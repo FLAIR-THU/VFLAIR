@@ -81,68 +81,10 @@ class BatchLabelReconstruction(object):
         #         all_nuswide_labels.append(line.split('_')[1][:-4])
         for batch_size in self.batch_size_list:
             for num_classes in self.num_class_list:
-        #         classes = [None] * num_classes
-        #         if self.dataset == 'cifar100':
-        #             # if apply the defense, we only use cifar20
-        #             if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar:
-        #                 classes = [i for i in range(num_classes)]
-        #             else:
-        #                 # classes = random.sample(list(range(100)), num_classes)
-        #                 classes = random.sample(list(range(10)), num_classes)
-
-        #             all_data, all_label = get_class_i(self.dst, classes)
-        #         elif self.dataset == 'mnist':
-        #             classes = random.sample(list(range(10)), num_classes)
-        #             all_data, all_label = get_class_i(self.dst, classes)
-        #         elif self.dataset == 'nuswide':
-        #             classes = random.sample(all_nuswide_labels, num_classes)
-        #             x_image, x_text, Y = get_labeled_data('./data/NUS_WIDE', classes, None, 'Train')
-        #         elif self.dataset == 'cifar10':
-        #             classes = random.sample(list(range(10)), num_classes)
-        #             all_data, all_label = get_class_i(self.dst, classes)
 
                 recovery_rate_history = []
                 for i_run in range(1, self.num_exp + 1):
                     start_time = time.time()
-        #             # randomly sample
-        #             if self.dataset == 'mnist' or self.dataset == 'cifar100' or self.dataset == 'cifar10':
-        #                 gt_data = []
-        #                 gt_label = []
-        #                 for i in range(0, batch_size):
-        #                     sample_idx = torch.randint(len(all_data), size=(1,)).item()
-        #                     gt_data.append(all_data[sample_idx])
-        #                     gt_label.append(all_label[sample_idx])
-        #                 gt_data = torch.stack(gt_data).to(self.device)
-        #                 half_size = list(gt_data.size())[-1] // 2
-        #                 gt_data_a = gt_data[:, :, :half_size, :]
-        #                 gt_data_b = gt_data[:, :, half_size:, :]
-        #                 gt_label = torch.stack(gt_label).to(self.device)
-        #                 gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-        #             elif self.dataset == 'nuswide':
-        #                 gt_data_a, gt_data_b, gt_label = [], [], []
-        #                 for i in range(0, batch_size):
-        #                     sample_idx = torch.randint(len(x_image), size=(1,)).item()
-        #                     gt_data_a.append(torch.tensor(x_text[sample_idx], dtype=torch.float32))
-        #                     gt_data_b.append(torch.tensor(x_image[sample_idx], dtype=torch.float32))
-        #                     gt_label.append(torch.tensor(Y[sample_idx], dtype=torch.float32))
-        #                 gt_data_a = torch.stack(gt_data_a).to(self.device)
-        #                 gt_data_b = torch.stack(gt_data_b).to(self.device)
-        #                 gt_label = torch.stack(gt_label).to(self.device)
-        #                 gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-        #             if self.apply_encoder:
-        #                 _, gt_onehot_label = self.encoder(gt_onehot_label) # get the result given by AutoEncoder.forward
-        #             if self.apply_adversarial_encoder:
-        #                 _, gt_onehot_label = self.encoder(gt_data_a)
-        #             # set model
-        #             if self.model == 'MLP2':
-        #                 self.net_a = MLP2(np.prod(list(gt_data_a.size())[1:]), num_classes).to(self.device)
-        #                 self.net_b = MLP2(np.prod(list(gt_data_b.size())[1:]), num_classes).to(self.device)
-        #             elif self.model == 'resnet18':
-        #                 self.net_a = resnet18(num_classes).to(self.device)
-        #                 self.net_b = resnet18(num_classes).to(self.device)
-                    
-                    # ......if args.apply_certify != 0 and epoch >= args.certify_start_epoch:
-                    #     .....
 
                     criterion = cross_entropy_for_onehot
                     pred_a = self.net_a(self.gt_data_a)

@@ -91,6 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
+    parser.add_argument('--configs', type=str, default='default_config', help='configure json file path')
     # ####### add to config file #######
     # parser.add_argument('--defense_up', type=int, default=0)
     # parser.add_argument('--epochs', type=int, default=20, help='num of training epochs')
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     # parser.add_argument('--gamma', type=float, default=0.97, help='learning rate decay')
     # parser.add_argument('--decay_period', type=int, default=1, help='epochs between two learning rate decays')
     # parser.add_argument('--weight_decay', type=float, default=3e-5, help='weight decay')
-    # parser.add_argument('--k', type=int, default=3, help='num of client')
+    # parser.add_argument('--k', type=int, default=2, help='num of participants')
     # parser.add_argument('--model', default='mlp2', help='resnet')
     # parser.add_argument('--input_size', type=int, default=28, help='resnet')
     # parser.add_argument('--use_project_head', type=int, default=0)
@@ -151,7 +152,7 @@ if __name__ == '__main__':
 
     if args.dataset == 'cifar100':
         # args.dst = datasets.CIFAR100("./dataset/", download=True)
-        args.dst = datasets.CIFAR10("./dataset/", download=True)
+        args.dst = datasets.CIFAR10("./data/", download=True)
         args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
         args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
     elif args.dataset == 'mnist':

@@ -1,4 +1,6 @@
 import os
+sys.path.append(os.pardir)
+
 import torch
 import csv
 import json
