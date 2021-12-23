@@ -14,6 +14,10 @@ data/
 ./data/*/*
 # ./VFL_Label_Inference/trained_models/*
 
+# experiment result files
+src/exp_result/
+./src/exp_result/*/*
+
 # Distribution / packaging
 .Python
 build/
