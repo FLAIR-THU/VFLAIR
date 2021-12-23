@@ -1,19 +1,19 @@
 {
     "k": 2,
-    "model_list":{
-        "0": {
-            "type": "MLP2",
-            "path": "../models/random"
-        },
-        "1": {
-            "type": "MLP2",
-            "path": "../models/random"
-        }
-    },
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10,
         "partition_function": "horizontal_half"
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "path": "random_14*28_10"
+        }
     },
     "attacker_train": {
         "batch_size": 64,

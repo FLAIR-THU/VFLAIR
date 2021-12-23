@@ -26,7 +26,7 @@ class BatchLabelReconstruction(object):
         :param args:  contains all the necessary parameters
         '''
         self.dataset = args.dataset
-        self.model = args.model
+        self.model = args.model_list
         self.num_exp = args.num_exp
         self.epochs = args.epochs
         self.lr = args.lr
@@ -38,8 +38,8 @@ class BatchLabelReconstruction(object):
         self.dst = args.dst
         self.exp_res_dir = args.exp_res_dir
         self.exp_res_path = args.exp_res_path
-        self.net_a = args.net_a
-        self.net_b = args.net_b
+        self.net_a = args.net_list[0]
+        self.net_b = args.net_list[1]
         self.gt_data_a = args.gt_data_a
         self.gt_data_b = args.gt_data_b
         self.gt_label = args.gt_label
