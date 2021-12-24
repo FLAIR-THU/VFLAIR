@@ -16,7 +16,7 @@ import copy
 
 import torch
 
-from load.LoadConfigs import load_configs
+from load.LoadConfigs import load_configs, load_attack_configs
 from load.LoadDataset import load_dataset
 from load.LoadModels import load_models
 from models.vision import *
@@ -105,52 +105,57 @@ if __name__ == '__main__':
     assert args.dataset_split != None, "dataset_split attribute not found config json file"
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
     args.dataset = args.dataset_split['dataset_name']
-    args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
-    args.batch_size_list = [args.batch_size]
-
-    if args.dataset == 'cifar10':
-        args.dst = datasets.CIFAR10("./data/", download=True)
-        # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
-        # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
-    elif args.dataset == 'cifar100':
-        args.dst = datasets.CIFAR100("./data/", download=True)
-        # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
-        # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
-    elif args.dataset == 'mnist':
-        args.dst = datasets.MNIST("~/.torch", download=True)
-        # args.batch_size_list = [32, 128, 512, 1024, 2048]
-        # args.num_class_list = [2] #[2, 3, 4, 5, 6, 7, 8, 9, 10]
-    elif args.dataset == 'nuswide':
-        args.dst = None
-        # args.batch_size_list = [32, 128, 512, 1024, 2048]
-        # args.num_class_list = [2] #[2, 4, 8, 16, 20, 40, 60, 81]
-
-    args = load_dataset(args)
-
-    args = load_models(args)
-    # if args.model == 'MLP2':
-    #     args.net_a = MLP2(np.prod(list(args.gt_data_a.size())[1:]), args.num_classes).to(args.device)
-    #     args.net_b = MLP2(np.prod(list(args.gt_data_b.size())[1:]), args.num_classes).to(args.device)
-    # elif args.model == 'resnet18':
-    #     args.net_a = resnet18(args.num_classes).to(args.device)
-    #     args.net_b = resnet18(args.num_classes).to(args.device)
-
-
-    args.exp_res_dir = f'exp_result/{args.dataset}/'
-    if not os.path.exists(args.exp_res_dir):
-        os.makedirs(args.exp_res_dir)
-    filename = f'dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
-           f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-    # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
-    #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-    args.exp_res_path = args.exp_res_dir + filename
-    
     # put in all the attacks
     attack_list = []
     for attack in args.attack_methods:
-        attack_list.append(globals()[attack](args))
-    for attack in attack_list:
-        attacker = attack
+        # load attack configs
+        attack_index = args.attack_methods.index(attack)
+        attack_config_file_path = args.attack_config_list[attack_index]
+        args = load_attack_configs(attack_config_file_path, attack, args)
+
+        args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
+        args.batch_size_list = [args.batch_size]
+
+        if args.dataset == 'cifar10':
+            args.dst = datasets.CIFAR10("./data/", download=True)
+            # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
+            # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
+        elif args.dataset == 'cifar100':
+            args.dst = datasets.CIFAR100("./data/", download=True)
+            # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
+            # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
+        elif args.dataset == 'mnist':
+            args.dst = datasets.MNIST("~/.torch", download=True)
+            # args.batch_size_list = [32, 128, 512, 1024, 2048]
+            # args.num_class_list = [2] #[2, 3, 4, 5, 6, 7, 8, 9, 10]
+        elif args.dataset == 'nuswide':
+            args.dst = None
+            # args.batch_size_list = [32, 128, 512, 1024, 2048]
+            # args.num_class_list = [2] #[2, 4, 8, 16, 20, 40, 60, 81]
+
+        args = load_dataset(args)
+
+        args = load_models(args)
+        # if args.model == 'MLP2':
+        #     args.net_a = MLP2(np.prod(list(args.gt_data_a.size())[1:]), args.num_classes).to(args.device)
+        #     args.net_b = MLP2(np.prod(list(args.gt_data_b.size())[1:]), args.num_classes).to(args.device)
+        # elif args.model == 'resnet18':
+        #     args.net_a = resnet18(args.num_classes).to(args.device)
+        #     args.net_b = resnet18(args.num_classes).to(args.device)
+
+
+        args.exp_res_dir = f'exp_result/{args.dataset}/'
+        if not os.path.exists(args.exp_res_dir):
+            os.makedirs(args.exp_res_dir)
+        filename = f'attacker={attack},dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
+            f'epochs={args.epochs},early_stop={args.early_stop}.txt'
+        # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
+        #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
+        args.exp_res_path = args.exp_res_dir + filename
+    
+
+        attacker = globals()[attack](args)
+        attack_list.append(attacker)
         attacker.train()
 
 
