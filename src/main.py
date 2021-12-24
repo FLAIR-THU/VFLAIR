@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='default_config', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='basic_configs', help='configure json file path')
     # ####### add to config file #######
     # parser.add_argument('--defense_up', type=int, default=0)
     # parser.add_argument('--epochs', type=int, default=20, help='num of training epochs')
@@ -145,7 +145,10 @@ if __name__ == '__main__':
     #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
     args.exp_res_path = args.exp_res_dir + filename
     
-    attack_list = [BatchLabelReconstruction(args)]
+    # put in all the attacks
+    attack_list = []
+    for attack in args.attack_methods:
+        attack_list.append(globals()[attack](args))
     for attack in attack_list:
         attacker = attack
         attacker.train()

@@ -5,7 +5,7 @@ import json
 import argparse
 
 def load_configs(config_file_name, args):
-    config_file_path = './config/'+config_file_name+'.json'
+    config_file_path = './configs/'+config_file_name+'.json'
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
     # print(config_dict)
