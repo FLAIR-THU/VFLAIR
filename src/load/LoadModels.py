@@ -31,20 +31,28 @@ def load_models(args):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser("backdoor").parse_args()
-    args.num_classes = 100
+    args.num_classes = 10
     
-    # temp_net = MLP2(14*28, args.num_classes)
-    # pickle.dump(temp_net, open('../../model_parameters/MLP2/random_14*28_'+str(args.num_classes)+'.pkl','wb'))
-    # loaded_net = pickle.load(open('../../model_parameters/MLP2/random_14*28_'+str(args.num_classes)+'.pkl',"rb"))
+    # temp_net = MLP2(28*28, args.num_classes)
+    # pickle.dump(temp_net, open('../../model_parameters/MLP2/random_28*28_'+str(args.num_classes)+'.pkl','wb'))
+    # loaded_net = pickle.load(open('../../model_parameters/MLP2/random_28*28_'+str(args.num_classes)+'.pkl',"rb"))
 
-    # temp_net = MLP2(16*32, args.num_classes)
-    # pickle.dump(temp_net, open('../../model_parameters/MLP2/random_16*32_'+str(args.num_classes)+'.pkl','wb'))
-    # loaded_net = pickle.load(open('../../model_parameters/MLP2/random_16*32_'+str(args.num_classes)+'.pkl',"rb"))
+    torch.manual_seed(1234)
+    def weights_init(m):
+        if hasattr(m, "weight"):
+            m.weight.data.uniform_(-0.5, 0.5)
+        if hasattr(m, "bias"):
+            m.bias.data.uniform_(-0.5, 0.5)
+    
+    temp_net = LeNet(args.num_classes)
+    temp_net.apply(weights_init)
+    pickle.dump(temp_net, open('../../model_parameters/LeNet/random_'+str(args.num_classes)+'.pkl','wb'))
+    loaded_net = pickle.load(open('../../model_parameters/LeNet/random_'+str(args.num_classes)+'.pkl',"rb"))
 
 
-    temp_net = resnet18(args.num_classes)
-    pickle.dump(temp_net, open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl','wb'))
-    loaded_net = pickle.load(open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl',"rb"))
+    # temp_net = resnet18(args.num_classes)
+    # pickle.dump(temp_net, open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl','wb'))
+    # loaded_net = pickle.load(open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl',"rb"))
 
     print(temp_net)
     print(loaded_net)

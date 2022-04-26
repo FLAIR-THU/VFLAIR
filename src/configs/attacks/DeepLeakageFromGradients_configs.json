@@ -1,0 +1,10 @@
+{
+    "attacker_train": {
+        "batch_size": 1,
+        "epochs": 300,
+        "lr": 0.1,
+        "num_exp": 1,
+        "early_stop": 0,
+        "early_stop_param": 0.0001
+    }
+}

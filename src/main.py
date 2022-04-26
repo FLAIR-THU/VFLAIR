@@ -23,8 +23,7 @@ from models.vision import *
 from utils.basic_functions import *
 from utils.constants import *
 from evaluates.BatchLabelReconstruction import *
-from evaluates.SampleLabelReconstruction import *
-
+from evaluates.DeepLeakageFromGradients import *
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -105,6 +104,8 @@ if __name__ == '__main__':
     assert args.dataset_split != None, "dataset_split attribute not found config json file"
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
     args.dataset = args.dataset_split['dataset_name']
+    print(args.dataset)
+    print(args.attack_methods)
     # put in all the attacks
     attack_list = []
     for attack in args.attack_methods:
@@ -142,12 +143,13 @@ if __name__ == '__main__':
         # elif args.model == 'resnet18':
         #     args.net_a = resnet18(args.num_classes).to(args.device)
         #     args.net_b = resnet18(args.num_classes).to(args.device)
+        print("everything loaded")
 
 
-        args.exp_res_dir = f'exp_result/{args.dataset}/'
+        args.exp_res_dir = f'exp_result/{attack}/{args.dataset}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
-        filename = f'attacker={attack},dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
+        filename = f'dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
             f'epochs={args.epochs},early_stop={args.early_stop}.txt'
         # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
         #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'

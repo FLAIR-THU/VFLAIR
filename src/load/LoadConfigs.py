@@ -112,7 +112,7 @@ def load_attack_configs(config_file_name, attack_name, args):
     config_file_path = './configs/attacks/'+config_file_name+'.json'
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
-    if attack_name == 'BatchLabelReconstruction':
+    if attack_name == 'BatchLabelReconstruction' or attack_name == "DeepLeakageFromGradients":
         # args.attacker_train_config
         if 'attacker_train' in config_dict:
             config_attacker_dict = config_dict['attacker_train']

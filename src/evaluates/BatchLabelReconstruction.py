@@ -87,6 +87,7 @@ class BatchLabelReconstruction(object):
                     start_time = time.time()
 
                     criterion = cross_entropy_for_onehot
+                    print(self.gt_data_a.shape)
                     pred_a = self.net_a(self.gt_data_a)
                     pred_b = self.net_b(self.gt_data_b)
                     ######################## defense start ############################

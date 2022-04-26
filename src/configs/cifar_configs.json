@@ -1,0 +1,40 @@
+{
+    "k": 2,
+    "dataset":{
+        "dataset_name": "cifar100",
+        "num_classes": 20,
+        "partition_function": "horizontal_half"
+    },
+    "model_list":{
+        "0": {
+            "type": "resnet18",
+            "path": "random_20"
+        },
+        "1": {
+            "type": "resnet18",
+            "path": "random_20"
+        }
+    },
+    "attack_methods": {
+        "BatchLabelReconstruction": 1,
+        "DeepLeakageFromGradients": 0
+    },
+    "attack_configs": {
+        "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
+        "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
+    },
+    "defense_methods": {
+        "apply_trainable_layer": 0,
+        "apply_laplace": 0,
+        "apply_gaussian": 0,
+        "dp_strength": 0.0,
+        "apply_grad_spar": 0,
+        "grad_spars": 0.0,
+        "apply_encoder": 0,
+        "apply_adversarial_encoder": 0,
+        "ae_lambda": 0.1,
+        "encoder_path": "",
+        "apply_marvell": 0,
+        "marvell_s": 0
+    }
+}

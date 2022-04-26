@@ -16,13 +16,11 @@
         }
     },
     "attack_methods": {
-        "BatchLabelReconstruction": 1,
-        "SampleLabelReconstruction": 0,
-        "DeepLeakageFromGradients": 0
+        "BatchLabelReconstruction": 0,
+        "DeepLeakageFromGradients": 1
     },
     "attack_configs": {
         "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
-        "SampleLabelReconstruction": "SampleLabelReconstruction_configs",
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
     },
     "defense_methods": {
