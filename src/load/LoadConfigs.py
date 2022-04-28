@@ -41,12 +41,14 @@ def load_configs(config_file_name, args):
             else:
                 model_dict[str(ik)] = default_dict_element
         args.model_list = model_dict
+        args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
     else:
         default_model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': '../models/MLP2/random'}
         for ik in range(args.k):
             default_model_dict[str(ik)] = default_dict_element
         args.model_list = default_model_dict
+        args.apply_trainable_layer = 0
     
     if 'attack_methods' in config_dict:
         config_attack_methods_dict = config_dict['attack_methods']
@@ -54,11 +56,12 @@ def load_configs(config_file_name, args):
         for key in config_attack_methods_dict:
             if config_attack_methods_dict[key] != 0:
                 methods_list.append(key)
-        if len(methods_list) == 0:
-            methods_list.append('BatchLabelReconstruction')
+        # if len(methods_list) == 0:
+        #     methods_list.append('BatchLabelReconstruction')
         args.attack_methods = methods_list
     else:
-        args.attack_methods = ['BatchLabelReconstruction']
+        # args.attack_methods = ['BatchLabelReconstruction']
+        args.attack_methods = []
     
     # attack_configs
     if 'attack_configs' in config_dict:
@@ -74,35 +77,38 @@ def load_configs(config_file_name, args):
             attack_config_list.append((attack_method+'_configs'))
         args.attack_config_list = attack_config_list
 
-
+    args.apply_laplace = 0
+    args.apply_gaussian = 0
+    args.apply_grad_spar = 0
+    args.apply_discrete_gradients = 0
+    args.apply_encoder = 0
+    args.apply_marvell = 0
     if 'defense_methods' in config_dict:
-        config_defense_dict = config_dict['defense_methods']
-        defense_methods = []
-        args.apply_trainable_layer = config_defense_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_defense_dict) else 0
-        args.apply_laplace = config_defense_dict['apply_laplace'] if ('apply_laplace' in config_defense_dict) else 0
-        args.apply_gaussian = config_defense_dict['apply_gaussian'] if ('apply_gaussian' in config_defense_dict) else 0
-        args.dp_strength = config_defense_dict['dp_strength'] if ('dp_strength' in config_defense_dict) else 0.0
-        args.apply_grad_spar = config_defense_dict['apply_grad_spar'] if ('apply_grad_spar' in config_defense_dict) else 0
-        args.grad_spars = config_defense_dict['grad_spars'] if ('grad_spars' in config_defense_dict) else 0.0
-        args.apply_encoder = config_defense_dict['apply_encoder'] if ('apply_encoder' in config_defense_dict) else 0
-        args.apply_adversarial_encoder = config_defense_dict['apply_adversarial_encoder'] if ('apply_adversarial_encoder' in config_defense_dict) else 0
-        args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 0.1
-        args.encoder = config_defense_dict['encoder'] if ('encoder' in config_defense_dict) else None
-        args.apply_marvell = config_defense_dict['apply_marvell'] if ('apply_marvell' in config_defense_dict) else 0
-        args.marvell_s = config_defense_dict['marvell_s'] if ('marvell_s' in config_defense_dict) else 0
+        config_defense_methods_dict = config_dict['defense_methods']
+        methods_list = []
+        for key in config_defense_methods_dict:
+            if config_defense_methods_dict[key] != 0:
+                methods_list.append(key)
+        # if len(methods_list) == 0:
+        #     methods_list.append('LaplaceDP')
+        args.defense_methods = methods_list
     else:
-        args.apply_trainable_layer = 0
-        args.apply_laplace = 0
-        args.apply_gaussian = 0
-        args.dp_strength = 0.0
-        args.apply_grad_spar = 0
-        args.grad_spars = 0.0
-        args.apply_encoder = 0
-        args.apply_adversarial_encoder = 0
-        args.ae_lambda = 0.1
-        args.encoder = None
-        args.apply_marvell = 0
-        args.marvell_s = 0
+        # args.defense_methods = ['LaplaceDP']
+        args.defense_methods = []
+    
+    # defense_configs
+    if 'defense_configs' in config_dict:
+        config_defense_config_dict = config_dict['defense_configs']
+        defense_config_list = []
+        for defense_method in args.defense_methods:
+            defense_config_list.append((config_defense_config_dict[defense_method] \
+                                        if defense_method in config_defense_config_dict else (defense_method+'_configs')))
+        args.defense_config_list = defense_config_list
+    else:
+        defense_config_list = []
+        for defense_method in args.defense_methods:
+            defense_config_list.append((defense_method+'_configs'))
+        args.defense_config_list = defense_config_list
 
     # important
     return args
@@ -134,6 +140,70 @@ def load_attack_configs(config_file_name, attack_name, args):
     
     # important
     return args
+
+
+def load_defense_configs(config_file_name, defense_name, args):
+    config_file_path = './configs/defenses/'+config_file_name+'.json'
+    config_file = open(config_file_path,"r")
+    config_dict = json.load(config_file)
+    if defense_name == 'LaplaceDP' or defense_name == 'GaussianDP':
+        if defense_name == 'LaplaceDP':
+            args.apply_laplace = 1
+        else:
+            args.apply_gaussian = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.dp_strength = config_defense_dict['dp_strength'] if ('dp_strength' in config_defense_dict) else 0.001
+        else:
+            args.dp_strength = 0.001
+    elif defense_name == 'GradientSparcification':
+        args.apply_grad_spar = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.grad_spars = config_defense_dict['grad_spars_rate'] if ('grad_spars_rate' in config_defense_dict) else 99
+        else:
+            args.dp_strength = 99
+    elif defense_name == 'DiscreteGradient':
+        args.apply_discrete_gradients = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.discrete_bins = config_defense_dict['discrete_bins'] if ('discrete_bins' in config_defense_dict) else 12
+        else:
+            args.dp_strength = 12
+    elif defense_name == 'ConfusionalAutoEncoder':
+        args.apply_encoder = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
+            args.encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
+        else:
+            args.ae_lambda = 1.0
+            args.encoder_path = ""
+    elif defense_name == 'DiscreteConfusionalAutoEncoder':
+        args.apply_discrete_gradients = 1
+        args.apply_encoder = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
+            args.encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
+            args.discrete_bins = config_defense_dict['discrete_bins'] if ('discrete_bins' in config_defense_dict) else 12
+        else:
+            args.ae_lambda = 1.0
+            args.encoder_path = ""
+            args.dp_strength = 12
+    elif defense_name == 'Marvell_configs':
+        args.apply_marvell = 1
+        if 'defense_parameters' in config_dict:
+            config_defense_dict = config_dict['defense_parameters']
+            args.marvell_s = config_defense_dict['marvell_s'] if ('marvell_s' in config_defense_dict) else 1
+        else:
+            args.marvell_s = 1
+    else:
+        assert defense_name == 'LaplaceDP', 'Invalid attack method, please double check'
+    
+    # important
+    return args
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser("backdoor").parse_args()

@@ -1,0 +1,6 @@
+{
+    "defense_parameters": {
+        "noise_type": "laplace",
+        "dp_strength": 0.001
+    }
+}

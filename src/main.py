@@ -16,7 +16,7 @@ import copy
 
 import torch
 
-from load.LoadConfigs import load_configs, load_attack_configs
+from load.LoadConfigs import load_configs, load_attack_configs, load_defense_configs
 from load.LoadDataset import load_dataset
 from load.LoadModels import load_models
 from models.vision import *
@@ -143,22 +143,26 @@ if __name__ == '__main__':
         # elif args.model == 'resnet18':
         #     args.net_a = resnet18(args.num_classes).to(args.device)
         #     args.net_b = resnet18(args.num_classes).to(args.device)
-        print("everything loaded")
+        for defense in args.defense_methods:
+            # load attack configs
+            defense_index = args.defense_methods.index(defense)
+            defense_config_file_path = args.defense_config_list[defense_index]
+            args = load_defense_configs(defense_config_file_path, defense, args)
+            print("everything loaded")
 
+            args.exp_res_dir = f'exp_result/{attack}/{args.dataset}/{defense}'
+            if not os.path.exists(args.exp_res_dir):
+                os.makedirs(args.exp_res_dir)
+            filename = f'dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
+                f'epochs={args.epochs},early_stop={args.early_stop}.txt'
+            # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
+            #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
+            args.exp_res_path = args.exp_res_dir + filename
+        
 
-        args.exp_res_dir = f'exp_result/{attack}/{args.dataset}/'
-        if not os.path.exists(args.exp_res_dir):
-            os.makedirs(args.exp_res_dir)
-        filename = f'dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
-            f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-        # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
-        #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-        args.exp_res_path = args.exp_res_dir + filename
-    
-
-        attacker = globals()[attack](args)
-        attack_list.append(attacker)
-        attacker.train()
+            attacker = globals()[attack](args)
+            attack_list.append(attacker)
+            attacker.train()
 
 
 

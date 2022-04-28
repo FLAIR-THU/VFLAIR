@@ -13,7 +13,8 @@
         "1": {
             "type": "MLP2",
             "path": "random_14*28_10"
-        }
+        },
+        "apply_trainable_layer": 0
     },
     "attack_methods": {
         "BatchLabelReconstruction": 0,
@@ -24,17 +25,21 @@
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
     },
     "defense_methods": {
-        "apply_trainable_layer": 0,
-        "apply_laplace": 0,
-        "apply_gaussian": 0,
-        "dp_strength": 0.0,
-        "apply_grad_spar": 0,
-        "grad_spars": 0.0,
-        "apply_encoder": 0,
-        "apply_adversarial_encoder": 0,
-        "ae_lambda": 0.1,
-        "encoder_path": "",
-        "apply_marvell": 0,
-        "marvell_s": 0
+        "LaplaceDP": 1,
+        "GaussianDP": 0,
+        "GradientSparcification": 0,
+        "DiscreteGradient": 0,
+        "ConfusionalAutoEncoder": 0,
+        "DiscreteConfusionalAutoEncoder": 0,
+        "Marvell": 0
+    },
+    "defense_configs": {
+        "LaplaceDP": "DP_configs",
+        "GaussianDP": "DP_configs",
+        "GradientSparcification": "GradientSparcification_configs",
+        "DiscreteGradient": "DiscreteGradient_configs",
+        "ConfusionalAutoEncoder": "ConfusionalAutoEncoder_configs",
+        "DiscreteConfusionalAutoEncoder": "DiscreteConfusionalAutoEncoder_configs",
+        "Marvell": "Marvell_configs"
     }
 }

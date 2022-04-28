@@ -1,0 +1,7 @@
+{
+    "defense_parameters": {
+        "ae_lambda": 1.0,
+        "encoder_path": "",
+        "discrete_bins": 12
+    }
+}
