@@ -1,6 +1,25 @@
 {
     "defense_parameters": {
         "ae_lambda": 1.0,
-        "encoder_path": ""
+        "encoder_path": "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_1.0_1642396548",
+        "possible_path": [
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_0.0_1631093149",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_0.1_1642396928",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_0.5_1642396797",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_1.0_1642396548",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_20_0.05_1645374482",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_20_0.0_1645374739",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_20_0.1_1645374527",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_20_0.5_1645374585",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_20_1.0_1645374675",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_2_0.0_1636174878",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_2_0.1_1636175237",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_2_0.5_1636175420",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_2_1.0_1636175704",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_5_0.05_1630981788",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_5_0.0_1631059899",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_5_0.1_1630895642",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_5_0.5_1630891447",
+            "../model_parameters/ConfusionalAutoEncoder/autoencoder_5_1.0_1630879452"]
     }
 }

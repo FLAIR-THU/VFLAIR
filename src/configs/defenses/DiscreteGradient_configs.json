@@ -1,5 +1,5 @@
 {
     "defense_parameters": {
-        "discrete_bins": 12
+        "discrete_gradients_bins": 12
     }
 }

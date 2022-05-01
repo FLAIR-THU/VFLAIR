@@ -3,6 +3,7 @@ sys.path.append(os.pardir)
 
 import json
 import argparse
+from models.autoencoder import AutoEncoder
 
 def load_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -77,24 +78,31 @@ def load_configs(config_file_name, args):
             attack_config_list.append((attack_method+'_configs'))
         args.attack_config_list = attack_config_list
 
+    # defense args initialization
     args.apply_laplace = 0
     args.apply_gaussian = 0
+    args.dp_strength = 0.0
     args.apply_grad_spar = 0
+    args.grad_spars = 0
     args.apply_discrete_gradients = 0
+    args.discrete_bins = 0
     args.apply_encoder = 0
+    args.ae_lambda = 0.0
+    args.encoder = None
     args.apply_marvell = 0
+    args.marvell_s = 0
     if 'defense_methods' in config_dict:
         config_defense_methods_dict = config_dict['defense_methods']
         methods_list = []
         for key in config_defense_methods_dict:
             if config_defense_methods_dict[key] != 0:
                 methods_list.append(key)
-        # if len(methods_list) == 0:
-        #     methods_list.append('LaplaceDP')
+        if len(methods_list) == 0:
+            methods_list.append('NoDefense')
         args.defense_methods = methods_list
     else:
-        # args.defense_methods = ['LaplaceDP']
-        args.defense_methods = []
+        args.defense_methods = ['NoDefense']
+        # args.defense_methods = []
     
     # defense_configs
     if 'defense_configs' in config_dict:
@@ -143,63 +151,84 @@ def load_attack_configs(config_file_name, attack_name, args):
 
 
 def load_defense_configs(config_file_name, defense_name, args):
-    config_file_path = './configs/defenses/'+config_file_name+'.json'
-    config_file = open(config_file_path,"r")
-    config_dict = json.load(config_file)
-    if defense_name == 'LaplaceDP' or defense_name == 'GaussianDP':
-        if defense_name == 'LaplaceDP':
-            args.apply_laplace = 1
+    args.apply_laplace = 0
+    args.apply_gaussian = 0
+    args.dp_strength = 0.001
+    args.apply_grad_spar = 0
+    args.grad_spars = 99
+    args.apply_discrete_gradients = 0
+    args.discrete_gradients_bins = 12
+    args.apply_encoder = 0
+    args.ae_lambda = 1.0
+    args.encoder = None
+    args.apply_marvell = 0
+    args.marvell_s = 1
+    if defense_name != 'NoDefense':
+        config_file_path = './configs/defenses/'+config_file_name+'.json'
+        config_file = open(config_file_path,"r")
+        config_dict = json.load(config_file)
+        if defense_name == 'LaplaceDP' or defense_name == 'GaussianDP':
+            if defense_name == 'LaplaceDP':
+                args.apply_laplace = 1
+            else:
+                args.apply_gaussian = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.dp_strength = config_defense_dict['dp_strength'] if ('dp_strength' in config_defense_dict) else 0.001
+            else:
+                args.dp_strength = 0.001
+        elif defense_name == 'GradientSparcification':
+            args.apply_grad_spar = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.grad_spars = config_defense_dict['grad_spars_rate'] if ('grad_spars_rate' in config_defense_dict) else 99
+            else:
+                args.grad_spars = 99
+        elif defense_name == 'DiscreteGradient':
+            args.apply_discrete_gradients = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.discrete_gradients_bins = config_defense_dict['discrete_gradients_bins'] if ('discrete_gradients_bins' in config_defense_dict) else 12
+            else:
+                args.discrete_gradients_bins = 12
+        elif defense_name == 'ConfusionalAutoEncoder':
+            args.apply_encoder = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
+                encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
+                dim = args.num_class_list[0]
+                encoder = AutoEncoder(input_dim=dim, encode_dim=2+dim * 6).to(args.device)
+                encoder.load_model(encoder_path, target_device=args.device)
+                args.encoder = encoder
+            else:
+                args.ae_lambda = 1.0
+                args.encoder = None
+        elif defense_name == 'DiscreteConfusionalAutoEncoder':
+            args.apply_discrete_gradients = 1
+            args.apply_encoder = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.discrete_gradients_bins = config_defense_dict['discrete_gradients_bins'] if ('discrete_gradients_bins' in config_defense_dict) else 12
+                args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
+                encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
+                dim = args.num_class_list[0]
+                encoder = AutoEncoder(input_dim=dim, encode_dim=2+dim * 6).to(args.device)
+                encoder.load_model(encoder_path, target_device=args.device)
+                args.encoder = encoder
+            else:
+                args.discrete_gradients_bins = 12
+                args.ae_lambda = 1.0
+                args.encoder = None
+        elif defense_name == 'Marvell':
+            args.apply_marvell = 1
+            if 'defense_parameters' in config_dict:
+                config_defense_dict = config_dict['defense_parameters']
+                args.marvell_s = config_defense_dict['marvell_s'] if ('marvell_s' in config_defense_dict) else 10
+            else:
+                args.marvell_s = 10
         else:
-            args.apply_gaussian = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.dp_strength = config_defense_dict['dp_strength'] if ('dp_strength' in config_defense_dict) else 0.001
-        else:
-            args.dp_strength = 0.001
-    elif defense_name == 'GradientSparcification':
-        args.apply_grad_spar = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.grad_spars = config_defense_dict['grad_spars_rate'] if ('grad_spars_rate' in config_defense_dict) else 99
-        else:
-            args.dp_strength = 99
-    elif defense_name == 'DiscreteGradient':
-        args.apply_discrete_gradients = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.discrete_bins = config_defense_dict['discrete_bins'] if ('discrete_bins' in config_defense_dict) else 12
-        else:
-            args.dp_strength = 12
-    elif defense_name == 'ConfusionalAutoEncoder':
-        args.apply_encoder = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
-            args.encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
-        else:
-            args.ae_lambda = 1.0
-            args.encoder_path = ""
-    elif defense_name == 'DiscreteConfusionalAutoEncoder':
-        args.apply_discrete_gradients = 1
-        args.apply_encoder = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.ae_lambda = config_defense_dict['ae_lambda'] if ('ae_lambda' in config_defense_dict) else 1.0
-            args.encoder_path = config_defense_dict['encoder_path'] if ('encoder_path' in config_defense_dict) else ""
-            args.discrete_bins = config_defense_dict['discrete_bins'] if ('discrete_bins' in config_defense_dict) else 12
-        else:
-            args.ae_lambda = 1.0
-            args.encoder_path = ""
-            args.dp_strength = 12
-    elif defense_name == 'Marvell_configs':
-        args.apply_marvell = 1
-        if 'defense_parameters' in config_dict:
-            config_defense_dict = config_dict['defense_parameters']
-            args.marvell_s = config_defense_dict['marvell_s'] if ('marvell_s' in config_defense_dict) else 1
-        else:
-            args.marvell_s = 1
-    else:
-        assert defense_name == 'LaplaceDP', 'Invalid attack method, please double check'
+            assert defense_name == 'LaplaceDP', 'Invalid attack method, please double check'
     
     # important
     return args

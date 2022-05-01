@@ -1,5 +1,5 @@
 {
     "defense_parameters": {
-        "marvell_s": [1,5,10]
+        "marvell_s": 10
     }
 }

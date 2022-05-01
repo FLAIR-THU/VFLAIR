@@ -24,7 +24,8 @@
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
     },
     "defense_methods": {
-        "LaplaceDP": 0,
+        "NoDefense": 1,
+        "LaplaceDP": 1,
         "GaussianDP": 0,
         "GradientSparcification": 0,
         "DiscreteGradient": 0,
@@ -33,6 +34,7 @@
         "Marvell": 0
     },
     "defense_configs": {
+        "NoDefense": "",
         "LaplaceDP": "DP_configs",
         "GaussianDP": "DP_configs",
         "GradientSparcification": "GradientSparcification_configs",
