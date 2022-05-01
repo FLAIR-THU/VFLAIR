@@ -159,7 +159,67 @@ if __name__ == '__main__':
             # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
             #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
             args.exp_res_path = args.exp_res_dir + filename
-        
+
+
+    # if args.dataset_name == "cifar100":
+    #     half_dim = 16
+    #     # num_classes = 20
+    #     # num_classes = 2
+    #     num_classes = 100
+    #     train_dst = datasets.CIFAR100("./dataset/", download=True, train=True, transform=transform)
+    #     data, label = fetch_data_and_label(train_dst, num_classes)
+    #     train_dst = SimpleDataset(data, label)
+    #     test_dst = datasets.CIFAR100("./dataset/", download=True, train=False, transform=transform)
+    #     data, label = fetch_data_and_label(test_dst, num_classes)
+    #     test_dst = SimpleDataset(data, label)
+    # elif args.dataset_name == "cifar10":
+    #     half_dim = 16
+    #     num_classes = 10
+    #     train_dst = datasets.CIFAR10("./dataset/", download=True, train=True, transform=transform)
+    #     data, label = fetch_data_and_label(train_dst, num_classes)
+    #     train_dst = SimpleDataset(data, label)
+    #     test_dst = datasets.CIFAR10("./dataset/", download=True, train=False, transform=transform)
+    #     data, label = fetch_data_and_label(test_dst, num_classes)
+    #     test_dst = SimpleDataset(data, label)
+    # elif args.dataset_name == "mnist":
+    #     half_dim = 14
+    #     num_classes = 10
+    #     # num_classes = 2
+    #     train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
+    #     data, label = fetch_data_and_label(train_dst, num_classes)
+    #     train_dst = SimpleDataset(data, label)
+    #     test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
+    #     data, label = fetch_data_and_label(test_dst, num_classes)
+    #     test_dst = SimpleDataset(data, label)
+    # elif args.dataset_name == 'nuswide':
+    #     half_dim = [634, 1000]
+    #     num_classes = 5
+    #     # num_classes = 2
+    #     train_dst = NUSWIDEDataset('./data/NUS_WIDE', 'train')
+    #     test_dst = NUSWIDEDataset('./data/NUS_WIDE', 'test')
+    # args.train_dataset = train_dst
+    # args.val_dataset = test_dst
+    # args.half_dim = half_dim
+    # args.num_classes = num_classes
+
+    # args.encoder = None
+    # args.models_dict = {"mnist": MLP2,
+    #            "cifar100": resnet18,
+    #            "cifar10": resnet18,
+    #         #    "cifar10": resnet20,
+    #            "nuswide": MLP2,
+    #            "classifier": None}
+
+    # path = f'./exp_result/{args.dataset_name}/no_defense_main_task.txt'
+    # num_exp = 10
+
+    # test_acc_list = []
+    # for _ in range(num_exp):
+    #     vfl_defence_image = VFLDefenceExperimentBase(args)
+    #     test_acc = vfl_defence_image.train()
+    #     test_acc_list.append(test_acc)
+    # append_exp_res(path, str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
+
 
             attacker = globals()[attack](args)
             attack_list.append(attacker)

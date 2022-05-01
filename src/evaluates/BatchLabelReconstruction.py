@@ -26,6 +26,7 @@ class BatchLabelReconstruction(object):
         '''
         :param args:  contains all the necessary parameters
         '''
+        self.device = args.device
         self.dataset = args.dataset
         self.model = args.model_list
         self.num_exp = args.num_exp
@@ -33,7 +34,6 @@ class BatchLabelReconstruction(object):
         self.lr = args.lr
         self.early_stop = args.early_stop
         self.early_stop_param = args.early_stop_param
-        self.device = args.device
         self.batch_size_list = args.batch_size_list
         self.num_class_list = args.num_class_list
         self.dst = args.dst
@@ -60,6 +60,7 @@ class BatchLabelReconstruction(object):
         self.apply_discrete_gradients = args.apply_discrete_gradients
         self.discrete_gradients_bins = args.discrete_gradients_bins
         # self.discrete_gradients_bound = args.discrete_gradients_bound
+        self.discrete_gradients_bound = 1e-3
         # self.show_param()
 
     def show_param(self):
@@ -194,9 +195,9 @@ class BatchLabelReconstruction(object):
                     #     dp = DPLaplacianNoiseApplyer(beta=self.noise_scale)
                     #     pred_a_gradients_clone = dp.laplace_mech(pred_a_gradients_clone)
                     #     # pred_b_gradients_clone = dp.laplace_mech(pred_b_gradients_clone)
-                    # elif self.apply_discrete_gradients:
-                    #     pred_a_gradients_clone = multistep_gradient(pred_a_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)
-                    #     # pred_b_gradients_clone = multistep_gradient(pred_b_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)
+                    elif self.apply_discrete_gradients:
+                        pred_a_gradients_clone = multistep_gradient(pred_a_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)
+                        # pred_b_gradients_clone = multistep_gradient(pred_b_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)
                     original_dy_dx = torch.autograd.grad(pred_a, self.net_a.parameters(), grad_outputs=pred_a_gradients_clone)
                     ######################## defense end ############################
 

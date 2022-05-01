@@ -32,38 +32,38 @@ class VFLDefenceExperimentBase(object):
         self.train_dataset = args.train_dataset
         self.val_dataset = args.val_dataset
         self.half_dim = args.half_dim
+        self.epochs = args.epochs
+        self.lr = args.lr
+        self.batch_size = args.batch_size
+        self.models_dict = args.models_dict
         # self.num_classes = args.num_classes
         self.num_classes = args.num_class_list[0]
+        self.gradients_res_a = None
+        self.gradients_res_b = None
 
+        # self.apply_trainable_layer = args.apply_trainable_layer
         self.apply_laplace = args.apply_laplace
         self.apply_gaussian = args.apply_gaussian
         self.dp_strength = args.dp_strength
         self.apply_grad_spar = args.apply_grad_spar
         self.grad_spars = args.grad_spars
         self.apply_encoder = args.apply_encoder
-        self.apply_random_encoder = args.apply_random_encoder
-        self.apply_adversarial_encoder = args.apply_adversarial_encoder
-        self.gradients_res_a = None
-        self.gradients_res_b = None
+        self.encoder = args.encoder
         self.apply_marvell = args.apply_marvell
         self.marvell_s = args.marvell_s
-
-        self.apply_ppdl = args.apply_ppdl
-        self.ppdl_theta_u = args.ppdl_theta_u
-        self.apply_gc = args.apply_gc
-        self.gc_preserved_percent = args.gc_preserved_percent
-        self.apply_lap_noise = args.apply_lap_noise
-        self.noise_scale = args.noise_scale
         self.apply_discrete_gradients = args.apply_discrete_gradients
         self.discrete_gradients_bins = args.discrete_gradients_bins
-        self.discrete_gradients_bound = args.discrete_gradients_bound
-        self.acc_top_k = args.acc_top_k
+        # self.discrete_gradients_bound = args.discrete_gradients_bound
+        self.discrete_gradients_bound = 1e-3
 
-        self.epochs = args.epochs
-        self.lr = args.lr
-        self.batch_size = args.batch_size
-        self.models_dict = args.models_dict
-        self.encoder = args.encoder
+        # self.apply_ppdl = args.apply_ppdl
+        # self.ppdl_theta_u = args.ppdl_theta_u
+        # self.apply_gc = args.apply_gc
+        # self.gc_preserved_percent = args.gc_preserved_percent
+        # self.apply_lap_noise = args.apply_lap_noise
+        # self.noise_scale = args.noise_scale
+        # self.apply_discrete_gradients = args.apply_discrete_gradients
+
 
     def fetch_parties_data(self, data):
         if self.dataset_name == 'nuswide':

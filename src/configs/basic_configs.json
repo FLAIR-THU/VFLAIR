@@ -30,8 +30,8 @@
         "GaussianDP": 0,
         "GradientSparcification": 0,
         "DiscreteGradient": 0,
-        "ConfusionalAutoEncoder": 1,
-        "DiscreteConfusionalAutoEncoder": 0,
+        "ConfusionalAutoEncoder": 0,
+        "DiscreteConfusionalAutoEncoder": 1,
         "Marvell": 1
     },
     "defense_configs": {
