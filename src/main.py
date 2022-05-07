@@ -6,15 +6,14 @@ import time
 import random
 import logging
 import argparse
+import torch
 import torch.nn as nn
-from torch.types import Device
+import torchvision.transforms as transforms
+from torchvision import datasets
+# from torch.types import Device
 import torch.utils
 import torch.backends.cudnn as cudnn
-from tensorboardX import SummaryWriter
-import utils
-import copy
-
-import torch
+# from tensorboardX import SummaryWriter
 
 from load.LoadConfigs import load_configs, load_attack_configs, load_defense_configs
 from load.LoadDataset import load_dataset
@@ -22,8 +21,11 @@ from load.LoadModels import load_models
 from models.vision import *
 from utils.basic_functions import *
 from utils.constants import *
+from utils.dataset.SimpleImageDataset import SimpleDataset
+from utils.dataset.NuswideDataset import NUSWIDEDataset
 from evaluates.BatchLabelReconstruction import *
 from evaluates.DeepLeakageFromGradients import *
+from evaluates.MainTaskVFL import VFLDefenceExperimentBase
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -35,7 +37,14 @@ def set_seed(seed=0):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-
+tp = transforms.ToTensor()
+transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+     ])
+transform_fn = transforms.Compose([
+    transforms.ToTensor()
+])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
@@ -117,34 +126,56 @@ if __name__ == '__main__':
         args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
         args.batch_size_list = [args.batch_size]
 
+        num_classes = args.num_class_list[0] # for main task evaluation
         if args.dataset == 'cifar10':
+            # for attack task evaluation
             args.dst = datasets.CIFAR10("./data/", download=True)
-            # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
-            # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
+            # for main task evaluation
+            args.half_dim = 16
+            num_classes = 10
+            args.train_dst = datasets.CIFAR10("./data/", download=True, train=True, transform=transform)
+            data, label = fetch_data_and_label(args.train_dst, num_classes)
+            args.train_dst = SimpleDataset(data, label)
+            args.test_dst = datasets.CIFAR10("./data/", download=True, train=False, transform=transform)
+            data, label = fetch_data_and_label(args.test_dst, num_classes)
+            args.test_dst = SimpleDataset(data, label)
         elif args.dataset == 'cifar100':
+            # for attack task evaluation
             args.dst = datasets.CIFAR100("./data/", download=True)
-            # args.batch_size_list = [2048] #[2, 32, 128, 512, 2048]
-            # args.num_class_list = [2] #[5, 10, 15, 20, 40, 60, 80, 100]
+            # for main task evaluation
+            args.half_dim = 16
+            args.train_dst = datasets.CIFAR100("./data/", download=True, train=True, transform=transform)
+            data, label = fetch_data_and_label(args.train_dst, num_classes)
+            args.train_dst = SimpleDataset(data, label)
+            args.test_dst = datasets.CIFAR100("./data/", download=True, train=False, transform=transform)
+            data, label = fetch_data_and_label(args.test_dst, num_classes)
+            args.test_dst = SimpleDataset(data, label)
         elif args.dataset == 'mnist':
+            # for attack task evaluation
             args.dst = datasets.MNIST("~/.torch", download=True)
-            # args.batch_size_list = [32, 128, 512, 1024, 2048]
-            # args.num_class_list = [2] #[2, 3, 4, 5, 6, 7, 8, 9, 10]
+            # for main task evaluation
+            args.half_dim = 14
+            args.train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
+            data, label = fetch_data_and_label(args.train_dst, num_classes)
+            args.train_dst = SimpleDataset(data, label)
+            args.test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
+            data, label = fetch_data_and_label(args.test_dst, num_classes)
+            args.test_dst = SimpleDataset(data, label)
         elif args.dataset == 'nuswide':
+            # for attack task evaluation
             args.dst = None
-            # args.batch_size_list = [32, 128, 512, 1024, 2048]
-            # args.num_class_list = [2] #[2, 4, 8, 16, 20, 40, 60, 81]
-
+            # for main task evaluation
+            args.half_dim = [634, 1000]
+            args.train_dst = NUSWIDEDataset('./data/NUS_WIDE', 'train')
+            args.test_dst = NUSWIDEDataset('./data/NUS_WIDE', 'test')
+        else:
+            assert args.dataset == 'mnist', "Dataset not supported, please add additional code for support"
         args = load_dataset(args)
 
         args = load_models(args)
-        # if args.model == 'MLP2':
-        #     args.net_a = MLP2(np.prod(list(args.gt_data_a.size())[1:]), args.num_classes).to(args.device)
-        #     args.net_b = MLP2(np.prod(list(args.gt_data_b.size())[1:]), args.num_classes).to(args.device)
-        # elif args.model == 'resnet18':
-        #     args.net_a = resnet18(args.num_classes).to(args.device)
-        #     args.net_b = resnet18(args.num_classes).to(args.device)
+
         for defense in args.defense_methods:
-            # load attack configs
+            # load defense configs
             print("use defense", defense)
             defense_index = args.defense_methods.index(defense)
             defense_config_file_path = args.defense_config_list[defense_index]
@@ -159,50 +190,11 @@ if __name__ == '__main__':
             # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
             #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
             args.exp_res_path = args.exp_res_dir + filename
+            
+            # attacker = globals()[attack](args)
+            # attack_list.append(attacker)
+            # attacker.train()
 
-
-    # if args.dataset_name == "cifar100":
-    #     half_dim = 16
-    #     # num_classes = 20
-    #     # num_classes = 2
-    #     num_classes = 100
-    #     train_dst = datasets.CIFAR100("./dataset/", download=True, train=True, transform=transform)
-    #     data, label = fetch_data_and_label(train_dst, num_classes)
-    #     train_dst = SimpleDataset(data, label)
-    #     test_dst = datasets.CIFAR100("./dataset/", download=True, train=False, transform=transform)
-    #     data, label = fetch_data_and_label(test_dst, num_classes)
-    #     test_dst = SimpleDataset(data, label)
-    # elif args.dataset_name == "cifar10":
-    #     half_dim = 16
-    #     num_classes = 10
-    #     train_dst = datasets.CIFAR10("./dataset/", download=True, train=True, transform=transform)
-    #     data, label = fetch_data_and_label(train_dst, num_classes)
-    #     train_dst = SimpleDataset(data, label)
-    #     test_dst = datasets.CIFAR10("./dataset/", download=True, train=False, transform=transform)
-    #     data, label = fetch_data_and_label(test_dst, num_classes)
-    #     test_dst = SimpleDataset(data, label)
-    # elif args.dataset_name == "mnist":
-    #     half_dim = 14
-    #     num_classes = 10
-    #     # num_classes = 2
-    #     train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
-    #     data, label = fetch_data_and_label(train_dst, num_classes)
-    #     train_dst = SimpleDataset(data, label)
-    #     test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
-    #     data, label = fetch_data_and_label(test_dst, num_classes)
-    #     test_dst = SimpleDataset(data, label)
-    # elif args.dataset_name == 'nuswide':
-    #     half_dim = [634, 1000]
-    #     num_classes = 5
-    #     # num_classes = 2
-    #     train_dst = NUSWIDEDataset('./data/NUS_WIDE', 'train')
-    #     test_dst = NUSWIDEDataset('./data/NUS_WIDE', 'test')
-    # args.train_dataset = train_dst
-    # args.val_dataset = test_dst
-    # args.half_dim = half_dim
-    # args.num_classes = num_classes
-
-    # args.encoder = None
     # args.models_dict = {"mnist": MLP2,
     #            "cifar100": resnet18,
     #            "cifar10": resnet18,
@@ -210,20 +202,14 @@ if __name__ == '__main__':
     #            "nuswide": MLP2,
     #            "classifier": None}
 
-    # path = f'./exp_result/{args.dataset_name}/no_defense_main_task.txt'
-    # num_exp = 10
+            path = args.exp_res_dir+'no_defense_main_task.txt'
+            test_acc_list = []
+            for _ in range(args.num_exp):
+                vfl_defence_image = VFLDefenceExperimentBase(args)
+                test_acc = vfl_defence_image.train()
+                test_acc_list.append(test_acc)
+            append_exp_res(path, str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
 
-    # test_acc_list = []
-    # for _ in range(num_exp):
-    #     vfl_defence_image = VFLDefenceExperimentBase(args)
-    #     test_acc = vfl_defence_image.train()
-    #     test_acc_list.append(test_acc)
-    # append_exp_res(path, str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
-
-
-            attacker = globals()[attack](args)
-            attack_list.append(attacker)
-            attacker.train()
 
 
 

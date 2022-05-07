@@ -11,6 +11,10 @@ def load_configs(config_file_name, args):
     config_dict = json.load(config_file)
     # print(config_dict)
     
+    # args.main_lr, learning rate for main task
+    args.main_lr = config_dict['lr'] if('lr' in config_dict) else 0.001
+    # args.main_epochs, iterations for main task
+    args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else 50
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
     
@@ -167,6 +171,8 @@ def load_defense_configs(config_file_name, defense_name, args):
         config_file_path = './configs/defenses/'+config_file_name+'.json'
         config_file = open(config_file_path,"r")
         config_dict = json.load(config_file)
+        args.main_lr = config_dict['lr'] if('lr' in config_dict) else args.main_lr
+        args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else args.main_epochs
         if defense_name == 'LaplaceDP' or defense_name == 'GaussianDP':
             if defense_name == 'LaplaceDP':
                 args.apply_laplace = 1

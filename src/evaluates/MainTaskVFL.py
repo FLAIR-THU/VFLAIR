@@ -29,14 +29,15 @@ class VFLDefenceExperimentBase(object):
     def __init__(self, args):
         self.device = args.device
         self.dataset_name = args.dataset
-        self.train_dataset = args.train_dataset
-        self.val_dataset = args.val_dataset
+        self.train_dataset = args.train_dst
+        self.val_dataset = args.test_dst
         self.half_dim = args.half_dim
-        self.epochs = args.epochs
-        self.lr = args.lr
+        self.epochs = args.main_epochs
+        self.lr = args.main_lr
         self.batch_size = args.batch_size
-        self.models_dict = args.models_dict
+        self.models_dict = args.model_list
         # self.num_classes = args.num_classes
+        # self.num_class_list = args.num_class_list
         self.num_classes = args.num_class_list[0]
         self.gradients_res_a = None
         self.gradients_res_b = None
@@ -75,21 +76,37 @@ class VFLDefenceExperimentBase(object):
         return data_a.to(self.device), data_b.to(self.device)
 
     def build_models(self, num_classes):
+        # if self.dataset_name == 'cifar100' or self.dataset_name == 'cifar10':
+        #     net_a = self.models_dict[self.dataset_name](num_classes).to(self.device)
+        #     net_b = self.models_dict[self.dataset_name](num_classes).to(self.device)
+        # elif self.dataset_name == 'mnist':
+        #     net_a = self.models_dict[self.dataset_name](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
+        #     net_b = self.models_dict[self.dataset_name](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
+        # elif self.dataset_name == 'nuswide':
+        #     net_a = self.models_dict[self.dataset_name](self.half_dim[0], num_classes).to(self.device)
+        #     net_b = self.models_dict[self.dataset_name](self.half_dim[1], num_classes).to(self.device)
+        # return net_a, net_b
         if self.dataset_name == 'cifar100' or self.dataset_name == 'cifar10':
-            net_a = self.models_dict[self.dataset_name](num_classes).to(self.device)
-            net_b = self.models_dict[self.dataset_name](num_classes).to(self.device)
+            net_a = globals()[self.models_dict['0']['type']](num_classes).to(self.device)
+            net_b = globals()[self.models_dict['0']['type']](num_classes).to(self.device)
         elif self.dataset_name == 'mnist':
-            net_a = self.models_dict[self.dataset_name](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
-            net_b = self.models_dict[self.dataset_name](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
+            net_a = globals()[self.models_dict['0']['type']](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
+            net_b = globals()[self.models_dict['0']['type']](self.half_dim * self.half_dim * 2, num_classes).to(self.device)
         elif self.dataset_name == 'nuswide':
-            net_a = self.models_dict[self.dataset_name](self.half_dim[0], num_classes).to(self.device)
-            net_b = self.models_dict[self.dataset_name](self.half_dim[1], num_classes).to(self.device)
+            net_a = globals()[self.models_dict['0']['type']](self.half_dim[0], num_classes).to(self.device)
+            net_b = globals()[self.models_dict['0']['type']](self.half_dim[1], num_classes).to(self.device)
         return net_a, net_b
 
     def label_to_one_hot(self, target, num_classes=10):
-        target = torch.unsqueeze(target, 1).to(self.device)
-        onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
-        onehot_target.scatter_(1, target, 1)
+        try:
+            _ = target.size()[1]
+            print("use target itself", target.size())
+            onehot_target = target.to(self.device)
+        except:
+            target = torch.unsqueeze(target, 1).to(self.device)
+            print("use unsqueezed target", target.size())
+            onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
+            onehot_target.scatter_(1, target, 1)
         return onehot_target
 
     def get_loader(self, dst, batch_size):
@@ -126,23 +143,10 @@ class VFLDefenceExperimentBase(object):
     def train_batch(self, batch_data_a, batch_data_b, batch_label, net_a, net_b, encoder, model_optimizer, criterion):
         if self.apply_encoder:
             if encoder:
-                if not self.apply_random_encoder:
-                    print('normal encoder')
-                    _, gt_one_hot_label = encoder(batch_label)
-                else:
-                    print('random encoder')
-                    _, gt_one_hot_label = self.get_random_softmax_onehot_label(batch_label)
+                _, gt_one_hot_label = encoder(batch_label)
             else:
                 assert(encoder != None)
-        elif self.apply_adversarial_encoder:
-            _, gt_one_hot_label = encoder(batch_data_a)
-            # print('gt_one_hot_label shape:', gt_one_hot_label, gt_one_hot_label.shape)
-            # print(gt_one_hot_label.detach().shape)
-            # gt_one_hot_label = sharpen(gt_one_hot_label.detach(), T=0.03)
-            # print('gt_one_hot_label:', torch.max(gt_one_hot_label, dim=-1))
-            # print('gt_one_hot_label shape:', gt_one_hot_label.shape)
         else:
-            # print('use nothing')
             gt_one_hot_label = batch_label
         # print('current_label:', gt_one_hot_label)
 
@@ -213,19 +217,19 @@ class VFLDefenceExperimentBase(object):
                 pred_a_gradients_clone = KL_gradient_perturb(pred_a_gradients_clone, self.marvell_s)
                 pred_a_gradients_clone = pred_a_gradients_clone.to(self.device)
         ######################## defense5: ppdl, GradientCompression, laplace_noise, DiscreteSGD ############################
-        elif self.apply_ppdl:
-            dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_a_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
-            dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_b_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
-        elif self.apply_gc:
-            tensor_pruner = TensorPruner(zip_percent=self.gc_preserved_percent)
-            tensor_pruner.update_thresh_hold(pred_a_gradients_clone)
-            pred_a_gradients_clone = tensor_pruner.prune_tensor(pred_a_gradients_clone)
-            tensor_pruner.update_thresh_hold(pred_b_gradients_clone)
-            pred_b_gradients_clone = tensor_pruner.prune_tensor(pred_b_gradients_clone)
-        elif self.apply_lap_noise:
-            dp = DPLaplacianNoiseApplyer(beta=self.noise_scale)
-            pred_a_gradients_clone = dp.laplace_mech(pred_a_gradients_clone)
-            pred_b_gradients_clone = dp.laplace_mech(pred_b_gradients_clone)
+        # elif self.apply_ppdl:
+        #     dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_a_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
+        #     dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_b_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
+        # elif self.apply_gc:
+        #     tensor_pruner = TensorPruner(zip_percent=self.gc_preserved_percent)
+        #     tensor_pruner.update_thresh_hold(pred_a_gradients_clone)
+        #     pred_a_gradients_clone = tensor_pruner.prune_tensor(pred_a_gradients_clone)
+        #     tensor_pruner.update_thresh_hold(pred_b_gradients_clone)
+        #     pred_b_gradients_clone = tensor_pruner.prune_tensor(pred_b_gradients_clone)
+        # elif self.apply_lap_noise:
+        #     dp = DPLaplacianNoiseApplyer(beta=self.noise_scale)
+        #     pred_a_gradients_clone = dp.laplace_mech(pred_a_gradients_clone)
+        #     pred_b_gradients_clone = dp.laplace_mech(pred_b_gradients_clone)
         elif self.apply_discrete_gradients:
             # print(pred_a_gradients_clone)
             pred_a_gradients_clone = multistep_gradient(pred_a_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)
@@ -271,7 +275,6 @@ class VFLDefenceExperimentBase(object):
         criterion = cross_entropy_for_onehot
 
         test_acc = 0.0
-        test_acc_topk = 0.0
         for i_epoch in range(self.epochs):
             tqdm_train = tqdm(train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -280,6 +283,7 @@ class VFLDefenceExperimentBase(object):
                 net_b.train()
                 gt_data_a, gt_data_b = self.fetch_parties_data(gt_data)
                 gt_one_hot_label = self.label_to_one_hot(gt_label, self.num_classes)
+                # gt_one_hot_label = gt_label.to(self.device)
                 gt_one_hot_label = gt_one_hot_label.to(self.device)
                 # print('before batch, gt_one_hot_label:', gt_one_hot_label)
                 # ====== train batch ======
@@ -298,6 +302,7 @@ class VFLDefenceExperimentBase(object):
                         # result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
                         for gt_val_data, gt_val_label in val_loader:
                             gt_val_one_hot_label = self.label_to_one_hot(gt_val_label, self.num_classes)
+                            # gt_val_one_hot_label = gt_val_label.to(self.device)
                             test_data_a, test_data_b = self.fetch_parties_data(gt_val_data)
 
                             test_logit_a = net_a(test_data_a)
@@ -322,4 +327,4 @@ class VFLDefenceExperimentBase(object):
                         tqdm_train.set_postfix(postfix)
                         print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                             i_epoch, loss, train_acc, test_acc))
-        return test_acc, test_acc_topk
+        return test_acc

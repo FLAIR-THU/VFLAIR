@@ -14,46 +14,46 @@ Just run `python main.py` to get launch an experiment. For more detail descripti
 ### One. folder tree
 ```python
 ├── data # built-in supported dataset, other datasets can be added
-�?   ├── cifar-100-python
-�?   ├── cifar-10-batches-py
-�?   ├── MNIST
-�?   └── NUS_WIDE
+�?   ├── cifar-100-python
+�?   ├── cifar-10-batches-py
+�?   ├── MNIST
+�?   └── NUS_WIDE
 ├── model_parameters # save your own model here, and specify it in your config json file.
-�?   ├── MLP2
-�?   �?   ├── random_14*28_10.pkl
-�?   �?   ├── random_14*28_2.pkl
-�?   �?   ├── random_16*32_10.pkl
-�?   �?   └── random_16*32_2.pkl
-�?   └── resnet18
-�?       ├── random_100.pkl
-�?       ├── random_10.pkl
-�?       └── random_2.pkl
+�?   ├── MLP2
+�?   �?   ├── random_14*28_10.pkl
+�?   �?   ├── random_14*28_2.pkl
+�?   �?   ├── random_16*32_10.pkl
+�?   �?   └── random_16*32_2.pkl
+�?   └── resnet18
+�?       ├── random_100.pkl
+�?       ├── random_10.pkl
+�?       └── random_2.pkl
 ├── README.md
 └── src
     ├── configs # Configer json files
-    �?   ├── attacks # Hyper-parameters for attacks. Keep the name of each file the same as it is in "basic_configs.json".
-    �?   �?   ├── BatchLabelReconstruction_configs.json
-    �?   �?   ├── DeepLeakageFromGradients_configs.json
-    �?   �?   └── SampleLabelReconstruction_configs.json
-    �?   ├── basic_configs.json # Hyper-parameters for privacy and safety evaluation. Path specified while running 'main.py".
-    �?   ├── default_config.py
-    �?   └── defenses # Hyper-parameters for defenses. Keep the name of each file the same as it is in "basic_configs.json".
+    �?   ├── attacks # Hyper-parameters for attacks. Keep the name of each file the same as it is in "basic_configs.json".
+    �?   �?   ├── BatchLabelReconstruction_configs.json
+    �?   �?   ├── DeepLeakageFromGradients_configs.json
+    �?   �?   └── SampleLabelReconstruction_configs.json
+    �?   ├── basic_configs.json # Hyper-parameters for privacy and safety evaluation. Path specified while running 'main.py".
+    �?   ├── default_config.py
+    �?   └── defenses # Hyper-parameters for defenses. Keep the name of each file the same as it is in "basic_configs.json".
     ├── evaluates # Put all the attak methods here. 
-    �?   ├── BatchLabelReconstruction.py
-    �?   ├── dlg_config.py
-    �?   ├── dlg.py
-    �?   ├── SampleLabelReconstruction.py
-    �?   └── utils.py
+    �?   ├── BatchLabelReconstruction.py
+    �?   ├── dlg_config.py
+    �?   ├── dlg.py
+    �?   ├── SampleLabelReconstruction.py
+    �?   └── utils.py
     ├── exp_result # results for evalustions
     ├── load
-    �?   ├── LoadConfigs.py # passe configure json files.
-    �?   ├── LoadDataset.py # prepare splited dataset
-    �?   └── LoadModels.py # load model using save models in 'pkl' files
+    �?   ├── LoadConfigs.py # passe configure json files.
+    �?   ├── LoadDataset.py # prepare splited dataset
+    �?   └── LoadModels.py # load model using save models in 'pkl' files
     ├── main.py # the entre of the code
     ├── models # utils for different kinds of models
-    �?   ├── model_templates.py
-    �?   ├── resnet_torch.py
-    �?   └── vision.py
+    �?   ├── model_templates.py
+    �?   ├── resnet_torch.py
+    �?   └── vision.py
     └── utils # utils for some basic values and functions
         ├── basic_functions.py
         ├── constants.py

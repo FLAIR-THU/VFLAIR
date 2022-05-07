@@ -28,7 +28,7 @@ class BatchLabelReconstruction(object):
         '''
         self.device = args.device
         self.dataset = args.dataset
-        self.model = args.model_list
+        # self.model = args.model_list
         self.num_exp = args.num_exp
         self.epochs = args.epochs
         self.lr = args.lr

@@ -1,5 +1,7 @@
 {
     "defense_parameters": {
+        "epochs": 30,
+        "lr": 0.001,
         "ae_lambda": 1.0,
         "encoder_path": "../model_parameters/ConfusionalAutoEncoder/autoencoder_10_1.0_1642396548",
         "possible_path": [
