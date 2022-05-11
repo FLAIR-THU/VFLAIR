@@ -49,6 +49,7 @@ class VFLDefenceExperimentBase(object):
         self.apply_grad_spar = args.apply_grad_spar
         self.grad_spars = args.grad_spars
         self.apply_encoder = args.apply_encoder
+        self.ae_lambda = args.ae_lambda
         self.encoder = args.encoder
         self.apply_marvell = args.apply_marvell
         self.marvell_s = args.marvell_s
@@ -101,7 +102,7 @@ class VFLDefenceExperimentBase(object):
         try:
             _ = target.size()[1]
             print("use target itself", target.size())
-            onehot_target = target.to(self.device)
+            onehot_target = target.type(torch.float32).to(self.device)
         except:
             target = torch.unsqueeze(target, 1).to(self.device)
             print("use unsqueezed target", target.size())
@@ -327,4 +328,16 @@ class VFLDefenceExperimentBase(object):
                         tqdm_train.set_postfix(postfix)
                         print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                             i_epoch, loss, train_acc, test_acc))
-        return test_acc
+        
+        parameter = 'none'
+        if self.apply_laplace or self.apply_gaussian:
+            parameter = str(self.dp_strength)
+        elif self.apply_grad_spar:
+            parameter = str(self.grad_spars)
+        elif self.apply_encoder:
+            parameter = str(self.ae_lambda)
+        elif self.apply_discrete_gradients:
+            parameter = str(self.discrete_gradients_bins)
+        elif self.apply_marvell:
+            parameter = str(self.marvell_s)
+        return test_acc, parameter

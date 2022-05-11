@@ -1,0 +1,19 @@
+{
+    "attacker_train": {
+        "batch_size": 2048,
+        "epochs": 50,
+        "lr": 0.01,
+        "num_exp": 1,
+        "amplify_rate": 10,
+
+        "report_freq": 100,
+        "momentum": 0.0,
+        "weight_decay": 1e-5,
+        "learning_rate_decay_rate": 0.97,
+        "decay_period": 1,
+        "worker_thread_number": 0,
+        "seed": 13,
+        "use_project_head": 0,
+        "explicit_softmax": 0
+    }
+}

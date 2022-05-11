@@ -19,22 +19,24 @@
         "apply_trainable_layer": 0
     },
     "attack_methods": {
-        "BatchLabelReconstruction": 1,
-        "DeepLeakageFromGradients": 0
+        "BatchLabelReconstruction": 0,
+        "DeepLeakageFromGradients": 0,
+        "ReplacementBackdoor": 1
     },
     "attack_configs": {
         "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
-        "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
+        "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs",
+        "ReplacementBackdoor": "ReplacementBackdoor_configs"
     },
     "defense_methods": {
         "NoDefense": 1,
         "LaplaceDP": 1,
         "GaussianDP": 1,
         "GradientSparcification": 1,
-        "DiscreteGradient": 1,
+        "DiscreteGradient": 0,
         "ConfusionalAutoEncoder": 1,
-        "DiscreteConfusionalAutoEncoder": 1,
-        "Marvell": 1
+        "DiscreteConfusionalAutoEncoder": 0,
+        "Marvell": 0
     },
     "defense_configs": {
         "NoDefense": "",

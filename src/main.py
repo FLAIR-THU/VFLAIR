@@ -25,6 +25,7 @@ from utils.dataset.SimpleImageDataset import SimpleDataset
 from utils.dataset.NuswideDataset import NUSWIDEDataset
 from evaluates.BatchLabelReconstruction import *
 from evaluates.DeepLeakageFromGradients import *
+from evaluates.ReplacementBackdoor import *
 from evaluates.MainTaskVFL import VFLDefenceExperimentBase
 
 def set_seed(seed=0):
@@ -191,24 +192,24 @@ if __name__ == '__main__':
             #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
             args.exp_res_path = args.exp_res_dir + filename
             
-            # attacker = globals()[attack](args)
-            # attack_list.append(attacker)
-            # attacker.train()
+            attacker = globals()[attack](args)
+            attack_list.append(attacker)
+            attacker.train()
 
-    # args.models_dict = {"mnist": MLP2,
-    #            "cifar100": resnet18,
-    #            "cifar10": resnet18,
-    #         #    "cifar10": resnet20,
-    #            "nuswide": MLP2,
-    #            "classifier": None}
-
-            path = args.exp_res_dir+'no_defense_main_task.txt'
-            test_acc_list = []
-            for _ in range(args.num_exp):
-                vfl_defence_image = VFLDefenceExperimentBase(args)
-                test_acc = vfl_defence_image.train()
-                test_acc_list.append(test_acc)
-            append_exp_res(path, str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
+            # args.models_dict = {"mnist": MLP2,
+            #            "cifar100": resnet18,
+            #            "cifar10": resnet18,
+            #         #    "cifar10": resnet20,
+            #            "nuswide": MLP2,
+            #            "classifier": None}
+            if attack != 'ReplacementBackdoor':
+                path = args.exp_res_dir+'no_defense_main_task.txt'
+                test_acc_list = []
+                for _ in range(args.num_exp):
+                    vfl_defence_image = VFLDefenceExperimentBase(args)
+                    test_acc, parameter = vfl_defence_image.train()
+                    test_acc_list.append(test_acc)
+                append_exp_res(path, str(parameter) + ' ' + str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
 
 
 

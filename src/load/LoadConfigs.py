@@ -134,17 +134,53 @@ def load_attack_configs(config_file_name, attack_name, args):
         # args.attacker_train_config
         if 'attacker_train' in config_dict:
             config_attacker_dict = config_dict['attacker_train']
-            args.batch_size = config_attacker_dict['batch_size'] if ('batch_size' in config_attacker_dict) else 64
+            args.batch_size = config_attacker_dict['batch_size'] if ('batch_size' in config_attacker_dict) else 2048
             args.epochs = config_attacker_dict['epochs'] if ('epochs' in config_attacker_dict) else 4000
             args.lr = config_attacker_dict['lr'] if ('lr' in config_attacker_dict) else 0.01
             args.num_exp = config_attacker_dict['num_exp'] if ('num_exp' in config_attacker_dict) else 10
             args.early_stop = config_attacker_dict['early_stop'] if ('early_stop' in config_attacker_dict) else 0
             args.early_stop_param = config_attacker_dict['early_stop_param'] if ('early_stop_param' in config_attacker_dict) else 0.0001
         else:
-            args.batch_size = 64
+            args.batch_size = 2048
             args.epochs = 4000
             args.lr = 0.01
             args.num_exp = 10
+            args.early_stop = 0
+            args.early_stop_param = 0.0001
+    elif attack_name == 'ReplacementBackdoor':
+        if 'attacker_train' in config_dict:
+            config_attacker_dict = config_dict['attacker_train']
+            args.batch_size = config_attacker_dict['batch_size'] if ('batch_size' in config_attacker_dict) else 2048
+            args.epochs = config_attacker_dict['epochs'] if ('epochs' in config_attacker_dict) else 100
+            args.lr = config_attacker_dict['lr'] if ('lr' in config_attacker_dict) else 0.01
+            args.num_exp = config_attacker_dict['num_exp'] if ('num_exp' in config_attacker_dict) else 10
+            args.amplify_rate = config_attacker_dict['amplify_rate'] if ('amplify_rate' in config_attacker_dict) else 10
+            args.report_freq = config_attacker_dict['report_freq'] if ('report_freq' in config_attacker_dict) else 100
+            args.momentum = config_attacker_dict['momentum'] if ('momentum' in config_attacker_dict) else 0.0
+            args.weight_decay = config_attacker_dict['weight_decay'] if ('weight_decay' in config_attacker_dict) else 1e-5
+            args.learning_rate_decay_rate = config_attacker_dict['learning_rate_decay_rate'] if ('learning_rate_decay_rate' in config_attacker_dict) else 0.97
+            args.decay_period = config_attacker_dict['decay_period'] if ('decay_period' in config_attacker_dict) else 1
+            args.worker_thread_number = config_attacker_dict['worker_thread_number'] if ('worker_thread_number' in config_attacker_dict) else 0
+            args.use_project_head = config_attacker_dict['use_project_head'] if ('use_project_head' in config_attacker_dict) else 0
+            args.explicit_softmax = config_attacker_dict['explicit_softmax'] if ('explicit_softmax' in config_attacker_dict) else 0
+            args.seed = config_attacker_dict['seed'] if ('seed' in config_attacker_dict) else 0
+            args.early_stop = config_attacker_dict['early_stop'] if ('early_stop' in config_attacker_dict) else 0
+            args.early_stop_param = config_attacker_dict['early_stop_param'] if ('early_stop_param' in config_attacker_dict) else 0.0001
+        else:
+            args.batch_size = 2048
+            args.epochs = 100
+            args.lr = 0.01
+            args.num_exp = 10
+            args.amplify_rate = 10
+            args.report_freq = 100
+            args.momentum = 0.0
+            args.weight_decay = 1e-5
+            args.learning_rate_decay_rate = 0.97
+            args.decay_period = 1
+            args.worker_thread_number = 0
+            args.use_project_head = 0
+            args.explicit_softmax = 0
+            args.seed = 0
             args.early_stop = 0
             args.early_stop_param = 0.0001
     else:
