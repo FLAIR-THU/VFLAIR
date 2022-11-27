@@ -18,6 +18,7 @@ import torch.backends.cudnn as cudnn
 from load.LoadConfigs import load_configs, load_attack_configs, load_defense_configs
 from load.LoadDataset import load_dataset
 from load.LoadModels import load_models
+from load.LoadParty import load_parties
 from models.vision import *
 from utils.basic_functions import *
 from utils.constants import *
@@ -26,8 +27,8 @@ from utils.dataset.NuswideDataset import NUSWIDEDataset
 from evaluates.BatchLabelReconstruction import *
 from evaluates.DeepLeakageFromGradients import *
 from evaluates.ReplacementBackdoor import *
-from evaluates.MainTaskVFL import VFLDefenceExperimentBase
-from evaluates.MainTaskVFL_separate import VFLDefenceExperimentBase_Separate
+from evaluates.MainTaskVFL import *
+from evaluates.MainTaskVFL_separate import *
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -117,6 +118,8 @@ if __name__ == '__main__':
     args.dataset = args.dataset_split['dataset_name']
     print(args.dataset)
     print(args.attack_methods)
+    
+    
     # put in all the attacks
     attack_list = []
     for attack in args.attack_methods:
@@ -129,52 +132,8 @@ if __name__ == '__main__':
         args.batch_size_list = [args.batch_size]
 
         num_classes = args.num_class_list[0] # for main task evaluation
-        if args.dataset == 'cifar10':
-            # for attack task evaluation
-            args.dst = datasets.CIFAR10("./data/", download=True)
-            # for main task evaluation
-            args.half_dim = 16
-            num_classes = 10
-            args.train_dst = datasets.CIFAR10("./data/", download=True, train=True, transform=transform)
-            data, label = fetch_data_and_label(args.train_dst, num_classes)
-            args.train_dst = SimpleDataset(data, label)
-            args.test_dst = datasets.CIFAR10("./data/", download=True, train=False, transform=transform)
-            data, label = fetch_data_and_label(args.test_dst, num_classes)
-            args.test_dst = SimpleDataset(data, label)
-        elif args.dataset == 'cifar100':
-            # for attack task evaluation
-            args.dst = datasets.CIFAR100("./data/", download=True)
-            # for main task evaluation
-            args.half_dim = 16
-            args.train_dst = datasets.CIFAR100("./data/", download=True, train=True, transform=transform)
-            data, label = fetch_data_and_label(args.train_dst, num_classes)
-            args.train_dst = SimpleDataset(data, label)
-            args.test_dst = datasets.CIFAR100("./data/", download=True, train=False, transform=transform)
-            data, label = fetch_data_and_label(args.test_dst, num_classes)
-            args.test_dst = SimpleDataset(data, label)
-        elif args.dataset == 'mnist':
-            # for attack task evaluation
-            args.dst = datasets.MNIST("~/.torch", download=True)
-            # for main task evaluation
-            args.half_dim = 14
-            args.train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
-            data, label = fetch_data_and_label(args.train_dst, num_classes)
-            args.train_dst = SimpleDataset(data, label)
-            args.test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
-            data, label = fetch_data_and_label(args.test_dst, num_classes)
-            args.test_dst = SimpleDataset(data, label)
-        elif args.dataset == 'nuswide':
-            # for attack task evaluation
-            args.dst = None
-            # for main task evaluation
-            args.half_dim = [634, 1000]
-            args.train_dst = NUSWIDEDataset('./data/NUS_WIDE', 'train')
-            args.test_dst = NUSWIDEDataset('./data/NUS_WIDE', 'test')
-        else:
-            assert args.dataset == 'mnist', "Dataset not supported, please add additional code for support"
-        args = load_dataset(args)
-
-        args = load_models(args)
+        args.num_classes = args.num_class_list[0]
+        args = load_parties(args)
 
         for defense in args.defense_methods:
             # load defense configs

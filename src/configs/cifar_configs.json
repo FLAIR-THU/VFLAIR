@@ -1,5 +1,6 @@
 {
     "k": 2,
+    "global_model": "ClassificationModelHostTrainableHead",
     "dataset":{
         "dataset_name": "cifar100",
         "num_classes": 20,

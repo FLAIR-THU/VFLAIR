@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 
 from models.vision import *
+from models.model_templates import *
 
 def load_models(args):
     args.net_list = [None] * args.k
@@ -28,6 +29,30 @@ def load_models(args):
 
     # important
     return args
+
+def load_models_per_party(args, index):
+    current_model_type = args.model_list[str(index)]['type']
+    current_input_dim = args.model_list[str(index)]['input_dim']
+    current_output_dim = args.model_list[str(index)]['output_dim']
+    # current_model_path = args.model_list[str(index)]['path']
+    # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
+    local_model = globals()[current_model_type](current_input_dim,current_output_dim)
+    local_model = local_model.to(args.device)
+    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.lr)
+    
+    global_model = None
+    global_model_optimizer = None
+    if index == args.k-1:
+        if "Trainable" not in args.global_model:
+            global_model = globals()[args.global_model]()
+        else:
+            global_model = globals()[args.global_model](args.k*args.num_classes, args.num_classes)
+        global_model = global_model.to(args.device)
+        global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.lr)
+
+    # important
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser("backdoor").parse_args()

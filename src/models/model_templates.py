@@ -97,8 +97,10 @@ class ClassificationModelHostHead(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, z0, z1):
-        out = z0.add(z1)
+    def forward(self, z_list):
+        out = z_list[0]
+        for i in range(len(z_list)-1):
+            out = out.add(z_list[i+1])
         return out
 
 
@@ -108,8 +110,10 @@ class ClassificationModelHostHeadWithSoftmax(nn.Module):
         super().__init__()
         self.softmax = nn.LogSoftmax()
 
-    def forward(self, z0, z1):
-        out = z0.add(z1)
+    def forward(self, z_list):
+        out = z_list[0]
+        for i in range(len(z_list)-1):
+            out = out.add(z_list[i+1])
         return self.softmax(out)
 
 
@@ -124,8 +128,8 @@ class ClassificationModelHostTrainable(nn.Module):
         z = self.local_model(input_X).flatten(start_dim=1)
         return z
 
-    def get_prediction(self, z0, z1):
-        out = torch.cat([z0, z1], dim=1)
+    def get_prediction(self,  z_list):
+        out = torch.cat(z_list, dim=1)
         return self.classifier_head(out)
 
 
@@ -135,8 +139,8 @@ class ClassificationModelHostTrainableHead(nn.Module):
         super().__init__()
         self.classifier_head = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, z0, z1):
-        out = torch.cat([z0, z1], dim=1)
+    def forward(self,  z_list):
+        out = torch.cat(z_list, dim=1)
         return self.classifier_head(out)
 
 
@@ -146,8 +150,8 @@ class ClassificationModelHostHeadTrainable(nn.Module):
         super().__init__()
         self.classifier_head = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, z0, z1):
-        out = torch.cat([z0, z1], dim=1)
+    def forward(self,  z_list):
+        out = torch.cat(z_list, dim=1)
         return self.classifier_head(out)
 
 

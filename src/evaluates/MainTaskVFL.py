@@ -24,7 +24,7 @@ from utils.marvell_functions import KL_gradient_perturb
 tf.compat.v1.enable_eager_execution() 
 
 
-class VFLDefenceExperimentBase(object):
+class MainTaskVFL(object):
 
     def __init__(self, args):
         self.device = args.device

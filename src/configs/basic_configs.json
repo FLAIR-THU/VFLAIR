@@ -2,6 +2,7 @@
     "epochs": 30,
     "lr": 0.001,
     "k": 2,
+    "global_model": "ClassificationModelHostTrainableHead",
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10,
@@ -10,31 +11,39 @@
     "model_list":{
         "0": {
             "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0
     },
     "attack_methods": {
+        "MainTaskVFL": 0,
+        "MainTaskVFL_separate": 1,
         "BatchLabelReconstruction": 0,
         "DeepLeakageFromGradients": 0,
-        "ReplacementBackdoor": 1
+        "ReplacementBackdoor": 0
     },
     "attack_configs": {
+        "MainTaskVFL": "MainTaskVFL_configs",
+        "MainTaskVFL_separate": "MainTaskVFL_separate_configs",
         "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs",
         "ReplacementBackdoor": "ReplacementBackdoor_configs"
     },
     "defense_methods": {
         "NoDefense": 1,
-        "LaplaceDP": 1,
-        "GaussianDP": 1,
-        "GradientSparcification": 1,
+        "LaplaceDP": 0,
+        "GaussianDP": 0,
+        "GradientSparcification": 0,
         "DiscreteGradient": 0,
-        "ConfusionalAutoEncoder": 1,
+        "ConfusionalAutoEncoder": 0,
         "DiscreteConfusionalAutoEncoder": 0,
         "Marvell": 0
     },

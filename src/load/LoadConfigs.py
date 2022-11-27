@@ -17,6 +17,8 @@ def load_configs(config_file_name, args):
     args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else 50
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
+    # args.k, what global model is applied
+    args.global_model = config_dict['global_model'] if ('global_model' in config_dict) else 'ClassificationModelHostHead'
     
     # args.dataset_split
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
@@ -25,7 +27,7 @@ def load_configs(config_file_name, args):
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
         model_dict = {}
-        default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10'}
+        default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10', 'input_dim': 392, 'output_dim': 10}
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
@@ -130,7 +132,24 @@ def load_attack_configs(config_file_name, attack_name, args):
     config_file_path = './configs/attacks/'+config_file_name+'.json'
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
-    if attack_name == 'BatchLabelReconstruction' or attack_name == "DeepLeakageFromGradients":
+    if attack_name == 'MainTaskVFL' or attack_name == "MainTaskVFL_separate":
+        # args.attacker_train_config
+        if 'attacker_train' in config_dict:
+            config_attacker_dict = config_dict['attacker_train']
+            args.batch_size = config_attacker_dict['batch_size'] if ('batch_size' in config_attacker_dict) else 2048
+            args.epochs = args.main_epochs
+            args.lr = config_attacker_dict['lr'] if ('lr' in config_attacker_dict) else 0.01
+            args.num_exp = config_attacker_dict['num_exp'] if ('num_exp' in config_attacker_dict) else 10
+            args.early_stop = config_attacker_dict['early_stop'] if ('early_stop' in config_attacker_dict) else 0
+            args.early_stop_param = config_attacker_dict['early_stop_param'] if ('early_stop_param' in config_attacker_dict) else 0.0001
+        else:
+            args.batch_size = 2048
+            args.epochs = args.main_epochs
+            args.lr = 0.01
+            args.num_exp = 10
+            args.early_stop = 0
+            args.early_stop_param = 0.0001
+    elif attack_name == 'BatchLabelReconstruction' or attack_name == "DeepLeakageFromGradients":
         # args.attacker_train_config
         if 'attacker_train' in config_dict:
             config_attacker_dict = config_dict['attacker_train']
