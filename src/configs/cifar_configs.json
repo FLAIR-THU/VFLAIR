@@ -1,6 +1,5 @@
 {
     "k": 2,
-    "global_model": "ClassificationModelHostTrainableHead",
     "dataset":{
         "dataset_name": "cifar100",
         "num_classes": 20,
@@ -9,12 +8,18 @@
     "model_list":{
         "0": {
             "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 20,
             "path": "random_20"
         },
         "1": {
             "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 20,
             "path": "random_20"
-        }
+        },
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     },
     "attack_methods": {
         "BatchLabelReconstruction": 1,

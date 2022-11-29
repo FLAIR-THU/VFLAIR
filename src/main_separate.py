@@ -162,14 +162,15 @@ if __name__ == '__main__':
             #         #    "cifar10": resnet20,
             #            "nuswide": MLP2,
             #            "classifier": None}
-            if attack != 'ReplacementBackdoor':
-                path = args.exp_res_dir+'no_defense_main_task.txt'
-                test_acc_list = []
-                for _ in range(args.num_exp):
-                    vfl_defence_image = VFLDefenceExperimentBase(args)
-                    test_acc, parameter = vfl_defence_image.train()
-                    test_acc_list.append(test_acc)
-                append_exp_res(path, str(parameter) + ' ' + str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
+            
+            # if attack != 'ReplacementBackdoor':
+            #     path = args.exp_res_dir+'no_defense_main_task.txt'
+            #     test_acc_list = []
+            #     for _ in range(args.num_exp):
+            #         vfl_defence_image = VFLDefenceExperimentBase(args)
+            #         test_acc, parameter = vfl_defence_image.train()
+            #         test_acc_list.append(test_acc)
+            #     append_exp_res(path, str(parameter) + ' ' + str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
 
 
 

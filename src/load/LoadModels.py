@@ -15,18 +15,6 @@ def load_models(args):
         current_model_path = args.model_list[str(ik)]['path']
         args.net_list[ik] = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
         args.net_list[ik] = args.net_list[ik].to(args.device)
-    
-    # if args.model == 'MLP2':
-    #     args.net_a = MLP2(np.prod(list(args.gt_data_a.size())[1:]), args.num_classes).to(args.device)
-    #     # args.net_a = pickle.load(open('.././model_parameters/MLP2/random.pkl',"rb"))
-    #     # args.net_a = args.net_a.to(args.device)
-    #     args.net_b = MLP2(np.prod(list(args.gt_data_b.size())[1:]), args.num_classes).to(args.device)
-    #     # args.net_b = pickle.load(open('.././model_parameters/MLP2/random.pkl',"rb"))
-    #     # args.net_b = args.net_b.to(args.device)
-    # elif args.model == 'resnet18':
-    #     args.net_a = resnet18(args.num_classes).to(args.device)
-    #     args.net_b = resnet18(args.num_classes).to(args.device)
-
     # important
     return args
 
@@ -36,15 +24,18 @@ def load_models_per_party(args, index):
     current_output_dim = args.model_list[str(index)]['output_dim']
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
-    local_model = globals()[current_model_type](current_input_dim,current_output_dim)
+    if 'resnet' in current_model_type:
+        local_model = globals()[current_model_type](current_output_dim)
+    else:
+        local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
     local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.lr)
     
     global_model = None
     global_model_optimizer = None
     if index == args.k-1:
-        if "Trainable" not in args.global_model:
-            global_model = globals()[args.global_model]()
+        if args.apply_trainable_layer == 0:
+            global_model = globals()[args.global_model](args.num_classes)
         else:
             global_model = globals()[args.global_model](args.k*args.num_classes, args.num_classes)
         global_model = global_model.to(args.device)

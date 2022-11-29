@@ -2,7 +2,6 @@
     "epochs": 30,
     "lr": 0.001,
     "k": 2,
-    "global_model": "ClassificationModelHostTrainableHead",
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10,
@@ -21,7 +20,8 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 0
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     },
     "attack_methods": {
         "MainTaskVFL": 0,

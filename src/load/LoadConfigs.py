@@ -18,7 +18,6 @@ def load_configs(config_file_name, args):
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
     # args.k, what global model is applied
-    args.global_model = config_dict['global_model'] if ('global_model' in config_dict) else 'ClassificationModelHostHead'
     
     # args.dataset_split
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
@@ -49,6 +48,7 @@ def load_configs(config_file_name, args):
                 model_dict[str(ik)] = default_dict_element
         args.model_list = model_dict
         args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
+        args.global_model = config_dict['global_model'] if ('global_model' in config_dict) else 'ClassificationModelHostHead'
     else:
         default_model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': '../models/MLP2/random'}
@@ -56,6 +56,7 @@ def load_configs(config_file_name, args):
             default_model_dict[str(ik)] = default_dict_element
         args.model_list = default_model_dict
         args.apply_trainable_layer = 0
+        args.global_model = 'ClassificationModelHostHead'
     
     if 'attack_methods' in config_dict:
         config_attack_methods_dict = config_dict['attack_methods']
