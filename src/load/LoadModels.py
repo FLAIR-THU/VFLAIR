@@ -35,11 +35,14 @@ def load_models_per_party(args, index):
     global_model_optimizer = None
     if index == args.k-1:
         if args.apply_trainable_layer == 0:
-            global_model = globals()[args.global_model](args.num_classes)
+            global_model = globals()[args.global_model]()
+            global_model = global_model.to(args.device)
+            global_model_optimizer = None
         else:
+            print("global_model", args.global_model)
             global_model = globals()[args.global_model](args.k*args.num_classes, args.num_classes)
-        global_model = global_model.to(args.device)
-        global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.lr)
+            global_model = global_model.to(args.device)
+            global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.lr)
 
     # important
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer

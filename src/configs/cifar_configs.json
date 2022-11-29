@@ -22,10 +22,12 @@
         "global_model": "ClassificationModelHostTrainableHead"
     },
     "attack_methods": {
-        "BatchLabelReconstruction": 1,
+        "MainTaskVFL_separate": 1,
+        "BatchLabelReconstruction": 0,
         "DeepLeakageFromGradients": 0
     },
     "attack_configs": {
+        "MainTaskVFL_separate": "MainTaskVFL_separate_configs",
         "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
     },

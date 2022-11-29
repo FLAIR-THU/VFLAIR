@@ -48,7 +48,7 @@ def load_configs(config_file_name, args):
                 model_dict[str(ik)] = default_dict_element
         args.model_list = model_dict
         args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
-        args.global_model = config_dict['global_model'] if ('global_model' in config_dict) else 'ClassificationModelHostHead'
+        args.global_model = config_model_dict['global_model'] if ('global_model' in config_model_dict) else 'ClassificationModelHostHead'
     else:
         default_model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': '../models/MLP2/random'}

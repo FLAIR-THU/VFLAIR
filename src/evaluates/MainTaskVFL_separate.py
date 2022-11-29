@@ -13,11 +13,9 @@ import time
 
 from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, sharpen
-from utils.defense_functions import *
-
+from defenses.defense_api import apply_defense
+from defenses.defense_functions import *
 from utils.constants import *
-from utils.defense_functions import *
-
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 
@@ -27,6 +25,7 @@ tf.compat.v1.enable_eager_execution()
 class MainTaskVFL_separate(object):
 
     def __init__(self, args):
+        self.args = args
         self.k = args.k
         self.device = args.device
         self.dataset_name = args.dataset
@@ -114,7 +113,7 @@ class MainTaskVFL_separate(object):
         # pred, loss, pred_gradients_list, pred_gradients_list_clone = self.parties[self.k-1].aggregate_and_gradient_calculation(pred_list, gt_one_hot_label)
         # ######################## aggregate logits of clients ########################
 
-        pred_gradients_list_clone = apply_defense(args, pred_gradients_list_clone)
+        pred_gradients_list_clone = apply_defense(self.args, pred_gradients_list_clone)
         
         # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
@@ -214,8 +213,8 @@ class MainTaskVFL_separate(object):
             parameter = str(self.marvell_s)
 
         if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
-            exp_result = str(parameter) + ' ' + str(test_acc)
+            exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
         else:
-            exp_result = f"bs|num_class|recovery_rate,%d|%d| %lf" % (batch_size, num_classes, test_acc)
+            exp_result = f"bs|num_class|recovery_rate,%d|%d| %lf" % (self.batch_size, self.num_classes, test_acc)
         
         return test_acc, parameter

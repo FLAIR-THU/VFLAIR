@@ -27,7 +27,6 @@ from utils.dataset.NuswideDataset import NUSWIDEDataset
 from evaluates.BatchLabelReconstruction import *
 from evaluates.DeepLeakageFromGradients import *
 from evaluates.ReplacementBackdoor import *
-from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFL_separate import *
 
 def set_seed(seed=0):

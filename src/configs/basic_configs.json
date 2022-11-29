@@ -20,18 +20,16 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "attack_methods": {
-        "MainTaskVFL": 0,
         "MainTaskVFL_separate": 1,
         "BatchLabelReconstruction": 0,
         "DeepLeakageFromGradients": 0,
         "ReplacementBackdoor": 0
     },
     "attack_configs": {
-        "MainTaskVFL": "MainTaskVFL_configs",
         "MainTaskVFL_separate": "MainTaskVFL_separate_configs",
         "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
         "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs",
