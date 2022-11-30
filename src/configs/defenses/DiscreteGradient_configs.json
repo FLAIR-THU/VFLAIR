@@ -1,0 +1,7 @@
+{
+    "defense_parameters": {
+        "epochs": 30,
+        "lr": 0.001,
+        "discrete_gradients_bins": 12
+    }
+}

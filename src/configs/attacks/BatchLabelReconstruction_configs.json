@@ -1,6 +1,6 @@
 {
     "attacker_train": {
-        "batch_size": 64,
+        "batch_size": 2048,
         "epochs": 3000,
         "lr": 0.01,
         "num_exp": 10,
