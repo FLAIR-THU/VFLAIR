@@ -39,10 +39,10 @@ class MainTaskVFL_separate(object):
         # self.num_classes = args.num_classes
         # self.num_class_list = args.num_class_list
         self.num_classes = args.num_classes
-        self.gradients_res_a = None
-        self.gradients_res_b = None
+        self.exp_res_dir = args.exp_res_dir
+        # self.gradients_res_a = None
+        # self.gradients_res_b = None
 
-        # self.apply_trainable_layer = args.apply_trainable_layer
         self.apply_laplace = args.apply_laplace
         self.apply_gaussian = args.apply_gaussian
         self.dp_strength = args.dp_strength
@@ -66,6 +66,7 @@ class MainTaskVFL_separate(object):
         # self.noise_scale = args.noise_scale
         # self.apply_discrete_gradients = args.apply_discrete_gradients
 
+        self.exp_res_path = args.exp_res_path
         self.parties = args.parties
 
     def label_to_one_hot(self, target, num_classes=10):
@@ -215,8 +216,8 @@ class MainTaskVFL_separate(object):
         if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
             exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
         else:
-            exp_result = f"bs|num_class|recovery_rate,%d|%d| %lf" % (self.batch_size, self.num_classes, test_acc)
-        append_exp_res(self.exp_res_path, exp_result)
+            exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
+        append_exp_res(self.exp_res_path+'main_task.txt', exp_result)
         print(exp_result)
         
         return test_acc, parameter
