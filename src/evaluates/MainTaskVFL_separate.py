@@ -12,7 +12,7 @@ import numpy as np
 import time
 
 from models.vision import resnet18, MLP2
-from utils.basic_functions import cross_entropy_for_onehot, sharpen
+from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from defenses.defense_api import apply_defense
 from defenses.defense_functions import *
 from utils.constants import *
@@ -216,5 +216,7 @@ class MainTaskVFL_separate(object):
             exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
         else:
             exp_result = f"bs|num_class|recovery_rate,%d|%d| %lf" % (self.batch_size, self.num_classes, test_acc)
+        append_exp_res(self.exp_res_path, exp_result)
+        print(exp_result)
         
         return test_acc, parameter

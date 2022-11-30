@@ -24,9 +24,9 @@ from utils.basic_functions import *
 from utils.constants import *
 from utils.dataset.SimpleImageDataset import SimpleDataset
 from utils.dataset.NuswideDataset import NUSWIDEDataset
-from evaluates.BatchLabelReconstruction import *
-from evaluates.DeepLeakageFromGradients import *
-from evaluates.ReplacementBackdoor import *
+# from evaluates.BatchLabelReconstruction import *
+# from evaluates.DeepLeakageFromGradients import *
+# from evaluates.ReplacementBackdoor import *
 from evaluates.MainTaskVFL_separate import *
 
 def set_seed(seed=0):
@@ -54,31 +54,6 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='basic_configs', help='configure json file path')
-    # ####### add to config file #######
-    # parser.add_argument('--defense_up', type=int, default=0)
-    # parser.add_argument('--epochs', type=int, default=20, help='num of training epochs')
-    # parser.add_argument('--batch_size', type=int, default=64, help='batch size')
-    # parser.add_argument('--report_freq', type=float, default=100, help='report frequency')
-    # parser.add_argument('--learning_rate', type=float, default=0.01, help='init learning rate')
-    # parser.add_argument('--gamma', type=float, default=0.97, help='learning rate decay')
-    # parser.add_argument('--decay_period', type=int, default=1, help='epochs between two learning rate decays')
-    # parser.add_argument('--weight_decay', type=float, default=3e-5, help='weight decay')
-    # parser.add_argument('--k', type=int, default=2, help='num of participants')
-    # parser.add_argument('--model', default='mlp2', help='resnet')
-    # parser.add_argument('--input_size', type=int, default=28, help='resnet')
-    # parser.add_argument('--use_project_head', type=int, default=0)
-    # parser.add_argument('--dp_type', type=str, default='none', help='[laplace, gaussian]')
-    # parser.add_argument('--dp_strength', type=float, default=0, help='[0.1, 0.075, 0.05, 0.025,...]')
-    # parser.add_argument('--gradient_sparsification', type=float, default=0)
-    # parser.add_argument("--certify", type=int, default=0, help="CertifyFLBaseline")
-    # parser.add_argument("--sigma", type=float, default=0, help='sigma for certify')
-    # parser.add_argument("--M", type=int, default=1000, help="voting party count in CertifyFL")
-    # parser.add_argument("--certify_start_epoch", type=int, default=1, help="number of epoch when the cerfity ClipAndPerturb start")
-    # parser.add_argument('--autoencoder', type=int, default=0)
-    # parser.add_argument('--lba', type=float, default=0)
-
-    # parser.add_argument('--backdoor_type', type=str, default='adjust', help="type of obtaining backdoor triger")
-    # parser.add_argument('--backdoor_scale', type=float, default=1.0, help="the color of backdoor triger")
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -88,36 +63,13 @@ if __name__ == '__main__':
         torch.cuda.set_device(cuda_id)
     print(f'running on cuda{torch.cuda.current_device()}')
 
-    # args.model = 'MLP2'
-    # args.dataset = 'mnist'
-    # args.num_classes = 10
-    # args.batch_size = 64
-    # args.epochs = 4000
-    # args.lr = 0.01
-    # args.num_exp = 10
-    # args.early_stop = False
-    # args.early_stop_param = 0.0001
-
-    # args.apply_trainable_layer = 0
-    # args.apply_laplace = 0
-    # args.apply_gaussian = 0
-    # args.dp_strength = 0.0
-    # args.apply_grad_spar = 0
-    # args.grad_spars = 0.0
-    # args.apply_encoder = 0
-    # args.apply_adversarial_encoder = 0
-    # args.ae_lambda = 0.1
-    # args.encoder = None
-    # args.apply_marvell = 0
-    # args.marvell_s = 0
-
+    # load configs from *_config.json files
     args = load_configs(args.configs, args)
     assert args.dataset_split != None, "dataset_split attribute not found config json file"
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
     args.dataset = args.dataset_split['dataset_name']
     print(args.dataset)
     print(args.attack_methods)
-    
     
     # put in all the attacks
     attack_list = []
