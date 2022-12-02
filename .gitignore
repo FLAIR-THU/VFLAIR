@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # dataset files
-dataset/
+# dataset/
 data/
 # VFL_Label_Inference/trained_models/
 ./dataset/*/*
