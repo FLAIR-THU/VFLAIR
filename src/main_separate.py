@@ -71,6 +71,9 @@ if __name__ == '__main__':
     print(args.dataset)
     print(args.attack_methods)
     
+    
+    args = load_parties(args)
+
     # put in all the attacks
     attack_list = []
     for attack in args.attack_methods:
@@ -84,7 +87,6 @@ if __name__ == '__main__':
 
         num_classes = args.num_class_list[0] # for main task evaluation
         args.num_classes = args.num_class_list[0]
-        args = load_parties(args)
 
         for defense in args.defense_methods:
             # load defense configs

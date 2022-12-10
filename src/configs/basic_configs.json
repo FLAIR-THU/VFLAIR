@@ -2,6 +2,10 @@
     "epochs": 30,
     "lr": 0.001,
     "k": 2,
+    "batch_size": 2048,
+    "num_exp": 10,
+    "early_stop": 0,
+    "early_stop_param": 0.0001,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10,
