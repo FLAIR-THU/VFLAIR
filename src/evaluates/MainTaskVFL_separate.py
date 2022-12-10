@@ -43,20 +43,20 @@ class MainTaskVFL_separate(object):
         # self.gradients_res_a = None
         # self.gradients_res_b = None
 
-        self.apply_laplace = args.apply_laplace
-        self.apply_gaussian = args.apply_gaussian
-        self.dp_strength = args.dp_strength
-        self.apply_grad_spar = args.apply_grad_spar
-        self.grad_spars = args.grad_spars
-        self.apply_encoder = args.apply_encoder
-        self.ae_lambda = args.ae_lambda
-        self.encoder = args.encoder
-        self.apply_marvell = args.apply_marvell
-        self.marvell_s = args.marvell_s
-        self.apply_discrete_gradients = args.apply_discrete_gradients
-        self.discrete_gradients_bins = args.discrete_gradients_bins
-        # self.discrete_gradients_bound = args.discrete_gradients_bound
-        self.discrete_gradients_bound = 1e-3
+        # self.apply_laplace = args.apply_laplace
+        # self.apply_gaussian = args.apply_gaussian
+        # self.dp_strength = args.dp_strength
+        # self.apply_grad_spar = args.apply_grad_spar
+        # self.grad_spars = args.grad_spars
+        # self.apply_encoder = args.apply_encoder
+        # self.ae_lambda = args.ae_lambda
+        # self.encoder = args.encoder
+        # self.apply_marvell = args.apply_marvell
+        # self.marvell_s = args.marvell_s
+        # self.apply_discrete_gradients = args.apply_discrete_gradients
+        # self.discrete_gradients_bins = args.discrete_gradients_bins
+        # # self.discrete_gradients_bound = args.discrete_gradients_bound
+        # self.discrete_gradients_bound = 1e-3
 
         # self.apply_ppdl = args.apply_ppdl
         # self.ppdl_theta_u = args.ppdl_theta_u
@@ -82,15 +82,16 @@ class MainTaskVFL_separate(object):
         return onehot_target
 
     def train_batch(self, parties_data, batch_label):
-        encoder = self.encoder
-        if self.apply_encoder:
-            if encoder:
-                _, gt_one_hot_label = encoder(batch_label)
-            else:
-                assert(encoder != None)
-        else:
-            gt_one_hot_label = batch_label
+        # encoder = self.encoder
+        # if self.apply_encoder:
+        #     if encoder:
+        #         _, gt_one_hot_label = encoder(batch_label)
+        #     else:
+        #         assert(encoder != None)
+        # else:
+        #     gt_one_hot_label = batch_label
         # print('current_label:', gt_one_hot_label)
+        gt_one_hot_label = batch_label
 
         # ====== normal vertical federated learning ======
 
@@ -183,11 +184,12 @@ class MainTaskVFL_separate(object):
                             test_logit, loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
 
                             enc_predict_prob = F.softmax(test_logit, dim=-1)
-                            if self.apply_encoder:
-                                dec_predict_prob = self.encoder.decoder(enc_predict_prob)
-                                predict_label = torch.argmax(dec_predict_prob, dim=-1)
-                            else:
-                                predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                            # if self.apply_encoder:
+                            #     dec_predict_prob = self.encoder.decoder(enc_predict_prob)
+                            #     predict_label = torch.argmax(dec_predict_prob, dim=-1)
+                            # else:
+                            #     predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                            predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
                             # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
                             actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
@@ -201,22 +203,24 @@ class MainTaskVFL_separate(object):
                         print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                             i_epoch, loss, train_acc, test_acc))
         
-        parameter = 'none'
-        if self.apply_laplace or self.apply_gaussian:
-            parameter = str(self.dp_strength)
-        elif self.apply_grad_spar:
-            parameter = str(self.grad_spars)
-        elif self.apply_encoder:
-            parameter = str(self.ae_lambda)
-        elif self.apply_discrete_gradients:
-            parameter = str(self.discrete_gradients_bins)
-        elif self.apply_marvell:
-            parameter = str(self.marvell_s)
+        # parameter = 'none'
+        # if self.apply_laplace or self.apply_gaussian:
+        #     parameter = str(self.dp_strength)
+        # elif self.apply_grad_spar:
+        #     parameter = str(self.grad_spars)
+        # elif self.apply_encoder:
+        #     parameter = str(self.ae_lambda)
+        # elif self.apply_discrete_gradients:
+        #     parameter = str(self.discrete_gradients_bins)
+        # elif self.apply_marvell:
+        #     parameter = str(self.marvell_s)
 
-        if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
-            exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
-        else:
-            exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
+        # if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
+        #     exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
+        # else:
+        #     exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
+        
+        exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
         append_exp_res(self.exp_res_path+'main_task.txt', exp_result)
         print(exp_result)
         

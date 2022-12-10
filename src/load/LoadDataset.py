@@ -90,7 +90,7 @@ def HFL(args, all_dataset):
 
 
 def load_dataset(args):
-    args.num_classes = args.num_class_list[0]
+    args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
     all_dataset = []
     if args.dataset == 'cifar100':
@@ -127,7 +127,7 @@ def load_dataset(args):
 
 
 def load_dataset_per_party(args, index):
-    args.num_classes = args.num_class_list[0]
+    args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
 
     half_dim = -1

@@ -71,41 +71,43 @@ if __name__ == '__main__':
     print(args.dataset)
     print(args.attack_methods)
     
-    # put in all the attacks
-    attack_list = []
-    for attack in args.attack_methods:
-        # load attack configs
-        attack_index = args.attack_methods.index(attack)
-        attack_config_file_path = args.attack_config_list[attack_index]
-        args = load_attack_configs(attack_config_file_path, attack, args)
+    args = load_parties(args)
+    args.exp_res_dir = f'exp_result/main/{args.dataset}/'
+    if not os.path.exists(args.exp_res_dir):
+        os.makedirs(args.exp_res_dir)
+    filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},num_exp={args.num_exp},' \
+        f'epochs={args.main_epochs}.txt'
+    # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
+    #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
+    args.exp_res_path = args.exp_res_dir + filename
+    
+    attacker = MainTaskVFL_separate(args)
+    attacker.train()
+    
+    
+    # # put in all the attacks
+    # attack_list = []
+    # for attack in args.attack_methods:
+    #     # load attack configs
+    #     attack_index = args.attack_methods.index(attack)
+    #     attack_config_file_path = args.attack_config_list[attack_index]
+    #     args = load_attack_configs(attack_config_file_path, attack, args)
 
-        args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
-        args.batch_size_list = [args.batch_size]
+    #     args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
+    #     args.batch_size_list = [args.batch_size]
 
-        num_classes = args.num_class_list[0] # for main task evaluation
-        args.num_classes = args.num_class_list[0]
-        args = load_parties(args)
+    #     num_classes = args.num_class_list[0] # for main task evaluation
+    #     args.num_classes = args.num_class_list[0]
+        
 
-        for defense in args.defense_methods:
-            # load defense configs
-            print("use defense", defense)
-            defense_index = args.defense_methods.index(defense)
-            defense_config_file_path = args.defense_config_list[defense_index]
-            args = load_defense_configs(defense_config_file_path, defense, args)
-            print("everything loaded")
+    #     for defense in args.defense_methods:
+    #         # load defense configs
+    #         print("use defense", defense)
+    #         defense_index = args.defense_methods.index(defense)
+    #         defense_config_file_path = args.defense_config_list[defense_index]
+    #         args = load_defense_configs(defense_config_file_path, defense, args)
+    #         print("everything loaded")
 
-            args.exp_res_dir = f'exp_result/{attack}/{args.dataset}/{defense}/'
-            if not os.path.exists(args.exp_res_dir):
-                os.makedirs(args.exp_res_dir)
-            filename = f'dataset={args.dataset},model={args.model_list[str(0)]["type"]},lr={args.lr},num_exp={args.num_exp},' \
-                f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-            # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
-            #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
-            args.exp_res_path = args.exp_res_dir + filename
-            
-            attacker = globals()[attack](args)
-            attack_list.append(attacker)
-            attacker.train()
 
             # args.models_dict = {"mnist": MLP2,
             #            "cifar100": resnet18,

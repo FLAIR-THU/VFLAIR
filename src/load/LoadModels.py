@@ -29,7 +29,7 @@ def load_models_per_party(args, index):
     else:
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
-    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.lr)
+    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr)
     
     global_model = None
     global_model_optimizer = None
@@ -42,7 +42,7 @@ def load_models_per_party(args, index):
             print("global_model", args.global_model)
             global_model = globals()[args.global_model](args.k*args.num_classes, args.num_classes)
             global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.lr)
+            global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
 
     # important
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
