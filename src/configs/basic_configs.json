@@ -25,6 +25,21 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "attack": {
+        "name": "BatchLabelReconstruction",
+        "parameters": {
+            "party": [0],
+            "lr": 0.01,
+            "epochs": 300
+        }
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [1],
+            "dp_strength": 0.001
+        }
+    },
     "attack_methods": {
         "MainTaskVFL_separate": 1,
         "BatchLabelReconstruction": 0,

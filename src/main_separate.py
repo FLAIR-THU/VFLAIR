@@ -69,10 +69,10 @@ if __name__ == '__main__':
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
     args.dataset = args.dataset_split['dataset_name']
     print(args.dataset)
-    print(args.attack_methods)
+    # print(args.attack_methods)
     
-    args = load_parties(args)
     args.exp_res_dir = f'exp_result/main/{args.dataset}/'
+    args = load_parties(args)
     if not os.path.exists(args.exp_res_dir):
         os.makedirs(args.exp_res_dir)
     filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},num_exp={args.num_exp},' \

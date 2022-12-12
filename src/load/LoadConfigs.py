@@ -25,7 +25,6 @@ def load_configs(config_file_name, args):
     # args.early_stop = config_dict['early_stop'] if ('early_stop' in config_dict) else 0
     # args.early_stop_param = config_dict['early_stop_param'] if ('early_stop_param' in config_dict) else 0.0001
     
-    
     # args.dataset_split
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
     args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
@@ -66,72 +65,87 @@ def load_configs(config_file_name, args):
         args.apply_trainable_layer = 0
         args.global_model = 'ClassificationModelHostHead'
     
-    if 'attack_methods' in config_dict:
-        config_attack_methods_dict = config_dict['attack_methods']
-        methods_list = []
-        for key in config_attack_methods_dict:
-            if config_attack_methods_dict[key] != 0:
-                methods_list.append(key)
-        # if len(methods_list) == 0:
-        #     methods_list.append('BatchLabelReconstruction')
-        args.attack_methods = methods_list
-    else:
-        # args.attack_methods = ['BatchLabelReconstruction']
-        args.attack_methods = []
+    # if attacker appears
+    args.apply_attack = False
+    if 'attack' in config_dict:
+        if 'name' in config_dict['attack']:
+            args.apply_attack = True
+            args.attack_name = config_dict['attack']['name']
+            args.attack_configs = config_dict['attack']['parameters'] if('parameters' in config_dict['attack']) else None
     
-    # attack_configs
-    if 'attack_configs' in config_dict:
-        config_attack_config_dict = config_dict['attack_configs']
-        attack_config_list = []
-        for attack_method in args.attack_methods:
-            attack_config_list.append((config_attack_config_dict[attack_method] \
-                                        if attack_method in config_attack_config_dict else (attack_method+'_configs')))
-        args.attack_config_list = attack_config_list
-    else:
-        attack_config_list = []
-        for attack_method in args.attack_methods:
-            attack_config_list.append((attack_method+'_configs'))
-        args.attack_config_list = attack_config_list
+    args.apply_defense = False
+    if 'defense' in config_dict:
+        if 'name' in config_dict['defense']:
+            args.apply_defense = True
+            args.defense_name = config_dict['defense']['name']
+            args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
 
-    # defense args initialization
-    args.apply_laplace = 0
-    args.apply_gaussian = 0
-    args.dp_strength = 0.0
-    args.apply_grad_spar = 0
-    args.grad_spars = 0
-    args.apply_discrete_gradients = 0
-    args.discrete_bins = 0
-    args.apply_encoder = 0
-    args.ae_lambda = 0.0
-    args.encoder = None
-    args.apply_marvell = 0
-    args.marvell_s = 0
-    if 'defense_methods' in config_dict:
-        config_defense_methods_dict = config_dict['defense_methods']
-        methods_list = []
-        for key in config_defense_methods_dict:
-            if config_defense_methods_dict[key] != 0:
-                methods_list.append(key)
-        if len(methods_list) == 0:
-            methods_list.append('NoDefense')
-        args.defense_methods = methods_list
-    else:
-        args.defense_methods = ['NoDefense']
-        # args.defense_methods = []
+    # if 'attack_methods' in config_dict:
+    #     config_attack_methods_dict = config_dict['attack_methods']
+    #     methods_list = []
+    #     for key in config_attack_methods_dict:
+    #         if config_attack_methods_dict[key] != 0:
+    #             methods_list.append(key)
+    #     # if len(methods_list) == 0:
+    #     #     methods_list.append('BatchLabelReconstruction')
+    #     args.attack_methods = methods_list
+    # else:
+    #     # args.attack_methods = ['BatchLabelReconstruction']
+    #     args.attack_methods = []
     
-    # defense_configs
-    if 'defense_configs' in config_dict:
-        config_defense_config_dict = config_dict['defense_configs']
-        defense_config_list = []
-        for defense_method in args.defense_methods:
-            defense_config_list.append((config_defense_config_dict[defense_method] \
-                                        if defense_method in config_defense_config_dict else (defense_method+'_configs')))
-        args.defense_config_list = defense_config_list
-    else:
-        defense_config_list = []
-        for defense_method in args.defense_methods:
-            defense_config_list.append((defense_method+'_configs'))
-        args.defense_config_list = defense_config_list
+    # # attack_configs
+    # if 'attack_configs' in config_dict:
+    #     config_attack_config_dict = config_dict['attack_configs']
+    #     attack_config_list = []
+    #     for attack_method in args.attack_methods:
+    #         attack_config_list.append((config_attack_config_dict[attack_method] \
+    #                                     if attack_method in config_attack_config_dict else (attack_method+'_configs')))
+    #     args.attack_config_list = attack_config_list
+    # else:
+    #     attack_config_list = []
+    #     for attack_method in args.attack_methods:
+    #         attack_config_list.append((attack_method+'_configs'))
+    #     args.attack_config_list = attack_config_list
+
+    # # defense args initialization
+    # args.apply_laplace = 0
+    # args.apply_gaussian = 0
+    # args.dp_strength = 0.0
+    # args.apply_grad_spar = 0
+    # args.grad_spars = 0
+    # args.apply_discrete_gradients = 0
+    # args.discrete_bins = 0
+    # args.apply_encoder = 0
+    # args.ae_lambda = 0.0
+    # args.encoder = None
+    # args.apply_marvell = 0
+    # args.marvell_s = 0
+    # if 'defense_methods' in config_dict:
+    #     config_defense_methods_dict = config_dict['defense_methods']
+    #     methods_list = []
+    #     for key in config_defense_methods_dict:
+    #         if config_defense_methods_dict[key] != 0:
+    #             methods_list.append(key)
+    #     if len(methods_list) == 0:
+    #         methods_list.append('NoDefense')
+    #     args.defense_methods = methods_list
+    # else:
+    #     args.defense_methods = ['NoDefense']
+    #     # args.defense_methods = []
+    
+    # # defense_configs
+    # if 'defense_configs' in config_dict:
+    #     config_defense_config_dict = config_dict['defense_configs']
+    #     defense_config_list = []
+    #     for defense_method in args.defense_methods:
+    #         defense_config_list.append((config_defense_config_dict[defense_method] \
+    #                                     if defense_method in config_defense_config_dict else (defense_method+'_configs')))
+    #     args.defense_config_list = defense_config_list
+    # else:
+    #     defense_config_list = []
+    #     for defense_method in args.defense_methods:
+    #         defense_config_list.append((defense_method+'_configs'))
+    #     args.defense_config_list = defense_config_list
 
     # important
     return args
