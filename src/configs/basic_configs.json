@@ -4,8 +4,6 @@
     "k": 2,
     "batch_size": 2048,
     "num_exp": 10,
-    "early_stop": 0,
-    "early_stop_param": 0.0001,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10,
@@ -26,6 +24,21 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "attack": {
+        "name": "BatchLabelReconstruction",
+        "parameters": {
+            "party": [0],
+            "lr": 0.01,
+            "epochs": 300
+        }
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [1],
+            "dp_strength": 0.001
+        }
     },
     "attack_methods": {
         "MainTaskVFL_separate": 1,
