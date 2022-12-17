@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
@@ -30,7 +30,7 @@
         "parameters": {
             "party": [0],
             "lr": 0.01,
-            "epochs": 300
+            "epochs": 3000
         }
     },
     "defense": {

@@ -35,12 +35,12 @@ class Party(object):
         self.global_model_optimizer = None
 
         # attack and defense
-        self.attacker = None
+        # self.attacker = None
         self.defender = None
         
         self.prepare_data(args, index)
         self.prepare_model(args, index)
-        self.prepare_attacker(args, index)
+        # self.prepare_attacker(args, index)
         self.prepare_defender(args, index)
 
     def prepare_data(self, args, index):
@@ -55,9 +55,9 @@ class Party(object):
         # prepare model and optimizer
         args, self.local_model, self.local_model_optimizer, self.global_model, self.global_model_optimizer = load_models_per_party(args, index)
 
-    def prepare_attacker(self, args, index):
-        if index in args.attack_configs['party']:
-            self.attacker = AttackerLoader(args, index, self.local_model)
+    # def prepare_attacker(self, args, index):
+    #     if index in args.attack_configs['party']:
+    #         self.attacker = AttackerLoader(args, index, self.local_model)
 
     def prepare_defender(self, args, index):
         if index in args.attack_configs['party']:
@@ -66,9 +66,9 @@ class Party(object):
     def obtain_local_data(self, data):
         self.local_batch_data = data
     
-    def party_attack(self, args, *params):
-        if self.index in args.attack_configs['party']:
-            return self.attacker.attack(self.local_batch_data, self.weights_grad_a, *params)
+    # def party_attack(self, args, *params):
+    #     if self.index in args.attack_configs['party']:
+    #         return self.attacker.attack(self.local_batch_data, self.weights_grad_a, *params)
 
     def local_forward():
         # args.local_model()

@@ -10,6 +10,7 @@ from tqdm import tqdm
 # from utils import cross_entropy_for_one_hot, sharpen
 import numpy as np
 import time
+import copy
 
 from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
@@ -19,6 +20,7 @@ from evaluates.defenses.defense_functions import *
 from utils.constants import *
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
+from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
 
@@ -45,13 +47,19 @@ class MainTaskVFL_separate(object):
         self.exp_res_path = args.exp_res_path
         self.parties = args.parties
 
+        self.parties_data = None
+        self.gt_one_hot_label = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
         self.pred_gradients_list_clone = []
         self.loss = None
         self.train_acc = None
-        self.gt_one_hot_label = None
+
+        # some state of VFL throughout training process
+        self.first_epoch_state = None
+        self.middle_epoch_state = None
+        # self.final_epoch_state = None # <-- this is save in the above parameters
 
     def label_to_one_hot(self, target, num_classes=10):
         try:
@@ -131,6 +139,7 @@ class MainTaskVFL_separate(object):
             data_loader_list.append(tqdm_train)
             # for parties_data in zip(self.parties[0].train_loader, self.parties[self.k-1].train_loader, tqdm_train): ## TODO: what to de for 4 party?
             for parties_data in zip(*data_loader_list):
+                self.parties_data = parties_data
                 i += 1
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
@@ -143,9 +152,11 @@ class MainTaskVFL_separate(object):
                 # ====== train batch ======
                 self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
             
-                print(i,i_epoch)
                 if i == i_epoch == 0:
-                    self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+                    self.first_epoch_state = self.save_state()
+                elif i_epoch == self.epochs//2 and i == 0:
+                    self.middle_epoch_state = self.save_state()
 
             # validation
             if (i + 1) % print_every == 0:
@@ -215,6 +226,21 @@ class MainTaskVFL_separate(object):
         
         return test_acc
 
+    def save_state(self):
+        return {
+            "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+            "data": copy.deepcopy(self.parties_data), 
+            "label": copy.deepcopy(self.gt_one_hot_label),
+            "predict": copy.deepcopy(self.pred_list_clone),
+            "gradient": copy.deepcopy(self.pred_gradients_list_clone),
+            "train_acc": copy.deepcopy(self.train_acc),
+            "loss": copy.deepcopy(self.loss)
+        }
+
+    def evaluate_attack(self):
+        self.attacker = AttackerLoader(self, self.args)
+        if self.attacker != None:
+            self.attacker.attack()
 
     def launch_attack(self, gradients_list, pred_list, type):
         if type == 'gradients_label':

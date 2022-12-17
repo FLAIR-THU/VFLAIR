@@ -81,8 +81,11 @@ if __name__ == '__main__':
     #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
     args.exp_res_path = args.exp_res_dir + filename
     
-    attacker = MainTaskVFL_separate(args)
-    attacker.train()
+    vfl = MainTaskVFL_separate(args)
+    vfl.train()
+
+    if args.apply_attack == True:
+        vfl.evaluate_attack()
     
     
     # # put in all the attacks

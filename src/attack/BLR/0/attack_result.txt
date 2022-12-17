@@ -1,0 +1,2 @@
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.098633|[[0.0986328125], [0.2353515625]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.099121|[[0.09912109375], [0.26904296875]]
