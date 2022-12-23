@@ -1,5 +1,3 @@
-
-
 # MARVELL constants
 batch_y = None
 writer = None

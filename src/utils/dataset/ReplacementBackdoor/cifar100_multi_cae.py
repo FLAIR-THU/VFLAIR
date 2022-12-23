@@ -87,7 +87,6 @@ class Cifar100DatasetVFLPERROUND():
         return self.target_list
 
 
-# 设置攻击对象的特殊图案
 def data_poison(images, poison_number):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
     poison_list = random.sample(range(images[0].shape[0]), poison_number)

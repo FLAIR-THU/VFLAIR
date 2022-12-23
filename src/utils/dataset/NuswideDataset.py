@@ -61,35 +61,6 @@ if __name__ == '__main__':
     print(torch.sum(train_dataset.y), torch.sum(test_dataset.y))
 
 
-    # '''X�?特征，不包含target;X_tsne�?已经降维之后的特�?'''
-    # tsne = manifold.TSNE(n_components=2, init='pca', random_state=501)
-    # train_X0_tsne = tsne.fit_transform(train_dataset.x[0])
-    # test_X0_tsne = tsne.fit_transform(test_dataset.x[0])
-    # train_X1_tsne = tsne.fit_transform(train_dataset.x[1])
-    # test_X1_tsne = tsne.fit_transform(test_dataset.x[1])
-    # print("Org data dimension is {}. Embedded data dimension is {}".format(train_dataset.x[0].shape[1:], train_X0_tsne.shape[1:]))
-        
-    # '''嵌入空间�?视化'''
-    # x_min, x_max = train_X0_tsne.min(0), train_X0_tsne.max(0)
-    # X_norm = (train_X0_tsne - x_min) / (x_max - x_min)  # 归一�?
-    # plt.figure(figsize=(8, 8))
-    # for i in range(X_norm.shape[0]):
-    #     plt.text(X_norm[i, 0], X_norm[i, 1], str(y[i]), color=plt.cm.Set1(train_dataset.y[i]), 
-    #             fontdict={'weight': 'bold', 'size': 9})
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.show()
-
-    # x_min, x_max = test_X0_tsne.min(0), test_X0_tsne.max(0)
-    # X_norm = (test_X0_tsne - x_min) / (x_max - x_min)  # 归一�?
-    # plt.figure(figsize=(8, 8))
-    # for i in range(X_norm.shape[0]):
-    #     plt.text(X_norm[i, 0], X_norm[i, 1], str(y[i]), color=plt.cm.Set1(test_dataset.y[i]), 
-    #             fontdict={'weight': 'bold', 'size': 9})
-    # plt.xticks([])
-    # plt.yticks([])
-    # plt.show()
-
     print(train_dataset.y)
 
     # print(train_dataset.poison_list)
