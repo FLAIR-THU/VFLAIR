@@ -25,7 +25,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 tf.compat.v1.enable_eager_execution() 
 
 
-class MainTaskVFL_separate(object):
+class MainTaskVFL(object):
 
     def __init__(self, args):
         self.args = args
@@ -109,7 +109,8 @@ class MainTaskVFL_separate(object):
         # ######################## aggregate logits of clients ########################
 
         # defense applied on gradients
-        self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
+        if self.args.apply_defense == True:
+            self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
         
         # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
@@ -132,11 +133,11 @@ class MainTaskVFL_separate(object):
 
         test_acc = 0.0
         for i_epoch in range(self.epochs):
-            tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
+            # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
             data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
-            data_loader_list.append(tqdm_train)
+            # data_loader_list.append(tqdm_train)
             # for parties_data in zip(self.parties[0].train_loader, self.parties[self.k-1].train_loader, tqdm_train): ## TODO: what to de for 4 party?
             for parties_data in zip(*data_loader_list):
                 self.parties_data = parties_data
@@ -152,7 +153,7 @@ class MainTaskVFL_separate(object):
                 # ====== train batch ======
                 self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
             
-                if i == i_epoch == 0:
+                if i == 0 and i_epoch == 0:
                     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state = self.save_state()
                 elif i_epoch == self.epochs//2 and i == 0:
@@ -199,7 +200,7 @@ class MainTaskVFL_separate(object):
                     postfix['train_loss'] = self.loss
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
                     postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-                    tqdm_train.set_postfix(postfix)
+                    # tqdm_train.set_postfix(postfix)
                     print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc))
         

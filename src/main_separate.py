@@ -27,7 +27,7 @@ from utils.dataset.NuswideDataset import NUSWIDEDataset
 # from evaluates.BatchLabelReconstruction import *
 # from evaluates.DeepLeakageFromGradients import *
 # from evaluates.ReplacementBackdoor import *
-from evaluates.MainTaskVFL_separate import *
+from evaluates.MainTaskVFL import *
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
     args.exp_res_path = args.exp_res_dir + filename
     
-    vfl = MainTaskVFL_separate(args)
+    vfl = MainTaskVFL(args)
     vfl.train()
 
     if args.apply_attack == True:

@@ -26,8 +26,8 @@ from utils.dataset.NuswideDataset import NUSWIDEDataset
 from evaluates.BatchLabelReconstruction import *
 from evaluates.DeepLeakageFromGradients import *
 from evaluates.ReplacementBackdoor import *
-from evaluates.MainTaskVFL import VFLDefenceExperimentBase
-from evaluates.MainTaskVFL_separate import VFLDefenceExperimentBase_Separate
+# from evaluates.MainTaskVFL import VFLDefenceExperimentBase
+from VFL.PlatForm.src.evaluates.MainTaskVFL import VFLDefenceExperimentBase_Separate
 
 def set_seed(seed=0):
     random.seed(seed)

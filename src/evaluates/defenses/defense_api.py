@@ -4,7 +4,9 @@ sys.path.append(os.pardir)
 from evaluates.defenses.defense_functions import *
 
 def DefenderLoader(args, index):
-    if args.defense_name in ['MID']:
+    if args.apply_defense == False:
+        return None
+    elif args.defense_name in ['MID']:
         # for future use, create a defender
         return None
     elif args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteGradient', 'MARVELL', 'CAE', 'DCAE']:

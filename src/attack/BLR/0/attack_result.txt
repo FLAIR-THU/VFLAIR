@@ -1,2 +1,7 @@
 bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.098633|[[0.0986328125], [0.2353515625]]
 bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.099121|[[0.09912109375], [0.26904296875]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.099121|[[0.09912109375], [0.26904296875]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.151367|[[0.1513671875], [0.53857421875]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.119629|[[0.11962890625], [0.5400390625]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.119629|[[0.11962890625], [0.5400390625]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.119629|[[0.11962890625], [0.5400390625]]

@@ -1,0 +1,75 @@
+{
+    "epochs": 1,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 2048,
+    "num_exp": 10,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10,
+        "partition_function": "horizontal_half"
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack": {
+        "name": "BatchLabelReconstruction",
+        "parameters": {
+            "party": [0],
+            "lr": 0.01,
+            "epochs": 3000
+        }
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [1],
+            "dp_strength": 0.001
+        }
+    },
+    "attack_methods": {
+        "MainTaskVFL_separate": 1,
+        "BatchLabelReconstruction": 0,
+        "DeepLeakageFromGradients": 0,
+        "ReplacementBackdoor": 0
+    },
+    "attack_configs": {
+        "MainTaskVFL_separate": "MainTaskVFL_separate_configs",
+        "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
+        "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs",
+        "ReplacementBackdoor": "ReplacementBackdoor_configs"
+    },
+    "defense_methods": {
+        "NoDefense": 1,
+        "LaplaceDP": 0,
+        "GaussianDP": 0,
+        "GradientSparcification": 0,
+        "DiscreteGradient": 0,
+        "ConfusionalAutoEncoder": 0,
+        "DiscreteConfusionalAutoEncoder": 0,
+        "Marvell": 0
+    },
+    "defense_configs": {
+        "NoDefense": "",
+        "LaplaceDP": "DP_configs",
+        "GaussianDP": "DP_configs",
+        "GradientSparcification": "GradientSparcification_configs",
+        "DiscreteGradient": "DiscreteGradient_configs",
+        "ConfusionalAutoEncoder": "ConfusionalAutoEncoder_configs",
+        "DiscreteConfusionalAutoEncoder": "DiscreteConfusionalAutoEncoder_configs",
+        "Marvell": "Marvell_configs"
+    }
+}

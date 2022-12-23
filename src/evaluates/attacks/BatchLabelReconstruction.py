@@ -161,6 +161,7 @@ class BatchLabelReconstruction(Attacker):
             recovery_rate_history = [[], []]
             # passive party does not whether
             for i, (dummy_model, optimizer) in enumerate(zip([self.dummy_active_top_trainable_model,self.dummy_active_top_non_trainable_model],[self.optimizer_trainable,self.optimizer_non_trainable])):
+                print(f"BLI iteration {i}")
                 start_time = time.time()
                 for iters in range(1, self.epochs + 1):
                     # print(f"in BLR, i={i}, iter={iters}")
