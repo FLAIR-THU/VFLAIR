@@ -10,9 +10,6 @@ __pycache__/
 # dataset/
 data/
 # VFL_Label_Inference/trained_models/
-./dataset/*/*
-./data/*/*
-# ./VFL_Label_Inference/trained_models/*
 
 # experiment result files
 src/exp_result/

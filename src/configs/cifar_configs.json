@@ -2,25 +2,35 @@
     "k": 2,
     "dataset":{
         "dataset_name": "cifar100",
-        "num_classes": 20,
+        "num_classes": 100,
         "partition_function": "horizontal_half"
     },
     "model_list":{
         "0": {
             "type": "resnet18",
             "input_dim": 512,
-            "output_dim": 20,
+            "output_dim": 100,
             "path": "random_20"
         },
         "1": {
             "type": "resnet18",
             "input_dim": 512,
-            "output_dim": 20,
+            "output_dim": 100,
             "path": "random_20"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
+    "attack": {
+        "name": "ReplacementBackdoor",
+        "parameters": {
+            "party": [0],
+            "lr": 0.01,
+            "epochs": 3000
+        }
+    }
+    
+    ,
     "attack_methods": {
         "MainTaskVFL_separate": 1,
         "BatchLabelReconstruction": 0,

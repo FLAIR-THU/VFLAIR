@@ -1,0 +1,11 @@
+matplotlib==3.5.1
+numpy==1.19.5
+pandas==1.4.3
+Pillow==9.3.0
+requests==2.28.1
+scikit_learn==1.2.0
+tensorflow==2.4.1
+torch==1.10.2
+torchsummary==1.5.1
+torchvision==0.11.3
+tqdm==4.62.3

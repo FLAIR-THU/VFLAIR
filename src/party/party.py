@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from models.vision import *
 from models.model_templates import *
 from models.autoencoder import *
-from load.LoadDataset import load_dataset_per_party
+from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor
 from load.LoadModels import *
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
@@ -27,6 +27,13 @@ class Party(object):
         self.train_loader = None
         self.test_loader = None
         self.local_batch_data = None
+        # backdoor poison data and label and target images list
+        self.train_poison_data = None
+        self.train_poison_label = None
+        self.test_poison_data = None
+        self.test_poison_label = None
+        self.train_target_list = None
+        self.test_target_list = None
         # local model
         self.local_model = None
         self.local_model_optimizer = None
@@ -45,7 +52,11 @@ class Party(object):
 
     def prepare_data(self, args, index):
         # prepare raw data for training
-        args, self.half_dim, (self.train_data,self.train_label), (self.test_data,self.test_label) = load_dataset_per_party(args, index)
+        if args.apply_backdoor == True:
+            print("in party prepare_data, will prepare poison data for backdooring")
+            args, self.half_dim, (self.train_data,self.train_label), (self.test_data,self.test_label), (self.train_poison_data,self.train_poison_label), (self.test_poison_data, self.test_poison_label), self.train_target_list, self.test_target_list = load_dataset_per_party_backdoor(args, index)
+        else:
+            args, self.half_dim, (self.train_data,self.train_label), (self.test_data,self.test_label) = load_dataset_per_party(args, index)
 
     def prepare_data_loader(self, batch_size):
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)

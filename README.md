@@ -1,12 +1,16 @@
 #### ToDo List
+- [x] requirement list generation. @tianyuan
 - [ ] base_config.json and \<DefenseMethod\>_confige.json @tianyuan
 - [ ] BatchLabelReconstruction change the models to list (multi-party?) @tianyuan
 - [ ] Attacks and Defense to add @tianyuan
 - [ ] FedBCD to add @tianyuan
-- [ ] Logic of attack and defense needs update @tianyuan
+- [x] Logic of attack and defense needs update @tianyuan
 
 
 ## Document
+
+### Zero. Environment Preparation
+Use `pip install -r requirements.txt` to install all the necessary requirements.
 
 ### One. A quick example
 Just run `python main_separate.py` to get launch an experiment. For more detail description, see Section Two.

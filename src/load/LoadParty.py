@@ -6,7 +6,7 @@ from party.active_party import ActiveParty
 
 def load_parties(args):
     # party 0,1,2,...,args.k-2||,args,k-1
-    args.parties = [None] * args.k
+    args.parties = [None] * args.k 
 
     assert args.k > 1
     # for passive party 0,1,2,...,args.k-2

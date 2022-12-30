@@ -15,7 +15,7 @@ transform_fn = transforms.Compose([
     transforms.ToTensor()
 ])
 
-from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label
+from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data
 
 def horizontal_half(args, all_dataset):
     if args.dataset == 'mnist' or args.dataset == 'cifar100' or args.dataset == 'cifar10':
@@ -217,3 +217,157 @@ def load_dataset_per_party(args, index):
     
     # important
     return args, half_dim, train_dst, test_dst
+
+def prepare_poison_target_list(args):
+    args.target_label = random.randint(0, args.num_classes-1)
+
+def load_dataset_per_party_backdoor(args, index):
+    args.num_classes = args.num_classes
+    args.classes = [None] * args.num_classes
+
+
+    half_dim = -1
+    if args.dataset == "cifar100":
+        half_dim = 16
+        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
+    elif args.dataset == "cifar20":
+        half_dim = 16
+        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
+    elif args.dataset == "cifar10":
+        half_dim = 16
+        train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+        test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
+    elif args.dataset == "mnist":
+        half_dim = 14
+        train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
+        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+        test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
+        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
+    # elif args.dataset_name == 'nuswide':
+    #     half_dim = [634, 1000]
+    #     train_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'train')
+    #     test_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'test')
+    # args.train_dataset = train_dst
+    # args.val_dataset = test_dst
+    else:
+        assert args.dataset == 'mnist', "dataset not supported yet"
+
+    train_dst = (torch.tensor(train_data).to(args.device),train_label.to(args.device))
+    test_dst = (torch.tensor(test_data).to(args.device),test_label.to(args.device))
+    train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
+    test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
+
+    if args.k == 2:
+        if index == 0:
+            # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
+            # passive party does not have label
+            train_dst = (train_dst[0][:, :, :half_dim, :], None)
+            test_dst = (test_dst[0][:, :, :half_dim, :], None)
+            train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :], None)
+            test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :], None)
+        elif index == 1:
+            train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
+            test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
+            train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :], train_poison_dst[1])
+            test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :], test_poison_dst[1])
+        else:
+            assert index <= 1, "invalide party index"
+    elif args.k == 4:
+        if index == 3:
+            train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
+            test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])
+            train_poison_dst = (train_poison_dst[0][:, :, half_dim:, half_dim:], train_poison_dst[1])
+            test_poison_dst = (test_poison_dst[0][:, :, half_dim:, half_dim:], test_poison_dst[1])         
+        else:
+            # passive party does not have label
+            if index == 0:
+                train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
+                test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
+                train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :half_dim], None)
+                test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :half_dim], None)
+            elif index == 1:
+                train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
+                test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
+                train_poison_dst = (train_poison_dst[0][:, :, :half_dim, half_dim:], None)
+                test_poison_dst = (test_poison_dst[0][:, :, :half_dim, half_dim:], None)
+            elif index == 2:
+                train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
+                test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
+                train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :half_dim], None)
+                test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :half_dim], None)
+            else:
+                assert index <= 3, "invalide party index"
+    else:
+        assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+    
+    # important
+    return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst, args.train_target_list, args.test_target_list
+

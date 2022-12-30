@@ -17,6 +17,7 @@ import torchvision.transforms as transforms
 from datetime import datetime
 import numpy as np
 import logging
+import copy
 
 tp = transforms.ToTensor()
 
@@ -400,6 +401,69 @@ def get_images():
                 img.show()
                 arr = np.array(img)
                 print("thumbnail", arr.shape)
+
+def data_poison(images, poison_list, k, dataset):
+    target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
+    
+    if 'cifar' in dataset.casefold():
+        if k == 2: # 1 party poison, passive party-0 poison
+            images[poison_list,0,15,31] = target_pixel_value[0][0]
+            images[poison_list,0,14,30] = target_pixel_value[0][1]
+            images[poison_list,0,13,31] = target_pixel_value[0][2]
+            images[poison_list,0,15,29] = target_pixel_value[0][3]
+            images[poison_list,1,15,31] = target_pixel_value[1][0]
+            images[poison_list,1,14,30] = target_pixel_value[1][1]
+            images[poison_list,1,13,31] = target_pixel_value[1][2]
+            images[poison_list,1,15,29] = target_pixel_value[1][3]
+            images[poison_list,2,15,31] = target_pixel_value[2][0]
+            images[poison_list,2,14,30] = target_pixel_value[2][1]
+            images[poison_list,2,13,31] = target_pixel_value[2][2]
+            images[poison_list,2,15,29] = target_pixel_value[2][3]
+        elif k == 4:
+            # 3 party poison, passive party-[0,1,2] poison
+            images[poison_list,0,15,15] = target_pixel_value[0][0]
+            images[poison_list,1,15,15] = target_pixel_value[1][0]
+            images[poison_list,2,15,15] = target_pixel_value[2][0]
+            images[poison_list,0,15,31] = target_pixel_value[0][1]
+            images[poison_list,1,15,31] = target_pixel_value[1][1]
+            images[poison_list,2,15,31] = target_pixel_value[2][1]
+            images[poison_list,0,31,15] = target_pixel_value[0][2]
+            images[poison_list,1,31,15] = target_pixel_value[1][2]
+            images[poison_list,2,31,15] = target_pixel_value[2][2]
+        else:
+            assert k == 4, "poison type not supported yet"
+    elif 'mnist' in dataset.casefold():
+        if k == 2:
+            images[poison_list, 0, 13, 27] = 1.0
+            images[poison_list, 0, 12, 26] = 1.0
+            images[poison_list, 0, 11, 27] = 1.0
+            images[poison_list, 0, 13, 25] = 1.0
+        elif k == 4:
+            images[poison_list, 0, 13, 13] = 1.0 # 3 party poison
+            images[poison_list, 0, 13, 27] = 1.0 # 3 party poison
+            images[poison_list, 0, 27, 13] = 1.0 # 3 party poison
+        else:
+            assert k == 4, "poison type not supported yet"
+    else:
+        assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+    return images, poison_list
+
+
+def generate_poison_data(data, label, poison_list, _type, k, dataset):
+    mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
+    poison_data = copy.deepcopy(mixed_data[poison_list])
+    poison_label = copy.deepcopy(label[poison_list])
+    print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
+    if _type == 'train':
+        data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
+        label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
+
+    # print(torch.argmax(label,axis=1)==target_label)
+    # print(np.where(torch.argmax(label,axis=1)==target_label))
+    # print(np.where(torch.argmax(label,axis=1)==target_label)[0])
+    # target_list = random.sample(list(np.where(torch.argmax(label,axis=1)==target_label)[0]), 10)
+
+    return data, label, poison_data, poison_label
 
 
 def entropy(predictions):

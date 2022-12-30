@@ -28,6 +28,7 @@ from utils.dataset.NuswideDataset import NUSWIDEDataset
 # from evaluates.DeepLeakageFromGradients import *
 # from evaluates.ReplacementBackdoor import *
 from evaluates.MainTaskVFL import *
+from evaluates.MainTaskVFLwithBackdoor import *
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -70,6 +71,13 @@ if __name__ == '__main__':
     args.dataset = args.dataset_split['dataset_name']
     print(args.dataset)
     # print(args.attack_methods)
+
+    # mark that backdoor data is never prepared
+    args.target_label = None
+    args.train_poison_list = None
+    args.train_target_list = None
+    args.test_poison_list = None
+    args.test_target_list = None
     
     args.exp_res_dir = f'exp_result/main/{args.dataset}/'
     args = load_parties(args)
@@ -81,7 +89,13 @@ if __name__ == '__main__':
     #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
     args.exp_res_path = args.exp_res_dir + filename
     
-    vfl = MainTaskVFL(args)
+    # if have inference time attack, use another VFL pipeline
+    if args.apply_backdoor == True:
+        vfl = MainTaskVFLwithBackdoor(args)
+        # no other attacks, only backdoor attack, may change later
+        args.apply_attack = False
+    else:
+        vfl = MainTaskVFL(args)
     vfl.train()
 
     if args.apply_attack == True:

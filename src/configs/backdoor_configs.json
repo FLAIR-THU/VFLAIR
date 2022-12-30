@@ -1,9 +1,9 @@
 {
-    "epochs": 1,
+    "epochs": 100,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 2048,
-    "num_exp": 10,
+    "batch_size": 64,
+    "num_exp": 1,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -25,7 +25,7 @@
         "global_model": "ClassificationModelHostHead"
     },
     "attack": {
-        "name": "BatchLabelReconstruction",
+        "name": "ReplacementBackdoor",
         "parameters": {
             "party": [0],
             "lr": 0.01,
