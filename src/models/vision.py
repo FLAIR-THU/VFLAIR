@@ -422,7 +422,7 @@ class MID_model(nn.Module):
         # # x.size() = (batch_size, class_num)
         x_double = self.enlarge_layer(x)
         mu, std = x_double[:,:self.input_dim*self.bottleneck_scale], x_double[:,self.input_dim*self.bottleneck_scale:]
-        std = F.softplus(std-5) # ? F.softplus(std-5)
+        std = F.softplus(std-0.5) # ? F.softplus(std-5)
         z = mu + std * epsilon
         z = z.to(x.device)
         z = self.decoder_layer(z)

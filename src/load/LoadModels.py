@@ -45,6 +45,8 @@ def load_models_per_party(args, index):
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
 
+    # no defense at all, set some variables as None
+    args.encoder = None
     # some defense need model, add here
     if args.apply_defense == True:
         if args.defense_name.upper() == 'MID':
@@ -90,9 +92,6 @@ def load_models_per_party(args, index):
                 encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
                 encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
                 args.encoder = encoder
-    else: 
-        # no defense at all, set some variables as None
-        args.encoder = None
     # important
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

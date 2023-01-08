@@ -1,6 +1,6 @@
 {
     "epochs": 30,
-    "lr": 0.05,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
     "num_exp": 10,

@@ -9,3 +9,4 @@ bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.081543|[[0.08154296875
 bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.084473|[[0.08447265625], [0.09619140625]]
 bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.069824|[[0.10302734375], [0.06982421875]]
 bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.053223|[[0.10693359375], [0.05322265625]]
+bs|num_class|attack_party_index|recovery_rate,2048|10|0|0.063477|[[0.08837890625], [0.0634765625]]
