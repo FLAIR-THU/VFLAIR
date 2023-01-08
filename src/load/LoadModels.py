@@ -7,6 +7,7 @@ import pickle
 
 from models.vision import *
 from models.model_templates import *
+from models.autoencoder import *
 
 def load_models(args):
     args.net_list = [None] * args.k
@@ -44,6 +45,54 @@ def load_models_per_party(args, index):
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
 
+    # some defense need model, add here
+    if args.apply_defense == True:
+        if args.defense_name.upper() == 'MID':
+            if not 'party' in args.defense_configs:
+                args.defense_configs['party'] = [args.k-1]
+                print('[warning] default active party selected for applying MID')
+            if not 'lambda' in args.defense_configs:
+                args.defense_configs['lambda'] = 0.001
+                print('[warning] default hyper-parameter lambda selected for applying MID')
+            if index in args.defense_configs['party']:
+                if index == args.k-1:
+                    # add args.k-1 MID model at active party with global_model
+                    mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1) for _ in range(args.k-1)]
+                    mid_model_list = [model.to(args.device) for model in mid_model_list]
+                    global_model = Active_global_MID_model(global_model,mid_model_list)
+                    global_model = global_model.to(args.device)
+                    # update optimizer
+                    if args.apply_trainable_layer == 0:
+                        parameters = []
+                        for mid_model in global_model.mid_model_list:
+                            parameters += list(mid_model.parameters())
+                        global_model_optimizer = torch.optim.Adam(parameters, lr=args.main_lr)
+                    else:
+                        global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
+                else:
+                    # add MID model at passive party with local_model
+                    mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1)
+                    mid_model = mid_model.to(args.device)
+                    local_model = Passive_local_MID_model(local_model,mid_model)
+                    local_model = local_model.to(args.device)
+                    # update optimizer
+                    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr)
+        if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
+            if index == args.k-1:
+                # only active party can have encoder and decoder for CAE
+                assert 'model_path' in args.defense_configs, "[error] no CAE model path given"
+                if not 'input_dim' in args.defense_configs:
+                    args.defense_configs['input_dim'] = args.num_classes
+                    print('[warning] default input_dim selected as num_classes for applying CAE')
+                if not 'encode_dim' in args.defense_configs:
+                    args.defense_configs['encode_dim'] = 2 + 6 * args.defense_configs['input_dim']
+                    print('[warning] default encode_dim selected as 2+6*input_dim for applying CAE')
+                encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
+                args.encoder = encoder
+    else: 
+        # no defense at all, set some variables as None
+        args.encoder = None
     # important
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

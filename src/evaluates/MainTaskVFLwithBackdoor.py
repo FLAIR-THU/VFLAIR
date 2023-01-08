@@ -128,7 +128,7 @@ class MainTaskVFLwithBackdoor(object):
         self.parties[self.k-1].global_backward(pred, loss)
 
         predict_prob = F.softmax(pred, dim=-1)
-        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(gt_one_hot_label, dim=-1)).item()
+        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
 

@@ -11,28 +11,35 @@ class ActiveParty(Party):
     def __init__(self, args, index):
         super().__init__(args, index)
         self.criterion = cross_entropy_for_onehot
+        self.encoder = args.encoder
     
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
         self.test_dst = ActiveDataset(self.test_data, self.test_label)
     
-    def aggregate_and_gradient_calculation(self, pred_list, gt_one_hot_label):
-        pred = self.global_model(pred_list)
-        loss = self.criterion(pred, gt_one_hot_label)
-        pred_gradients_list = []
-        pred_gradients_list_clone = []
-        for ik in range(self.args.k):
-            _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
-            _gradients_clone = _gradients[0].detach().clone()
-            pred_gradients_list.append(_gradients)
-            pred_gradients_list_clone.append(_gradients_clone)
-        # self.global_backward(pred, loss)
-        return pred, loss, pred_gradients_list, pred_gradients_list_clone
+    # def aggregate_and_gradient_calculation(self, pred_list, gt_one_hot_label):
+    #     pred = self.global_model(pred_list)
+    #     loss = self.criterion(pred, gt_one_hot_label)
+    #     pred_gradients_list = []
+    #     pred_gradients_list_clone = []
+    #     for ik in range(self.args.k):
+    #         _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
+    #         _gradients_clone = _gradients[0].detach().clone()
+    #         pred_gradients_list.append(_gradients)
+    #         pred_gradients_list_clone.append(_gradients_clone)
+    #     # self.global_backward(pred, loss)
+    #     return pred, loss, pred_gradients_list, pred_gradients_list_clone
     
     def aggregate(self, pred_list, gt_one_hot_label):
         pred = self.global_model(pred_list)
         loss = self.criterion(pred, gt_one_hot_label)
+        # ########## for active mid model loss (start) ##########
+        if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+            for mid_loss in self.global_model.mid_loss_list:
+                loss = loss + mid_loss
+            self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+        # ########## for active mid model loss (end) ##########
         return pred, loss
     
     def gradient_calculation(self, pred, pred_list, loss):

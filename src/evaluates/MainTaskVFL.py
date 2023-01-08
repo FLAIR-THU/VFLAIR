@@ -109,9 +109,9 @@ class MainTaskVFL(object):
         # ######################## aggregate logits of clients ########################
 
         # defense applied on gradients
-        if self.args.apply_defense == True:
+        if self.args.apply_defense == True and self.args.apply_mid == False:
             self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
-        
+
         # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
@@ -120,7 +120,7 @@ class MainTaskVFL(object):
         self.parties[self.k-1].global_backward(pred, loss)
 
         predict_prob = F.softmax(pred, dim=-1)
-        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(gt_one_hot_label, dim=-1)).item()
+        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
 
@@ -267,6 +267,7 @@ class MainTaskVFL(object):
             return apply_defense(self.args, gradients_list)
         else:
             # further extention
+            return gradients_list
             pass
 
     def calc_label_recovery_rate(self, dummy_label, gt_label):
