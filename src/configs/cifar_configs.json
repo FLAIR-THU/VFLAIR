@@ -1,5 +1,6 @@
 {
     "k": 2,
+    "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "cifar100",
         "num_classes": 100,
@@ -27,6 +28,12 @@
             "party": [0],
             "lr": 0.01,
             "epochs": 3000
+        }
+    },
+    "defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "gradient_sparse_rate": 99.0
         }
     }
     

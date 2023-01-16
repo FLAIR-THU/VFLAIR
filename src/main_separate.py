@@ -92,15 +92,11 @@ if __name__ == '__main__':
     
     # if have inference time attack, use another VFL pipeline
     if args.apply_backdoor == True:
-        if args.apply_mid == True or args.apply_cae == True:
-            # TODO: what to do with mixed???
-            pass
-        else:
-            vfl = MainTaskVFLwithBackdoor(args)
-            # no other attacks, only backdoor attack, may change later
-            args.apply_attack = False
-    elif args.apply_mid == True or args.apply_cae == True:
-        vfl = MainTaskVFLwithMID(args)
+        vfl = MainTaskVFLwithBackdoor(args)
+        # no other attacks, only backdoor attack, may change later
+        args.apply_attack = False
+    # elif args.apply_mid == True or args.apply_cae == True:
+    #     vfl = MainTaskVFLwithMID(args)
     else:
         vfl = MainTaskVFL(args)
     vfl.train()

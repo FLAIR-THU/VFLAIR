@@ -48,7 +48,7 @@ class Party(object):
         self.prepare_data(args, index)
         self.prepare_model(args, index)
         # self.prepare_attacker(args, index)
-        self.prepare_defender(args, index)
+        # self.prepare_defender(args, index)
 
     def prepare_data(self, args, index):
         # prepare raw data for training
@@ -70,9 +70,9 @@ class Party(object):
     #     if index in args.attack_configs['party']:
     #         self.attacker = AttackerLoader(args, index, self.local_model)
 
-    def prepare_defender(self, args, index):
-        if index in args.attack_configs['party']:
-            self.defender = DefenderLoader(args, index)
+    # def prepare_defender(self, args, index):
+    #     if index in args.attack_configs['party']:
+    #         self.defender = DefenderLoader(args, index)
     
     def obtain_local_data(self, data):
         self.local_batch_data = data

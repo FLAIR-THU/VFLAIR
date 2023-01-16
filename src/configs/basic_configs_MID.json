@@ -3,6 +3,7 @@
     "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
+    "iteration_per_aggregation": 1,
     "num_exp": 10,
     "dataset":{
         "dataset_name": "mnist",
@@ -28,14 +29,15 @@
         "name": "BatchLabelReconstruction",
         "parameters": {
             "party": [0],
-            "lr": 0.01,
+            "lr": 0.05,
             "epochs": 3000
         }
     },
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
+            "party": [0],
+            "lr": 0.001,
             "lambda": 0.01
         }
     }

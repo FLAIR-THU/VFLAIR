@@ -104,13 +104,15 @@ class BatchLabelReconstruction(Attacker):
         self.vfl_info = top_vfl.first_epoch_state
         # prepare parameters
         self.device = args.device
+        self.num_classes = args.num_classes
+        self.k = args.k
         self.party = args.attack_configs['party'] # parties that launch attacks
         self.lr = args.attack_configs['lr']
         self.epochs = args.attack_configs['epochs']
         self.label_size = args.num_classes
-        self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(args.k*args.num_classes, args.num_classes).to(args.device)
+        self.dummy_active_top_trainable_model = None
         self.optimizer_trainable = None # construct later
-        self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(args.device)
+        self.dummy_active_top_non_trainable_model = None
         self.optimizer_non_trainable = None # construct later
         self.criterion = cross_entropy_for_onehot
         self.file_name = 'attack_result.txt'
@@ -139,21 +141,24 @@ class BatchLabelReconstruction(Attacker):
             print(pred_a.size())
             self_data = self.vfl_info['data'][ik][0]
             print(self_data.size())
-            original_dy = self.vfl_info['gradient'][ik]
-            print(original_dy.size())
+            # original_dy = self.vfl_info['gradient'][ik]
+            original_dy_dx = self.vfl_info['local_model_gradient'][ik]
             local_model = self.vfl_info['model'][ik]
             true_label = self.vfl_info['label']
             print(true_label.size())
             
             local_model_copy = copy.deepcopy(local_model)
-            new_pred_a = local_model_copy(self_data)
-            original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
+            local_model_copy.eval()
+            # new_pred_a = local_model_copy(self_data)
+            # original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
 
             sample_count = pred_a.size()[0]
             dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
             dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
 
+            self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
             self.optimizer_trainable = torch.optim.Adam([dummy_pred_b, dummy_label] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
+            self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(self.device)
             self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr)
 
 
@@ -165,14 +170,14 @@ class BatchLabelReconstruction(Attacker):
                 start_time = time.time()
                 for iters in range(1, self.epochs + 1):
                     # print(f"in BLR, i={i}, iter={iters}")
-                    local_model.eval()
+                    local_model_copy.eval()
                     may_converge = True
                     def closure():
                         optimizer.zero_grad()
-                        dummy_pred = dummy_model([local_model(self_data), dummy_pred_b])
+                        dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b])
                         dummy_onehot_label = F.softmax(dummy_label, dim=-1)
                         dummy_loss = self.criterion(dummy_pred, dummy_onehot_label)
-                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model.parameters(), create_graph=True)
+                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model_copy.parameters(), create_graph=True)
                         grad_diff = 0
                         # for e in dummy_dy_dx_a:
                         #     print(e.size(),"**")
@@ -180,16 +185,16 @@ class BatchLabelReconstruction(Attacker):
                         #     print(e.size(),"***")
                         for (gx, gy) in zip(dummy_dy_dx_a, original_dy_dx):
                             grad_diff += ((gx - gy) ** 2).sum()
-                            if grad_diff > 1e8:
-                                # may_converge = False
-                                break
+                            # if grad_diff > 1e8:
+                            #     # may_converge = False
+                            #     break
                         grad_diff.backward()
                         return grad_diff
                     optimizer.step(closure)
                     if may_converge == False:
                         print("may_not converge, break")
                         break
-                    local_model.eval()
+                    local_model_copy.eval()
                     
                     # if self.early_stop == True:
                     #     if closure().item() < self.early_stop_param:

@@ -3,9 +3,15 @@ sys.path.append(os.pardir)
 
 import random
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
+
 tp = transforms.ToTensor()
 transform = transforms.Compose(
     [transforms.ToTensor(),
@@ -16,6 +22,9 @@ transform_fn = transforms.Compose([
 ])
 
 from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data
+
+TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income']
+
 
 def horizontal_half(args, all_dataset):
     if args.dataset == 'mnist' or args.dataset == 'cifar100' or args.dataset == 'cifar10':
@@ -126,6 +135,60 @@ def load_dataset(args):
     return args
 
 
+def dataset_partition(args, index, dst, half_dim):
+    if args.dataset in ['mnist', 'cifar10', 'cifar100', 'cifar20']:
+        if args.k == 2:
+            if index == 0:
+                return (dst[0][:, :, :half_dim, :], None)
+            elif index == 1:
+                return (dst[0][:, :, half_dim:, :], dst[1])
+            else:
+                assert index <= 1, "invalide party index"
+                return None
+        elif args.k == 4:
+            if index == 3:
+                return (dst[0][:, :, half_dim:, half_dim:], dst[1])
+            else:
+                # passive party does not have label
+                if index == 0:
+                    return (dst[0][:, :, :half_dim, :half_dim], None)
+                elif index == 1:
+                    return (dst[0][:, :, :half_dim, half_dim:], None)
+                elif index == 2:
+                    return (dst[0][:, :, half_dim:, :half_dim], None)
+                else:
+                    assert index <= 3, "invalide party index"
+                    return None
+        else:
+            assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+            return None
+    elif args.dataset in TABULAR_DATA:
+        if args.k == 2:
+            if index == 0:
+                return (dst[0][:, :half_dim], None)
+            elif index == 1:
+                return (dst[0][:, half_dim:], dst[1])
+            else:
+                assert index <= 1, "invalide party index"
+                return None
+        elif args.k == 4:
+            half_dim = int(half_dim//2)
+            if index == 3:
+                return (dst[0][:, half_dim*3:], dst[1])
+            else:
+                # passive party does not have label
+                if index <= 2:
+                    return (dst[0][:, half_dim*index:half_dim*(index+1)], None)
+                else:
+                    assert index <= 3, "invalide party index"
+                    return None
+        else:
+            assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+            return None
+    else:
+        assert args.dataset == 'mnist', "dataset not supported"
+        return None
+
 def load_dataset_per_party(args, index):
     args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
@@ -172,6 +235,54 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (data, label)
+    elif args.dataset in TABULAR_DATA:
+        if args.dataset == 'breast_cancer_diagnose':
+            half_dim = 15
+            df = pd.read_csv("../../../share_dataset/BreastCancer/wdbc.data",header = 0)
+            X = df.iloc[:, 2:].values
+            y = df.iloc[:, 1].values
+            y = np.where(y=='B',0,1)
+            y = np.squeeze(y)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
+        elif args.dataset == 'diabetes':
+            half_dim = 4
+            df = pd.read_csv("../../../share_dataset/Diabetes/diabetes.csv",header = 0)
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
+        elif args.dataset == 'adult_income':
+            df = pd.read_csv("../../../share_dataset/Income/adult.csv",header = 0)
+            df = df.drop_duplicates()
+            encoder = OneHotEncoder()
+            # 'age', 'workclass', 'fnlwgt', 'education', 'educational-num',
+            # 'marital-status', 'occupation', 'relationship', 'race', 'gender',
+            # 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+            # 'income'
+            # category_columns_index = [1,3,5,6,7,8,9,13]
+            # num_category_of_each_column = [9,16,7,15,6,5,2,42]
+            category_columns = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'gender','native-country']
+            # encoder.fit(df.loc[:,category_columns])
+            # df.loc[:,category_columns] = encoder.transform(df.loc[:,category_columns])
+            for _column in category_columns:
+                # Get one hot encoding of columns B
+                one_hot = pd.get_dummies(df[_column], prefix=_column)
+                # Drop column B as it is now encoded
+                df = df.drop(_column,axis = 1)
+                # Join the encoded df
+                df = df.join(one_hot)
+            y = df['income'].values
+            y = np.where(y=='<=50K',0,1)
+            df = df.drop('income',axis=1)
+            X = df.values
+            half_dim = 6+9+16+7+15 #=53
+            # half_dim = int(X.shape[1]//2)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
+        X_train = torch.tensor(X_train)
+        X_test = torch.tensor(X_test)
+        y_train = torch.tensor(y_train)
+        y_test = torch.tensor(y_test)
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
     # elif args.dataset_name == 'nuswide':
     #     half_dim = [634, 1000]
     #     train_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'train')
@@ -184,36 +295,38 @@ def load_dataset_per_party(args, index):
     train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
     test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
 
-    if args.k == 2:
-        if index == 0:
-            # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
-            # passive party does not have label
-            train_dst = (train_dst[0][:, :, :half_dim, :], None)
-            test_dst = (test_dst[0][:, :, :half_dim, :], None)
-        elif index == 1:
-            train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
-            test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
-        else:
-            assert index <= 1, "invalide party index"
-    elif args.k == 4:
-        if index == 3:
-            train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
-            test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])         
-        else:
-            # passive party does not have label
-            if index == 0:
-                train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
-                test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
-            elif index == 1:
-                train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
-                test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
-            elif index == 2:
-                train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
-                test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
-            else:
-                assert index <= 3, "invalide party index"
-    else:
-        assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+    train_dst = dataset_partition(args,index,train_dst,half_dim)
+    test_dst = dataset_partition(args,index,test_dst,half_dim)
+    # if args.k == 2:
+    #     if index == 0:
+    #         # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
+    #         # passive party does not have label
+    #         train_dst = (train_dst[0][:, :, :half_dim, :], None)
+    #         test_dst = (test_dst[0][:, :, :half_dim, :], None)
+    #     elif index == 1:
+    #         train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
+    #         test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
+    #     else:
+    #         assert index <= 1, "invalide party index"
+    # elif args.k == 4:
+    #     if index == 3:
+    #         train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
+    #         test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])         
+    #     else:
+    #         # passive party does not have label
+    #         if index == 0:
+    #             train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
+    #             test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
+    #         elif index == 1:
+    #             train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
+    #             test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
+    #         elif index == 2:
+    #             train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
+    #             test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
+    #         else:
+    #             assert index <= 3, "invalide party index"
+    # else:
+    #     assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
     
     # important
     return args, half_dim, train_dst, test_dst
@@ -224,7 +337,6 @@ def prepare_poison_target_list(args):
 def load_dataset_per_party_backdoor(args, index):
     args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
-
 
     half_dim = -1
     if args.dataset == "cifar100":
@@ -325,48 +437,52 @@ def load_dataset_per_party_backdoor(args, index):
     train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
     test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
 
-    if args.k == 2:
-        if index == 0:
-            # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
-            # passive party does not have label
-            train_dst = (train_dst[0][:, :, :half_dim, :], None)
-            test_dst = (test_dst[0][:, :, :half_dim, :], None)
-            train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :], None)
-            test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :], None)
-        elif index == 1:
-            train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
-            test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
-            train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :], train_poison_dst[1])
-            test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :], test_poison_dst[1])
-        else:
-            assert index <= 1, "invalide party index"
-    elif args.k == 4:
-        if index == 3:
-            train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
-            test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])
-            train_poison_dst = (train_poison_dst[0][:, :, half_dim:, half_dim:], train_poison_dst[1])
-            test_poison_dst = (test_poison_dst[0][:, :, half_dim:, half_dim:], test_poison_dst[1])         
-        else:
-            # passive party does not have label
-            if index == 0:
-                train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
-                test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
-                train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :half_dim], None)
-                test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :half_dim], None)
-            elif index == 1:
-                train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
-                test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
-                train_poison_dst = (train_poison_dst[0][:, :, :half_dim, half_dim:], None)
-                test_poison_dst = (test_poison_dst[0][:, :, :half_dim, half_dim:], None)
-            elif index == 2:
-                train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
-                test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
-                train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :half_dim], None)
-                test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :half_dim], None)
-            else:
-                assert index <= 3, "invalide party index"
-    else:
-        assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+    train_dst = dataset_partition(args,index,train_dst,half_dim)
+    test_dst = dataset_partition(args,index,test_dst,half_dim)
+    train_poison_dst = dataset_partition(args,index,train_poison_dst,half_dim)
+    test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
+    # if args.k == 2:
+    #     if index == 0:
+    #         # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
+    #         # passive party does not have label
+    #         train_dst = (train_dst[0][:, :, :half_dim, :], None)
+    #         test_dst = (test_dst[0][:, :, :half_dim, :], None)
+    #         train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :], None)
+    #         test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :], None)
+    #     elif index == 1:
+    #         train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
+    #         test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
+    #         train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :], train_poison_dst[1])
+    #         test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :], test_poison_dst[1])
+    #     else:
+    #         assert index <= 1, "invalide party index"
+    # elif args.k == 4:
+    #     if index == 3:
+    #         train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
+    #         test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])
+    #         train_poison_dst = (train_poison_dst[0][:, :, half_dim:, half_dim:], train_poison_dst[1])
+    #         test_poison_dst = (test_poison_dst[0][:, :, half_dim:, half_dim:], test_poison_dst[1])         
+    #     else:
+    #         # passive party does not have label
+    #         if index == 0:
+    #             train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
+    #             test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
+    #             train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :half_dim], None)
+    #             test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :half_dim], None)
+    #         elif index == 1:
+    #             train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
+    #             test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
+    #             train_poison_dst = (train_poison_dst[0][:, :, :half_dim, half_dim:], None)
+    #             test_poison_dst = (test_poison_dst[0][:, :, :half_dim, half_dim:], None)
+    #         elif index == 2:
+    #             train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
+    #             test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
+    #             train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :half_dim], None)
+    #             test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :half_dim], None)
+    #         else:
+    #             assert index <= 3, "invalide party index"
+    # else:
+    #     assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
     
     # important
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst, args.train_target_list, args.test_target_list
