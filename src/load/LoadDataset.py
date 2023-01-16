@@ -274,8 +274,9 @@ def load_dataset_per_party(args, index):
             y = np.where(y=='<=50K',0,1)
             df = df.drop('income',axis=1)
             X = df.values
-            half_dim = 6+9+16+7+15 #=53
-            # half_dim = int(X.shape[1]//2)
+            half_dim = 6+9 #=15 acc=0.83
+            # half_dim = 6+9+16+7+15 #=53 acc=0.77
+            # half_dim = int(X.shape[1]//2) acc=0.77
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
