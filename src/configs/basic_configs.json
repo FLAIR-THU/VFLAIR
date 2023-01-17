@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
@@ -29,7 +29,7 @@
         "name": "BatchLabelReconstruction",
         "parameters": {
             "party": [0],
-            "lr": 0.001,
+            "lr": 1,
             "epochs": 10000
         }
     },

@@ -123,12 +123,24 @@ class BatchLabelReconstruction(Attacker):
         #     os.makedirs(self.exp_res_dir)
         # self.exp_res_path = self.exp_res_dir + self.file_name
     
+    def set_seed(self,seed=0):
+        # random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = True
+
     def calc_label_recovery_rate(self, dummy_label, gt_label):
         success = torch.sum(torch.argmax(dummy_label, dim=-1) == torch.argmax(gt_label, dim=-1)).item()
         total = dummy_label.shape[0]
         return success / total
 
+
     def attack(self):
+        self.set_seed(100)
         for ik in self.party:
             index = ik
             self.exp_res_dir = self.exp_res_dir + f'attack/BLR/{index}/'
@@ -153,19 +165,27 @@ class BatchLabelReconstruction(Attacker):
             # original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
 
             sample_count = pred_a.size()[0]
-            dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-            dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+            dummy_pred_b_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+            dummy_label_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+            dummy_pred_b_no_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+            dummy_label_no_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
 
             self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
-            self.optimizer_trainable = torch.optim.Adam([dummy_pred_b, dummy_label] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
+            self.optimizer_trainable = torch.optim.Adam([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
+            # self.optimizer_trainable = torch.optim.SGD([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
             self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(self.device)
-            self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr)
+            self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
+            # self.optimizer_non_trainable = torch.optim.SGD([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
 
 
             recovery_history = []
             recovery_rate_history = [[], []]
             # passive party does not whether
-            for i, (dummy_model, optimizer) in enumerate(zip([self.dummy_active_top_trainable_model,self.dummy_active_top_non_trainable_model],[self.optimizer_trainable,self.optimizer_non_trainable])):
+            for i, (dummy_model, optimizer, dummy_pred_b, dummy_label) in \
+                        enumerate(zip([self.dummy_active_top_non_trainable_model,self.dummy_active_top_trainable_model],\
+                                    [self.optimizer_non_trainable,self.optimizer_trainable],\
+                                    [dummy_pred_b_no_top_trainabel_model,dummy_pred_b_top_trainabel_model],\
+                                    [dummy_label_no_top_trainabel_model,dummy_label_top_trainabel_model])):
                 print(f"BLI iteration {i}")
                 start_time = time.time()
                 for iters in range(1, self.epochs + 1):
@@ -201,6 +221,8 @@ class BatchLabelReconstruction(Attacker):
                     #         break
                 print("appending dummy_label")
                 recovery_history.append(dummy_label)
+
+                print(dummy_label, true_label)
 
                 rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
                 recovery_rate_history[i].append(rec_rate)

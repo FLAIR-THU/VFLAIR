@@ -262,7 +262,11 @@ class MainTaskVFLwithBackdoor(object):
         # else:
         #     exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
         
-        exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
+        if self.args.apply_defense:
+            exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'
+        else:
+            exp_result = 'NoDefense::'
+        exp_result = exp_result + f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
