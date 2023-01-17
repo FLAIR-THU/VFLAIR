@@ -68,6 +68,8 @@ def load_configs(config_file_name, args):
     # if attacker appears
     args.apply_attack = False
     args.apply_backdoor = False
+    args.apply_mid = False
+    args.apply_cae = False
     if 'attack' in config_dict:
         if 'name' in config_dict['attack']:
             args.apply_attack = True
@@ -84,6 +86,10 @@ def load_configs(config_file_name, args):
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
+            if 'mid' in args.defense_name.casefold():
+                args.apply_mid = True
+            elif 'cae' in args.defense_name.casefold():
+                args.apply_cae = True
         else:
             assert 'name' in config_dict['defense'], "missing defense name"
 

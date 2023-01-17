@@ -230,16 +230,23 @@ def GaussianDP(args, original_object):
 def GradientSparsification(args, original_object):
     original_object = original_object[0]
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
-    with torch.no_grad():
-    #     percent = grad_spars_ratio / 100.0 # percent to drop
-    #     if self.gradients_res_a is not None and \
-    #             pred_a_gradients_clone.shape[0] == self.gradients_res_a.shape[0]:
-    #         pred_a_gradients_clone = pred_a_gradients_clone + self.gradients_res_a
-        a_thr = torch.quantile(torch.abs(pred_a_gradients_clone), percent)
-        self.gradients_res_a = torch.where(torch.abs(pred_a_gradients_clone).double() < a_thr.item(),
-                                                pred_a_gradients_clone.double(), float(0.)).to(args.device)
-        pred_a_gradients_clone = pred_a_gradients_clone - self.gradients_res_a
-    return original_object
+    while grad_spars_ratio > 1.0:
+        grad_spars_ratio = grad_spars_ratio / 100.0
+    if grad_spars_ratio < 1.0:
+        new_object = []
+        with torch.no_grad():
+        #     percent = grad_spars_ratio / 100.0 # percent to drop
+        #     if self.gradients_res_a is not None and \
+        #             pred_a_gradients_clone.shape[0] == self.gradients_res_a.shape[0]:
+        #         pred_a_gradients_clone = pred_a_gradients_clone + self.gradients_res_a
+            for ik in range(len(original_object)):
+                a_thr = torch.quantile(torch.abs(original_object[ik]), grad_spars_ratio)
+                gradients_res_a = torch.where(torch.abs(original_object[ik]).double() < a_thr.item(),
+                                                        original_object[ik].double(), float(0.)).to(args.device)
+                new_object.append(original_object[ik] - gradients_res_a)
+        return new_object
+    else:
+        return original_object
 
     # TODO
     # ######################## defense start ############################

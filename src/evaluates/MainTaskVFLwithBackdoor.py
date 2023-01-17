@@ -74,16 +74,13 @@ class MainTaskVFLwithBackdoor(object):
         return onehot_target
 
     def train_batch(self, parties_data, batch_label):
-        # encoder = self.encoder
-        # if self.apply_encoder:
-        #     if encoder:
-        #         _, gt_one_hot_label = encoder(batch_label)
-        #     else:
-        #         assert(encoder != None)
-        # else:
-        #     gt_one_hot_label = batch_label
+        encoder = self.args.encoder
+        if self.args.apply_cae:
+            assert encoder != None, "[error] encoder is None for CAE"
+            _, gt_one_hot_label = encoder(batch_label)              
+        else:
+            gt_one_hot_label = batch_label
         # print('current_label:', gt_one_hot_label)
-        gt_one_hot_label = batch_label
 
         # ====== normal vertical federated learning ======
 
@@ -112,7 +109,7 @@ class MainTaskVFLwithBackdoor(object):
         # ######################## aggregate logits of clients ########################
 
         # defense applied on gradients
-        if self.args.apply_defense == True:
+        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
             self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
         
         # ######### for backdoor start #########
@@ -128,11 +125,19 @@ class MainTaskVFLwithBackdoor(object):
         self.parties[self.k-1].global_backward(pred, loss)
 
         predict_prob = F.softmax(pred, dim=-1)
-        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(gt_one_hot_label, dim=-1)).item()
+        if self.args.apply_cae:
+            predict_prob = self.parties[ik].encoder.decoder(predict_prob)
+        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
 
     def train(self):
+        self.exp_res_dir = self.exp_res_dir + f'Backdoor/{self.k}/'
+        if not os.path.exists(self.exp_res_dir):
+            os.makedirs(self.exp_res_dir)
+        filename = self.exp_res_path.split("/")[-1]
+        self.exp_res_path = self.exp_res_dir + filename
+        print(f"self.exp_res_path={self.exp_res_path}")
 
         print_every = 1
 
@@ -205,12 +210,12 @@ class MainTaskVFLwithBackdoor(object):
                         test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
-                        # if self.apply_encoder:
-                        #     dec_predict_prob = self.encoder.decoder(enc_predict_prob)
-                        #     predict_label = torch.argmax(dec_predict_prob, dim=-1)
-                        # else:
-                        #     predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                        predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                        if self.args.apply_cae == True:
+                            dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                            predict_label = torch.argmax(dec_predict_prob, dim=-1)
+                        else:
+                            predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                        # predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
                         # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
                         actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
@@ -257,7 +262,11 @@ class MainTaskVFLwithBackdoor(object):
         # else:
         #     exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
         
-        exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.test_acc, self.backdoor_acc)
+        if self.args.apply_defense:
+            exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'
+        else:
+            exp_result = 'NoDefense::'
+        exp_result = exp_result + f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         

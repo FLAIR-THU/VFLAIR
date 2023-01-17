@@ -3,6 +3,7 @@
     "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
+    "iteration_per_aggregation": 1,
     "num_exp": 10,
     "dataset":{
         "dataset_name": "mnist",
@@ -28,8 +29,14 @@
         "name": "BatchLabelReconstruction",
         "parameters": {
             "party": [0],
-            "lr": 0.01,
-            "epochs": 3000
+            "lr": 1,
+            "epochs": 10000
+        }
+    },
+    "defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "gradient_sparse_rate": 100.0
         }
     }
 }

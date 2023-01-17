@@ -48,7 +48,7 @@ class Party(object):
         self.prepare_data(args, index)
         self.prepare_model(args, index)
         # self.prepare_attacker(args, index)
-        self.prepare_defender(args, index)
+        # self.prepare_defender(args, index)
 
     def prepare_data(self, args, index):
         # prepare raw data for training
@@ -70,9 +70,9 @@ class Party(object):
     #     if index in args.attack_configs['party']:
     #         self.attacker = AttackerLoader(args, index, self.local_model)
 
-    def prepare_defender(self, args, index):
-        if index in args.attack_configs['party']:
-            self.defender = DefenderLoader(args, index)
+    # def prepare_defender(self, args, index):
+    #     if index in args.attack_configs['party']:
+    #         self.defender = DefenderLoader(args, index)
     
     def obtain_local_data(self, data):
         self.local_batch_data = data
@@ -88,6 +88,11 @@ class Party(object):
     def local_backward(self, gradient, local_pred):
         # update local model
         self.local_model_optimizer.zero_grad()
+        # ########## for passive local mid loss (start) ##########
+        if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']) and (self.index < self.args.k-1):
+            self.local_model.mid_loss.backward(retain_graph=True)
+            self.local_model.mid_loss = torch.empty((1,1)).to(self.args.device)
+        # ########## for passive local mid loss (end) ##########
         self.weights_grad_a = torch.autograd.grad(local_pred, self.local_model.parameters(), grad_outputs=gradient, retain_graph=True)
         for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
             if w.requires_grad:
