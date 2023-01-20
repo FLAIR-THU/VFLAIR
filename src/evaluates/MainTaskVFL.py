@@ -97,29 +97,31 @@ class MainTaskVFL(object):
         torch.autograd.set_detect_anomaly(True)
         # == FedBCD ==
         for q in range(self.Q):
-            for ik in range(self.k):
-                if q == 0: # before first iteration, Exchange information between party 1,2...k
+            print('inner iteration q=',q)
+            if q == 0: #before first iteration, Exchange party 1,2...k
+                for ik in range(self.k):
                     # compute logits of clients
                     self.parties[ik].obtain_local_data(parties_data[ik][0])
                     self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
                     self.pred_list_clone.append(self.pred_list[ik].detach().clone())
                     self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
                 
-                    # ######################## aggregate logits of clients ########################
-                    pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
-                    self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-                    # ######################## aggregate logits of clients ########################
+                # ######################## aggregate logits of clients ########################
+                pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
+                self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
+                # ######################## aggregate logits of clients ########################
                     
-                    # defense applied on gradients
-                    if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-                        self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
+                # defense applied on gradients
+                if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+                    self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
                     
-                    # update parameters for all parties
-                    for ik in range(self.k):
-                        self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
-                    self.parties[self.k-1].global_backward(pred, loss)
+                # update parameters for all parties
+                for ik in range(self.k):
+                    self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
+                self.parties[self.k-1].global_backward(pred, loss)
                 
-                else: # FedBCD: in other iterations, no communication happen, no defense&attack
+            else: # FedBCD: in other iterations, no communication happen, no defense&attack
+                for ik in range(self.k):
                     if ik == self.k-1:
                         ############### Party k: uses old data transfered from the other parties ###############
                         # the intermediate information obtained from the most recent synchronization: 
@@ -127,8 +129,8 @@ class MainTaskVFL(object):
                         self.local_pred_list_clone = self.pred_list_clone
                         # update logits of Party k
                         self.local_pred_list[self.k-1] = self.parties[self.k-1].local_model(parties_data[self.k-1][0])
-                        self.local_pred_list_clone[self.k-1] = self.local_pred_list[[self.k-1]].detach().clone()
-                        self.local_pred_list_clone[[self.k-1]] = torch.autograd.Variable(self.local_pred_list_clone[[self.k-1]], requires_grad=True).to(self.device)
+                        self.local_pred_list_clone[self.k-1] = self.local_pred_list[self.k-1].detach().clone()
+                        self.local_pred_list_clone[self.k-1] = torch.autograd.Variable(self.local_pred_list_clone[self.k-1], requires_grad=True).to(self.device)
                         # Party k: aggregate logits of clients ####
                         pred, loss = self.parties[self.k-1].aggregate(self.local_pred_list_clone, gt_one_hot_label)
                         self.local_pred_gradients_list, self.local_pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
@@ -136,16 +138,14 @@ class MainTaskVFL(object):
                         # update parameters for Party k
                         self.parties[self.k-1].local_backward(self.local_pred_gradients_list_clone[self.k-1], self.pred_list[self.k-1])
                         self.parties[self.k-1].global_backward(pred, loss)
-
                     else:
-                        ############### Party 1~k-1: use the original gradient ###############
+                        ############### Party 1~k-1: uses the original gradient ###############
                         # the intermediate information obtained from the most recent synchronization: 
                         # self.pred_gradients_list_clone
 
                         # update parameters for Party 1~k-1
-                        for ik in range(self.k-1):
-                            local_pred = self.parties[ik].local_model(parties_data[ik][0])
-                            self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], local_pred)
+                        local_pred = self.parties[ik].local_model(parties_data[ik][0])
+                        self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], local_pred)
 
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
