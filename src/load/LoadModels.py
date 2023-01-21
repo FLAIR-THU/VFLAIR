@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 
 from models.vision import *
+from models.gcn import *
 from models.model_templates import *
 from models.autoencoder import *
 
@@ -21,12 +22,15 @@ def load_models(args):
 
 def load_basic_models(args,index):
     current_model_type = args.model_list[str(index)]['type']
-    current_input_dim = args.model_list[str(index)]['input_dim']
+    current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
+    current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
     if 'resnet' in current_model_type:
         local_model = globals()[current_model_type](current_output_dim)
+    elif 'gcn' in current_model_type.lower():
+        local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)
     else:
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)

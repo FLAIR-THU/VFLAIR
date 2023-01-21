@@ -7,6 +7,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,precision_score,roc_curve,auc,average_precision_score,log_loss
+from copy import deepcopy, copy
 
 import torch
 from torchvision import datasets
@@ -22,9 +24,11 @@ transform_fn = transforms.Compose([
 ])
 
 from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data
+from utils.cora_utils import *
+from utils.graph_functions import load_data1, split_graph
 
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income']
-
+GRAPH_DATA = ['cora']
 
 def horizontal_half(args, all_dataset):
     if args.dataset == 'mnist' or args.dataset == 'cifar100' or args.dataset == 'cifar10':
@@ -139,9 +143,11 @@ def dataset_partition(args, index, dst, half_dim):
     if args.dataset in ['mnist', 'cifar10', 'cifar100', 'cifar20']:
         if args.k == 2:
             if index == 0:
-                return (dst[0][:, :, :half_dim, :], None)
+                # return (dst[0][:, :, :half_dim, :], None)
+                return (dst[0][:, :, half_dim:, :], None)
             elif index == 1:
-                return (dst[0][:, :, half_dim:, :], dst[1])
+                # return (dst[0][:, :, half_dim:, :], dst[1])
+                return (dst[0][:, :, :half_dim, :], dst[1])
             else:
                 assert index <= 1, "invalide party index"
                 return None
@@ -185,6 +191,24 @@ def dataset_partition(args, index, dst, half_dim):
         else:
             assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
             return None
+    elif args.dataset in GRAPH_DATA: #args.dataset == 'cora':
+        assert args.k == 2, 'more than 2 party is not supported for cora'
+        if index == 0:
+            A_A, A_B, X_A, X_B = split_graph(args, dst[0][0], dst[0][1], split_method='com', split_ratio=0.5, with_s=True, with_f=True)
+            A_A = normalize_adj(A_A)
+            A_B = normalize_adj(A_B)
+            # print(type(A_A),type(A_B),type(X_A),type(X_B))
+            A_A = sparse_mx_to_torch_sparse_tensor(A_A).to(args.device)
+            args.A_B = sparse_mx_to_torch_sparse_tensor(A_B).to(args.device)
+            X_A = sparse_mx_to_torch_sparse_tensor(X_A).to(args.device)
+            args.X_B = sparse_mx_to_torch_sparse_tensor(X_B).to(args.device)
+            args.half_dim = [X_A.shape[1], X_B.shape[1]]
+            # print(args.half_dim)
+            return ([A_A,X_A],None), args
+        elif index == 1:
+            return ([args.A_B,args.X_B],dst[1]), args
+        else:
+            assert index <= 1, 'invalid party index'
     else:
         assert args.dataset == 'mnist', "dataset not supported"
         return None
@@ -229,12 +253,32 @@ def load_dataset_per_party(args, index):
         train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
-        print(type(data),type(data[0]),type(label))
         train_dst = (data, label)
         test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (data, label)
+    elif args.dataset in GRAPH_DATA:
+        if args.dataset == 'cora':
+            adj, features, idx_train, idx_val, idx_test, label = load_data1(args.dataset)
+            target_nodes = idx_test
+            A = np.array(adj.todense())
+            X = sparse_to_tuple(features.tocoo())
+            # print(type(adj), type(features), type(label))
+            idx_train = torch.LongTensor(idx_train)
+            idx_test = torch.LongTensor(idx_test)
+            label = torch.LongTensor(label).to(args.device)
+            train_dst = ([adj, features], label)
+            test_dst = ([adj, features,target_nodes], label)
+            # test_dst = (torch.tensor([adj.to(args.device), features.to(args.device), target_nodes]),label)
+            # adj = normalize_adj(adj)
+            # adj = sparse_mx_to_torch_sparse_tensor(adj)
+            # features = sparse_mx_to_torch_sparse_tensor(features)
+            # idx_train = torch.LongTensor(idx_train)
+            # idx_val = torch.LongTensor(idx_val)
+            # idx_test = torch.LongTensor(idx_test)
+            # labels = torch.LongTensor(labels)
+        half_dim = -1
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
             half_dim = 15
@@ -293,41 +337,14 @@ def load_dataset_per_party(args, index):
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
-    train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
-    test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
-
-    train_dst = dataset_partition(args,index,train_dst,half_dim)
-    test_dst = dataset_partition(args,index,test_dst,half_dim)
-    # if args.k == 2:
-    #     if index == 0:
-    #         # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
-    #         # passive party does not have label
-    #         train_dst = (train_dst[0][:, :, :half_dim, :], None)
-    #         test_dst = (test_dst[0][:, :, :half_dim, :], None)
-    #     elif index == 1:
-    #         train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
-    #         test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
-    #     else:
-    #         assert index <= 1, "invalide party index"
-    # elif args.k == 4:
-    #     if index == 3:
-    #         train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
-    #         test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])         
-    #     else:
-    #         # passive party does not have label
-    #         if index == 0:
-    #             train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
-    #             test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
-    #         elif index == 1:
-    #             train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
-    #             test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
-    #         elif index == 2:
-    #             train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
-    #             test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
-    #         else:
-    #             assert index <= 3, "invalide party index"
-    # else:
-    #     assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+    if not args.dataset in GRAPH_DATA:
+        train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
+        test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+        train_dst = dataset_partition(args,index,train_dst,half_dim)
+        test_dst = dataset_partition(args,index,test_dst,half_dim)
+    else:
+        train_dst, args = dataset_partition(args,index,train_dst,half_dim)
+        test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
     
     # important
     return args, half_dim, train_dst, test_dst

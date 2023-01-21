@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import time
 import numpy as np
 import copy
+import pickle 
 
 from evaluates.attacks.attacker import Attacker
 from models.model_templates import ClassificationModelHostHead, ClassificationModelHostTrainableHead
@@ -156,47 +157,64 @@ class BatchLabelReconstruction(Attacker):
             # original_dy = self.vfl_info['gradient'][ik]
             original_dy_dx = self.vfl_info['local_model_gradient'][ik]
             local_model = self.vfl_info['model'][ik]
+
+            # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
+            
             true_label = self.vfl_info['label']
             print(true_label.size())
             
             local_model_copy = copy.deepcopy(local_model)
+            local_model = local_model.to(self.device)
             local_model_copy.eval()
             # new_pred_a = local_model_copy(self_data)
             # original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
 
             sample_count = pred_a.size()[0]
-            dummy_pred_b_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-            dummy_label_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-            dummy_pred_b_no_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-            dummy_label_no_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+            # dummy_pred_b_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+            # dummy_label_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+            # dummy_pred_b_no_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+            # dummy_label_no_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
 
-            self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
-            self.optimizer_trainable = torch.optim.Adam([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
-            # self.optimizer_trainable = torch.optim.SGD([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
-            self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(self.device)
-            self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
-            # self.optimizer_non_trainable = torch.optim.SGD([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
+            # self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
+            # self.optimizer_trainable = torch.optim.Adam([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
+            # # self.optimizer_trainable = torch.optim.SGD([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
+            # self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(self.device)
+            # self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
+            # # self.optimizer_non_trainable = torch.optim.SGD([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
 
 
             recovery_history = []
             recovery_rate_history = [[], []]
             # passive party does not whether
-            for i, (dummy_model, optimizer, dummy_pred_b, dummy_label) in \
-                        enumerate(zip([self.dummy_active_top_non_trainable_model,self.dummy_active_top_trainable_model],\
-                                    [self.optimizer_non_trainable,self.optimizer_trainable],\
-                                    [dummy_pred_b_no_top_trainabel_model,dummy_pred_b_top_trainabel_model],\
-                                    [dummy_label_no_top_trainabel_model,dummy_label_top_trainabel_model])):
-                print(f"BLI iteration {i}")
+            # for i, (dummy_model, optimizer, dummy_pred_b, dummy_label) in \
+            #             enumerate(zip([self.dummy_active_top_non_trainable_model,self.dummy_active_top_trainable_model],\
+            #                         [self.optimizer_non_trainable,self.optimizer_trainable],\
+            #                         [dummy_pred_b_no_top_trainabel_model,dummy_pred_b_top_trainabel_model],\
+            #                         [dummy_label_no_top_trainabel_model,dummy_label_top_trainabel_model])):
+            for i in range(2):
+                if i == 0: #non_trainable_top_model
+                    dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+                    dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+                    dummy_model = ClassificationModelHostHead().to(self.device)
+                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr)
+                else:
+                    assert i == 1 #trainable_top_model
+                    dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+                    dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+                    dummy_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
+                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label] + list(dummy_model.parameters()), lr=self.lr)
+
+                print(f"BLI iteration for type{i}")
                 start_time = time.time()
                 for iters in range(1, self.epochs + 1):
                     # print(f"in BLR, i={i}, iter={iters}")
-                    local_model_copy.eval()
-                    may_converge = True
                     def closure():
                         optimizer.zero_grad()
                         dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b])
+                        
                         dummy_onehot_label = F.softmax(dummy_label, dim=-1)
                         dummy_loss = self.criterion(dummy_pred, dummy_onehot_label)
+                        # print(f"dummy_predict={dummy_pred},dummy_onehot_label={dummy_onehot_label},dummy_loss={dummy_loss}")
                         dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model_copy.parameters(), create_graph=True)
                         grad_diff = 0
                         # for e in dummy_dy_dx_a:
@@ -208,13 +226,13 @@ class BatchLabelReconstruction(Attacker):
                             # if grad_diff > 1e8:
                             #     # may_converge = False
                             #     break
+                        # print(f"grad_diff={grad_diff}")
                         grad_diff.backward()
                         return grad_diff
+                    
+                    # rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
+                    # print(f"iter={iter}::rec_rate={rec_rate}")
                     optimizer.step(closure)
-                    if may_converge == False:
-                        print("may_not converge, break")
-                        break
-                    local_model_copy.eval()
                     
                     # if self.early_stop == True:
                     #     if closure().item() < self.early_stop_param:

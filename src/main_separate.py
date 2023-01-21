@@ -99,7 +99,10 @@ if __name__ == '__main__':
     #     vfl = MainTaskVFLwithMID(args)
     else:
         vfl = MainTaskVFL(args)
-    vfl.train()
+    if args.dataset not in ['cora']:
+        vfl.train()
+    else:
+        vfl.train_graph()
 
     if args.apply_attack == True:
         vfl.evaluate_attack()

@@ -62,6 +62,7 @@ class MainTaskVFL(object):
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
     def label_to_one_hot(self, target, num_classes=10):
+        # print('label_to_one_hot:', target, type(target))
         try:
             _ = target.size()[1]
             # print("use target itself", target.size())
@@ -157,13 +158,19 @@ class MainTaskVFL(object):
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
                 
-                self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
+                self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
             
                 if i == 0 and i_epoch == 0:
                     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state.update(self.save_state(False))
+                
+                # if i == 0 and i_epoch == 0:
+                #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+                #     self.first_epoch_state = self.save_state()
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state = self.save_state()
 
             # validation
             if (i + 1) % print_every == 0:
@@ -238,7 +245,102 @@ class MainTaskVFL(object):
         
         return test_acc
 
-    def save_state(self, BEFORE_MODEL_UPDATE):
+
+    def train_graph(self):
+        test_acc = 0.0
+        for i_epoch in range(self.epochs):
+            # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
+            postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
+            # data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
+            # data_loader_list.append(tqdm_train)
+            self.parties_data = [(self.parties[ik].train_data, self.parties[ik].train_label) for ik in range(self.k)]
+            for ik in range(self.k):
+                self.parties[ik].local_model.train()
+            self.parties[self.k-1].global_model.train()
+
+            # print("train", self.parties_data[0][0].size(),self.parties_data[self.k-1][0].size(),self.parties_data[self.k-1][1].size())
+            # print("train", self.parties_data[self.k-1][1])
+            # print("train", type(self.parties_data[self.k-1][1]))
+            self.gt_one_hot_label = self.label_to_one_hot(self.parties_data[self.k-1][1], self.num_classes)
+            self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
+            # print("parties' data have size:", self.parties_data[0][0].size(), parties_data[self.k-1][0].size(), parties_data[self.k-1][1].size())
+            # ====== train batch ======
+            
+            # if i == 0 and i_epoch == 0:
+            #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+            #     self.first_epoch_state = self.save_state(True)
+            # elif i_epoch == self.epochs//2 and i == 0:
+            #     self.middle_epoch_state = self.save_state(True)
+            
+            self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
+        
+            # if i == 0 and i_epoch == 0:
+            #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+            #     self.first_epoch_state.update(self.save_state(False))
+            # elif i_epoch == self.epochs//2 and i == 0:
+            #     self.middle_epoch_state.update(self.save_state(False))
+
+
+            # validation
+            print("validate and test")
+            for ik in range(self.k):
+                self.parties[ik].local_model.eval()
+            self.parties[self.k-1].global_model.eval()
+            
+            suc_cnt = 0
+            sample_cnt = 0
+            with torch.no_grad():
+                # enc_result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
+                # result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
+                parties_data = [(self.parties[ik].test_data, self.parties[ik].test_label) for ik in range(self.k)]
+                
+                gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
+                gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
+
+                pred_list = []
+                for ik in range(self.k):
+                    pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+                test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
+
+                enc_predict_prob = F.softmax(test_logit, dim=-1)
+                if self.args.apply_cae == True:
+                    dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                    predict_label = torch.argmax(dec_predict_prob, dim=-1)
+                else:
+                    predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                # predict_label = torch.argmax(enc_predict_prob, dim=-1)
+
+                # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
+                predict_label = predict_label[parties_data[self.k-1][0][2]]
+                actual_label = actual_label[parties_data[self.k-1][0][2]]
+                
+                sample_cnt += predict_label.shape[0]
+                suc_cnt += torch.sum(predict_label == actual_label).item()
+                self.test_acc = suc_cnt / float(sample_cnt)
+                postfix['train_loss'] = self.loss
+                postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
+                postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+                # tqdm_train.set_postfix(postfix)
+                print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
+                    i_epoch, self.loss, self.train_acc, self.test_acc))
+        
+        if self.args.apply_cae == True:
+            exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
+        elif self.args.apply_mid == True:
+            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
+        else:
+            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
+        append_exp_res(self.exp_res_path, exp_result)
+        print(exp_result)
+        
+        return test_acc
+
+
+
+
+
+    def save_state(self, BEFORE_MODEL_UPDATE=True):
         if BEFORE_MODEL_UPDATE:
             return {
                 "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
@@ -254,6 +356,16 @@ class MainTaskVFL(object):
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss)
             }
+        # return {
+        #         "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+        #         "data": copy.deepcopy(self.parties_data), 
+        #         "label": copy.deepcopy(self.gt_one_hot_label),
+        #         "predict": copy.deepcopy(self.pred_list_clone),
+        #         "gradient": copy.deepcopy(self.pred_gradients_list_clone),
+        #         "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+        #         "train_acc": copy.deepcopy(self.train_acc),
+        #         "loss": copy.deepcopy(self.loss)
+        #     }
 
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)
