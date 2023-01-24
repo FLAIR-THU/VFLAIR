@@ -101,6 +101,7 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 class BatchLabelReconstruction(Attacker):
     def __init__(self, top_vfl, args):
         super().__init__(args)
+        self.args = args
         # get information for launching BLI attack
         self.vfl_info = top_vfl.first_epoch_state
         # prepare parameters
@@ -117,7 +118,7 @@ class BatchLabelReconstruction(Attacker):
         self.optimizer_non_trainable = None # construct later
         self.criterion = cross_entropy_for_onehot
         self.file_name = 'attack_result.txt'
-        self.exp_res_dir = ''
+        self.exp_res_dir = f'exp_result/main/{args.dataset}/attack/BLR/'
         self.exp_res_path = ''
         # self.exp_res_dir = args.exp_res_dir + f'attack/BLR/{self.index}/'
         # if not os.path.exists(self.exp_res_dir):
@@ -144,16 +145,16 @@ class BatchLabelReconstruction(Attacker):
         self.set_seed(100)
         for ik in self.party:
             index = ik
-            self.exp_res_dir = self.exp_res_dir + f'attack/BLR/{index}/'
+            self.exp_res_dir = self.exp_res_dir + f'{index}/'
             if not os.path.exists(self.exp_res_dir):
                 os.makedirs(self.exp_res_dir)
             self.exp_res_path = self.exp_res_dir + self.file_name
             
             # collect necessary information
             pred_a = self.vfl_info['predict'][ik]        
-            print(pred_a.size())
+            # print(pred_a.size())
             self_data = self.vfl_info['data'][ik][0]
-            print(self_data.size())
+            # print(self_data.size())
             # original_dy = self.vfl_info['gradient'][ik]
             original_dy_dx = self.vfl_info['local_model_gradient'][ik]
             local_model = self.vfl_info['model'][ik]
@@ -161,7 +162,7 @@ class BatchLabelReconstruction(Attacker):
             # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
             
             true_label = self.vfl_info['label']
-            print(true_label.size())
+            # print(true_label.size())
             
             local_model_copy = copy.deepcopy(local_model)
             local_model = local_model.to(self.device)
@@ -237,10 +238,10 @@ class BatchLabelReconstruction(Attacker):
                     # if self.early_stop == True:
                     #     if closure().item() < self.early_stop_param:
                     #         break
-                print("appending dummy_label")
+                # print("appending dummy_label")
                 recovery_history.append(dummy_label)
 
-                print(dummy_label, true_label)
+                # print(dummy_label, true_label)
 
                 rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
                 recovery_rate_history[i].append(rec_rate)
@@ -249,8 +250,12 @@ class BatchLabelReconstruction(Attacker):
             
             avg_rec_rate_trainable = sum(recovery_rate_history[0])/len(recovery_rate_history[0])
             avg_rec_rate_non_trainable = sum(recovery_rate_history[1])/len(recovery_rate_history[1])
-            best_rec_rate = min(avg_rec_rate_trainable,avg_rec_rate_non_trainable)
-            exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (sample_count, self.label_size, index, best_rec_rate, str(recovery_rate_history))
+            best_rec_rate = max(avg_rec_rate_trainable,avg_rec_rate_non_trainable)
+            print(f"BLI, if self.args.apply_defense={self.args.apply_defense}")
+            if self.args.apply_defense == True:
+                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, best_rec_rate, str(recovery_rate_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            else:
+                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (sample_count, self.label_size, index, best_rec_rate, str(recovery_rate_history))
             append_exp_res(self.exp_res_path, exp_result)
         
         # return best_rec_rate

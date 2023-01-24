@@ -73,6 +73,7 @@ if __name__ == '__main__':
     print(args.dataset)
     # print(args.attack_methods)
 
+    # for _ in range(args.num_exp):
     # mark that backdoor data is never prepared
     args.target_label = None
     args.train_poison_list = None
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     args = load_parties(args)
     if not os.path.exists(args.exp_res_dir):
         os.makedirs(args.exp_res_dir)
-    filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},num_exp={args.num_exp},' \
+    filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},' \
         f'epochs={args.main_epochs}.txt'
     # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
     #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
@@ -108,47 +109,3 @@ if __name__ == '__main__':
         vfl.evaluate_attack()
     
     
-    # # put in all the attacks
-    # attack_list = []
-    # for attack in args.attack_methods:
-    #     # load attack configs
-    #     attack_index = args.attack_methods.index(attack)
-    #     attack_config_file_path = args.attack_config_list[attack_index]
-    #     args = load_attack_configs(attack_config_file_path, attack, args)
-
-    #     args.num_class_list = [(args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 2)]
-    #     args.batch_size_list = [args.batch_size]
-
-    #     num_classes = args.num_class_list[0] # for main task evaluation
-    #     args.num_classes = args.num_class_list[0]
-        
-
-    #     for defense in args.defense_methods:
-    #         # load defense configs
-    #         print("use defense", defense)
-    #         defense_index = args.defense_methods.index(defense)
-    #         defense_config_file_path = args.defense_config_list[defense_index]
-    #         args = load_defense_configs(defense_config_file_path, defense, args)
-    #         print("everything loaded")
-
-
-            # args.models_dict = {"mnist": MLP2,
-            #            "cifar100": resnet18,
-            #            "cifar10": resnet18,
-            #         #    "cifar10": resnet20,
-            #            "nuswide": MLP2,
-            #            "classifier": None}
-            
-            # if attack != 'ReplacementBackdoor':
-            #     path = args.exp_res_dir+'no_defense_main_task.txt'
-            #     test_acc_list = []
-            #     for _ in range(args.num_exp):
-            #         vfl_defence_image = VFLDefenceExperimentBase(args)
-            #         test_acc, parameter = vfl_defence_image.train()
-            #         test_acc_list.append(test_acc)
-            #     append_exp_res(path, str(parameter) + ' ' + str(np.mean(test_acc_list))+ ' ' + str(test_acc_list) + ' ' + str(np.max(test_acc_list)))
-
-
-
-
-

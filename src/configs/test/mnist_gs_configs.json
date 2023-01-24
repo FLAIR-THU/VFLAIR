@@ -24,14 +24,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "attack": {
-        "name": "BatchLabelReconstruction",
-        "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 100
-        }
-    },
     "defense": {
         "name": "GradientSparsification",
         "parameters": {

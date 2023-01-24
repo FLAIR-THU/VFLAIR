@@ -1,6 +1,6 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -21,21 +21,15 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     },
     "attack": {
         "name": "BatchLabelReconstruction",
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 100
-        }
-    },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 100.0
+            "epochs": 10000
         }
     }
 }

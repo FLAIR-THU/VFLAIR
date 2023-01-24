@@ -238,6 +238,8 @@ class MainTaskVFL(object):
             exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
         elif self.args.apply_mid == True:
             exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
+        elif self.args.apply_defense == True:
+            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf Defense: %s %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
             exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
@@ -325,19 +327,23 @@ class MainTaskVFL(object):
                 print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                     i_epoch, self.loss, self.train_acc, self.test_acc))
         
-        if self.args.apply_cae == True:
-            exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
-        elif self.args.apply_mid == True:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
+        print(self.args.apply_defense)
+        # if self.args.apply_cae == True:
+        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
+        # elif self.args.apply_mid == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID %lf wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'], str(self.args.defense_configs['party']))
+        # elif self.args.apply_defense == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+        # else:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
+        if self.args.apply_defense == True:
+            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
             exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
         return test_acc
-
-
-
 
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
@@ -372,24 +378,24 @@ class MainTaskVFL(object):
         if self.attacker != None:
             self.attacker.attack()
 
-    def launch_attack(self, gradients_list, pred_list, type):
-        if type == 'gradients_label':
-            for ik in range(self.k):
-                start_time = time.time()
-                recovery_history = self.parties[ik].party_attack(self.args, gradients_list[ik], pred_list[ik])
-                end_time = time.time()
-                if recovery_history != None:
-                    recovery_rate_history = []
-                    for dummy_label in recovery_history:
-                        rec_rate = self.calc_label_recovery_rate(dummy_label, self.gt_one_hot_label)
-                        recovery_rate_history.append(rec_rate)
-                        print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (dummy_label.size()[0], self.num_classes, ik, rec_rate, end_time - start_time))
-                    best_rec_rate = max(recovery_rate_history)
-                    exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (dummy_label.size()[0], self.num_classes, ik, best_rec_rate, str(recovery_rate_history))
-                    append_exp_res(self.parties[ik].attacker.exp_res_path, exp_result)
-        else:
-            # further extention
-            pass
+    # def launch_attack(self, gradients_list, pred_list, type):
+    #     if type == 'gradients_label':
+    #         for ik in range(self.k):
+    #             start_time = time.time()
+    #             recovery_history = self.parties[ik].party_attack(self.args, gradients_list[ik], pred_list[ik])
+    #             end_time = time.time()
+    #             if recovery_history != None:
+    #                 recovery_rate_history = []
+    #                 for dummy_label in recovery_history:
+    #                     rec_rate = self.calc_label_recovery_rate(dummy_label, self.gt_one_hot_label)
+    #                     recovery_rate_history.append(rec_rate)
+    #                     print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (dummy_label.size()[0], self.num_classes, ik, rec_rate, end_time - start_time))
+    #                 best_rec_rate = max(recovery_rate_history)
+    #                 exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (dummy_label.size()[0], self.num_classes, ik, best_rec_rate, str(recovery_rate_history))
+    #                 append_exp_res(self.parties[ik].attacker.exp_res_path, exp_result)
+    #     else:
+    #         # further extention
+    #         pass
 
     def launch_defense(self, gradients_list, type):
         if type == 'gradients':

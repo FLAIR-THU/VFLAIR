@@ -19,8 +19,8 @@ def load_configs(config_file_name, args):
     args.k = config_dict['k'] if('k' in config_dict) else 2
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
-    # args.num_exp number of repeat experiments for main task
-    args.num_exp = config_dict['num_exp'] if ('num_exp' in config_dict) else 10
+    # # args.num_exp number of repeat experiments for main task
+    # args.num_exp = config_dict['num_exp'] if ('num_exp' in config_dict) else 10
     # # args.early_stop, if use early stop
     # args.early_stop = config_dict['early_stop'] if ('early_stop' in config_dict) else 0
     # args.early_stop_param = config_dict['early_stop_param'] if ('early_stop_param' in config_dict) else 0.0001

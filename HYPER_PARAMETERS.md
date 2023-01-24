@@ -10,7 +10,7 @@
 #### CAE-VFL - Main Task ACC
 1. lr=0.01
 
-| $\lambda$ | 0.01|
+| $\lambda$ | 1.0 |
 |:-:|:-:|
 |GolbalModel|0.9387|
 |No GlobalModel|0.91|

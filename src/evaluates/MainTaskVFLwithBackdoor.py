@@ -176,13 +176,26 @@ class MainTaskVFLwithBackdoor(object):
                 self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                 # print("parties' data have size:", parties_data[0][0].size(), parties_data[self.k-1][0].size(), parties_data[self.k-1][1].size())
                 # ====== train batch ======
+
+                if i == 0 and i_epoch == 0:
+                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+                    self.first_epoch_state = self.save_state(True)
+                elif i_epoch == self.epochs//2 and i == 0:
+                    self.middle_epoch_state = self.save_state(True)
+
                 self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
             
                 if i == 0 and i_epoch == 0:
                     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
-                    self.first_epoch_state = self.save_state()
+                    self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs//2 and i == 0:
-                    self.middle_epoch_state = self.save_state()
+                    self.middle_epoch_state.update(self.save_state(False))
+
+                # if i == 0 and i_epoch == 0:
+                #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
+                #     self.first_epoch_state = self.save_state()
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state = self.save_state()
 
             # validation
             if (i + 1) % print_every == 0:
@@ -257,31 +270,57 @@ class MainTaskVFLwithBackdoor(object):
         # elif self.apply_marvell:
         #     parameter = str(self.marvell_s)
 
-        # if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
-        #     exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
+        # if self.args.apply_cae == True:
+        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
+        # elif self.args.apply_mid == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
+        # elif self.args.apply_defense == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         # else:
-        #     exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
-        
-        if self.args.apply_defense:
-            exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
+
+        if self.args.apply_defense == True:
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = 'NoDefense::'
-        exp_result = exp_result + f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
+
+        # if self.args.apply_defense:
+        #     exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'
+        # else:
+        #     exp_result = 'NoDefense::'
+        # exp_result = exp_result + f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
+        
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
         return test_acc
 
-    def save_state(self):
-        return {
-            "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
-            "data": copy.deepcopy(self.parties_data), 
-            "label": copy.deepcopy(self.gt_one_hot_label),
-            "predict": copy.deepcopy(self.pred_list_clone),
-            "gradient": copy.deepcopy(self.pred_gradients_list_clone),
-            "train_acc": copy.deepcopy(self.train_acc),
-            "loss": copy.deepcopy(self.loss)
-        }
+    def save_state(self, BEFORE_MODEL_UPDATE=True):
+        if BEFORE_MODEL_UPDATE:
+            return {
+                "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+            }
+        else:
+            return {
+                # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+                "data": copy.deepcopy(self.parties_data), 
+                "label": copy.deepcopy(self.gt_one_hot_label),
+                "predict": copy.deepcopy(self.pred_list_clone),
+                "gradient": copy.deepcopy(self.pred_gradients_list_clone),
+                "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+                "train_acc": copy.deepcopy(self.train_acc),
+                "loss": copy.deepcopy(self.loss)
+            }
+        # return {
+        #     "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+        #     "data": copy.deepcopy(self.parties_data), 
+        #     "label": copy.deepcopy(self.gt_one_hot_label),
+        #     "predict": copy.deepcopy(self.pred_list_clone),
+        #     "gradient": copy.deepcopy(self.pred_gradients_list_clone),
+        #     "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+        #     "train_acc": copy.deepcopy(self.train_acc),
+        #     "loss": copy.deepcopy(self.loss)
+        # }
 
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)

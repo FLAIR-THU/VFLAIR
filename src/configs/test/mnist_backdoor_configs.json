@@ -1,9 +1,8 @@
 {
-    "epochs": 30,
-    "lr": 0.001,
+    "epochs": 100,
+    "lr": 0.005,
     "k": 2,
-    "batch_size": 2048,
-    "iteration_per_aggregation": 1,
+    "batch_size": 64,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -21,21 +20,13 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     },
     "attack": {
-        "name": "BatchLabelReconstruction",
+        "name": "ReplacementBackdoor",
         "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 100
-        }
-    },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 100.0
+            "party": [0]
         }
     }
 }

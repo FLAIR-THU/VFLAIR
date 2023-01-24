@@ -29,13 +29,13 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 100
+            "epochs": 10000
         }
     },
     "defense": {
-        "name": "GradientSparsification",
+        "name": "LaplaceDP",
         "parameters": {
-            "gradient_sparse_rate": 100.0
+            "dp_strength": 0.0005
         }
     }
 }

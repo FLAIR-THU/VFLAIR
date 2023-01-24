@@ -17,7 +17,8 @@ src/exp_result/
 
 # debug files
 *.png
-./debug.py
+./debug*
+src/debug*
 
 
 # Distribution / packaging

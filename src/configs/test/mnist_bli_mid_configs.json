@@ -1,9 +1,10 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
+    "num_exp": 10,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -29,13 +30,15 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 100
+            "epochs": 10000
         }
     },
     "defense": {
-        "name": "GradientSparsification",
+        "name": "MID",
         "parameters": {
-            "gradient_sparse_rate": 100.0
+            "party": [0],
+            "lr": 0.001,
+            "lambda": 1e-9
         }
     }
 }

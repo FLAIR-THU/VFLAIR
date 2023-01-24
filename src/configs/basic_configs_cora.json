@@ -22,7 +22,7 @@
             "output_dim": 7,
             "path": ""
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     }
 }

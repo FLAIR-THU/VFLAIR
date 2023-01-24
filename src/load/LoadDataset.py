@@ -450,8 +450,8 @@ def load_dataset_per_party_backdoor(args, index):
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
 
-    train_dst = (torch.tensor(train_data).to(args.device),train_label.to(args.device))
-    test_dst = (torch.tensor(test_data).to(args.device),test_label.to(args.device))
+    train_dst = (train_data.to(args.device),train_label.to(args.device))
+    test_dst = (test_data.to(args.device),test_label.to(args.device))
     train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
     test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
 
