@@ -25,6 +25,9 @@ from evaluates.attacks.attack_api import AttackerLoader
 tf.compat.v1.enable_eager_execution() 
 
 
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+
+
 class MainTaskVFL(object):
 
     def __init__(self, args):
@@ -64,6 +67,7 @@ class MainTaskVFL(object):
         
         self.loss = None
         self.train_acc = None
+        self.flag = 1
 
         # some state of VFL throughout training process
         self.first_epoch_state = None
@@ -115,7 +119,7 @@ class MainTaskVFL(object):
         torch.autograd.set_detect_anomaly(True)
         # == FedBCD ==
         for q in range(self.Q):
-            #print('inner iteration q=',q)
+            # print('inner iteration q=',q)
             if q == 0: #before first iteration, Exchange party 1,2...k
                 # allocate data to each party
                 for ik in range(self.k):
@@ -125,8 +129,8 @@ class MainTaskVFL(object):
                 self.pred_transmit() # partyk存下所有party的pred
                 self.gradient_transmit() # partyk计算gradient传输给passive parties
                 
-                if self.auc<0.977 and self.flag == 0:
-                    self.rounds = self.rounds+1
+                if self.flag == 0 and (self.train_acc == None or self.train_acc < STOPPING_ACC[self.dataset_name]):
+                    self.rounds = self.rounds + 1
                 else:
                     self.flag = 1
 
