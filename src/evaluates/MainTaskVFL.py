@@ -61,7 +61,7 @@ class MainTaskVFL(object):
         self.local_pred_list_clone = []
         self.local_pred_gradients_list = []
         self.local_pred_gradients_list_clone = []
-
+        
         self.loss = None
         self.train_acc = None
 
@@ -69,7 +69,25 @@ class MainTaskVFL(object):
         self.first_epoch_state = None
         self.middle_epoch_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
+    
+    def pred_transmit(self): # partyk存下所有party的pred
+        for ik in range(self.k):
+            pred, pred_clone = self.parties[ik].give_pred()
+            if ik < (self.k-1):
+                self.parties[self.k-1].receive_pred(pred_clone, ik) # 用于aggregate
+    
+    def gradient_transmit(self):  # partyk(active) as gradient giver
+        gradient = self.parties[self.k-1].give_gradient()
 
+        # defense applied on gradients
+        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+            gradient = self.launch_defense(gradient, "gradients")        
+
+        # active party transfer gradient to passive parties
+        for ik in range(self.k-1):
+            self.parties[ik].receive_gradient(gradient[ik])
+        return
+    
     def label_to_one_hot(self, target, num_classes=10):
         # print('label_to_one_hot:', target, type(target))
         try:
@@ -90,111 +108,48 @@ class MainTaskVFL(object):
             _, gt_one_hot_label = encoder(batch_label)              
         else:
             gt_one_hot_label = batch_label
+        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
         # print('current_label:', gt_one_hot_label)
 
         # ====== normal vertical federated learning ======
-
-        ###################################################################################################
-        ####################################### code without FedBCD #######################################
-        ###################################################################################################
-        # # compute logits of clients
-        # self.pred_list = []
-        # self.pred_list_clone = []
-        # torch.autograd.set_detect_anomaly(True)
-        # for ik in range(self.k):
-        #     self.parties[ik].obtain_local_data(parties_data[ik][0])
-        #     self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-        #     # pred_list[ik] = torch.autograd.Variable(pred_list[ik], requires_grad=True).to(self.device)
-        #     self.pred_list_clone.append(self.pred_list[ik].detach().clone())
-        #     self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
-
-        # # ######################## aggregate logits of clients ########################
-        # pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
-        # # _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
-        # # _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
-        # # pred = self.parties[self.k-1].global_model(pred_list)
-        # # loss = self.parties[self.k-1].criterion(pred, gt_one_hot_label)
-        # self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-        # # pred, loss, pred_gradients_list, pred_gradients_list_clone = self.parties[self.k-1].aggregate_and_gradient_calculation(pred_list, gt_one_hot_label)
-        # # ######################## aggregate logits of clients ########################
-
-        # # defense applied on gradients
-        # if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-        #     self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
-
-        # # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
-        # # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
-        # # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
-        # for ik in range(self.k):
-        #     self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
-        # self.parties[self.k-1].global_backward(pred, loss)
-        ###################################################################################################
-        ####################################### code without FedBCD #######################################
-        ###################################################################################################
-
-
-        ###################################################################################################
-        ######################################## code with FedBCD #########################################
-        ###################################################################################################
-        # compute logits of clients
-        self.pred_list = []
-        self.pred_list_clone = []
         torch.autograd.set_detect_anomaly(True)
         # == FedBCD ==
         for q in range(self.Q):
-            # print('inner iteration q=',q)
+            #print('inner iteration q=',q)
             if q == 0: #before first iteration, Exchange party 1,2...k
+                # allocate data to each party
                 for ik in range(self.k):
-                    # compute logits of clients
                     self.parties[ik].obtain_local_data(parties_data[ik][0])
-                    self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-                    self.pred_list_clone.append(self.pred_list[ik].detach().clone())
-                    self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
-
-                # ######################## aggregate logits of clients ########################
-                pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
-                self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-                # ######################## aggregate logits of clients ########################
-
-                # defense applied on gradients
-                if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-                    self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
+                
+                # exchange info between parties
+                self.pred_transmit() # partyk存下所有party的pred
+                self.gradient_transmit() # partyk计算gradient传输给passive parties
+                
+                if self.auc<0.977 and self.flag == 0:
+                    self.rounds = self.rounds+1
+                else:
+                    self.flag = 1
 
                 # update parameters for all parties
                 for ik in range(self.k):
-                    self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
-                self.parties[self.k-1].global_backward(pred, loss)
-
+                    self.parties[ik].local_backward()
+                self.parties[self.k-1].global_backward()
+            
             else: # FedBCD: in other iterations, no communication happen, no defense&attack
-                for ik in range(self.k):
-                    if ik == self.k-1:
-                        ############### Party k: uses old data transfered from the other parties ###############
-                        # the intermediate information obtained from the most recent synchronization: 
-                        self.local_pred_list = self.pred_list
-                        self.local_pred_list_clone = self.pred_list_clone
-                        # update logits of Party k
-                        self.local_pred_list[self.k-1] = self.parties[self.k-1].local_model(parties_data[self.k-1][0])
-                        self.local_pred_list_clone[self.k-1] = self.local_pred_list[self.k-1].detach().clone()
-                        self.local_pred_list_clone[self.k-1] = torch.autograd.Variable(self.local_pred_list_clone[self.k-1], requires_grad=True).to(self.device)
-                        # Party k: aggregate logits of clients ####
-                        pred, loss = self.parties[self.k-1].aggregate(self.local_pred_list_clone, gt_one_hot_label)
-                        self.local_pred_gradients_list, self.local_pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-
-                        # update parameters for Party k
-                        self.parties[self.k-1].local_backward(self.local_pred_gradients_list_clone[self.k-1], self.pred_list[self.k-1])
-                        self.parties[self.k-1].global_backward(pred, loss)
-                    else:
-                        ############### Party 1~k-1: uses the original gradient ###############
-                        # the intermediate information obtained from the most recent synchronization: 
-                        # self.pred_gradients_list_clone
-
-                        # update parameters for Party 1~k-1
-                        local_pred = self.parties[ik].local_model(parties_data[ik][0])
-                        self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], local_pred)
-        ###################################################################################################
-        ######################################## code with FedBCD #########################################
-        ###################################################################################################
+                # ==== update parameters ====
+                # for passive parties
+                for ik in range(self.k-1):
+                    _pred, _pred_clone= self.parties[ik].give_pred() # 更新local_pred
+                    self.parties[ik].local_backward() # self.pred_gradients_list_clone[ik], self.pred_list[ik]
+                
+                # for active party k
+                _pred, _pred_clone = self.parties[self.k-1].give_pred() # 更新local_pred
+                _gradient = self.parties[self.k-1].give_gradient() # 更新local_gradient
+                self.parties[self.k-1].local_backward()
+                self.parties[self.k-1].global_backward()
         
+        pred = self.parties[self.k-1].global_pred
+        loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
             predict_prob = self.parties[ik].encoder.decoder(predict_prob)
