@@ -22,7 +22,6 @@ from utils.basic_functions import *
 from utils.constants import *
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
-from evaluates.MainTaskVFLwithMID import *
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -89,8 +88,6 @@ if __name__ == '__main__':
         vfl = MainTaskVFLwithBackdoor(args)
         # no other attacks, only backdoor attack, may change later
         args.apply_attack = False
-    # elif args.apply_mid == True or args.apply_cae == True:
-    #     vfl = MainTaskVFLwithMID(args)
     else:
         vfl = MainTaskVFL(args)
     if args.dataset not in ['cora']:

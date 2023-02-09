@@ -380,8 +380,8 @@ class MainTaskVFL(object):
                 # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
                 "data": copy.deepcopy(self.parties_data), 
                 "label": copy.deepcopy(self.gt_one_hot_label),
-                "predict": copy.deepcopy(self.pred_list_clone),
-                "gradient": copy.deepcopy(self.pred_gradients_list_clone),
+                "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
+                "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
                 "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss)

@@ -103,8 +103,7 @@ class MainTaskVFLwithBackdoor(object):
         # _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
         # pred = self.parties[self.k-1].global_model(pred_list)
         # loss = self.parties[self.k-1].criterion(pred, gt_one_hot_label)
-        self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-        # pred, loss, pred_gradients_list, pred_gradients_list_clone = self.parties[self.k-1].aggregate_and_gradient_calculation(pred_list, gt_one_hot_label)
+        self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(self.pred_list_clone, loss)
         # ######################## aggregate logits of clients ########################
 
         # defense applied on gradients
@@ -120,8 +119,8 @@ class MainTaskVFLwithBackdoor(object):
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
         # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
         for ik in range(self.k):
-            self.parties[ik].local_backward(self.pred_gradients_list_clone[ik][:-1], self.pred_list[ik][:-1])
-        self.parties[self.k-1].global_backward(pred, loss)
+            self.parties[ik].local_backward_old(self.pred_gradients_list_clone[ik][:-1], self.pred_list[ik][:-1])
+        self.parties[self.k-1].global_backward_old(pred, loss)
 
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:

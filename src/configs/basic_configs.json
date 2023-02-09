@@ -1,6 +1,6 @@
 {
     "epochs": 30,
-    "lr": 0.0,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -29,13 +29,7 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 100
-        }
-    },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 99.0
+            "epochs": 10000
         }
     }
 }
