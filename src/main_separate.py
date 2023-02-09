@@ -15,18 +15,11 @@ import torch.utils
 import torch.backends.cudnn as cudnn
 # from tensorboardX import SummaryWriter
 
-from load.LoadConfigs import load_configs, load_attack_configs, load_defense_configs
-from load.LoadDataset import load_dataset
-from load.LoadModels import load_models
+from load.LoadConfigs import load_configs
 from load.LoadParty import load_parties
 from models.vision import *
 from utils.basic_functions import *
 from utils.constants import *
-from utils.dataset.SimpleImageDataset import SimpleDataset
-from utils.dataset.NuswideDataset import NUSWIDEDataset
-# from evaluates.BatchLabelReconstruction import *
-# from evaluates.DeepLeakageFromGradients import *
-# from evaluates.ReplacementBackdoor import *
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
 from evaluates.MainTaskVFLwithMID import *

@@ -453,7 +453,7 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
     mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
     poison_data = copy.deepcopy(mixed_data[poison_list])
     poison_label = copy.deepcopy(label[poison_list])
-    print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
+    # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
     if _type == 'train':
         data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
         label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))

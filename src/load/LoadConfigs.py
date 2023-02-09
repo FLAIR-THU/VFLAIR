@@ -19,6 +19,8 @@ def load_configs(config_file_name, args):
     args.k = config_dict['k'] if('k' in config_dict) else 2
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
+    # args.Q ,iteration_per_aggregation for FedBCD
+    args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
     # # args.num_exp number of repeat experiments for main task
     # args.num_exp = config_dict['num_exp'] if ('num_exp' in config_dict) else 10
     # # args.early_stop, if use early stop

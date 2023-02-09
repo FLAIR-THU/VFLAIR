@@ -232,7 +232,7 @@ def GradientSparsification(args, original_object):
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
     while grad_spars_ratio > 1.0:
         grad_spars_ratio = grad_spars_ratio / 100.0
-    if grad_spars_ratio < 1.0:
+    if grad_spars_ratio > 0.0:
         new_object = []
         with torch.no_grad():
         #     percent = grad_spars_ratio / 100.0 # percent to drop

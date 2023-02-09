@@ -36,9 +36,9 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [0],
+            "party": [1],
             "lr": 0.001,
-            "lambda": 1e-9
+            "lambda": 0.0
         }
     }
 }

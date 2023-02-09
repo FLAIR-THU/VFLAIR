@@ -35,7 +35,7 @@
     "defense": {
         "name": "LaplaceDP",
         "parameters": {
-            "dp_strength": 0.0005
+            "dp_strength": 0.0001
         }
     }
 }

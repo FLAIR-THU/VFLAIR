@@ -30,124 +30,16 @@ from utils.graph_functions import load_data1, split_graph
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income']
 GRAPH_DATA = ['cora']
 
-def horizontal_half(args, all_dataset):
-    if args.dataset == 'mnist' or args.dataset == 'cifar100' or args.dataset == 'cifar10':
-        all_data, all_label = all_dataset
-        gt_data = []
-        gt_label = []
-        for i in range(0, args.batch_size):
-            sample_idx = torch.randint(len(all_data), size=(1,)).item()
-            gt_data.append(all_data[sample_idx])
-            gt_label.append(all_label[sample_idx])
-        gt_data = torch.stack(gt_data).to(args.device)
-        half_size = list(gt_data.size())[-1] // 2
-        args.gt_data_a = gt_data[:, :, :half_size, :]
-        args.gt_data_b = gt_data[:, :, half_size:, :]
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-    elif args.dataset == 'nuswide':
-        x_image, x_text, Y = all_dataset
-        gt_data_a, gt_data_b, gt_label = [], [], []
-        for i in range(0, args.batch_size):
-            sample_idx = torch.randint(len(x_image), size=(1,)).item()
-            gt_data_a.append(torch.tensor(x_text[sample_idx], dtype=torch.float32))
-            gt_data_b.append(torch.tensor(x_image[sample_idx], dtype=torch.float32))
-            gt_label.append(torch.tensor(Y[sample_idx], dtype=torch.float32))
-        args.gt_data_a = torch.stack(gt_data_a).to(args.device)
-        args.gt_data_b = torch.stack(gt_data_b).to(args.device)
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-    else:
-        gt_data_a, gt_data_b, gt_label = [], [], []
-        args.gt_data_a = torch.stack(gt_data_a).to(args.device)
-        args.gt_data_b = torch.stack(gt_data_b).to(args.device)
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-        assert args.dataset == 'nuswide', 'dataset not supported yet'
-    return args
-
-def HFL(args, all_dataset):
-    if args.dataset == 'mnist' or args.dataset == 'cifar100' or args.dataset == 'cifar10':
-        all_data, all_label = all_dataset
-        gt_data = []
-        gt_label = []
-        for i in range(0, args.batch_size):
-            sample_idx = torch.randint(len(all_data), size=(1,)).item()
-            gt_data.append(all_data[sample_idx])
-            gt_label.append(all_label[sample_idx])
-        args.gt_data = torch.stack(gt_data).to(args.device)
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-    elif args.dataset == 'nuswide':
-        x_image, x_text, Y = all_dataset
-        gt_data_a, gt_data_b, gt_label = [], [], []
-        for i in range(0, args.batch_size):
-            sample_idx = torch.randint(len(x_image), size=(1,)).item()
-            gt_data_a.append(torch.tensor(x_text[sample_idx], dtype=torch.float32))
-            gt_data_b.append(torch.tensor(x_image[sample_idx], dtype=torch.float32))
-            gt_label.append(torch.tensor(Y[sample_idx], dtype=torch.float32))
-        # args.gt_data_a = torch.stack(gt_data_a).to(args.device)
-        # args.gt_data_b = torch.stack(gt_data_b).to(args.device)
-        args.gt_data = [torch.stack(gt_data_a).to(args.device), torch.stack(gt_data_b).to(args.device)]
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-    else:
-        gt_data_a, gt_data_b, gt_label = [], [], []
-        # args.gt_data_a = torch.stack(gt_data_a).to(args.device)
-        # args.gt_data_b = torch.stack(gt_data_b).to(args.device)
-        args.gt_data = torch.stack([]).to(args.device)
-        args.gt_label = torch.stack(gt_label).to(args.device)
-        args.gt_onehot_label = gt_label  # label_to_onehot(gt_label)
-        assert args.dataset == 'nuswide', 'dataset not supported yet'
-    return args
-
-
-def load_dataset(args):
-    args.num_classes = args.num_classes
-    args.classes = [None] * args.num_classes
-    all_dataset = []
-    if args.dataset == 'cifar100':
-        args.classes = random.sample(list(range(100)), args.num_classes)
-        all_data, all_label = get_class_i(args.dst, args.classes)
-        all_dataset = [all_data, all_label]
-    elif args.dataset == 'cifar10':
-        args.classes = random.sample(list(range(10)), args.num_classes)
-        all_data, all_label = get_class_i(args.dst, args.classes)
-        all_dataset = [all_data, all_label]
-    elif args.dataset == 'mnist':
-        args.classes = random.sample(list(range(10)), args.num_classes)
-        all_data, all_label = get_class_i(args.dst, args.classes)
-        all_dataset = [all_data, all_label]
-    elif args.dataset == 'nuswide':
-        all_nuswide_labels = []
-        for line in os.listdir('./data/NUS_WIDE/Groundtruth/AllLabels'):
-            all_nuswide_labels.append(line.split('_')[1][:-4])
-        args.classes = random.sample(all_nuswide_labels, args.num_classes)
-        x_image, x_text, Y = get_labeled_data('./data/NUS_WIDE', args.classes, None, 'Train')
-        all_dataset = [x_image, x_text, Y]
-    
-    # randomly sample
-    split_type = args.dataset_split['partition_function'] if ('partition_function' in args.dataset_split) else 'horizontal_half'
-    if split_type == 'horizontal_half':
-        args = horizontal_half(args, all_dataset)
-    elif split_type == 'HFL':
-        args = HFL(args, all_dataset)
-    else:
-        assert split_type == 'horizontal_half', 'dataset splition type not supported yet'
-    
-    # important
-    return args
-
 
 def dataset_partition(args, index, dst, half_dim):
     if args.dataset in ['mnist', 'cifar10', 'cifar100', 'cifar20']:
         if args.k == 2:
             if index == 0:
-                # return (dst[0][:, :, :half_dim, :], None)
-                return (dst[0][:, :, half_dim:, :], None)
+                return (dst[0][:, :, :half_dim, :], None)
+                # return (dst[0][:, :, half_dim:, :], None)
             elif index == 1:
-                # return (dst[0][:, :, half_dim:, :], dst[1])
-                return (dst[0][:, :, :half_dim, :], dst[1])
+                return (dst[0][:, :, half_dim:, :], dst[1])
+                # return (dst[0][:, :, :half_dim, :], dst[1])
             else:
                 assert index <= 1, "invalide party index"
                 return None
@@ -270,14 +162,6 @@ def load_dataset_per_party(args, index):
             label = torch.LongTensor(label).to(args.device)
             train_dst = ([adj, features], label)
             test_dst = ([adj, features,target_nodes], label)
-            # test_dst = (torch.tensor([adj.to(args.device), features.to(args.device), target_nodes]),label)
-            # adj = normalize_adj(adj)
-            # adj = sparse_mx_to_torch_sparse_tensor(adj)
-            # features = sparse_mx_to_torch_sparse_tensor(features)
-            # idx_train = torch.LongTensor(idx_train)
-            # idx_val = torch.LongTensor(idx_val)
-            # idx_test = torch.LongTensor(idx_test)
-            # labels = torch.LongTensor(labels)
         half_dim = -1
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
@@ -297,7 +181,6 @@ def load_dataset_per_party(args, index):
         elif args.dataset == 'adult_income':
             df = pd.read_csv("../../../share_dataset/Income/adult.csv",header = 0)
             df = df.drop_duplicates()
-            encoder = OneHotEncoder()
             # 'age', 'workclass', 'fnlwgt', 'education', 'educational-num',
             # 'marital-status', 'occupation', 'relationship', 'race', 'gender',
             # 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
@@ -305,8 +188,6 @@ def load_dataset_per_party(args, index):
             # category_columns_index = [1,3,5,6,7,8,9,13]
             # num_category_of_each_column = [9,16,7,15,6,5,2,42]
             category_columns = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'gender','native-country']
-            # encoder.fit(df.loc[:,category_columns])
-            # df.loc[:,category_columns] = encoder.transform(df.loc[:,category_columns])
             for _column in category_columns:
                 # Get one hot encoding of columns B
                 one_hot = pd.get_dummies(df[_column], prefix=_column)
@@ -435,6 +316,7 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.train_target_list != None, "[[inner error]]"
             assert args.test_poison_list != None, "[[inner error]]"
             assert args.test_target_list != None, "[[inner error]]"
+        print(f"party#{index} target label={args.target_label}")
         train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
         if args.train_target_list == None:
@@ -459,48 +341,6 @@ def load_dataset_per_party_backdoor(args, index):
     test_dst = dataset_partition(args,index,test_dst,half_dim)
     train_poison_dst = dataset_partition(args,index,train_poison_dst,half_dim)
     test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
-    # if args.k == 2:
-    #     if index == 0:
-    #         # train_dst[0].shape = (samplecount,channels,height,width) for MNIST and CIFAR
-    #         # passive party does not have label
-    #         train_dst = (train_dst[0][:, :, :half_dim, :], None)
-    #         test_dst = (test_dst[0][:, :, :half_dim, :], None)
-    #         train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :], None)
-    #         test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :], None)
-    #     elif index == 1:
-    #         train_dst = (train_dst[0][:, :, half_dim:, :], train_dst[1])
-    #         test_dst = (test_dst[0][:, :, half_dim:, :], test_dst[1])
-    #         train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :], train_poison_dst[1])
-    #         test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :], test_poison_dst[1])
-    #     else:
-    #         assert index <= 1, "invalide party index"
-    # elif args.k == 4:
-    #     if index == 3:
-    #         train_dst = (train_dst[0][:, :, half_dim:, half_dim:], train_dst[1])
-    #         test_dst = (test_dst[0][:, :, half_dim:, half_dim:], test_dst[1])
-    #         train_poison_dst = (train_poison_dst[0][:, :, half_dim:, half_dim:], train_poison_dst[1])
-    #         test_poison_dst = (test_poison_dst[0][:, :, half_dim:, half_dim:], test_poison_dst[1])         
-    #     else:
-    #         # passive party does not have label
-    #         if index == 0:
-    #             train_dst = (train_dst[0][:, :, :half_dim, :half_dim], None)
-    #             test_dst = (test_dst[0][:, :, :half_dim, :half_dim], None)
-    #             train_poison_dst = (train_poison_dst[0][:, :, :half_dim, :half_dim], None)
-    #             test_poison_dst = (test_poison_dst[0][:, :, :half_dim, :half_dim], None)
-    #         elif index == 1:
-    #             train_dst = (train_dst[0][:, :, :half_dim, half_dim:], None)
-    #             test_dst = (test_dst[0][:, :, :half_dim, half_dim:], None)
-    #             train_poison_dst = (train_poison_dst[0][:, :, :half_dim, half_dim:], None)
-    #             test_poison_dst = (test_poison_dst[0][:, :, :half_dim, half_dim:], None)
-    #         elif index == 2:
-    #             train_dst = (train_dst[0][:, :, half_dim:, :half_dim], None)
-    #             test_dst = (test_dst[0][:, :, half_dim:, :half_dim], None)
-    #             train_poison_dst = (train_poison_dst[0][:, :, half_dim:, :half_dim], None)
-    #             test_poison_dst = (test_poison_dst[0][:, :, half_dim:, :half_dim], None)
-    #         else:
-    #             assert index <= 3, "invalide party index"
-    # else:
-    #     assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
     
     # important
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst, args.train_target_list, args.test_target_list

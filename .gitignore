@@ -17,8 +17,8 @@ src/exp_result/
 
 # debug files
 *.png
-./debug*
-src/debug*
+./debug.*
+src/debug.*
 
 
 # Distribution / packaging

@@ -14,7 +14,6 @@ import copy
 
 from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
-# from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
 from utils.constants import *
@@ -145,6 +144,9 @@ class MainTaskVFLwithBackdoor(object):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
 
         test_acc = 0.0
+        train_acc_history = []
+        test_acc_histoty = []
+        backdoor_acc_history = []
         for i_epoch in range(self.epochs):
             # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -257,18 +259,10 @@ class MainTaskVFLwithBackdoor(object):
                     # tqdm_train.set_postfix(postfix)
                     print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} backdoor_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc, self.backdoor_acc))
-
-        # parameter = 'none'
-        # if self.apply_laplace or self.apply_gaussian:
-        #     parameter = str(self.dp_strength)
-        # elif self.apply_grad_spar:
-        #     parameter = str(self.grad_spars)
-        # elif self.apply_encoder:
-        #     parameter = str(self.ae_lambda)
-        # elif self.apply_discrete_gradients:
-        #     parameter = str(self.discrete_gradients_bins)
-        # elif self.apply_marvell:
-        #     parameter = str(self.marvell_s)
+                    
+                    train_acc_history.append(self.train_acc)
+                    test_acc_histoty.append(self.test_acc)
+                    backdoor_acc_history.append(self.backdoor_acc)
 
         # if self.args.apply_cae == True:
         #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
@@ -280,9 +274,11 @@ class MainTaskVFLwithBackdoor(object):
         #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
 
         if self.args.apply_defense == True:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
+            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
 
         # if self.args.apply_defense:
         #     exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'

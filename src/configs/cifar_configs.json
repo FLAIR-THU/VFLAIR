@@ -26,8 +26,7 @@
         "name": "ReplacementBackdoor",
         "parameters": {
             "party": [0],
-            "lr": 0.01,
-            "epochs": 3000
+            "lr": 0.01
         }
     },
     "defense": {

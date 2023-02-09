@@ -1,8 +1,8 @@
 {
-    "epochs": 1,
+    "epochs": 100,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 64,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "cifar10",
@@ -25,17 +25,9 @@
         "global_model": "ClassificationModelHostHead"
     },
     "attack": {
-        "name": "BatchLabelReconstruction",
+        "name": "ReplacementBackdoor",
         "parameters": {
-            "party": [0],
-            "lr": 1,
-            "epochs": 10000
-        }
-    },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 100.0
+            "party": [0]
         }
     }
 }

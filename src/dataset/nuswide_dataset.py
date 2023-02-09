@@ -18,7 +18,7 @@ class SimpleDataset(Dataset):
 
     def __getitem__(self, item_idx):
         data_i, target_i = self.data[item_idx], self.labels[item_idx]
-        return torch.tensor(data_i, dtype=torch.float32), torch.tensor(target_i, dtype=torch.long)
+        return torch.tensor(data_i.clone().detach(), dtype=torch.float32), torch.tensor(target_i.clone().detach(), dtype=torch.long)
 
 
 class PassiveDataset(Dataset):
@@ -47,7 +47,7 @@ class ActiveDataset(Dataset):
 
     def __getitem__(self, item_idx):
         data_i, target_i = self.data[item_idx], self.labels[item_idx]
-        return torch.tensor(data_i, dtype=torch.float32), torch.tensor(target_i, dtype=torch.long)
+        return torch.tensor(data_i.clone().detach(), dtype=torch.float32), torch.tensor(target_i.clone().detach(), dtype=torch.long)
 
 
 class SimpleTwoPartyDataset(Dataset):

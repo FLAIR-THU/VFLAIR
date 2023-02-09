@@ -15,7 +15,7 @@ sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_bl
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ssed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
@@ -61,12 +61,12 @@ sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_bl
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ssed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
@@ -109,12 +109,12 @@ sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_bl
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ssed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
@@ -155,12 +155,12 @@ sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_bl
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ssed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i
 done
-ed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
+sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_bli_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
     python main_separate.py --configs test/mnist_bli_dp_configs --seed $i

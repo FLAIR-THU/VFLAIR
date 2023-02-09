@@ -46,6 +46,8 @@ class MainTaskVFL(object):
 
         self.exp_res_path = args.exp_res_path
         self.parties = args.parties
+        
+        self.Q = args.Q # FedBCD
 
         self.parties_data = None
         self.gt_one_hot_label = None
@@ -53,6 +55,13 @@ class MainTaskVFL(object):
         self.pred_list_clone = []
         self.pred_gradients_list = []
         self.pred_gradients_list_clone = []
+        
+        # FedBCD related
+        self.local_pred_list = []
+        self.local_pred_list_clone = []
+        self.local_pred_gradients_list = []
+        self.local_pred_gradients_list_clone = []
+
         self.loss = None
         self.train_acc = None
 
@@ -85,38 +94,107 @@ class MainTaskVFL(object):
 
         # ====== normal vertical federated learning ======
 
+        ###################################################################################################
+        ####################################### code without FedBCD #######################################
+        ###################################################################################################
+        # # compute logits of clients
+        # self.pred_list = []
+        # self.pred_list_clone = []
+        # torch.autograd.set_detect_anomaly(True)
+        # for ik in range(self.k):
+        #     self.parties[ik].obtain_local_data(parties_data[ik][0])
+        #     self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+        #     # pred_list[ik] = torch.autograd.Variable(pred_list[ik], requires_grad=True).to(self.device)
+        #     self.pred_list_clone.append(self.pred_list[ik].detach().clone())
+        #     self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
+
+        # # ######################## aggregate logits of clients ########################
+        # pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
+        # # _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
+        # # _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
+        # # pred = self.parties[self.k-1].global_model(pred_list)
+        # # loss = self.parties[self.k-1].criterion(pred, gt_one_hot_label)
+        # self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
+        # # pred, loss, pred_gradients_list, pred_gradients_list_clone = self.parties[self.k-1].aggregate_and_gradient_calculation(pred_list, gt_one_hot_label)
+        # # ######################## aggregate logits of clients ########################
+
+        # # defense applied on gradients
+        # if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+        #     self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
+
+        # # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
+        # # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
+        # # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
+        # for ik in range(self.k):
+        #     self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
+        # self.parties[self.k-1].global_backward(pred, loss)
+        ###################################################################################################
+        ####################################### code without FedBCD #######################################
+        ###################################################################################################
+
+
+        ###################################################################################################
+        ######################################## code with FedBCD #########################################
+        ###################################################################################################
         # compute logits of clients
         self.pred_list = []
         self.pred_list_clone = []
         torch.autograd.set_detect_anomaly(True)
-        for ik in range(self.k):
-            self.parties[ik].obtain_local_data(parties_data[ik][0])
-            self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-            # pred_list[ik] = torch.autograd.Variable(pred_list[ik], requires_grad=True).to(self.device)
-            self.pred_list_clone.append(self.pred_list[ik].detach().clone())
-            self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
+        # == FedBCD ==
+        for q in range(self.Q):
+            # print('inner iteration q=',q)
+            if q == 0: #before first iteration, Exchange party 1,2...k
+                for ik in range(self.k):
+                    # compute logits of clients
+                    self.parties[ik].obtain_local_data(parties_data[ik][0])
+                    self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+                    self.pred_list_clone.append(self.pred_list[ik].detach().clone())
+                    self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
 
-        # ######################## aggregate logits of clients ########################
-        pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
-        # _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
-        # _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
-        # pred = self.parties[self.k-1].global_model(pred_list)
-        # loss = self.parties[self.k-1].criterion(pred, gt_one_hot_label)
-        self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
-        # pred, loss, pred_gradients_list, pred_gradients_list_clone = self.parties[self.k-1].aggregate_and_gradient_calculation(pred_list, gt_one_hot_label)
-        # ######################## aggregate logits of clients ########################
+                # ######################## aggregate logits of clients ########################
+                pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
+                self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
+                # ######################## aggregate logits of clients ########################
 
-        # defense applied on gradients
-        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-            self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
+                # defense applied on gradients
+                if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+                    self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
 
-        # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
-        # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
-        # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
-        for ik in range(self.k):
-            self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
-        self.parties[self.k-1].global_backward(pred, loss)
+                # update parameters for all parties
+                for ik in range(self.k):
+                    self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], self.pred_list[ik])
+                self.parties[self.k-1].global_backward(pred, loss)
 
+            else: # FedBCD: in other iterations, no communication happen, no defense&attack
+                for ik in range(self.k):
+                    if ik == self.k-1:
+                        ############### Party k: uses old data transfered from the other parties ###############
+                        # the intermediate information obtained from the most recent synchronization: 
+                        self.local_pred_list = self.pred_list
+                        self.local_pred_list_clone = self.pred_list_clone
+                        # update logits of Party k
+                        self.local_pred_list[self.k-1] = self.parties[self.k-1].local_model(parties_data[self.k-1][0])
+                        self.local_pred_list_clone[self.k-1] = self.local_pred_list[self.k-1].detach().clone()
+                        self.local_pred_list_clone[self.k-1] = torch.autograd.Variable(self.local_pred_list_clone[self.k-1], requires_grad=True).to(self.device)
+                        # Party k: aggregate logits of clients ####
+                        pred, loss = self.parties[self.k-1].aggregate(self.local_pred_list_clone, gt_one_hot_label)
+                        self.local_pred_gradients_list, self.local_pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(pred, self.pred_list_clone, loss)
+
+                        # update parameters for Party k
+                        self.parties[self.k-1].local_backward(self.local_pred_gradients_list_clone[self.k-1], self.pred_list[self.k-1])
+                        self.parties[self.k-1].global_backward(pred, loss)
+                    else:
+                        ############### Party 1~k-1: uses the original gradient ###############
+                        # the intermediate information obtained from the most recent synchronization: 
+                        # self.pred_gradients_list_clone
+
+                        # update parameters for Party 1~k-1
+                        local_pred = self.parties[ik].local_model(parties_data[ik][0])
+                        self.parties[ik].local_backward(self.pred_gradients_list_clone[ik], local_pred)
+        ###################################################################################################
+        ######################################## code with FedBCD #########################################
+        ###################################################################################################
+        
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
             predict_prob = self.parties[ik].encoder.decoder(predict_prob)
@@ -217,31 +295,18 @@ class MainTaskVFL(object):
                     print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc))
         
-        # parameter = 'none'
-        # if self.apply_laplace or self.apply_gaussian:
-        #     parameter = str(self.dp_strength)
-        # elif self.apply_grad_spar:
-        #     parameter = str(self.grad_spars)
-        # elif self.apply_encoder:
-        #     parameter = str(self.ae_lambda)
-        # elif self.apply_discrete_gradients:
-        #     parameter = str(self.discrete_gradients_bins)
-        # elif self.apply_marvell:
-        #     parameter = str(self.marvell_s)
-
-        # if self.apply_laplace or self.apply_gaussian or self.apply_grad_spar or self.apply_encoder or self.apply_marvell:
-        #     exp_result = str(parameter) + ' ' + str(test_acc) + ' bs=' + str(self.batch_size) + '|num_class=' + str(self.num_classes)
-        # else:
-        #     exp_result = f"bs|num_class|epochs|recovery_rate,%d|%d|%d| %lf" % (self.batch_size, self.num_classes, self.self.epochs, test_acc)
-        
-        if self.args.apply_cae == True:
-            exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
-        elif self.args.apply_mid == True:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
-        elif self.args.apply_defense == True:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf Defense: %s %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+        if self.args.apply_defense == True:
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
+        # if self.args.apply_cae == True:
+        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
+        # elif self.args.apply_mid == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
+        # elif self.args.apply_defense == True:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf Defense: %s %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+        # else:
+        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
@@ -337,9 +402,9 @@ class MainTaskVFL(object):
         # else:
         #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         if self.args.apply_defense == True:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
+            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         

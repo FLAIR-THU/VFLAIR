@@ -1,6 +1,6 @@
 {
     "epochs": 100,
-    "lr": 0.005,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 64,
     "dataset":{
@@ -20,13 +20,19 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "attack": {
         "name": "ReplacementBackdoor",
         "parameters": {
             "party": [0]
+        }
+    },
+    "defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "gradient_sparse_rate": 100.0
         }
     }
 }

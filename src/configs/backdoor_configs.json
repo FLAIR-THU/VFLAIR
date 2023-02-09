@@ -29,14 +29,5 @@
         "parameters": {
             "party": [0]
         }
-    },
-    "defense": {
-        "name": "CAE",
-        "parameters": {
-            "input_dim": 10,
-            "encode_dim": 62,
-            "lambda": 1,
-            "model_path": "../trained_CAE_models/autoencoder_10_1.0_1642396548"
-        }
     }
 }
