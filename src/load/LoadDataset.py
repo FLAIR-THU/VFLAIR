@@ -27,7 +27,7 @@ from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
-TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income']
+TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 
 
@@ -59,6 +59,15 @@ def dataset_partition(args, index, dst, half_dim):
                     return None
         else:
             assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+            return None
+    elif args.dataset in ['nuswide']:
+        if args.k == 2:
+            if index == 0:
+                return (dst[0][1],None) # passive party with text
+            else:
+                return (dst[0][0], dst[1]) # active party with image
+        else:
+            assert (args.k == 2), "total number of parties not supported for data partitioning"
             return None
     elif args.dataset in TABULAR_DATA:
         if args.k == 2:
@@ -150,6 +159,23 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (data, label)
+    elif args.dataset == 'nuswide':
+        half_dim = [634, 1000]
+        if args.num_classes == 5:
+            selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
+        elif args.num_classes == 2:
+            selected_labels = ['clouds','person'] # class_num = 2
+        X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 60000, 'Train')
+        # X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 600, 'Train')
+        data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        train_dst = (data, label)
+        X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 40000, 'Test')
+        # X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 400, 'Test')
+        data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        test_dst = (data, label)
+        print("nuswide dataset [test]:", data[0].shape, data[1].shape, label.shape)
     elif args.dataset in GRAPH_DATA:
         if args.dataset == 'cora':
             adj, features, idx_train, idx_val, idx_test, label = load_data1(args.dataset)
@@ -203,24 +229,38 @@ def load_dataset_per_party(args, index):
             # half_dim = 6+9+16+7+15 #=53 acc=0.77
             # half_dim = int(X.shape[1]//2) acc=0.77
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
+        elif args.dataset == 'criteo':
+            # category_features = ['C' + str(i) for i in range(1, 27)]
+            # dense_features = ['I' + str(i) for i in range(1, 14)]
+            # target_columns = ['label']
+            # columns = target_columns + dense_features + category_features
+            # print(columns)
+            # data_train = pd.read_csv("../../../share_dataset/Criteo/train.txt",sep='\t',names = columns,nrows=10000)
+            # print(data_train.describe())
+            # data_train.fillna(data_train.median(),inplace=True)
+            df = pd.read_csv("../../../share_dataset/Criteo/criteo.csv",nrows=100000)
+            # df = pd.read_csv("../../../share_dataset/Criteo/criteo.csv",nrows=100000)
+            print("criteo dataset loaded")
+            half_dim = (df.shape[1]-1)//2
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
         y_train = torch.tensor(y_train)
         y_test = torch.tensor(y_test)
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
-    # elif args.dataset_name == 'nuswide':
-    #     half_dim = [634, 1000]
-    #     train_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'train')
-    #     test_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'test')
-    # args.train_dataset = train_dst
-    # args.val_dataset = test_dst
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
     if not args.dataset in GRAPH_DATA:
-        train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
-        test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+        if not args.dataset == 'nuswide':
+            train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
+            test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+        else:
+            train_dst = ([train_dst[0][0].to(args.device),train_dst[0][1].to(args.device)],train_dst[1].to(args.device))
+            test_dst = ([test_dst[0][0].to(args.device),test_dst[0][1].to(args.device)],test_dst[1].to(args.device))
         train_dst = dataset_partition(args,index,train_dst,half_dim)
         test_dst = dataset_partition(args,index,test_dst,half_dim)
     else:

@@ -37,6 +37,34 @@ class MLP2(nn.Module):
         x = self.layer2(x)
         return x
 
+class MLP3(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP3, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Linear(input_dim, 32, bias=True),
+            nn.ReLU(inplace=True)
+        )
+        torch.nn.init.xavier_uniform_(self.layer1[0].weight)
+        torch.nn.init.zeros_(self.layer1[0].bias)
+
+        self.layer2 = nn.Sequential(
+            nn.Linear(32, 16, bias=True),
+            nn.ReLU(inplace=True)
+        )
+        torch.nn.init.xavier_uniform_(self.layer2[0].weight)
+        torch.nn.init.zeros_(self.layer2[0].bias)
+
+        self.layer3 = nn.Sequential(
+            nn.Linear(16, output_dim, bias=True),
+            # nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        return x
+
 class LeNet5(nn.Module):
 
     def __init__(self, n_classes):
