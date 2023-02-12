@@ -232,7 +232,7 @@ class MainTaskVFL(object):
                         pred_list = []
                         for ik in range(self.k):
                             pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
+                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:

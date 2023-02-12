@@ -143,7 +143,7 @@ class BatchLabelReconstruction(Attacker):
 
     def attack(self):
         self.set_seed(100)
-        for ik in self.party:
+        for ik in self.party: # attacker party #ik
             index = ik
             self.exp_res_dir = self.exp_res_dir + f'{index}/'
             if not os.path.exists(self.exp_res_dir):
@@ -159,39 +159,26 @@ class BatchLabelReconstruction(Attacker):
             original_dy_dx = self.vfl_info['local_model_gradient'][ik]
             local_model = self.vfl_info['model'][ik]
 
-            # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
-            
             true_label = self.vfl_info['label']
             # print(true_label.size())
             
             local_model_copy = copy.deepcopy(local_model)
             local_model = local_model.to(self.device)
             local_model_copy.eval()
+
+            # ################## debug: for checking if saved results are right (start) ##################
+            # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
+            # original_dy = self.vfl_info['gradient'][ik]
             # new_pred_a = local_model_copy(self_data)
-            # original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
+            # new_original_dy_dx = torch.autograd.grad(new_pred_a, local_model_copy.parameters(), grad_outputs=original_dy, retain_graph=True)
+            # print(f"predict_error:{torch.nonzero(new_pred_a-pred_a)}")
+            # for new_w, w in zip(new_original_dy_dx, original_dy_dx):
+            #     print(f"model_weight_error:{torch.nonzero(new_w-w)}")
+            # ################## debug: for checking if saved results are right (end) ##################
 
             sample_count = pred_a.size()[0]
-            # dummy_pred_b_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-            # dummy_label_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-            # dummy_pred_b_no_top_trainabel_model = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-            # dummy_label_no_top_trainabel_model = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-
-            # self.dummy_active_top_trainable_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
-            # self.optimizer_trainable = torch.optim.Adam([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
-            # # self.optimizer_trainable = torch.optim.SGD([dummy_pred_b_top_trainabel_model, dummy_label_top_trainabel_model] + list(self.dummy_active_top_trainable_model.parameters()), lr=self.lr)
-            # self.dummy_active_top_non_trainable_model = ClassificationModelHostHead().to(self.device)
-            # self.optimizer_non_trainable = torch.optim.Adam([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
-            # # self.optimizer_non_trainable = torch.optim.SGD([dummy_pred_b_no_top_trainabel_model, dummy_label_no_top_trainabel_model], lr=self.lr)
-
-
             recovery_history = []
             recovery_rate_history = [[], []]
-            # passive party does not whether
-            # for i, (dummy_model, optimizer, dummy_pred_b, dummy_label) in \
-            #             enumerate(zip([self.dummy_active_top_non_trainable_model,self.dummy_active_top_trainable_model],\
-            #                         [self.optimizer_non_trainable,self.optimizer_trainable],\
-            #                         [dummy_pred_b_no_top_trainabel_model,dummy_pred_b_top_trainabel_model],\
-            #                         [dummy_label_no_top_trainabel_model,dummy_label_top_trainabel_model])):
             for i in range(2):
                 if i == 0: #non_trainable_top_model
                     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
@@ -231,8 +218,8 @@ class BatchLabelReconstruction(Attacker):
                         grad_diff.backward()
                         return grad_diff
                     
-                    # rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
-                    # print(f"iter={iter}::rec_rate={rec_rate}")
+                    rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
+                    # print(f"iter={iters}::rec_rate={rec_rate}")
                     optimizer.step(closure)
                     
                     # if self.early_stop == True:

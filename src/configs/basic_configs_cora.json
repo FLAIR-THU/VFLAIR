@@ -1,6 +1,6 @@
 {
-    "epochs": 20,
-    "lr": 0.05,
+    "epochs": 200,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -13,13 +13,13 @@
         "0": {
             "type": "GCN",
             "hidden_dim": 32,
-            "output_dim": 7,
+            "output_dim": 16,
             "path": ""
         },
         "1": {
             "type": "GCN",
             "hidden_dim": 32,
-            "output_dim": 7,
+            "output_dim": 16,
             "path": ""
         },
         "apply_trainable_layer": 1,

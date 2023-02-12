@@ -46,7 +46,10 @@ def load_basic_models(args,index):
             global_model_optimizer = None
         else:
             print("global_model", args.global_model)
-            global_model = globals()[args.global_model](args.k*args.num_classes, args.num_classes)
+            global_input_dim = 0
+            for ik in range(args.k):
+                global_input_dim += args.model_list[str(ik)]['output_dim']
+            global_model = globals()[args.global_model](global_input_dim, args.num_classes)
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
             # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr)

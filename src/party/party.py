@@ -115,13 +115,11 @@ class Party(object):
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
-
         # ########## for passive local mid loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']) and (self.index < self.args.k-1):
             self.local_model.mid_loss.backward(retain_graph=True)
             self.local_model.mid_loss = torch.empty((1,1)).to(self.args.device)
         # ########## for passive local mid loss (end) ##########
-
         self.weights_grad_a = torch.autograd.grad(self.local_pred, self.local_model.parameters(), grad_outputs=self.local_gradient, retain_graph=True)
         for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
             if w.requires_grad:

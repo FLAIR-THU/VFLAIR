@@ -12,6 +12,8 @@ class ActiveParty(Party):
         super().__init__(args, index)
         self.criterion = cross_entropy_for_onehot
         self.encoder = args.encoder
+        self.train_index = args.idx_train
+        self.test_index = args.idx_test
         
         self.gt_one_hot_label = None
 
@@ -50,9 +52,15 @@ class ActiveParty(Party):
     def receive_pred(self, pred, giver_index):
         self.pred_received[giver_index] = pred
 
-    def aggregate(self, pred_list, gt_one_hot_label):
+    def aggregate(self, pred_list, gt_one_hot_label, test=False):
         pred = self.global_model(pred_list)
-        loss = self.criterion(pred, gt_one_hot_label)
+        if self.train_index != None:
+            if test == False:
+                loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
+            else:
+                loss = self.criterion(pred[self.test_index], gt_one_hot_label[self.test_index])
+        else:
+            loss = self.criterion(pred, gt_one_hot_label)
         # ########## for active mid model loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             for mid_loss in self.global_model.mid_loss_list:

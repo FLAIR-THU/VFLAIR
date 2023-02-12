@@ -1,6 +1,6 @@
 {
     "epochs": 100,
-    "lr": 0.01,
+    "lr": 0.0001,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -22,7 +22,7 @@
             "output_dim": 2,
             "path": ""
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead3"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     }
 }

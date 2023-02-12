@@ -104,6 +104,7 @@ def dataset_partition(args, index, dst, half_dim):
             X_A = sparse_mx_to_torch_sparse_tensor(X_A).to(args.device)
             args.X_B = sparse_mx_to_torch_sparse_tensor(X_B).to(args.device)
             args.half_dim = [X_A.shape[1], X_B.shape[1]]
+            print("cora after split", A_A.shape, A_B.shape, X_A.shape, X_B.shape)
             # print(args.half_dim)
             return ([A_A,X_A],None), args
         elif index == 1:
@@ -119,6 +120,8 @@ def load_dataset_per_party(args, index):
     args.classes = [None] * args.num_classes
 
     half_dim = -1
+    args.idx_train = None
+    args.idx_test = None
     if args.dataset == "cifar100":
         half_dim = 16
         train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
@@ -182,12 +185,12 @@ def load_dataset_per_party(args, index):
             target_nodes = idx_test
             A = np.array(adj.todense())
             X = sparse_to_tuple(features.tocoo())
-            # print(type(adj), type(features), type(label))
-            idx_train = torch.LongTensor(idx_train)
-            idx_test = torch.LongTensor(idx_test)
+            print("cora dataset before split", A.shape, type(X), X[0].shape)
+            args.idx_train = torch.LongTensor(idx_train)
+            args.idx_test = torch.LongTensor(idx_test)
             label = torch.LongTensor(label).to(args.device)
             train_dst = ([adj, features], label)
-            test_dst = ([adj, features,target_nodes], label)
+            test_dst = ([adj, features, target_nodes], label)
         half_dim = -1
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
@@ -230,16 +233,7 @@ def load_dataset_per_party(args, index):
             # half_dim = int(X.shape[1]//2) acc=0.77
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
         elif args.dataset == 'criteo':
-            # category_features = ['C' + str(i) for i in range(1, 27)]
-            # dense_features = ['I' + str(i) for i in range(1, 14)]
-            # target_columns = ['label']
-            # columns = target_columns + dense_features + category_features
-            # print(columns)
-            # data_train = pd.read_csv("../../../share_dataset/Criteo/train.txt",sep='\t',names = columns,nrows=10000)
-            # print(data_train.describe())
-            # data_train.fillna(data_train.median(),inplace=True)
             df = pd.read_csv("../../../share_dataset/Criteo/criteo.csv",nrows=100000)
-            # df = pd.read_csv("../../../share_dataset/Criteo/criteo.csv",nrows=100000)
             print("criteo dataset loaded")
             half_dim = (df.shape[1]-1)//2
             X = df.iloc[:, :-1].values
