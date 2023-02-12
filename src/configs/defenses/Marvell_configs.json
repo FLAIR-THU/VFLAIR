@@ -1,7 +1,0 @@
-{
-    "defense_parameters": {
-        "epochs": 30,
-        "lr": 0.001,
-        "marvell_s": 10
-    }
-}

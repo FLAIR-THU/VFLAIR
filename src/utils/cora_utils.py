@@ -74,40 +74,20 @@ def load_data(dataset_str, num_node, num_label):
             entry = [int(x) for x in j.split(" ")]
             attack_id.append(entry[0])
 
-
-    # train_mask = sample_mask(idx_train, labels.shape[0])
-    # val_mask = sample_mask(idx_val, labels.shape[0])
-    # test_mask = sample_mask(idx_test, labels.shape[0])
-    #
-    # # attack_mask = sample_mask(idx_attack, labels.shape[0])
-    #
-    # y_train = np.zeros(labels.shape)
-    # y_val = np.zeros(labels.shape)
-    # y_test = np.zeros(labels.shape)
-    #
-    #
-    # y_train[train_mask, :] = labels[train_mask, :]
-    # y_val[val_mask, :] = labels[val_mask, :]
-    # y_test[test_mask, :] = labels[test_mask, :]
-    #
-    # y_attack = []
-    # attack_mask = []
-    # for idx_attack in range(len(attack_id)):
-    #     y_attack.append(np.zeros(labels.shape))
-    #     attack_mask.append(sample_mask(attack_id[idx_attack], labels.shape[0]))
-    #     y_attack[idx_attack][attack_mask[idx_attack], :] = labels[attack_mask[idx_attack], :]
-    # return adj, features, labels, y_train, y_val, y_test, y_attack, train_mask, val_mask, test_mask, attack_mask, adjsum
     return adj, features, np.array(labels), np.array(idx_train), np.array(idx_val), np.array(idx_test), adjsum
+
 
 def encode_onehot(labels):
     eye = np.eye(labels.max() + 1)
     onehot_mx = eye[labels]
     return onehot_mx
 
+
 def tensor2onehot(labels):
     eye = torch.eye(labels.max() + 1)
     onehot_mx = eye[labels]
     return onehot_mx.to(labels.device)
+
 
 def preprocess(adj, features, labels, preprocess_adj=False, preprocess_feature=False, sparse=False, device='cpu'):
 
@@ -128,6 +108,7 @@ def preprocess(adj, features, labels, preprocess_adj=False, preprocess_feature=F
         adj = torch.FloatTensor(adj.todense())
     return adj.to(device), features.to(device), labels.to(device)
 
+
 def to_tensor(adj, features, labels=None, device='cpu'):
     if sp.issparse(adj):
         adj = sparse_mx_to_torch_sparse_tensor(adj)
@@ -146,6 +127,7 @@ def to_tensor(adj, features, labels=None, device='cpu'):
         labels = torch.LongTensor(labels)
         return adj.to(device), features.to(device), labels.to(device)
 
+
 def normalize_feature(mx):
     """Row-normalize sparse matrix"""
     if type(mx) is not sp.lil.lil_matrix:
@@ -156,6 +138,7 @@ def normalize_feature(mx):
     r_mat_inv = sp.diags(r_inv)
     mx = r_mat_inv.dot(mx)
     return mx
+
 
 def normalize_adj(mx):
     """Row-normalize sparse matrix"""
@@ -171,6 +154,7 @@ def normalize_adj(mx):
     mx = mx.dot(r_mat_inv)
     return mx
 
+
 def normalize_adj_rgcn(mx, k):
     """Row-normalize sparse matrix"""
     if type(mx) is not sp.lil.lil_matrix:
@@ -184,6 +168,7 @@ def normalize_adj_rgcn(mx, k):
     mx = r_mat_inv.dot(mx)
     mx = mx.dot(r_mat_inv)
     return mx
+
 
 def normalize_sparse_tensor(adj, fill_value=1):
     edge_index = adj._indices()
@@ -203,6 +188,7 @@ def normalize_sparse_tensor(adj, fill_value=1):
     shape = adj.shape
     return torch.sparse.FloatTensor(edge_index, values, shape)
 
+
 def add_self_loops(edge_index, edge_weight=None, fill_value=1, num_nodes=None):
     # num_nodes = maybe_num_nodes(edge_index, num_nodes)
 
@@ -218,6 +204,7 @@ def add_self_loops(edge_index, edge_weight=None, fill_value=1, num_nodes=None):
     edge_index = torch.cat([edge_index, loop_index], dim=1)
 
     return edge_index, edge_weight
+
 
 def normalize_adj_tensor(adj, sparse=False):
 
@@ -239,6 +226,7 @@ def normalize_adj_tensor(adj, sparse=False):
         mx = mx @ r_mat_inv
     return mx
 
+
 def normalize_adj_tensor_rgcn(adj, k,sparse=False):
 
     device = torch.device("cuda" if adj.is_cuda else "cpu")
@@ -259,6 +247,7 @@ def normalize_adj_tensor_rgcn(adj, k,sparse=False):
         mx = mx @ r_mat_inv
     return mx
 
+
 def degree_normalize_adj(mx):
     """Row-normalize sparse matrix"""
     mx = mx.tolil()
@@ -271,6 +260,7 @@ def degree_normalize_adj(mx):
     # mx = mx.dot(r_mat_inv)
     mx = r_mat_inv.dot(mx)
     return mx
+
 
 def degree_normalize_sparse_tensor(adj, fill_value=1):
     edge_index = adj._indices()
@@ -290,6 +280,7 @@ def degree_normalize_sparse_tensor(adj, fill_value=1):
     shape = adj.shape
     return torch.sparse.FloatTensor(edge_index, values, shape)
 
+
 def degree_normalize_adj_tensor(adj, sparse=True):
 
     device = torch.device("cuda" if adj.is_cuda else "cpu")
@@ -307,6 +298,7 @@ def degree_normalize_adj_tensor(adj, sparse=True):
         mx = r_mat_inv @ mx
     return mx
 
+
 def accuracy(output, labels):
     if labels is int:
         labels = [labels]
@@ -318,6 +310,7 @@ def accuracy(output, labels):
     correct = correct.sum()
     return correct / len(labels)
 
+
 def accuracy1(output, labels, adj):
     if labels is int:
         labels = [labels]
@@ -328,6 +321,8 @@ def accuracy1(output, labels, adj):
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct / len(labels)
+
+
 def vote(output, labels, adj):
     pred_labels = output.max(1)[1].type_as(labels)
     edges = np.array(adj.nonzero()).T
@@ -343,8 +338,7 @@ def loss_acc(output, labels, targets, avg_loss=True):
     if avg_loss:
         return loss, correct.sum() / len(targets)
     return loss, correct
-    # correct = correct.sum()
-    # return loss, correct / len(labels)
+
 
 def classification_margin(output, true_label):
     '''probs_true_label - probs_best_second_class'''
@@ -355,6 +349,7 @@ def classification_margin(output, true_label):
     probs_best_second_class = probs[probs.argmax()]
     return (probs_true_label - probs_best_second_class).item()
 
+
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
@@ -363,6 +358,7 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     values = torch.from_numpy(sparse_mx.data)
     shape = torch.Size(sparse_mx.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
+
 
 def to_scipy(tensor):
     """Convert a dense/sparse tensor to """
@@ -375,12 +371,14 @@ def to_scipy(tensor):
         values = tensor[indices[0], indices[1]]
         return sp.csr_matrix((values.cpu().numpy(), indices.cpu().numpy()), shape=tensor.shape)
 
+
 def is_sparse_tensor(tensor):
     # if hasattr(tensor, 'nnz'):
     if tensor.layout == torch.sparse_coo:
         return True
     else:
         return False
+
 
 def get_train_val_test(nnodes, val_size=0.1, test_size=0.8, stratify=None, seed=None):
     '''
@@ -411,6 +409,7 @@ def get_train_val_test(nnodes, val_size=0.1, test_size=0.8, stratify=None, seed=
 
     return idx_train, idx_val, idx_test
 
+
 def get_train_test(nnodes, test_size=0.8, stratify=None, seed=None):
     '''
         This function returns training and test set without validation.
@@ -429,6 +428,7 @@ def get_train_test(nnodes, test_size=0.8, stratify=None, seed=None):
                                                 stratify=stratify)
 
     return idx_train, idx_test
+
 
 def get_train_val_test_gcn(labels, seed=None):
     '''
@@ -453,12 +453,14 @@ def get_train_val_test_gcn(labels, seed=None):
     idx_test = idx_unlabeled[500: 1500]
     return idx_train, idx_val, idx_test
 
+
 def get_train_test_labelrate(labels, label_rate):
     nclass = labels.max() + 1
     train_size = int(round(len(labels) * label_rate / nclass))
     print("=== train_size = %s ===" % train_size)
     idx_train, idx_val, idx_test = get_splits_each_class(labels, train_size=train_size)
     return idx_train, idx_test
+
 
 def get_splits_each_class(labels, train_size):
     '''
@@ -492,6 +494,7 @@ def get_degree_squence(adj):
         return adj.sum(0)
     except:
         return ts.sum(adj, dim=1).to_dense()
+
 
 def likelihood_ratio_filter(node_pairs, modified_adjacency, original_adjacency, d_min, threshold=0.004):
     """
@@ -560,6 +563,7 @@ def degree_sequence_log_likelihood(degree_sequence, d_min):
     ll = compute_log_likelihood(n, alpha, sum_log_degrees, d_min)
     return ll, alpha, n, sum_log_degrees
 
+
 def updated_log_likelihood_for_edge_changes(node_pairs, adjacency_matrix, d_min):
 
     # For each node pair find out whether there is an edge or not in the input adjacency matrix.
@@ -600,12 +604,14 @@ def update_sum_log_degrees(sum_log_degrees_before, n_old, d_old, d_new, d_min):
     new_n = new_n.float()
     return sum_log_degrees_after, new_n
 
+
 def compute_alpha(n, sum_log_degrees, d_min):
     try:
         alpha =  1 + n / (sum_log_degrees - n * torch.log(d_min - 0.5))
     except:
         alpha =  1 + n / (sum_log_degrees - n * np.log(d_min - 0.5))
     return alpha
+
 
 def compute_log_likelihood(n, alpha, sum_log_degrees, d_min):
     # Log likelihood under alpha
@@ -615,6 +621,7 @@ def compute_log_likelihood(n, alpha, sum_log_degrees, d_min):
         ll = n * np.log(alpha) + n * alpha * np.log(d_min) + (alpha + 1) * sum_log_degrees
 
     return ll
+
 
 def ravel_multiple_indices(ixs, shape, reverse=False):
     """
@@ -639,6 +646,7 @@ def ravel_multiple_indices(ixs, shape, reverse=False):
 
     return ixs[:, 0] * shape[1] + ixs[:, 1]
 
+
 def visualize(your_var):
     '''visualize computation graph'''
     from graphviz import Digraph
@@ -647,13 +655,11 @@ def visualize(your_var):
     from torchviz import make_dot
     make_dot(your_var).view()
 
+
 def reshape_mx(mx, shape):
     indices = mx.nonzero()
     return sp.csr_matrix((mx.data, (indices[0], indices[1])), shape=shape)
 
-# def check_path(file_path):
-#     if not osp.exists(file_path):
-#         os.system(f'mkdir -p {file_path}')
 
 def gen_adj(sim, n, k):
 
@@ -668,6 +674,7 @@ def gen_adj(sim, n, k):
             sim[id][neighbor] = -1
             sim[neighbor][id] = -1
     return fadj
+
 
 def truncatedSVD(data, k=10):
     print('=== GCN-SVD: rank={} ==='.format(k))

@@ -29,7 +29,15 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 10000
+            "epochs": 10000,
+            "early_stop": 0,
+            "early_stop_threshold": 0.0
+        }
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "dp_strength": 0.0001
         }
     }
 }

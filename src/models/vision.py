@@ -395,35 +395,6 @@ def resnet152():
     return ResNet(BottleNeck, [3, 8, 36, 3])
 
 
-# MID replated models
-# class MID_layer(nn.Module):
-#     def __init__(self, input_dim, output_dim):
-#         super(MID_layer, self).__init__()
-#         self.layer1 = nn.Sequential(
-#             nn.Flatten(),
-#             nn.Linear(input_dim, input_dim*5, bias=True),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(input_dim*5, output_dim, bias=True),
-#             nn.ReLU(inplace=True)
-#         )
-    
-#     def forward(self, x):
-#         x = self.layer1(x)
-#         return x
-
-# class MID_enlarge_layer(nn.Module):
-#     def __init__(self, input_dim, output_dim):
-#         super(MID_enlarge_layer, self).__init__()
-#         self.layer1 = nn.Sequential(
-#             nn.Flatten(),
-#             nn.Linear(input_dim, output_dim, bias=True),
-#             nn.ReLU(inplace=True)
-#         )
-    
-#     def forward(self, x):
-#         x = self.layer1(x)
-#         return x
-
 class MID_model(nn.Module):
     def __init__(self, input_dim, output_dim, mid_lambda, bottleneck_scale=1):
         super(MID_model, self).__init__()
@@ -457,6 +428,7 @@ class MID_model(nn.Module):
         mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))
 
         return z, mid_loss
+
 
 class Passive_local_MID_model(nn.Module):
     def __init__(self, local_model, mid_model):

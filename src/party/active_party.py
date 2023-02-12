@@ -5,7 +5,7 @@ import torch
 
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot
-from dataset.nuswide_dataset import ActiveDataset
+from dataset.party_dataset import ActiveDataset
 
 class ActiveParty(Party):
     def __init__(self, args, index):
@@ -18,7 +18,7 @@ class ActiveParty(Party):
         self.gt_one_hot_label = None
 
         self.pred_received = []
-        for i in range(args.k):
+        for _ in range(args.k):
             self.pred_received.append([])
         
         self.global_pred = None
@@ -28,19 +28,6 @@ class ActiveParty(Party):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
         self.test_dst = ActiveDataset(self.test_data, self.test_label)
-    
-    # def aggregate_and_gradient_calculation(self, pred_list, gt_one_hot_label):
-    #     pred = self.global_model(pred_list)
-    #     loss = self.criterion(pred, gt_one_hot_label)
-    #     pred_gradients_list = []
-    #     pred_gradients_list_clone = []
-    #     for ik in range(self.args.k):
-    #         _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
-    #         _gradients_clone = _gradients[0].detach().clone()
-    #         pred_gradients_list.append(_gradients)
-    #         pred_gradients_list_clone.append(_gradients_clone)
-    #     # self.global_backward(pred, loss)
-    #     return pred, loss, pred_gradients_list, pred_gradients_list_clone
     
     def give_pred(self): # 计算自己的pred并更新本地pred_list
         self.local_pred = self.local_model(self.local_batch_data)

@@ -70,7 +70,6 @@ def get_rand_batch(seed, class_num, batch_size, transform=None):
 def entropy(predictions):
     epsilon = 1e-6
     H = -predictions * torch.log(predictions + epsilon)
-    # print("H:", H.shape)
     return torch.mean(H)
 
 def calculate_entropy(matrix, N=2):
@@ -81,9 +80,6 @@ def calculate_entropy(matrix, N=2):
             class_counts[row_idx] += elem
             all_counts += elem
 
-    # print("class_counts", class_counts)
-    # print("all_counts", all_counts)
-
     weight_entropy = 0.0
     for row_idx, row in enumerate(matrix):
         norm_elem_list = []
@@ -92,23 +88,14 @@ def calculate_entropy(matrix, N=2):
             if elem > 0:
                 norm_elem_list.append(elem / float(class_count))
         weight = class_count / float(all_counts)
-        # weight = 1 / float(len(matrix))
         ent = numpy_entropy(np.array(norm_elem_list), N=N)
-        # print("norm_elem_list:", norm_elem_list)
-        # print("weight:", weight)
-        # print("ent:", ent)
         weight_entropy += weight * ent
     return weight_entropy
 
 def numpy_entropy(predictions, N=2):
-    # epsilon = 1e-10
-    # epsilon = 1e-8
     epsilon = 0
-    # print(np.log2(predictions + epsilon))
     H = -predictions * (np.log(predictions + epsilon) / np.log(N))
-    # print("H:", H.shape)
     return np.sum(H)
-    # return H
 
 
 def img_show(img):
@@ -126,14 +113,6 @@ def draw_line_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, 
     plt.ylabel(label_y, fontsize=16)
     #plt.title(title, fontsize=14) 
     plt.tick_params(labelsize=14)
-
-    # ax.set_xlabel(label_x, fontsize=15)
-    # ax.set_ylabel(label_y, fontsize=16)
-    # ax.tick_params(axis='x', labelsize=14)
-    # ax.tick_params(axis='y', labelsize=14)
-    # ax.legend(fontsize=14) 
-
-
 
     x_major_locator = MultipleLocator(x_scale)
     y_major_locator = MultipleLocator(y_scale)
@@ -228,7 +207,6 @@ def aggregate(classifier, logits_a, logits_b):
         return classifier(logits)
     else:
         return logits_a + logits_b
-
 
 
 def transform_convert(img_tensor, transform):
@@ -401,6 +379,7 @@ def get_images():
                 img.show()
                 arr = np.array(img)
                 print("thumbnail", arr.shape)
+
 
 def data_poison(images, poison_list, k, dataset):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
@@ -647,19 +626,6 @@ def save_checkpoint(state, ckpt_dir, is_best=False):
         shutil.copyfile(filename, best_filename)
 
 
-# def ClipAndPerturb(model,device,ro,sigma):
-#     model_dict = model.state_dict()
-#     temp_dict = {}
-#     for k,v in model_dict.items():
-#         temp_dict[k] = v
-#         _norm = np.linalg.norm(temp_dict[k].cpu(),ord=1)
-#         # print("L2 norm of parameter =",_norm)
-#         temp_dict[k] = temp_dict[k]/max(1,(_norm/ro))
-#         temp_dict[k].to(device)
-#         temp_dict[k] += torch.normal(0.0, sigma*sigma, temp_dict[k].shape).to(device)
-#     temp_model = copy.deepcopy(model)
-#     temp_model.load_state_dict(temp_dict)
-#     return temp_model
 def ClipAndPerturb(vector,device,ro,sigma):
     _norm = np.linalg.norm(vector.cpu().detach().numpy(),ord=1)
     # print("L2 norm of parameter =",_norm)

@@ -7,7 +7,6 @@ from torch.utils.data import DataLoader
 import tensorflow as tf
 
 from tqdm import tqdm
-# from utils import cross_entropy_for_one_hot, sharpen
 import numpy as np
 import time
 import copy
@@ -170,12 +169,9 @@ class MainTaskVFL(object):
 
         test_acc = 0.0
         for i_epoch in range(self.epochs):
-            # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
             data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
-            # data_loader_list.append(tqdm_train)
-            # for parties_data in zip(self.parties[0].train_loader, self.parties[self.k-1].train_loader, tqdm_train): ## TODO: what to de for 4 party?
             for parties_data in zip(*data_loader_list):
                 self.parties_data = parties_data
                 i += 1
@@ -187,10 +183,9 @@ class MainTaskVFL(object):
                 self.gt_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                 self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                 # print("parties' data have size:", parties_data[0][0].size(), parties_data[self.k-1][0].size(), parties_data[self.k-1][1].size())
-                # ====== train batch ======
                 
+                # ====== train batch (start) ======
                 if i == 0 and i_epoch == 0:
-                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state = self.save_state(True)
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
@@ -198,16 +193,14 @@ class MainTaskVFL(object):
                 self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
             
                 if i == 0 and i_epoch == 0:
-                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state.update(self.save_state(False))
-                
                 # if i == 0 and i_epoch == 0:
-                #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                 #     self.first_epoch_state = self.save_state()
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state()
+                # ====== train batch (end) ======
 
             # validation
             if (i + 1) % print_every == 0:
@@ -220,10 +213,7 @@ class MainTaskVFL(object):
                 sample_cnt = 0
 
                 with torch.no_grad():
-                    # enc_result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
-                    # result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
                     data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
-                    # for parties_data in zip(self.parties[0].test_loader, self.parties[self.k-1].test_loader):
                     for parties_data in zip(*data_loader_list):
                         # print("test", parties_data[0][0].size(),parties_data[self.k-1][0].size(),parties_data[self.k-1][1].size())
                         gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
@@ -240,9 +230,7 @@ class MainTaskVFL(object):
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
                             predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                        # predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
-                        # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
                         actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
                         sample_cnt += predict_label.shape[0]
                         suc_cnt += torch.sum(predict_label == actual_label).item()
@@ -258,14 +246,6 @@ class MainTaskVFL(object):
             exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
             exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
-        # if self.args.apply_cae == True:
-        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
-        # elif self.args.apply_mid == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
-        # elif self.args.apply_defense == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf Defense: %s %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
-        # else:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
@@ -275,36 +255,28 @@ class MainTaskVFL(object):
     def train_graph(self):
         test_acc = 0.0
         for i_epoch in range(self.epochs):
-            # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
-            # data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
-            # data_loader_list.append(tqdm_train)
             self.parties_data = [(self.parties[ik].train_data, self.parties[ik].train_label) for ik in range(self.k)]
             for ik in range(self.k):
                 self.parties[ik].local_model.train()
             self.parties[self.k-1].global_model.train()
 
-            # print("train", self.parties_data[0][0].size(),self.parties_data[self.k-1][0].size(),self.parties_data[self.k-1][1].size())
-            # print("train", self.parties_data[self.k-1][1])
-            # print("train", type(self.parties_data[self.k-1][1]))
             self.gt_one_hot_label = self.label_to_one_hot(self.parties_data[self.k-1][1], self.num_classes)
             self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
-            # print("parties' data have size:", self.parties_data[0][0].size(), parties_data[self.k-1][0].size(), parties_data[self.k-1][1].size())
-            # ====== train batch ======
-            
-            # if i == 0 and i_epoch == 0:
-            #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
-            #     self.first_epoch_state = self.save_state(True)
-            # elif i_epoch == self.epochs//2 and i == 0:
-            #     self.middle_epoch_state = self.save_state(True)
+
+            # ====== train batch (start) ======            
+            if i_epoch == 0:
+                self.first_epoch_state = self.save_state(True)
+            elif i_epoch == self.epochs//2:
+                self.middle_epoch_state = self.save_state(True)
             
             self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
         
-            # if i == 0 and i_epoch == 0:
-            #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
-            #     self.first_epoch_state.update(self.save_state(False))
-            # elif i_epoch == self.epochs//2 and i == 0:
-            #     self.middle_epoch_state.update(self.save_state(False))
+            if  i_epoch == 0:
+                self.first_epoch_state.update(self.save_state(False))
+            elif i_epoch == self.epochs//2:
+                self.middle_epoch_state.update(self.save_state(False))
+            # ====== train batch (end) ======            
 
 
             # validation
@@ -316,8 +288,6 @@ class MainTaskVFL(object):
             suc_cnt = 0
             sample_cnt = 0
             with torch.no_grad():
-                # enc_result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
-                # result_matrix = np.zeros((self.num_classes, self.num_classes), dtype=int)
                 parties_data = [(self.parties[ik].test_data, self.parties[ik].test_label) for ik in range(self.k)]
                 
                 gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
@@ -334,9 +304,7 @@ class MainTaskVFL(object):
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                # predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
-                # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
                 actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
                 predict_label = predict_label[parties_data[self.k-1][0][2]]
                 actual_label = actual_label[parties_data[self.k-1][0][2]]
@@ -351,15 +319,6 @@ class MainTaskVFL(object):
                 print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                     i_epoch, self.loss, self.train_acc, self.test_acc))
         
-        print(self.args.apply_defense)
-        # if self.args.apply_cae == True:
-        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
-        # elif self.args.apply_mid == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID %lf wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'], str(self.args.defense_configs['party']))
-        # elif self.args.apply_defense == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
-        # else:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
         if self.args.apply_defense == True:
             exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
@@ -386,40 +345,11 @@ class MainTaskVFL(object):
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss)
             }
-        # return {
-        #         "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
-        #         "data": copy.deepcopy(self.parties_data), 
-        #         "label": copy.deepcopy(self.gt_one_hot_label),
-        #         "predict": copy.deepcopy(self.pred_list_clone),
-        #         "gradient": copy.deepcopy(self.pred_gradients_list_clone),
-        #         "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
-        #         "train_acc": copy.deepcopy(self.train_acc),
-        #         "loss": copy.deepcopy(self.loss)
-        #     }
 
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)
         if self.attacker != None:
             self.attacker.attack()
-
-    # def launch_attack(self, gradients_list, pred_list, type):
-    #     if type == 'gradients_label':
-    #         for ik in range(self.k):
-    #             start_time = time.time()
-    #             recovery_history = self.parties[ik].party_attack(self.args, gradients_list[ik], pred_list[ik])
-    #             end_time = time.time()
-    #             if recovery_history != None:
-    #                 recovery_rate_history = []
-    #                 for dummy_label in recovery_history:
-    #                     rec_rate = self.calc_label_recovery_rate(dummy_label, self.gt_one_hot_label)
-    #                     recovery_rate_history.append(rec_rate)
-    #                     print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (dummy_label.size()[0], self.num_classes, ik, rec_rate, end_time - start_time))
-    #                 best_rec_rate = max(recovery_rate_history)
-    #                 exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (dummy_label.size()[0], self.num_classes, ik, best_rec_rate, str(recovery_rate_history))
-    #                 append_exp_res(self.parties[ik].attacker.exp_res_path, exp_result)
-    #     else:
-    #         # further extention
-    #         pass
 
     def launch_defense(self, gradients_list, type):
         if type == 'gradients':
@@ -427,7 +357,6 @@ class MainTaskVFL(object):
         else:
             # further extention
             return gradients_list
-            pass
 
     def calc_label_recovery_rate(self, dummy_label, gt_label):
         success = torch.sum(torch.argmax(dummy_label, dim=-1) == torch.argmax(gt_label, dim=-1)).item()

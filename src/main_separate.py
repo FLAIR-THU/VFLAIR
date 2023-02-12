@@ -57,7 +57,7 @@ if __name__ == '__main__':
         torch.cuda.set_device(cuda_id)
     print(f'running on cuda{torch.cuda.current_device()}')
 
-    # load configs from *_config.json files
+    # load configs from *.json files
     args = load_configs(args.configs, args)
     assert args.dataset_split != None, "dataset_split attribute not found config json file"
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
@@ -66,6 +66,7 @@ if __name__ == '__main__':
     # print(args.attack_methods)
 
     # for _ in range(args.num_exp):
+    
     # mark that backdoor data is never prepared
     args.target_label = None
     args.train_poison_list = None
@@ -79,8 +80,6 @@ if __name__ == '__main__':
         os.makedirs(args.exp_res_dir)
     filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},' \
         f'epochs={args.main_epochs}.txt'
-    # filename = f'dataset={args.dataset},model={args.model},lr={args.lr},num_exp={args.num_exp},' \
-    #        f'epochs={args.epochs},early_stop={args.early_stop}.txt'
     args.exp_res_path = args.exp_res_dir + filename
     
     # if have inference time attack, use another VFL pipeline

@@ -83,12 +83,8 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         parameters = []
                         for mid_model in global_model.mid_model_list:
                             parameters += list(mid_model.parameters())
-                        # global_model_optimizer = torch.optim.Adam(parameters, lr=args.main_lr)
-                        # global_model_optimizer = torch.optim.SGD(parameters, lr=args.main_lr)
                         global_model_optimizer = torch.optim.Adam(parameters, lr=mid_lr)
                     else:
-                        # global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
-                        # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr)
                         parameters = []
                         for mid_model in global_model.mid_model_list:
                             parameters += list(mid_model.parameters())
@@ -103,8 +99,6 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)
                     # update optimizer
-                    # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr)
-                    # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr)
                     local_model_optimizer = torch.optim.Adam(
                         [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                          {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
@@ -132,36 +126,4 @@ def load_models_per_party(args, index):
 
 
 if __name__ == '__main__':
-    args = argparse.ArgumentParser("backdoor").parse_args()
-    args.num_classes = 10
-    
-    # temp_net = MLP2(28*28, args.num_classes)
-    # pickle.dump(temp_net, open('../../model_parameters/MLP2/random_28*28_'+str(args.num_classes)+'.pkl','wb'))
-    # loaded_net = pickle.load(open('../../model_parameters/MLP2/random_28*28_'+str(args.num_classes)+'.pkl',"rb"))
-
-    torch.manual_seed(1234)
-    def weights_init(m):
-        if hasattr(m, "weight"):
-            m.weight.data.uniform_(-0.5, 0.5)
-        if hasattr(m, "bias"):
-            m.bias.data.uniform_(-0.5, 0.5)
-    
-    temp_net = LeNet(args.num_classes)
-    temp_net.apply(weights_init)
-    pickle.dump(temp_net, open('../../model_parameters/LeNet/random_'+str(args.num_classes)+'.pkl','wb'))
-    loaded_net = pickle.load(open('../../model_parameters/LeNet/random_'+str(args.num_classes)+'.pkl',"rb"))
-
-
-    # temp_net = resnet18(args.num_classes)
-    # pickle.dump(temp_net, open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl','wb'))
-    # loaded_net = pickle.load(open('../../model_parameters/resnet18/random_'+str(args.num_classes)+'.pkl',"rb"))
-
-    print(temp_net)
-    print(loaded_net)
-
-    # if args.model == 'MLP2':
-    #     args.net_a = MLP2(np.prod(list(args.gt_data_a.size())[1:]), args.num_classes).to(args.device)
-    #     args.net_b = MLP2(np.prod(list(args.gt_data_b.size())[1:]), args.num_classes).to(args.device)
-    # elif args.model == 'resnet18':
-    #     args.net_a = resnet18(args.num_classes).to(args.device)
-    #     args.net_b = resnet18(args.num_classes).to(args.device)
+    pass

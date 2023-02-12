@@ -29,7 +29,9 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 3000
+            "epochs": 3000,
+            "early_stop": 0,
+            "early_stop_threshold": 0.0
         }
     }
 }

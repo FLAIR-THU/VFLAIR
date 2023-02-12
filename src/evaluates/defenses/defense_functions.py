@@ -12,7 +12,6 @@ def bound(grad, gamma):
     else:
         return grad
 
-
 def generate_lap_noise(beta):
     # beta = sensitivity / epsilon
     u1 = np.random.random()
@@ -24,11 +23,9 @@ def generate_lap_noise(beta):
     # print(n_value)
     return n_value
 
-
 def sigma(x, c, sensitivity):
     x = 2. * c * sensitivity / x
     return x
-
 
 def get_grad_num(layer_grad_list):
     num_grad = 0
@@ -43,7 +40,6 @@ def get_grad_num(layer_grad_list):
         num_grad_per_layer.append(num_grad_this_layer)
     return num_grad, num_grad_per_layer
 
-
 def get_grad_layer_id_by_grad_id(num_grad_per_layer, id):
     id_layer = 0
     id_temp = id
@@ -56,7 +52,6 @@ def get_grad_layer_id_by_grad_id(num_grad_per_layer, id):
             break
     return id_layer, id_temp
 
-
 def get_one_grad_by_grad_id(layer_grad_list, num_grad_per_layer, id):
     id_layer, id_in_this_layer = get_grad_layer_id_by_grad_id(num_grad_per_layer, id)
     grad_this_layer = layer_grad_list[id_layer]
@@ -67,7 +62,6 @@ def get_one_grad_by_grad_id(layer_grad_list, num_grad_per_layer, id):
             id_in_this_layer % grad_this_layer.shape[1]]
     return the_grad
 
-
 def set_one_grad_by_grad_id(layer_grad_list, num_grad_per_layer, id, set_value):
     id_layer, id_in_this_layer = get_grad_layer_id_by_grad_id(num_grad_per_layer, id)
     grad_this_layer = layer_grad_list[id_layer]
@@ -77,12 +71,9 @@ def set_one_grad_by_grad_id(layer_grad_list, num_grad_per_layer, id, set_value):
         layer_grad_list[id_layer][id_in_this_layer // grad_this_layer.shape[1]][
             id_in_this_layer % grad_this_layer.shape[1]] = set_value
 
-
 def dp_gc_ppdl(epsilon, sensitivity, layer_grad_list, theta_u, gamma, tau):
     grad_num, num_grad_per_layer = get_grad_num(layer_grad_list)
     c = int(theta_u * grad_num)
-    # print("c:", c)
-    # exit()
     epsilon1 = 8. / 9 * epsilon
     epsilon2 = 2. / 9 * epsilon
     used_grad_ids = []
@@ -250,43 +241,6 @@ def GradientSparsification(args, original_object):
 
     # TODO
     # ######################## defense start ############################
-    # ######################## defense1: dp ############################
-    # if self.apply_laplace and self.dp_strength != 0.0 or self.apply_gaussian and self.dp_strength != 0.0:
-    #     location = 0.0
-    #     threshold = 0.2  # 1e9
-    #     if self.apply_laplace:
-    #         with torch.no_grad():
-    #             scale = self.dp_strength
-    #             # clip 2-norm per sample
-    #             print("norm of gradients:", torch.norm(pred_a_gradients_clone, dim=1), torch.max(torch.norm(pred_a_gradients_clone, dim=1)))
-    #             norm_factor_a = torch.div(torch.max(torch.norm(pred_a_gradients_clone, dim=1)),
-    #                                       threshold + 1e-6).clamp(min=1.0)
-    #             # add laplace noise
-    #             dist_a = torch.distributions.laplace.Laplace(location, scale)
-    #             pred_a_gradients_clone = torch.div(pred_a_gradients_clone, norm_factor_a) + \
-    #                                      dist_a.sample(pred_a_gradients_clone.shape).to(self.device)
-    #             print("norm of gradients after laplace:", torch.norm(pred_a_gradients_clone, dim=1), torch.max(torch.norm(pred_a_gradients_clone, dim=1)))
-    #     elif self.apply_gaussian:
-    #         with torch.no_grad():
-    #             scale = self.dp_strength
-
-    #             print("norm of gradients:", torch.norm(pred_a_gradients_clone, dim=1), torch.max(torch.norm(pred_a_gradients_clone, dim=1)))
-    #             norm_factor_a = torch.div(torch.max(torch.norm(pred_a_gradients_clone, dim=1)),
-    #                                       threshold + 1e-6).clamp(min=1.0)
-    #             pred_a_gradients_clone = torch.div(pred_a_gradients_clone, norm_factor_a) + \
-    #                                      torch.normal(location, scale, pred_a_gradients_clone.shape).to(self.device)
-    #             print("norm of gradients after gaussian:", torch.norm(pred_a_gradients_clone, dim=1), torch.max(torch.norm(pred_a_gradients_clone, dim=1)))
-    # ######################## defense2: gradient sparsification ############################
-    # elif self.apply_grad_spar:
-    #     with torch.no_grad():
-    #         percent = self.grad_spars / 100.0
-    #         if self.gradients_res_a is not None and \
-    #                 pred_a_gradients_clone.shape[0] == self.gradients_res_a.shape[0]:
-    #             pred_a_gradients_clone = pred_a_gradients_clone + self.gradients_res_a
-    #         a_thr = torch.quantile(torch.abs(pred_a_gradients_clone), percent)
-    #         self.gradients_res_a = torch.where(torch.abs(pred_a_gradients_clone).double() < a_thr.item(),
-    #                                               pred_a_gradients_clone.double(), float(0.)).to(self.device)
-    #         pred_a_gradients_clone = pred_a_gradients_clone - self.gradients_res_a
     # ######################## defense3: marvell ############################
     # elif self.apply_marvell and self.marvell_s != 0 and self.num_classes == 2:
     #     # for marvell, change label to [0,1]
@@ -305,16 +259,6 @@ def GradientSparsification(args, original_object):
     # # elif self.apply_ppdl:
     # #     dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_a_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
     # #     dp_gc_ppdl(epsilon=1.8, sensitivity=1, layer_grad_list=[pred_b_gradients_clone], theta_u=self.ppdl_theta_u, gamma=0.001, tau=0.0001)
-    # # elif self.apply_gc:
-    # #     tensor_pruner = TensorPruner(zip_percent=self.gc_preserved_percent)
-    # #     tensor_pruner.update_thresh_hold(pred_a_gradients_clone)
-    # #     pred_a_gradients_clone = tensor_pruner.prune_tensor(pred_a_gradients_clone)
-    # #     tensor_pruner.update_thresh_hold(pred_b_gradients_clone)
-    # #     pred_b_gradients_clone = tensor_pruner.prune_tensor(pred_b_gradients_clone)
-    # # elif self.apply_lap_noise:
-    # #     dp = DPLaplacianNoiseApplyer(beta=self.noise_scale)
-    # #     pred_a_gradients_clone = dp.laplace_mech(pred_a_gradients_clone)
-    # #     pred_b_gradients_clone = dp.laplace_mech(pred_b_gradients_clone)
     # elif self.apply_discrete_gradients:
     #     # print(pred_a_gradients_clone)
     #     pred_a_gradients_clone = multistep_gradient(pred_a_gradients_clone, bins_num=self.discrete_gradients_bins, bound_abs=self.discrete_gradients_bound)

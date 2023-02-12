@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.pardir)
 
 from party.party import Party
-from dataset.nuswide_dataset import PassiveDataset
+from dataset.party_dataset import PassiveDataset
 
 class PassiveParty(Party):
     def __init__(self, args, index):

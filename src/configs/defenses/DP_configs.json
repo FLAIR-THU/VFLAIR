@@ -1,8 +1,0 @@
-{
-    "defense_parameters": {
-        "epochs": 30,
-        "lr": 0.001,
-        "noise_type": "laplace",
-        "dp_strength": 0.001
-    }
-}
