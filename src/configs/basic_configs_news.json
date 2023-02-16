@@ -1,0 +1,37 @@
+{
+    "epochs": 30,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 2048,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "news20",
+        "num_classes": 20
+    },
+    "model_list":{
+        "0": {
+            "type": "LSTM",
+            "input_dim": 500,
+            "output_dim": 20,
+            "vocab_size": 214874,
+            "path": ""
+        },
+        "1": {
+            "type": "LSTM",
+            "input_dim": 500,
+            "output_dim": 20,
+            "vocab_size": 214874,
+            "path": ""
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack": {
+        "name": "BatchLabelReconstruction",
+        "parameters": {
+            "party": [0],
+            "lr": 0.05,
+            "epochs": 10000
+        }
+    }
+}
