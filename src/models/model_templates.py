@@ -2,6 +2,74 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# for BreastCancer dataset
+class MLP2_7(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP2_7, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Linear(input_dim, 7, bias=True),
+            nn.Sigmoid()
+        )
+
+        self.layer2 = nn.Sequential(
+            nn.Linear(7, output_dim, bias=True),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        return x
+
+# for adult income dataset
+class MLP2_8(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP2_8, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 8),
+            nn.ReLU(),
+            nn.Linear(8, output_dim),
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
+
+# For diabetes dataset
+class MLP2_5(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP2_5, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 5),
+            nn.ReLU(),
+            nn.Linear(5, output_dim),
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
+
+# For news20 dataset
+class LSTM(nn.Module):
+ 
+    def __init__(self, vocab_size, output_dim, embedding_dim=100, hidden_dim=128):
+        super(LSTM, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.lstm = nn.LSTM(input_size = embedding_dim, hidden_size = hidden_dim, num_layers = 1,
+                            bidirectional = True, batch_first = True)
+        self.Ws = nn.Parameter(torch.Tensor(hidden_dim, output_dim))
+        nn.init.uniform_(self.Ws, -0.1, 0.1)
+  
+    def forward(self, x):
+        x = self.embedding(x.long())
+        #x = pack_padded_sequence(x, x_len)
+        H, (h_n, c_n) = self.lstm(x)
+        h_n = torch.squeeze(h_n)
+        res = torch.matmul(h_n, self.Ws)
+        y = F.softmax(res, dim=1)
+        # y.size(batch_size, output_dim)
+        return y
+
 
 class SimpleCNN(nn.Module):
     def __init__(self, num_classes):
