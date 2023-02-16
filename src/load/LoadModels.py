@@ -32,6 +32,8 @@ def load_basic_models(args,index):
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
         local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)
+    elif 'lstm' in current_model_type.lower(): 
+        local_model = globals()[current_model_type](current_vocab_size, current_output_dim)
     else:
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
