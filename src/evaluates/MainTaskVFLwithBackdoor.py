@@ -125,6 +125,7 @@ class MainTaskVFLwithBackdoor(object):
             _, gt_one_hot_label = encoder(batch_label)              
         else:
             gt_one_hot_label = batch_label
+        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
         # print('current_label:', gt_one_hot_label)
 
         # ====== normal vertical federated learning ======
