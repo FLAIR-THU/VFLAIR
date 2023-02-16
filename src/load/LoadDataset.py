@@ -1,4 +1,5 @@
 import sys, os
+from os.path import join
 sys.path.append(os.pardir)
 
 import random
@@ -11,7 +12,6 @@ from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,p
 from copy import deepcopy, copy
 
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 
