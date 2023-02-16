@@ -25,6 +25,7 @@ def load_basic_models(args,index):
     current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
     current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
+    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
     if 'resnet' in current_model_type:
