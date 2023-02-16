@@ -46,14 +46,24 @@ class MainTaskVFLwithBackdoor(object):
         self.exp_res_path = args.exp_res_path
         self.parties = args.parties
 
+        self.Q = args.Q # FedBCD
+
         self.parties_data = None
         self.gt_one_hot_label = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
         self.pred_gradients_list_clone = []
+
+        # FedBCD related
+        self.local_pred_list = []
+        self.local_pred_list_clone = []
+        self.local_pred_gradients_list = []
+        self.local_pred_gradients_list_clone = []
+        
         self.loss = None
         self.train_acc = None
+        self.flag = 1
 
         # some state of VFL throughout training process
         self.first_epoch_state = None
@@ -71,6 +81,42 @@ class MainTaskVFLwithBackdoor(object):
             onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
             onehot_target.scatter_(1, target, 1)
         return onehot_target
+    
+    def pred_transmit(self): 
+        for ik in range(self.k):
+            pred, pred_detach = self.parties[ik].give_pred()
+
+            # ######### for backdoor start #########
+            pred_detach[-1] = pred_detach[-2]
+            # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
+            # ######### for backdoor end #########
+
+            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+
+            if ik == (self.k-1): # Active party update local pred
+                self.parties[ik].update_local_pred(pred_clone)
+            if ik < (self.k-1): # Passive party sends pred for aggregation
+                self.parties[self.k-1].receive_pred(pred_clone, ik) 
+    
+    def gradient_transmit(self):  # partyk(active) as gradient giver
+        gradient = self.parties[self.k-1].give_gradient() # gradient_clone
+
+        # defense applied on gradients
+        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+            gradient = self.launch_defense(gradient, "gradients")        
+
+        # ######### for backdoor start #########
+        for ik in range(self.k-1): # Only Passive Parties do
+            _grad = gradient[ik][-1]
+            gradient[ik][-2] = _grad
+        # ######### for backdoor end #########
+
+        # active party update local gradient
+        self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
+        # active party transfer gradient to passive parties
+        for ik in range(self.k-1):
+            self.parties[ik].receive_gradient(gradient[ik])
+        return
 
     def train_batch(self, parties_data, batch_label):
         encoder = self.args.encoder
@@ -82,46 +128,43 @@ class MainTaskVFLwithBackdoor(object):
         # print('current_label:', gt_one_hot_label)
 
         # ====== normal vertical federated learning ======
-
-        # compute logits of clients
-        self.pred_list = []
-        self.pred_list_clone = []
         torch.autograd.set_detect_anomaly(True)
-        for ik in range(self.k):
-            self.parties[ik].obtain_local_data(parties_data[ik][0])
-            self.pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-            # pred_list[ik] = torch.autograd.Variable(pred_list[ik], requires_grad=True).to(self.device)
-            self.pred_list_clone.append(self.pred_list[ik].detach().clone())
-            # ######### for backdoor start #########
-            self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
-            # ######### for backdoor end #########
-            self.pred_list_clone[ik] = torch.autograd.Variable(self.pred_list_clone[ik], requires_grad=True).to(self.device)
+        # == FedBCD ==
+        for q in range(self.Q):
+            # print('inner iteration q=',q)
+            if q == 0: #before first iteration, Exchange party 1,2...k
+                # allocate data to each party
+                for ik in range(self.k):
+                    self.parties[ik].obtain_local_data(parties_data[ik][0])
+                
+                # exchange info between parties
+                self.pred_transmit() # partyk存下所有party的pred
+                self.gradient_transmit() # partyk计算gradient传输给passive parties
+                
+                if self.flag == 0 and (self.train_acc == None or self.train_acc < STOPPING_ACC[self.dataset_name]):
+                    self.rounds = self.rounds + 1
+                else:
+                    self.flag = 1
 
-        # ######################## aggregate logits of clients ########################
-        pred, loss = self.parties[self.k-1].aggregate(self.pred_list_clone, gt_one_hot_label)
-        # _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
-        # _gradients = torch.autograd.grad(loss, pred_list[ik], retain_graph=True)
-        # pred = self.parties[self.k-1].global_model(pred_list)
-        # loss = self.parties[self.k-1].criterion(pred, gt_one_hot_label)
-        self.pred_gradients_list, self.pred_gradients_list_clone = self.parties[self.k-1].gradient_calculation(self.pred_list_clone, loss)
-        # ######################## aggregate logits of clients ########################
+                # update parameters for all parties
+                for ik in range(self.k):
+                    self.parties[ik].local_backward()
+                self.parties[self.k-1].global_backward()
+            else: # FedBCD: in other iterations, no communication happen, no defense&attack
+                # ==== update parameters ====
+                # for passive parties
+                for ik in range(self.k-1):
+                    _pred, _pred_clone= self.parties[ik].give_pred() # update local_pred
+                    self.parties[ik].local_backward() # self.pred_gradients_list_clone[ik], self.pred_list[ik]
+                
+                # for active party k
+                _pred, _pred_clone = self.parties[self.k-1].give_pred() # 更新local_pred
+                _gradient = self.parties[self.k-1].give_gradient() # 更新local_gradient
+                self.parties[self.k-1].local_backward()
+                self.parties[self.k-1].global_backward()
 
-        # defense applied on gradients
-        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-            self.pred_gradients_list_clone = self.launch_defense(self.pred_gradients_list_clone, "gradients")        
-        
-        # ######### for backdoor start #########
-        for ik in range(self.k-1):
-            self.pred_gradients_list_clone[ik][-2] = self.pred_gradients_list_clone[ik][-1]
-        # ######### for backdoor end #########
-
-        # print("gradients_clone[ik] have size:", pred_gradients_list_clone[0].size())
-        # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=torch.tensor([[1.]*10]*2048).to(self.device), retain_graph=True)
-        # _g = torch.autograd.grad(pred_list[ik], self.parties[ik].local_model.parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
-        for ik in range(self.k):
-            self.parties[ik].local_backward_old(self.pred_gradients_list_clone[ik][:-1], self.pred_list[ik][:-1])
-        self.parties[self.k-1].global_backward_old(pred, loss)
-
+        pred = self.parties[self.k-1].global_pred
+        loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
             predict_prob = self.parties[ik].encoder.decoder(predict_prob)
