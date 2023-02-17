@@ -12,8 +12,8 @@ class ActiveParty(Party):
         super().__init__(args, index)
         self.criterion = cross_entropy_for_onehot
         self.encoder = args.encoder
-        self.train_index = args.idx_train
-        self.test_index = args.idx_test
+        self.train_index = None  # args.idx_train
+        self.test_index = None  # args.idx_test
         
         self.gt_one_hot_label = None
 
@@ -29,12 +29,8 @@ class ActiveParty(Party):
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
         self.test_dst = ActiveDataset(self.test_data, self.test_label)
     
-    def give_pred(self): # 计算自己的pred并更新本地pred_list
-        self.local_pred = self.local_model(self.local_batch_data)
-        self.local_pred_clone = torch.autograd.Variable(self.local_pred.detach().clone(), requires_grad=True).to(self.args.device)
-        
-        self.pred_received[self.args.k-1] = self.local_pred_clone
-        return self.local_pred, self.local_pred_clone
+    def update_local_pred(self, pred):
+        self.pred_received[self.args.k-1] = pred
     
     def receive_pred(self, pred, giver_index):
         self.pred_received[giver_index] = pred
@@ -69,10 +65,11 @@ class ActiveParty(Party):
         pred_list = self.pred_received 
         self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
         pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
-
-        self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
+        # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
         return pred_gradients_list_clone
     
+    def update_local_gradient(self, gradient):
+        self.local_gradient = gradient
 
     def global_backward_old(self, pred, loss):
         if self.global_model_optimizer != None: 

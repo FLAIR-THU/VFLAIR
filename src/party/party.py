@@ -58,10 +58,10 @@ class Party(object):
         self.local_gradient = gradient
         return 
 
-    def give_pred(self): # 仅计算pred不更新本地pred_list (区分于active party的give pred)
+    def give_pred(self): 
         self.local_pred = self.local_model(self.local_batch_data)
-        self.local_pred_clone = torch.autograd.Variable(self.local_pred.detach().clone(), requires_grad=True).to(self.args.device)
-        return self.local_pred, self.local_pred_clone # pred:用于local_backward // pred_clone:用于aggregate
+        self.local_pred_detach = self.local_pred.detach().clone()
+        return self.local_pred, self.local_pred_detach 
     
     def prepare_data(self, args, index):
         # prepare raw data for training

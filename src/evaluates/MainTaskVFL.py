@@ -73,19 +73,25 @@ class MainTaskVFL(object):
         self.middle_epoch_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
     
-    def pred_transmit(self): # partyk存下所有party的pred
+    def pred_transmit(self): # Active party gets pred from passive parties
         for ik in range(self.k):
-            pred, pred_clone = self.parties[ik].give_pred()
-            if ik < (self.k-1):
-                self.parties[self.k-1].receive_pred(pred_clone, ik) # 用于aggregate
+            pred, pred_detach = self.parties[ik].give_pred()
+            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+
+            if ik == (self.k-1): # Active party update local pred
+                self.parties[ik].update_local_pred(pred_clone)
+            if ik < (self.k-1): # Passive party sends pred for aggregation
+                self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
-    def gradient_transmit(self):  # partyk(active) as gradient giver
-        gradient = self.parties[self.k-1].give_gradient()
+    def gradient_transmit(self):  # Active party sends gradient to passive parties
+        gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
             gradient = self.launch_defense(gradient, "gradients")        
 
+        # active party update local gradient
+        self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
         # active party transfer gradient to passive parties
         for ik in range(self.k-1):
             self.parties[ik].receive_gradient(gradient[ik])

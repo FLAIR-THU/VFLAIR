@@ -1,4 +1,5 @@
 import sys, os
+from os.path import join
 sys.path.append(os.pardir)
 
 import random
@@ -9,6 +10,10 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,precision_score,roc_curve,auc,average_precision_score,log_loss
 from copy import deepcopy, copy
+
+import re
+from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import Tokenizer
 
 import torch
 from torchvision import datasets
@@ -29,6 +34,7 @@ from utils.graph_functions import load_data1, split_graph
 
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
+TEXT_DATA = ['news20']
 
 
 def dataset_partition(args, index, dst, half_dim):
@@ -70,6 +76,26 @@ def dataset_partition(args, index, dst, half_dim):
             assert (args.k == 2), "total number of parties not supported for data partitioning"
             return None
     elif args.dataset in TABULAR_DATA:
+        if args.k == 2:
+            if index == 0:
+                return (dst[0][:, :half_dim], None)
+            elif index == 1:
+                return (dst[0][:, half_dim:], dst[1])
+            else:
+                assert index <= 1, "invalide party index"
+                return None
+        elif args.k == 4:
+            half_dim = int(half_dim//2)
+            if index == 3:
+                return (dst[0][:, half_dim*3:], dst[1])
+            else:
+                # passive party does not have label
+                if index <= 2:
+                    return (dst[0][:, half_dim*index:half_dim*(index+1)], None)
+                else:
+                    assert index <= 3, "invalide party index"
+                    return None
+    elif args.dataset in TEXT_DATA: 
         if args.k == 2:
             if index == 0:
                 return (dst[0][:, :half_dim], None)
@@ -239,6 +265,42 @@ def load_dataset_per_party(args, index):
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
+        X_train = torch.tensor(X_train)
+        X_test = torch.tensor(X_test)
+        y_train = torch.tensor(y_train)
+        y_test = torch.tensor(y_test)
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    elif args.dataset in TEXT_DATA:
+        if args.dataset == 'news20':
+            texts, labels, labels_index = [], {}, []
+            Text_dir = '../share_dataset/news20/'
+            for name in sorted(os.listdir(Text_dir)):
+                #  every file_folder under the root_file_folder should be labels with a unique number
+                labels[name] = len(labels) # 
+                path = join(Text_dir, name)
+                for fname in sorted(os.listdir(path)):
+                    if fname.isdigit():# The training set we want is all have a digit name
+                        fpath = join(path,fname)
+                        labels_index.append(labels[name])
+                        # skip header
+                        f = open(fpath, encoding='latin-1')
+                        t = f.read()
+                        texts.append(t)
+                        f.close()
+            MAX_SEQUENCE_LENGTH = 1000
+            MAX_NB_WORDS = 20000
+            tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
+            tokenizer.fit_on_texts(texts)
+            sequences = tokenizer.texts_to_sequences(texts)
+            # word_index = tokenizer.word_index
+            # vocab_size = len(word_index) + 1
+            half_dim = int(MAX_SEQUENCE_LENGTH/2) # 500
+            X = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            X = np.array(X)
+            y = np.array(labels_index)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+                    
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
         y_train = torch.tensor(y_train)

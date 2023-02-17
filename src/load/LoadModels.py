@@ -25,12 +25,15 @@ def load_basic_models(args,index):
     current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
     current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
+    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
     if 'resnet' in current_model_type:
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
         local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)
+    elif 'lstm' in current_model_type.lower(): 
+        local_model = globals()[current_model_type](current_vocab_size, current_output_dim)
     else:
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
