@@ -1,6 +1,6 @@
 {
-    "epochs": 100,
-    "lr": 0.0001,
+    "epochs": 30,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -13,16 +13,16 @@
         "0": {
             "type": "MLP3",
             "input_dim": 4096,
-            "output_dim": 2,
+            "output_dim": 4,
             "path": ""
         },
         "1": {
             "type": "MLP3",
             "input_dim": 4096,
-            "output_dim": 2,
+            "output_dim": 4,
             "path": ""
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead3"
     }
 }

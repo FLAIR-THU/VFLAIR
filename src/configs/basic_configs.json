@@ -33,11 +33,5 @@
             "early_stop": 0,
             "early_stop_threshold": 0.0
         }
-    },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "dp_strength": 0.0001
-        }
     }
 }

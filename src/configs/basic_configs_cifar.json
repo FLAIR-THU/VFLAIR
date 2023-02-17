@@ -1,5 +1,5 @@
 {
-    "epochs": 160,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
     "batch_size": 64,
@@ -29,7 +29,7 @@
         "parameters": {
             "party": [0],
             "lr": 0.05,
-            "epochs": 2000
+            "epochs": 20000
         }
     }
 }

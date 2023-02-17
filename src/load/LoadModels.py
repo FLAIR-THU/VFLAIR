@@ -34,7 +34,7 @@ def load_basic_models(args,index):
     else:
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
-    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr)
+    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
     # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr)
     
     global_model = None

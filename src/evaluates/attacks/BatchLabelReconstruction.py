@@ -55,7 +55,7 @@ class BatchLabelReconstruction(Attacker):
 
 
     def attack(self):
-        self.set_seed(100)
+        self.set_seed(123)
         for ik in self.party: # attacker party #ik
             index = ik
             self.exp_res_dir = self.exp_res_dir + f'{index}/'
@@ -68,16 +68,14 @@ class BatchLabelReconstruction(Attacker):
             self_data = self.vfl_info['data'][ik][0]
             original_dy_dx = self.vfl_info['local_model_gradient'][ik]
             local_model = self.vfl_info['model'][ik]
-            true_label = self.vfl_info['label']
+            true_label = self.vfl_info['label'].to(self.device)
             
             local_model_copy = copy.deepcopy(local_model)
             local_model = local_model.to(self.device)
             local_model_copy.eval()
 
-            print(pred_a.device, self_data.device, original_dy_dx[0].device, true_label.device)
-            print("self.device", self.device)
-
             # ################## debug: for checking if saved results are right (start) ##################
+            print(f"sample_count = {pred_a.size()[0]}, number of classes = {pred_a.size()[1]}, {self.label_size}")
             # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
             # original_dy = self.vfl_info['gradient'][ik]
             # new_pred_a = local_model_copy(self_data)
@@ -95,18 +93,18 @@ class BatchLabelReconstruction(Attacker):
                     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
                     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
                     dummy_model = ClassificationModelHostHead().to(self.device)
-                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr)
+                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr, weight_decay=0.0)
                 else:
-                    assert i == 1 #trainable_top_model
+                    assert i == 1 #trainable_top_model,  can use user define models instead
                     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
                     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
                     dummy_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
                     optimizer = torch.optim.Adam([dummy_pred_b, dummy_label] + list(dummy_model.parameters()), lr=self.lr)
 
-                print(f"BLI iteration for type{i}")
+                print(f"BLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
                 start_time = time.time()
                 for iters in range(1, self.epochs + 1):
-                    # print(f"in BLR, i={i}, iter={iters}")
+                    # s_time = time.time()
                     def closure():
                         optimizer.zero_grad()
                         dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b])
@@ -123,13 +121,15 @@ class BatchLabelReconstruction(Attacker):
                     rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
                     # print(f"iter={iters}::rec_rate={rec_rate}")
                     optimizer.step(closure)
+                    e_time = time.time()
+                    # print(f"in BLR, i={i}, iter={iters}, time={s_time-e_time}")
                     
                     if self.early_stop == 1:
                         if closure().item() < self.early_stop_threshold:
                             break
                 
                 # print("appending dummy_label")
-                recovery_history.append(dummy_label)
+                # recovery_history.append(dummy_label)
                 # print(dummy_label, true_label)
 
                 rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
