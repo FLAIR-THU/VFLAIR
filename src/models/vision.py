@@ -44,15 +44,15 @@ class MLP3(nn.Module):
             nn.Linear(input_dim, 64, bias=True),
             nn.ReLU(inplace=True)
         )
-        torch.nn.init.xavier_uniform_(self.layer1[0].weight)
-        torch.nn.init.zeros_(self.layer1[0].bias)
+        # torch.nn.init.xavier_uniform_(self.layer1[0].weight)
+        # torch.nn.init.zeros_(self.layer1[0].bias)
 
         self.layer2 = nn.Sequential(
             nn.Linear(64, 16, bias=True),
             nn.ReLU(inplace=True)
         )
-        torch.nn.init.xavier_uniform_(self.layer2[0].weight)
-        torch.nn.init.zeros_(self.layer2[0].bias)
+        # torch.nn.init.xavier_uniform_(self.layer2[0].weight)
+        # torch.nn.init.zeros_(self.layer2[0].bias)
 
         self.layer3 = nn.Sequential(
             nn.Linear(16, output_dim, bias=True),

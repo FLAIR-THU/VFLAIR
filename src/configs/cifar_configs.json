@@ -32,7 +32,7 @@
     "defense": {
         "name": "GradientSparsification",
         "parameters": {
-            "gradient_sparse_rate": 99.0
+            "gradient_sparse_rate": 0.0
         }
     }
     

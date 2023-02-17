@@ -1,5 +1,5 @@
 {
-    "epochs": 160,
+    "epochs": 100,
     "lr": 0.001,
     "k": 2,
     "batch_size": 64,
@@ -27,9 +27,7 @@
     "attack": {
         "name": "ReplacementBackdoor",
         "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 200
+            "party": [0]
         }
     }
 }

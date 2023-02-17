@@ -60,8 +60,8 @@ class Party(object):
 
     def give_pred(self): 
         self.local_pred = self.local_model(self.local_batch_data)
-        self.local_pred_detach = self.local_pred.detach().clone()
-        return self.local_pred, self.local_pred_detach 
+        self.local_pred_clone = self.local_pred.detach().clone()
+        return self.local_pred, self.local_pred_clone 
     
     def prepare_data(self, args, index):
         # prepare raw data for training

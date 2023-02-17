@@ -22,6 +22,7 @@ from utils.marvell_functions import KL_gradient_perturb
 from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.90, 'cifar100': 0.60}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFLwithBackdoor(object):
@@ -87,8 +88,9 @@ class MainTaskVFLwithBackdoor(object):
             pred, pred_detach = self.parties[ik].give_pred()
 
             # ######### for backdoor start #########
-            pred_detach[-1] = pred_detach[-2]
-            # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
+            if ik != self.k-1: # Only Passive Parties do
+                pred_detach[-1] = pred_detach[-2]
+                # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
             # ######### for backdoor end #########
 
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
@@ -107,8 +109,7 @@ class MainTaskVFLwithBackdoor(object):
 
         # ######### for backdoor start #########
         for ik in range(self.k-1): # Only Passive Parties do
-            _grad = gradient[ik][-1]
-            gradient[ik][-2] = _grad
+            gradient[ik][-2] = gradient[ik][-1]
         # ######### for backdoor end #########
 
         # active party update local gradient
@@ -223,7 +224,6 @@ class MainTaskVFLwithBackdoor(object):
                 # ====== train batch ======
 
                 if i == 0 and i_epoch == 0:
-                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state = self.save_state(True)
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
@@ -231,7 +231,6 @@ class MainTaskVFLwithBackdoor(object):
                 self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
             
                 if i == 0 and i_epoch == 0:
-                    # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state.update(self.save_state(False))
