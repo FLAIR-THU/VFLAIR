@@ -89,6 +89,7 @@ if __name__ == '__main__':
         args.apply_attack = False
     else:
         vfl = MainTaskVFL(args)
+    
     if args.dataset not in ['cora']:
         vfl.train()
     else:

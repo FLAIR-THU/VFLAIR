@@ -334,75 +334,36 @@ def load_dataset_per_party_backdoor(args, index):
     args.classes = [None] * args.num_classes
 
     half_dim = -1
-    if args.dataset == "cifar100":
-        half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
-        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
-        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
-        if args.target_label == None:
-            args.target_label = random.randint(0, args.num_classes-1)
-            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
-            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
+    args.idx_train = None
+    args.idx_test = None
+    if args.dataset in ['mnist', 'cifar100', 'cifar20', 'cifar10']:
+        # load image datasets
+        if args.dataset == "cifar100":
+            half_dim = 16
+            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        elif args.dataset == "cifar20":
+            half_dim = 16
+            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        elif args.dataset == "cifar10":
+            half_dim = 16
+            train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         else:
-            assert args.train_poison_list != None , "[[inner error]]"
-            assert args.train_target_list != None, "[[inner error]]"
-            assert args.test_poison_list != None, "[[inner error]]"
-            assert args.test_target_list != None, "[[inner error]]"
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
-        if args.train_target_list == None:
-            assert args.test_target_list == None
-            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
-            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
-    elif args.dataset == "cifar20":
-        half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
-        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
-        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
-        if args.target_label == None:
-            args.target_label = random.randint(0, args.num_classes-1)
-            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
-            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
-        else:
-            assert args.train_poison_list != None , "[[inner error]]"
-            assert args.train_target_list != None, "[[inner error]]"
-            assert args.test_poison_list != None, "[[inner error]]"
-            assert args.test_target_list != None, "[[inner error]]"
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
-        if args.train_target_list == None:
-            assert args.test_target_list == None
-            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
-            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
-    elif args.dataset == "cifar10":
-        half_dim = 16
-        train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform)
-        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-        test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform)
-        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
-        if args.target_label == None:
-            args.target_label = random.randint(0, args.num_classes-1)
-            args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))
-            args.test_poison_list = random.sample(range(len(test_dst)), int(0.01 * len(test_dst)))
-        else:
-            assert args.train_poison_list != None , "[[inner error]]"
-            assert args.train_target_list != None, "[[inner error]]"
-            assert args.test_poison_list != None, "[[inner error]]"
-            assert args.test_target_list != None, "[[inner error]]"
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
-        if args.train_target_list == None:
-            assert args.test_target_list == None
-            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
-            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
-    elif args.dataset == "mnist":
-        half_dim = 14
-        train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
-        train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-        test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
-        test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+            assert args.dataset == "mnist"
+            half_dim = 14
+            train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        # poison image datasets
         if args.target_label == None:
             args.target_label = random.randint(0, args.num_classes-1)
             args.train_poison_list = random.sample(range(len(train_dst)), int(0.01 * len(train_dst)))

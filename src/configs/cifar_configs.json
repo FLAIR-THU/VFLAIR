@@ -29,36 +29,4 @@
             "lr": 0.01
         }
     }
-    
-    ,
-    "attack_methods": {
-        "MainTaskVFL_separate": 1,
-        "BatchLabelReconstruction": 0,
-        "DeepLeakageFromGradients": 0
-    },
-    "attack_configs": {
-        "MainTaskVFL_separate": "MainTaskVFL_separate_configs",
-        "BatchLabelReconstruction": "BatchLabelReconstruction_configs",
-        "DeepLeakageFromGradients": "DeepLeakageFromGradients_configs"
-    },
-    "defense_methods": {
-        "NoDefense": 1,
-        "LaplaceDP": 0,
-        "GaussianDP": 0,
-        "GradientSparcification": 0,
-        "DiscreteGradient": 0,
-        "ConfusionalAutoEncoder": 0,
-        "DiscreteConfusionalAutoEncoder": 0,
-        "Marvell": 0
-    },
-    "defense_configs": {
-        "NoDefense": "",
-        "LaplaceDP": "DP_configs",
-        "GaussianDP": "DP_configs",
-        "GradientSparcification": "GradientSparcification_configs",
-        "DiscreteGradient": "DiscreteGradient_configs",
-        "ConfusionalAutoEncoder": "ConfusionalAutoEncoder_configs",
-        "DiscreteConfusionalAutoEncoder": "DiscreteConfusionalAutoEncoder_configs",
-        "Marvell": "Marvell_configs"
-    }
 }
