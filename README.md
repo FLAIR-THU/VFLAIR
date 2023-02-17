@@ -33,3 +33,38 @@ Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Confi
 5. Prepare your own model in `/model_parameters` as pickle files. Simply use `pickle.dump(your_net, open('<YourPath>/<YourModel>.pkl','wb'))` to save your model and use `your_net = pickle.load(open('<YourPath>/<YourModel>.pkl',"rb"))` to load it.
 6. Add the name of your attack(defense) method to `/src/configs/basic_configs.json` file and set the value to `1` if you want it in your evaluation. -->
 
+# Three. Datasets
+In VFLow, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
+
+Defaultly, datasets used are stored under directory `../../share_dataset/`.
+
+1. Image Dataset
+    1. MNIST
+        * Loaded from torchvision, `torchvision.datasets.MNIST('~/.torch', download=True)`
+    2. CIFAR10
+        * By default, the data are stored under directory `../../share_dataset/cifar-10-batches-py/`.
+        * Loaded from torchvision, `torchvision.datasets.CIFAR10('<you_directory>', download=True)`
+    3. CIFAR100
+        * By default, the data are stored under directory `../../share_dataset/cifar-100-python/`.
+        * Loaded from torchvision, `torchvision.datasets.CIFAR100('<you_directory>', download=True)`
+2. Graph Dataset
+    1. Cora
+        * By default, the data are stored under directory `../../share_dataset/Cora/`.
+        * We use the dataset provided by [link](https://github.com/hgh0545/Graph-Fraudster) for Cora.
+3. Tabular Dataset
+    1. Breast Cancer
+        * @zixuan
+    2. Diabetes
+        * @zixuan
+    3. Adult Income
+        * @zixuan
+    4. Cretio
+        * By default, the data are stored under directory `../../share_dataset/Criteo/`.
+        * Download `tain.txt` from [kaggle-link](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
+4. Text Dataset
+    1. News20
+        * @zixuan
+5. Multi-modal Dataset
+    1. NUS-WIDE
+        * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
+        * Download from [link](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.

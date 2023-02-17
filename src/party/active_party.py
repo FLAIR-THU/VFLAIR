@@ -12,8 +12,8 @@ class ActiveParty(Party):
         super().__init__(args, index)
         self.criterion = cross_entropy_for_onehot
         self.encoder = args.encoder
-        self.train_index = None  # args.idx_train
-        self.test_index = None  # args.idx_test
+        self.train_index = args.idx_train
+        self.test_index = args.idx_test
         
         self.gt_one_hot_label = None
 

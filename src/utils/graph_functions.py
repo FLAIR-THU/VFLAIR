@@ -23,7 +23,7 @@ def sample_mask(idx, l):
 def load_data1(dataset):
     ## get data
     if dataset == 'cora' or dataset == 'citeseer' or dataset == 'pubmed':
-        data_path = '../data/Cora/'
+        data_path = '../../../share_dataset/Cora/'
         suffixs = ['x', 'y', 'allx', 'ally', 'tx', 'ty', 'graph']
         objects = []
         for suffix in suffixs:

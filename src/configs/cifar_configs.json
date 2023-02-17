@@ -28,12 +28,6 @@
             "party": [0],
             "lr": 0.01
         }
-    },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 0.0
-        }
     }
     
     ,
