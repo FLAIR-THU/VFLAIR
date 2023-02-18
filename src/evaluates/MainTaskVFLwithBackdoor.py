@@ -85,20 +85,22 @@ class MainTaskVFLwithBackdoor(object):
     
     def pred_transmit(self): 
         for ik in range(self.k):
-            pred, pred_detach = self.parties[ik].give_pred()
+            pred, pred_clone = self.parties[ik].give_pred()
 
             # ######### for backdoor start #########
             if ik != self.k-1: # Only Passive Parties do
-                pred_detach[-1] = pred_detach[-2]
+                self.parties[ik].local_pred_clone[-1] = self.parties[ik].local_pred_clone[-2]
+                pred_clone[ik][-1] = pred_clone[ik][-2]
                 # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
             # ######### for backdoor end #########
 
-            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+            pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
 
-            if ik == (self.k-1): # Active party update local pred
-                self.parties[ik].update_local_pred(pred_clone)
             if ik < (self.k-1): # Passive party sends pred for aggregation
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
+            else: 
+                assert ik == (self.k-1) # Active party update local pred
+                self.parties[ik].update_local_pred(pred_clone)
     
     def gradient_transmit(self):  # partyk(active) as gradient giver
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
@@ -149,9 +151,9 @@ class MainTaskVFLwithBackdoor(object):
                     self.flag = 1
 
                 # update parameters for all parties
+                self.parties[self.k-1].global_backward()
                 for ik in range(self.k):
                     self.parties[ik].local_backward()
-                self.parties[self.k-1].global_backward()
             else: # FedBCD: in other iterations, no communication happen, no defense&attack
                 # ==== update parameters ====
                 # for passive parties
@@ -162,8 +164,8 @@ class MainTaskVFLwithBackdoor(object):
                 # for active party k
                 _pred, _pred_clone = self.parties[self.k-1].give_pred() # 更新local_pred
                 _gradient = self.parties[self.k-1].give_gradient() # 更新local_gradient
-                self.parties[self.k-1].local_backward()
                 self.parties[self.k-1].global_backward()
+                self.parties[self.k-1].local_backward()
 
         pred = self.parties[self.k-1].global_pred
         loss = self.parties[self.k-1].global_loss

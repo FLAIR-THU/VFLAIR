@@ -100,9 +100,9 @@ class ActiveParty(Party):
             # active party with trainable global layer
             _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
             _gradients_clone = _gradients[0].detach().clone()
+            
             # update local model
             self.global_model_optimizer.zero_grad()
-            
             if self.args.apply_trainable_layer == True:
                 weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                 for w, g in zip(self.global_model.parameters(), weights_grad_a):
