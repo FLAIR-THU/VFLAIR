@@ -176,6 +176,7 @@ def get_class_i(dataset, label_set):
     num_cls = len(label_set)
     for j in range(len(dataset)):
         img, label = dataset[j]
+        # print("in basic_functions::get_class_i", np.array(img))
         if label in label_set:
             label_new = label_set.index(label)
             # gt_data.append(img if torch.is_tensor(img) else tp(img))

@@ -150,31 +150,31 @@ def load_dataset_per_party(args, index):
     args.idx_test = None
     if args.dataset == "cifar100":
         half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
     elif args.dataset == "cifar20":
         half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
     elif args.dataset == "cifar10":
         half_dim = 16
-        train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform)
+        train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform)
+        test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
@@ -340,21 +340,22 @@ def load_dataset_per_party_backdoor(args, index):
         # load image datasets
         if args.dataset == "cifar100":
             half_dim = 16
-            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         elif args.dataset == "cifar20":
+            assert args.num_classes == 20
             half_dim = 16
-            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         elif args.dataset == "cifar10":
             half_dim = 16
-            train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform)
+            train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform)
+            test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         else:
             assert args.dataset == "mnist"
