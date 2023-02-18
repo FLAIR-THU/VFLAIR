@@ -198,21 +198,22 @@ class MainTaskVFLwithBackdoor(object):
             data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
             # data_loader_list.append(tqdm_train)
             # for parties_data in zip(self.parties[0].train_loader, self.parties[self.k-1].train_loader, tqdm_train): ## TODO: what to de for 4 party?
+            poison_id = random.randint(0, self.parties[0].train_poison_data.size()[0]-1)
+            target_id = random.randint(0, len(self.parties[0].train_target_list)-1)
             for parties_data in zip(*data_loader_list):
                 # ######### for backdoor start #########
                 # print("parties data", len(parties_data[self.k-1][0]),len(parties_data[self.k-1][1]))
                 # print("parties data", type(parties_data[self.k-1][0]),len(parties_data[self.k-1][1]))
                 # print("parties data", parties_data[self.k-1][0].size(),len(parties_data[self.k-1][1]))
-                poison_id = random.randint(0, self.parties[ik].train_poison_data.size()[0]-1)
-                target_id = random.randint(0, len(self.parties[ik].train_target_list)-1)
                 parties_data = list(parties_data)
                 for ik in range(self.k):
                     parties_data[ik][0] = torch.cat((parties_data[ik][0], self.parties[ik].train_poison_data[[poison_id]], self.parties[ik].train_data[[target_id]]), axis=0)
                 parties_data[self.k-1][1] = torch.cat((parties_data[self.k-1][1], self.parties[self.k-1].train_poison_label[[poison_id]], self.label_to_one_hot(torch.tensor([self.args.target_label]), self.num_classes)), axis=0)
+                # print("see what label looks like", parties_data[self.k-1][1].size(), self.parties[self.k-1].train_poison_label[[poison_id]], self.label_to_one_hot(torch.tensor([self.args.target_label]), self.num_classes))
                 # ######### for backdoor end #########
-
                 self.parties_data = parties_data
                 i += 1
+
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
                 self.parties[self.k-1].global_model.train()
@@ -272,15 +273,12 @@ class MainTaskVFLwithBackdoor(object):
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
                             predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                        # predict_label = torch.argmax(enc_predict_prob, dim=-1)
-
-                        # enc_predict_label = torch.argmax(enc_predict_prob, dim=-1)
                         actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
                         sample_cnt += predict_label.shape[0]
                         suc_cnt += torch.sum(predict_label == actual_label).item()
                     self.test_acc = suc_cnt / float(sample_cnt)
 
-                    # # ######### for backdoor start #########
+                    # # ######### for backdoor acc start #########
                     actual_label = [self.args.target_label]*(self.parties[self.k-1].test_poison_data.size()[0])                    
                     actual_label = torch.tensor(actual_label).to(self.device)
                     gt_val_one_hot_label = self.label_to_one_hot(actual_label, self.num_classes)
@@ -290,9 +288,14 @@ class MainTaskVFLwithBackdoor(object):
                         pred_list.append(self.parties[ik].local_model(self.parties[ik].test_poison_data))
                     test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
                     enc_predict_prob = F.softmax(test_logit, dim=-1)
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                    self.backdoor_acc = torch.sum(predict_label == actual_label).item()/ actual_label.size()[0]
-                    # # ######### for backdoor end #########
+                    if self.args.apply_cae == True:
+                        dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                        predict_label = torch.argmax(dec_predict_prob, dim=-1)
+                    else:
+                        predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                    print(predict_label[:10], actual_label[:10])
+                    self.backdoor_acc = torch.sum(predict_label == actual_label).item() / actual_label.size()[0]
+                    # # ######### for backdoor acc end #########
                         
                     postfix['train_loss'] = self.loss
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
