@@ -287,6 +287,7 @@ class MainTaskVFLwithBackdoor(object):
                     gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
                     pred_list = []
                     for ik in range(self.k):
+                        # print(f"poison data at party#{ik}: {self.parties[ik].test_poison_data[0][0,14,30]}, {self.parties[ik].test_poison_data[0][1,14,30]}, {self.parties[ik].test_poison_data[0][2,14,30]}")
                         pred_list.append(self.parties[ik].local_model(self.parties[ik].test_poison_data))
                     test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
                     enc_predict_prob = F.softmax(test_logit, dim=-1)
@@ -295,7 +296,7 @@ class MainTaskVFLwithBackdoor(object):
                         predict_label = torch.argmax(dec_predict_prob, dim=-1)
                     else:
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                    print(predict_label[:10], actual_label[:10])
+                    # print(predict_label[:10], actual_label[:10])
                     self.backdoor_acc = torch.sum(predict_label == actual_label).item() / actual_label.size()[0]
                     # # ######### for backdoor acc end #########
                         

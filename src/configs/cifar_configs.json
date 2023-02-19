@@ -1,4 +1,6 @@
 {
+    "epochs": 100,
+    "lr": 0.05,
     "k": 2,
     "iteration_per_aggregation": 1,
     "dataset":{
