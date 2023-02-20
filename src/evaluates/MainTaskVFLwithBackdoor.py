@@ -90,10 +90,10 @@ class MainTaskVFLwithBackdoor(object):
             # ######### for backdoor start #########
             if ik != self.k-1: # Only Passive Parties do
                 self.parties[ik].local_pred_clone[-1] = self.parties[ik].local_pred_clone[-2]
-                pred_clone[ik][-1] = pred_clone[ik][-2]
+                pred_clone[-1] = pred_clone[-2]
                 # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
             # ######### for backdoor end #########
-
+                
             pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
 
             if ik < (self.k-1): # Passive party sends pred for aggregation
