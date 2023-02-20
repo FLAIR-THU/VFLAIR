@@ -53,17 +53,21 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
         * We use the dataset provided by [link](https://github.com/hgh0545/Graph-Fraudster) for Cora.
 3. Tabular Dataset
     1. Breast Cancer
-        * @zixuan
-    2. Diabetes
-        * @zixuan
-    3. Adult Income
-        * @zixuan
+      * By default, the data are stored under directory `../../share_dataset/BreastCancer/`
+      * Download wdbc.data from [Wisconsin Diagnostic Breast Cancer (WDBC) | Kaggle](https://www.kaggle.com/datasets/mohaiminul101/wisconsin-diagnostic-breast-cancer-wdbc)
+   2. Diabetes
+      * By default, the data are stored under directory `../../share_dataset/Diabetes/`
+      * Download diabetes.csv from [Diabetes Dataset | Kaggle](https://www.kaggle.com/datasets/mathchi/diabetes-data-set)
+   3. Adult Income
+      * By default, the data are stored under directory `../../share_dataset/Income/`
+      * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
     4. Cretio
         * By default, the data are stored under directory `../../share_dataset/Criteo/`.
         * Download `tain.txt` from [kaggle-link](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
 4. Text Dataset
     1. News20
-        * @zixuan
+        * By default, the data are stored under directory `../../share_dataset/news20/`
+        * Download from [20 Newsgroups | Kaggle](https://www.kaggle.com/datasets/crawford/20-newsgroups), and align texts from the same category into the same directory as`../../share_dataset/news20/"category_name"/text_files`
 5. Multi-modal Dataset
     1. NUS-WIDE
         * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
