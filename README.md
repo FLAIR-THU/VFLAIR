@@ -57,7 +57,7 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
       * Download wdbc.data from [Wisconsin Diagnostic Breast Cancer (WDBC) | Kaggle](https://www.kaggle.com/datasets/mohaiminul101/wisconsin-diagnostic-breast-cancer-wdbc)
    2. Diabetes
       * By default, the data are stored under directory `../../share_dataset/Diabetes/`
-      * Download diabetes.csv from [Diabetes Dataset | Kaggle](https://www.kaggle.com/datasets/mathchi/diabetes-data-set)
+      * Download diabetes.csv from https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database
    3. Adult Income
       * By default, the data are stored under directory `../../share_dataset/Income/`
       * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
