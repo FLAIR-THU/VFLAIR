@@ -12,8 +12,7 @@ from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,p
 from copy import deepcopy, copy
 
 import re
-from keras.preprocessing.sequence import pad_sequences
-from keras.preprocessing.text import Tokenizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 import torch
 from torchvision import datasets
@@ -288,18 +287,22 @@ def load_dataset_per_party(args, index):
                         t = f.read()
                         texts.append(t)
                         f.close()
-            MAX_SEQUENCE_LENGTH = 1000
-            MAX_NB_WORDS = 20000
-            tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
-            tokenizer.fit_on_texts(texts)
-            sequences = tokenizer.texts_to_sequences(texts)
+            #MAX_SEQUENCE_LENGTH = 1000
+            #MAX_NB_WORDS = 20000
+            #tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
+            #tokenizer.fit_on_texts(texts)
+            #sequences = tokenizer.texts_to_sequences(texts)
             # word_index = tokenizer.word_index
             # vocab_size = len(word_index) + 1
-            half_dim = int(MAX_SEQUENCE_LENGTH/2) # 500
-            X = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-            X = np.array(X)
+            #half_dim = int(MAX_SEQUENCE_LENGTH/2) # 500
+            #X = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            vectorizer = TfidfVectorizer() 
+            X = vectorizer.fit_transform(texts)
+            X = np.array(X.A)
             y = np.array(labels_index)
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+            # ADDED: in config: input_dim = X.shape[1]//2 need to change according to categories included
+            half_dim = int(X.shape[1]//2) #42491
                     
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
