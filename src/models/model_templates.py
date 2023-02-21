@@ -8,12 +8,11 @@ class MLP2_128(nn.Module):
         super(MLP2_128, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Linear(input_dim, 128, bias=True),
-            nn.Sigmoid()
+            nn.ReLU()
         )
 
         self.layer2 = nn.Sequential(
-            nn.Linear(128, output_dim, bias=True),
-            nn.Sigmoid()
+            nn.Linear(128, output_dim, bias=True)
         )
 
     def forward(self, x):
