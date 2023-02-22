@@ -3,17 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # for BreastCancer dataset
-class MLP2_7(nn.Module):
+class MLP2_128(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2_7, self).__init__()
+        super(MLP2_128, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Linear(input_dim, 7, bias=True),
-            nn.Sigmoid()
+            nn.Linear(input_dim, 128, bias=True),
+            nn.ReLU()
         )
 
         self.layer2 = nn.Sequential(
-            nn.Linear(7, output_dim, bias=True),
-            nn.Sigmoid()
+            nn.Linear(128, output_dim, bias=True)
         )
 
     def forward(self, x):
@@ -22,13 +21,17 @@ class MLP2_7(nn.Module):
         return x
 
 # for adult income dataset
-class MLP2_8(nn.Module):
+class MLP4(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2_8, self).__init__()
+        super(MLP4, self).__init__()
         self.layer = nn.Sequential(
-            nn.Linear(input_dim, 8),
+            nn.Linear(input_dim, 64),
             nn.ReLU(),
-            nn.Linear(8, output_dim),
+            nn.Linear(64, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, output_dim)
         )
 
     def forward(self, x):
@@ -36,20 +39,39 @@ class MLP2_8(nn.Module):
         return out
 
 # For diabetes dataset
-class MLP2_5(nn.Module):
+class LogisticRegressionModel(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2_5, self).__init__()
+        super(LogisticRegressionModel, self).__init__()
         self.layer = nn.Sequential(
-            nn.Linear(input_dim, 5),
-            nn.ReLU(),
-            nn.Linear(5, output_dim),
+            nn.Linear(input_dim, output_dim)
         )
 
     def forward(self, x):
         out = self.layer(x)
         return out
 
+
 # For news20 dataset
+class MLP5(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim = 64):
+        super(MLP5, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim)
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
+    
+    
 class LSTM(nn.Module):
  
     def __init__(self, vocab_size, output_dim, embedding_dim=100, hidden_dim=128):
