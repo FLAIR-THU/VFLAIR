@@ -11,13 +11,13 @@
     },
     "model_list":{
         "0": {
-            "type": "MLP2_7",
+            "type": "MLP2_128",
             "input_dim": 15,
             "output_dim": 2,
             "path": ""
         },
         "1": {
-            "type": "MLP2_7",
+            "type": "MLP2_128",
             "input_dim": 15,
             "output_dim": 2,
             "path": ""
