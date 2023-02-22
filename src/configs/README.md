@@ -5,8 +5,8 @@
 * "lr": main task learning rate
 * "k": number of parties
 * "batch_size": #samples used for each batch
-* "iteration_per_aggregation": for FedBCD, to increase VFL efficiency
-* "num_exp": experiments will repeat for this amount of times, and the average score is treated as the final result
+* "iteration_per_aggregation": for [FedBCD](https://ieeexplore.ieee.org/abstract/document/9855231/), to increase VFL efficiency. When the value is set to `1`, then FedBCD is not applied, while for value `>1`, FedBCD is applied.
+<!-- * "num_exp": experiments will repeat for this amount of times, and the average score is treated as the final result -->
 * "dataset": the dataset for experiments
     * "dataset_name": name of the dataset, ["mnist", "cifar10", "cifar100", "breast-cancer", "diabetes" ] are supported with default dataset partition, you can add your own dataset if needed by modifying `/src/load/LoadDataset.py` file. 
     * "num_classes": number of classes for experiments
