@@ -21,7 +21,7 @@ VFLow is a general, extensible and light-weight VFL framework that provides vani
 Use `pip install -r requirements.txt` to install all the necessary requirements.
 
 ### One. A quick example
-Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py`(a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
+Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. How to use
 1. Run Evaluation Experiments
@@ -60,20 +60,20 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
 2. Graph Dataset
     1. Cora
         * By default, the data are stored under directory `../../share_dataset/Cora/`.
-        * We use the dataset provided by [link](https://github.com/hgh0545/Graph-Fraudster) for Cora.
+        * We use the dataset provided by [Cora (Github)](https://github.com/hgh0545/Graph-Fraudster) for Cora.
 3. Tabular Dataset
     1. Breast Cancer
       * By default, the data are stored under directory `../../share_dataset/BreastCancer/`
       * Download wdbc.data from [Wisconsin Diagnostic Breast Cancer (WDBC) | Kaggle](https://www.kaggle.com/datasets/mohaiminul101/wisconsin-diagnostic-breast-cancer-wdbc)
    2. Diabetes
       * By default, the data are stored under directory `../../share_dataset/Diabetes/`
-      * Download diabetes.csv from https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database
+      * Download diabetes.csv from [Pima Indians Diabetes | Kaggle](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database)
    3. Adult Income
       * By default, the data are stored under directory `../../share_dataset/Income/`
       * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
     4. Cretio
         * By default, the data are stored under directory `../../share_dataset/Criteo/`.
-        * Download `tain.txt` from [kaggle-link](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
+        * Download `tain.txt` from [Criteo | Kaggle](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
 4. Text Dataset
     1. News20
         * By default, the data are stored under directory `../../share_dataset/news20/`
@@ -81,4 +81,4 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
 5. Multi-modal Dataset
     1. NUS-WIDE
         * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
-        * Download from [link](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.
+        * Download from [NUS-WIDE Dataset](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.
