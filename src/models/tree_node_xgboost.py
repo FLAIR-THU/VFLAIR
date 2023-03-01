@@ -8,7 +8,7 @@ from typing import List
 
 import numpy as np
 
-from .tree_node import Node
+from .tree_node_core import Node
 
 
 def xgboost_compute_gain(

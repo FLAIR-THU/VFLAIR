@@ -8,7 +8,7 @@ from typing import List
 import numpy as np
 
 from .tree_loss import BCELoss, CELoss, sigmoid, softmax
-from .tree_node import Tree
+from .tree_node_core import Tree
 from .tree_node_xgboost import XGBoostNode
 
 

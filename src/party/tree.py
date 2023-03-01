@@ -5,7 +5,7 @@ sys.path.append(os.pardir)
 
 import numpy as np
 
-from .tree_party import Party
+from .tree_party_core import Party
 
 
 class XGBoostParty(Party):
