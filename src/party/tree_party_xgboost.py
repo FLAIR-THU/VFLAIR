@@ -4,7 +4,8 @@ import sys
 sys.path.append(os.pardir)
 
 import numpy as np
-from tree_party import Party
+
+from .tree_party import Party
 
 
 class XGBoostParty(Party):
@@ -53,11 +54,10 @@ class XGBoostParty(Party):
             num_thresholds = self.subsample_col_count
 
         split_candidates_grad_hess = [[] for _ in range(num_thresholds)]
-        temp_thresholds = [[] for _ in range(num_thresholds)]
+        self.temp_thresholds = [[] for _ in range(num_thresholds)]
 
         row_count = len(idxs)
         grad_dim = len(gradient[0])
-
         for i in range(self.subsample_col_count):
             k = self.temp_column_subsample[i]
             x_col = []
@@ -102,7 +102,7 @@ class XGBoostParty(Party):
                     split_candidates_grad_hess[i].append(
                         (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
                     )
-                    temp_thresholds[i].append(percentiles[p])
+                    self.temp_thresholds[i].append(percentiles[p])
 
             if self.use_missing_value:
                 current_max_idx = not_missing_values_count - 1
@@ -137,7 +137,7 @@ class XGBoostParty(Party):
                                 temp_left_y_class_cnt,
                             )
                         )
-                        temp_thresholds[i + self.subsample_col_count].append(
+                        self.temp_thresholds[i + self.subsample_col_count].append(
                             percentiles[p]
                         )
 

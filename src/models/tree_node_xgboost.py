@@ -7,7 +7,8 @@ import threading
 from typing import List
 
 import numpy as np
-from tree_node import Node
+
+from .tree_node import Node
 
 
 def xgboost_compute_gain(
@@ -75,40 +76,31 @@ class XGBoostNode(Node):
         use_only_active_party_: bool = False,
         n_job_: int = 1,
     ):
-        super(XGBoostNode, self).__init__(
-            parties_,
-            y_,
-            num_classes_,
-            gradient_,
-            hessian_,
-            idxs_,
-            prior_,
-            min_child_weight_,
-            lam_,
-            gamma_,
-            eps_,
-            depth_,
-            mi_bound_,
-            active_party_id_,
-            use_only_active_party_,
-            n_job_,
-        )
-
+        super().__init__()
         self.parties = parties_
         self.y = y_
-        self.prior = prior_
+        self.num_classes = num_classes_
         self.gradient = gradient_
         self.hessian = hessian_
+        self.idxs = idxs_
+        self.prior = prior_
         self.min_child_weight = min_child_weight_
+        self.mi_bound = mi_bound_
         self.lam = lam_
         self.gamma = gamma_
         self.eps = eps_
-        self.mi_bound = mi_bound_
-        self.best_entropy = None
+        self.depth = depth_
+        self.active_party_id = active_party_id_
         self.use_only_active_party = use_only_active_party_
+        self.n_job = n_job_
+
+        self.best_entropy = None
         self.left = None
         self.right = None
-        self.num_classes = num_classes_
+
+        self.row_count = len(self.idxs)
+        self.num_parties = len(self.parties)
+
         self.entire_datasetsize = len(self.y)
         self.entire_class_cnt = np.zeros(self.num_classes)
         for i in range(self.entire_datasetsize):
@@ -123,11 +115,11 @@ class XGBoostNode(Node):
         self.val = self.compute_weight()
 
         if self.is_leaf():
-            self.is_leaf_flag = True
+            self.is_leaf_flag = 1
         else:
-            self.is_leaf_flag = False
+            self.is_leaf_flag = 0
 
-        if not self.is_leaf_flag:
+        if self.is_leaf_flag == 0:
             best_split = self.find_split()
             party_id = best_split[0]
             if party_id != -1:
@@ -137,7 +129,7 @@ class XGBoostNode(Node):
                 )
                 self.make_children_nodes(best_split[0], best_split[1], best_split[2])
             else:
-                self.is_leaf_flag = True
+                self.is_leaf_flag = 1
 
     def get_idxs(self):
         return self.idxs
@@ -187,9 +179,7 @@ class XGBoostNode(Node):
         grad_dim = len(sum_grad)
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
-            search_results = self.parties[
-                temp_party_id
-            ].greedy_search_split_from_pointer(
+            search_results = self.parties[temp_party_id].greedy_search_split(
                 self.gradient, self.hessian, self.y, self.idxs
             )
             temp_score, temp_entropy = 0, 0
@@ -320,16 +310,16 @@ class XGBoostNode(Node):
             if not any(x == self.idxs[i] for x in left_idxs):
                 right_idxs.append(self.idxs[i])
 
-        left_is_satisfied_lmir_cond = False  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, left_idxs)
-        right_is_satisfied_lmir_cond = False  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, right_idxs)
+        left_is_satisfied_lmir_cond = True  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, left_idxs)
+        right_is_satisfied_lmir_cond = True  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, right_idxs)
 
-        left = XGBoostNode(
+        self.left = XGBoostNode(
             self.parties,
             self.y,
             self.num_classes,
             self.gradient,
             self.hessian,
-            self.left_idxs,
+            left_idxs,
             self.prior,
             self.min_child_weight,
             self.lam,
@@ -341,15 +331,15 @@ class XGBoostNode(Node):
             (self.use_only_active_party or (not left_is_satisfied_lmir_cond)),
             self.n_job,
         )
-        if left.is_leaf_flag == 1:
-            left.party_id = self.party_id
-        right = XGBoostNode(
+        if self.left.is_leaf_flag == 1:
+            self.left.party_id = self.party_id
+        self.right = XGBoostNode(
             self.parties,
             self.y,
             self.num_classes,
             self.gradient,
             self.hessian,
-            self.right_idxs,
+            right_idxs,
             self.prior,
             self.min_child_weight,
             self.lam,
@@ -361,24 +351,24 @@ class XGBoostNode(Node):
             (self.use_only_active_party or (not right_is_satisfied_lmir_cond)),
             self.n_job,
         )
-        if right.is_leaf_flag == 1:
-            right.party_id = self.party_id
+        if self.right.is_leaf_flag == 1:
+            self.right.party_id = self.party_id
 
         # Notice: this flag only supports for the case of two parties
         if (
-            left.is_leaf_flag == 1
-            and right.is_leaf_flag == 1
+            self.left.is_leaf_flag == 1
+            and self.right.is_leaf_flag == 1
             and self.party_id == self.active_party_id
         ):
-            left.not_splitted_flag = True
-            right.not_splitted_flag = True
+            self.left.not_splitted_flag = True
+            self.right.not_splitted_flag = True
 
         # Clear unused index
         if not (
-            (left.not_splitted_flag and right.not_splitted_flag)
+            (self.left.not_splitted_flag and self.right.not_splitted_flag)
             or (
-                left.lmir_flag_exclude_passive_parties
-                and right.lmir_flag_exclude_passive_parties
+                self.left.lmir_flag_exclude_passive_parties
+                and self.right.lmir_flag_exclude_passive_parties
             )
         ):
             self.idxs = []

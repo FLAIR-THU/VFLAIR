@@ -6,9 +6,10 @@ sys.path.append(os.pardir)
 from typing import List
 
 import numpy as np
-from tree_loss import BCELoss, CELoss
-from tree_node import Tree
-from tree_node_xgboost import XGBoostNode
+
+from .tree_loss import BCELoss, CELoss, sigmoid, softmax
+from .tree_node import Tree
+from .tree_node_xgboost import XGBoostNode
 
 
 class XGBoostTree(Tree):
@@ -188,8 +189,8 @@ class XGBoostClassifier(XGBoostBase):
         predicted_probas = np.zeros((row_count, self.num_classes), dtype=float)
         for i in range(row_count):
             if self.num_classes == 2:
-                predicted_probas[i][1] = self.sigmoid(raw_score[i][0])
+                predicted_probas[i][1] = sigmoid(raw_score[i][0])
                 predicted_probas[i][0] = 1 - predicted_probas[i][1]
             else:
-                predicted_probas[i] = self.softmax(raw_score[i])
+                predicted_probas[i] = softmax(raw_score[i])
         return predicted_probas.tolist()

@@ -24,7 +24,7 @@ class Party:
         self.use_missing_value = use_missing_value
         self.seed = seed
 
-        self.col_count = len(x[1])
+        self.col_count = len(x[0])
         self.subsample_col_count = max(1, int(subsample_cols * self.col_count))
 
         self.lookup_table = {}
@@ -86,7 +86,9 @@ class Party:
         else:
             missing_dir = -1
 
-        self.lookup_table.emplace(
-            len(self.lookup_table), (feature_opt_id, threshold_opt, missing_dir)
+        self.lookup_table[len(self.lookup_table)] = (
+            feature_opt_id,
+            threshold_opt,
+            missing_dir,
         )
         return len(self.lookup_table) - 1

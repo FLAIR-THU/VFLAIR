@@ -166,7 +166,7 @@ class NodeAPI:
 class Tree:
     def __init__(self) -> None:
         self.dtree = None
-        self.nodeapi = None
+        self.nodeapi = NodeAPI()
         self.num_row = None
 
     def get_root_node(self) -> Node:
@@ -193,3 +193,6 @@ class Tree:
             for i, val in zip(indices, values):
                 y_train_pred[i] = val
         return y_train_pred
+
+    def print(self, target_party_id: int = -1) -> str:
+        return self.nodeapi.print(self.dtree, target_party_id)
