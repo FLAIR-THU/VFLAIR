@@ -38,11 +38,11 @@ def travase_nodes_to_extract_adjacency_matrix(
             not_splitted_flag = (
                 temp_node.left.not_splitted_flag and temp_node.right.not_splitted_flag
             )
-            lmir_exclude_flag = (
-                temp_node.left.lmir_flag_exclude_passive_parties
-                and temp_node.right.lmir_flag_exclude_passive_parties
+            secure_exclude_flag = (
+                temp_node.left.secure_flag_exclude_passive_parties
+                and temp_node.right.secure_flag_exclude_passive_parties
             )
-            exclude_flag = not_splitted_flag or lmir_exclude_flag
+            exclude_flag = not_splitted_flag or secure_exclude_flag
 
             if exclude_flag:
                 temp_idxs_size = len(temp_node.idxs)
@@ -52,8 +52,8 @@ def travase_nodes_to_extract_adjacency_matrix(
                         adj_mat[temp_node.idxs[j]][temp_node.idxs[i]] += weight
 
             if (
-                not temp_node.left.lmir_flag_exclude_passive_parties
-                or not temp_node.right.lmir_flag_exclude_passive_parties
+                not temp_node.left.secure_flag_exclude_passive_parties
+                or not temp_node.right.secure_flag_exclude_passive_parties
             ):
                 que.put(temp_node.left)
                 que.put(temp_node.right)

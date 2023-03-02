@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.pardir)
 
 import threading
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
@@ -65,16 +65,15 @@ class XGBoostNode(Node):
         gradient_: list,
         hessian_: list,
         idxs_: list,
-        prior_: list,
         min_child_weight_: float,
         lam_: float,
         gamma_: float,
         eps_: float,
         depth_: int,
-        mi_bound_: float,
         active_party_id_: int = -1,
         use_only_active_party_: bool = False,
         n_job_: int = 1,
+        custom_secure_cond_func: Callable = (lambda _: False),
     ):
         super().__init__()
         self.parties = parties_
@@ -83,9 +82,7 @@ class XGBoostNode(Node):
         self.gradient = gradient_
         self.hessian = hessian_
         self.idxs = idxs_
-        self.prior = prior_
         self.min_child_weight = min_child_weight_
-        self.mi_bound = mi_bound_
         self.lam = lam_
         self.gamma = gamma_
         self.eps = eps_
@@ -93,6 +90,7 @@ class XGBoostNode(Node):
         self.active_party_id = active_party_id_
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
+        self.custom_secure_cond_func = custom_secure_cond_func
 
         self.best_entropy = None
         self.left = None
@@ -189,14 +187,14 @@ class XGBoostNode(Node):
                 [0] * grad_dim,
                 [0] * grad_dim,
             )
-            temp_left_size, temp_right_size = 0, 0
+            temp_left_size = 0
             skip_flag = False
 
             for j in range(len(search_results)):
                 temp_score = 0
                 temp_entropy = 0
                 temp_left_size = 0
-                temp_right_size = 0
+                # temp_right_size = 0
 
                 for c in range(grad_dim):
                     temp_left_grad[c] = 0
@@ -212,7 +210,7 @@ class XGBoostNode(Node):
                         temp_left_hess[c] += search_results[j][k][1][c]
 
                     temp_left_size += search_results[j][k][2]
-                    temp_right_size = tot_cnt - temp_left_size
+                    # temp_right_size = tot_cnt - temp_left_size
 
                     for c in range(self.num_classes):
                         temp_left_class_cnt[c] += search_results[j][k][3][c]
@@ -310,8 +308,10 @@ class XGBoostNode(Node):
             if not any(x == self.idxs[i] for x in left_idxs):
                 right_idxs.append(self.idxs[i])
 
-        left_is_satisfied_lmir_cond = True  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, left_idxs)
-        right_is_satisfied_lmir_cond = True  # is_satisfied_with_lmir_bound_from_pointer(num_classes, mi_bound, y, entire_class_cnt, prior, right_idxs)
+        left_is_satisfied_secure_cond = self.custom_secure_cond_func((self, left_idxs))
+        right_is_satisfied_secure_cond = self.custom_secure_cond_func(
+            (self, right_idxs)
+        )
 
         self.left = XGBoostNode(
             self.parties,
@@ -320,15 +320,13 @@ class XGBoostNode(Node):
             self.gradient,
             self.hessian,
             left_idxs,
-            self.prior,
             self.min_child_weight,
             self.lam,
             self.gamma,
             self.eps,
             self.depth - 1,
-            self.mi_bound,
             self.active_party_id,
-            (self.use_only_active_party or (not left_is_satisfied_lmir_cond)),
+            (self.use_only_active_party or (left_is_satisfied_secure_cond)),
             self.n_job,
         )
         if self.left.is_leaf_flag == 1:
@@ -340,15 +338,13 @@ class XGBoostNode(Node):
             self.gradient,
             self.hessian,
             right_idxs,
-            self.prior,
             self.min_child_weight,
             self.lam,
             self.gamma,
             self.eps,
             self.depth - 1,
-            self.mi_bound,
             self.active_party_id,
-            (self.use_only_active_party or (not right_is_satisfied_lmir_cond)),
+            (self.use_only_active_party or (right_is_satisfied_secure_cond)),
             self.n_job,
         )
         if self.right.is_leaf_flag == 1:
@@ -367,8 +363,8 @@ class XGBoostNode(Node):
         if not (
             (self.left.not_splitted_flag and self.right.not_splitted_flag)
             or (
-                self.left.lmir_flag_exclude_passive_parties
-                and self.right.lmir_flag_exclude_passive_parties
+                self.left.secure_flag_exclude_passive_parties
+                and self.right.secure_flag_exclude_passive_parties
             )
         ):
             self.idxs = []

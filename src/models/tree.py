@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.pardir)
 
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
@@ -20,16 +20,15 @@ class XGBoostTree(Tree):
         num_classes: int,
         gradient: List[List[float]],
         hessian: List[List[float]],
-        prior: List[float],
         min_child_weight: float,
         lam: float,
         gamma: float,
         eps: float,
         depth: int,
-        mi_bound: float,
         active_party_id: int = -1,
         use_only_active_party: bool = False,
         n_job: int = 1,
+        custom_secure_cond_func: Callable = (lambda _: False),
     ):
         idxs = list(range(len(y)))
         for i in range(len(parties)):
@@ -42,16 +41,15 @@ class XGBoostTree(Tree):
             gradient,
             hessian,
             idxs,
-            prior,
             min_child_weight,
             lam,
             gamma,
             eps,
             depth,
-            mi_bound,
             active_party_id,
             use_only_active_party,
             n_job,
+            custom_secure_cond_func,
         )
 
     def free_intermediate_resources(self):
@@ -70,11 +68,11 @@ class XGBoostBase:
         lam: float = 1.5,
         gamma: float = 1,
         eps: float = 0.1,
-        mi_bound: float = np.inf,
         active_party_id: int = -1,
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
         n_job: int = 1,
+        custom_secure_cond_func: Callable = (lambda _: False),
         save_loss: bool = True,
     ):
         self.num_classes = num_classes
@@ -86,14 +84,12 @@ class XGBoostBase:
         self.lam = lam
         self.gamma = gamma
         self.eps = eps
-        self.mi_bound = mi_bound
         self.active_party_id = active_party_id
         self.completelly_secure_round = completelly_secure_round
         self.init_value = init_value
         self.n_job = n_job
+        self.custom_secure_cond_func = custom_secure_cond_func
         self.save_loss = save_loss
-        if mi_bound < 0:
-            self.mi_bound = np.inf
         if num_classes == 2:
             self.lossfunc_obj = BCELoss()
         else:
@@ -117,10 +113,6 @@ class XGBoostBase:
 
     def fit(self, parties: List, y: np.ndarray) -> None:
         row_count = len(y)
-        prior = np.zeros(self.num_classes)
-        for j in range(row_count):
-            prior[int(y[j])] += 1
-        prior /= float(row_count)
         base_pred = []
         if not self.estimators:
             self.init_pred = self.get_init_pred(y)
@@ -141,16 +133,15 @@ class XGBoostBase:
                 self.num_classes,
                 grad,
                 hess,
-                prior,
                 self.min_child_weight,
                 self.lam,
                 self.gamma,
                 self.eps,
                 self.depth,
-                self.mi_bound,
                 self.active_party_id,
                 (self.completelly_secure_round > i),
                 self.n_job,
+                self.custom_secure_cond_func,
             )
             pred_temp = boosting_tree.get_train_prediction()
             base_pred += self.learning_rate * np.array(pred_temp)

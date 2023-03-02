@@ -25,7 +25,7 @@ class Node:
         self.best_score = -1 * np.inf
         self.is_leaf_flag = -1
         self.is_pure_flag = -1
-        self.lmir_flag_exclude_passive_parties = False
+        self.secure_flag_exclude_passive_parties = False
         self.not_splitted_flag = False
 
     @abstractmethod
@@ -112,7 +112,7 @@ class NodeAPI:
             node_info += str(node.get_party_id())
             node_info += ", "
             node_info += str(node.get_record_id())
-            if node.lmir_flag_exclude_passive_parties:
+            if node.secure_flag_exclude_passive_parties:
                 node_info += " *"
             node_info = prefix + "|-- " + node_info
 
