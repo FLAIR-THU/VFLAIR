@@ -4,18 +4,21 @@ import sys
 sys.path.append(os.pardir)
 
 from typing import Callable, List
+import random
 
 import numpy as np
 
 from .tree_loss import BCELoss, CELoss, sigmoid, softmax
 from .tree_node_core import Tree
 from .tree_node_xgboost import XGBoostNode
+from .tree_node_randomforest import RandomForestNode
+from ..party.tree import XGBoostParty, RandomForestParty
 
 
 class XGBoostTree(Tree):
     def fit(
         self,
-        parties: List,
+        parties: List[XGBoostParty],
         y: List[float],
         num_classes: int,
         gradient: List[List[float]],
@@ -53,6 +56,53 @@ class XGBoostTree(Tree):
         )
 
     def free_intermediate_resources(self):
+        self.dtree.y.clear()
+        self.dtree.y = []
+
+
+class RandomForestTree(Tree):
+    def __init__(self):
+        super().__init__()
+
+    def fit(
+        self,
+        parties: List[RandomForestParty],
+        y: List[float],
+        num_classes: int,
+        min_leaf: int,
+        depth: int,
+        prior: List[float],
+        max_samples_ratio: float = 1.0,
+        mi_bound: float = 0,
+        active_party_id: int = -1,
+        n_job: int = 1,
+        seed: int = 0,
+    ):
+        idxs = list(range(len(y)))
+        if max_samples_ratio < 1.0:
+            random.seed(seed)
+            random.shuffle(idxs)
+            temp_subsampled_size = int(max_samples_ratio * len(y))
+            idxs = idxs[:temp_subsampled_size]
+
+        for party in parties:
+            party.subsample_columns()
+        self.num_row = len(y)
+        self.dtree = RandomForestNode(
+            parties,
+            y,
+            num_classes,
+            idxs,
+            depth,
+            prior,
+            mi_bound,
+            active_party_id,
+            False,
+            n_job,
+        )
+
+    def free_intermediate_resources(self):
+        self.dtree.y.clear()
         self.dtree.y = []
 
 
