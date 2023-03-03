@@ -161,7 +161,7 @@ class RandomForestParty(Party):
         )
 
     def get_threshold_candidates(self, x_col: List[float]) -> List[float]:
-        x_col_wo_duplicates = self.remove_duplicates(x_col)
+        x_col_wo_duplicates = list(set(x_col))
         threshold_candidates = x_col_wo_duplicates.copy()
         threshold_candidates.sort()
         return threshold_candidates

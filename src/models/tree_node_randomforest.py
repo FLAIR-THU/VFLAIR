@@ -1,23 +1,31 @@
 import math
 import threading
-from typing import Callable, List
+from typing import List
 
 from .tree_node_core import Node
-from ..party.tree import RandomForestParty
+
+
+def calc_giniimp(tot_cnt: float, class_cnt: List[float]) -> float:
+    num_classes = len(class_cnt)
+    giniimp = 1.0
+    for c in range(num_classes):
+        temp_class_ratio = class_cnt[c] / tot_cnt
+        giniimp -= temp_class_ratio * temp_class_ratio
+    return giniimp
 
 
 class RandomForestNode(Node):
     def __init__(
         self,
-        parties_: List[RandomForestParty],
-        y_: List[float],
-        num_classes_: int,
-        idxs_: List[int],
-        depth_: int,
-        active_party_id_: int = -1,
-        use_only_active_party_: bool = False,
-        n_job_: int = 1,
-        custom_secure_cond_func: Callable = (lambda _: False),
+        parties_,
+        y_,
+        num_classes_,
+        idxs_,
+        depth_,
+        active_party_id_=-1,
+        use_only_active_party_=False,
+        n_job_=1,
+        custom_secure_cond_func=(lambda _: False),
     ):
         super().__init__()
         self.parties = parties_
@@ -113,9 +121,9 @@ class RandomForestNode(Node):
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
-            search_results = self.parties[
-                temp_party_id
-            ].greedy_search_split_from_pointer(self.idxs, self.y)
+            search_results = self.parties[temp_party_id].greedy_search_split(
+                self.idxs, self.y
+            )
 
             num_search_results = len(search_results)
             for j in range(num_search_results):
@@ -136,10 +144,10 @@ class RandomForestNode(Node):
                             temp_y_class_cnt[c] - temp_left_class_cnt[c]
                         )
 
-                    temp_left_giniimp = self.calc_giniimp(
+                    temp_left_giniimp = calc_giniimp(
                         temp_left_size, temp_left_class_cnt
                     )
-                    temp_right_giniimp = self.calc_giniimp(
+                    temp_right_giniimp = calc_giniimp(
                         temp_right_size, temp_right_class_cnt
                     )
                     temp_giniimp = temp_left_giniimp * (
@@ -216,46 +224,46 @@ class RandomForestNode(Node):
             (self, right_idxs)
         )
 
-        left = RandomForestNode(
+        self.left = RandomForestNode(
             self.parties,
             self.y,
             self.num_classes,
-            self.left_idxs,
+            left_idxs,
             self.depth - 1,
             self.active_party_id,
             (self.use_only_active_party or not left_is_satisfied_secure_cond),
             self.n_job,
         )
-        if left.is_leaf_flag == 1:
-            left.party_id = self.party_id
-        right = RandomForestNode(
+        if self.left.is_leaf_flag == 1:
+            self.left.party_id = self.party_id
+        self.right = RandomForestNode(
             self.parties,
             self.y,
             self.num_classes,
-            self.right_idxs,
+            right_idxs,
             self.depth - 1,
             self.active_party_id,
             (self.use_only_active_party or not right_is_satisfied_secure_cond),
             self.n_job,
         )
-        if right.is_leaf_flag == 1:
-            right.party_id = self.party_id
+        if self.right.is_leaf_flag == 1:
+            self.right.party_id = self.party_id
 
         # Notice: this flag only supports for the case of two parties
         if (
-            left.is_leaf_flag == 1
-            and right.is_leaf_flag == 1
+            self.left.is_leaf_flag == 1
+            and self.right.is_leaf_flag == 1
             and self.party_id == self.active_party_id
         ):
-            left.not_splitted_flag = True
-            right.not_splitted_flag = True
+            self.left.not_splitted_flag = True
+            self.right.not_splitted_flag = True
 
         # Clear unused index
         if not (
-            (left.not_splitted_flag and right.not_splitted_flag)
+            (self.left.not_splitted_flag and self.right.not_splitted_flag)
             or (
-                left.secure_flag_exclude_passive_parties
-                and right.secure_flag_exclude_passive_parties
+                self.left.secure_flag_exclude_passive_parties
+                and self.right.secure_flag_exclude_passive_parties
             )
         ):
             self.idxs.clear()

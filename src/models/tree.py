@@ -3,22 +3,21 @@ import sys
 
 sys.path.append(os.pardir)
 
-from typing import Callable, List
 import random
+from typing import Callable, List
 
 import numpy as np
 
 from .tree_loss import BCELoss, CELoss, sigmoid, softmax
 from .tree_node_core import Tree
-from .tree_node_xgboost import XGBoostNode
 from .tree_node_randomforest import RandomForestNode
-from ..party.tree import XGBoostParty, RandomForestParty
+from .tree_node_xgboost import XGBoostNode
 
 
 class XGBoostTree(Tree):
     def fit(
         self,
-        parties: List[XGBoostParty],
+        parties: List,
         y: List[float],
         num_classes: int,
         gradient: List[List[float]],
@@ -66,7 +65,7 @@ class RandomForestTree(Tree):
 
     def fit(
         self,
-        parties: List[RandomForestParty],
+        parties: List,
         y: List[float],
         num_classes: int,
         depth: int,
