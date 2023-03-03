@@ -14,8 +14,6 @@ class RandomForestNode(Node):
         num_classes_: int,
         idxs_: List[int],
         depth_: int,
-        prior_: List[float],
-        mi_bound_: float,
         active_party_id_: int = -1,
         use_only_active_party_: bool = False,
         n_job_: int = 1,
@@ -35,9 +33,7 @@ class RandomForestNode(Node):
         self.left = None
         self.right = None
         self.giniimp = 0.0
-        self.mi_bound = mi_bound_
 
-        self.prior = prior_
         self.entire_datasetsize = 0.0
         self.entire_class_cnt = [0 for _ in range(num_classes_)]
 
@@ -226,8 +222,6 @@ class RandomForestNode(Node):
             self.num_classes,
             self.left_idxs,
             self.depth - 1,
-            self.prior,
-            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or not left_is_satisfied_secure_cond),
             self.n_job,
@@ -240,8 +234,6 @@ class RandomForestNode(Node):
             self.num_classes,
             self.right_idxs,
             self.depth - 1,
-            self.prior,
-            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or not right_is_satisfied_secure_cond),
             self.n_job,

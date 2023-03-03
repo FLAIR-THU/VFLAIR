@@ -69,11 +69,8 @@ class RandomForestTree(Tree):
         parties: List[RandomForestParty],
         y: List[float],
         num_classes: int,
-        min_leaf: int,
         depth: int,
-        prior: List[float],
         max_samples_ratio: float = 1.0,
-        mi_bound: float = 0,
         active_party_id: int = -1,
         n_job: int = 1,
         seed: int = 0,
@@ -94,8 +91,6 @@ class RandomForestTree(Tree):
             num_classes,
             idxs,
             depth,
-            prior,
-            mi_bound,
             active_party_id,
             False,
             n_job,
@@ -243,10 +238,8 @@ class RandomForestClassifier:
         num_classes=2,
         subsample_cols=0.8,
         depth=5,
-        min_leaf=1,
         max_samples_ratio=1.0,
         num_trees=5,
-        mi_bound=float("inf"),
         active_party_id=-1,
         n_job=1,
         seed=0,
@@ -254,10 +247,8 @@ class RandomForestClassifier:
         self.num_classes = num_classes
         self.subsample_cols = subsample_cols
         self.depth = depth
-        self.min_leaf = min_leaf
         self.max_samples_ratio = max_samples_ratio
         self.num_trees = num_trees
-        self.mi_bound = mi_bound if mi_bound >= 0 else float("inf")
         self.active_party_id = active_party_id
         self.n_job = n_job
         self.seed = seed
@@ -273,26 +264,14 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
-        row_count = len(y)
-
-        prior = [0] * self.num_classes
-        for j in range(row_count):
-            prior[int(y[j])] += 1
-
-        for c in range(self.num_classes):
-            prior[c] /= float(row_count)
-
-        for i in range(self.num_trees):
+        for _ in range(self.num_trees):
             tree = RandomForestTree()
             tree.fit(
                 parties,
                 y,
                 self.num_classes,
-                self.min_leaf,
                 self.depth,
-                prior,
                 self.max_samples_ratio,
-                self.mi_bound,
                 self.active_party_id,
                 self.n_job,
                 self.seed,
@@ -302,7 +281,7 @@ class RandomForestClassifier:
 
     def predict_raw(self, X):
         row_count = len(X)
-        y_pred = [[0] * self.num_classes for _ in range(row_count)]
+        y_pred = [[0 for _ in range(self.num_classes)] for _ in range(row_count)]
         estimators_num = len(self.estimators)
 
         for i in range(estimators_num):
