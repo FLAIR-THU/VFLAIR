@@ -1,7 +1,9 @@
+import math
 import threading
 from typing import Callable, List
 
 from .tree_node_core import Node
+from ..party.tree import RandomForestParty
 
 
 class RandomForestNode(Node):
@@ -266,3 +268,23 @@ class RandomForestNode(Node):
         ):
             self.idxs.clear()
             self.idxs = []
+
+    def is_leaf(self):
+        if self.is_leaf_flag == -1:
+            return self.is_pure() or math.isinf(self.score) or self.depth <= 0
+        else:
+            return self.is_leaf_flag
+
+    def is_pure(self):
+        if self.is_pure_flag == -1:
+            s = set()
+            for i in range(self.row_count):
+                if self.y[self.idxs[i]] not in s:
+                    s.add(self.y[self.idxs[i]])
+                    if len(s) == 2:
+                        self.is_pure_flag = 0
+                        return False
+            self.is_pure_flag = 1
+            return True
+        else:
+            return self.is_pure_flag == 1
