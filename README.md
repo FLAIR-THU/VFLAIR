@@ -1,8 +1,18 @@
-#### ToDo List
-- [x] requirement list generation. @tianyuan
-- [ ] Attacks and Defense to add @tianyuan
-- [ ] FedBCD to add @zixuan
-- [x] Logic of attack and defense needs update @tianyuan
+# VFLow
+
+## Basic Introduction
+
+VFLow is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective improving methods as well as attack and defense evaluations considering data safety and privacy.
+
+* VFLow provides simulation of the vanilar VFL process containing forward local model prediction transmits, backward gradient transmits as well as local and global model updates.
+* FedBCD ([paper](https://ieeexplore.ieee.org/abstract/document/9855231/)) is provided for improving the effectiveness of VFL training process.
+* Batch-level Label Inference attack ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/)) and targeted backdoor attack by label replacement ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/)) are included in VFLow as examples for training-decoupled attack and training-time attack separately. Detail information of these attacks are included in `/src/configs/README.md`.
+* Several basic defense methods as well as emerging defense strategies are provided in VFLow and can be flexibly applied in VFL training and tesing flow. Defense methods provided in VFLow is listed below. Detail information of these defenses are included in `/src/configs/README.md`.
+    * Differentail Privacy (Laplace-DP and Gaussian-DP) ([paper](https://www.google.com.au/books/edition/Theory_and_Applications_of_Models_of_Com/JHFqCQAAQBAJ?hl=en&gbpv=1&pg=PA1&printsec=frontcover))
+    * Gradient Sparsification (GS) ([paper](https://openreview.net/forum?id=SkhQHMW0W))
+    * Confusional AutoEncoder (CAE) ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/))
+    * Mutual Information regularization Defense ([paper](https://arxiv.org/abs/2301.01142))
+* Multipul datasets are provided along with VFLow. Detail introduction on dataset achival and application are explained below.
 
 
 ## Document
@@ -11,7 +21,7 @@
 Use `pip install -r requirements.txt` to install all the necessary requirements.
 
 ### One. A quick example
-Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py`. For more detail description, see Section Two.
+Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. How to use
 1. Run Evaluation Experiments
@@ -33,7 +43,7 @@ Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Confi
 5. Prepare your own model in `/model_parameters` as pickle files. Simply use `pickle.dump(your_net, open('<YourPath>/<YourModel>.pkl','wb'))` to save your model and use `your_net = pickle.load(open('<YourPath>/<YourModel>.pkl',"rb"))` to load it.
 6. Add the name of your attack(defense) method to `/src/configs/basic_configs.json` file and set the value to `1` if you want it in your evaluation. -->
 
-# Three. Datasets
+### Three. Datasets
 In VFLow, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
 
 Defaultly, datasets used are stored under directory `../../share_dataset/`.
@@ -50,20 +60,20 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
 2. Graph Dataset
     1. Cora
         * By default, the data are stored under directory `../../share_dataset/Cora/`.
-        * We use the dataset provided by [link](https://github.com/hgh0545/Graph-Fraudster) for Cora.
+        * We use the dataset provided by [Cora (Github)](https://github.com/hgh0545/Graph-Fraudster) for Cora.
 3. Tabular Dataset
     1. Breast Cancer
       * By default, the data are stored under directory `../../share_dataset/BreastCancer/`
       * Download wdbc.data from [Wisconsin Diagnostic Breast Cancer (WDBC) | Kaggle](https://www.kaggle.com/datasets/mohaiminul101/wisconsin-diagnostic-breast-cancer-wdbc)
    2. Diabetes
       * By default, the data are stored under directory `../../share_dataset/Diabetes/`
-      * Download diabetes.csv from https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database
+      * Download diabetes.csv from [Pima Indians Diabetes | Kaggle](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database)
    3. Adult Income
       * By default, the data are stored under directory `../../share_dataset/Income/`
       * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
     4. Cretio
         * By default, the data are stored under directory `../../share_dataset/Criteo/`.
-        * Download `tain.txt` from [kaggle-link](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
+        * Download `tain.txt` from [Criteo | Kaggle](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
 4. Text Dataset
     1. News20
         * By default, the data are stored under directory `../../share_dataset/news20/`
@@ -71,4 +81,4 @@ Defaultly, datasets used are stored under directory `../../share_dataset/`.
 5. Multi-modal Dataset
     1. NUS-WIDE
         * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
-        * Download from [link](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.
+        * Download from [NUS-WIDE Dataset](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.

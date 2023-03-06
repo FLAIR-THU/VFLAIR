@@ -9,7 +9,6 @@ __pycache__/
 # dataset files
 # dataset/
 data/
-# VFL_Label_Inference/trained_models/
 
 # experiment result files
 src/exp_result/
@@ -19,6 +18,7 @@ src/exp_result/
 *.png
 ./debug.*
 src/debug.*
+_HYPER_PARAMETERS.md
 
 
 # Distribution / packaging
