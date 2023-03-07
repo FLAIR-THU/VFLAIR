@@ -82,7 +82,7 @@ class RandomForestNode(Node):
         return self.record_id
 
     def get_val(self) -> List[float]:
-        return self.val.tolist()
+        return self.val
 
     def get_score(self) -> float:
         return self.score
@@ -231,7 +231,7 @@ class RandomForestNode(Node):
             left_idxs,
             self.depth - 1,
             self.active_party_id,
-            (self.use_only_active_party or not left_is_satisfied_secure_cond),
+            (self.use_only_active_party or left_is_satisfied_secure_cond),
             self.n_job,
         )
         if self.left.is_leaf_flag == 1:
@@ -243,7 +243,7 @@ class RandomForestNode(Node):
             right_idxs,
             self.depth - 1,
             self.active_party_id,
-            (self.use_only_active_party or not right_is_satisfied_secure_cond),
+            (self.use_only_active_party or right_is_satisfied_secure_cond),
             self.n_job,
         )
         if self.right.is_leaf_flag == 1:
