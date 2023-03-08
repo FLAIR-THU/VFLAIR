@@ -11,11 +11,6 @@ from evaluates.attacks.ID2Graph import ID2Graph
 from models.tree import RandomForestClassifier, XGBoostClassifier
 from party.tree import RandomForestParty, XGBoostParty
 
-min_leaf = 1
-subsample_cols = 0.8
-max_bin = 4
-depth = 6
-number_of_trees = 5
 use_missing_value = False
 
 
@@ -27,7 +22,16 @@ def baseline(X_train, y_train, num_classes, seed):
     return baseline_v
 
 
-def experiment(model_type, eta, seed_base):
+def experiment(
+    model_type,
+    eta,
+    min_leaf,
+    subsample_cols,
+    max_bin,
+    depth,
+    number_of_trees,
+    seed_base,
+):
     data = load_breast_cancer()
     X = data.data
     y = data.target
@@ -111,12 +115,48 @@ if __name__ == "__main__":
     )
     parser.add_argument("--num_trials", type=int, default=5, help="number of trials")
     parser.add_argument("--eta", type=float, default=0.6, help="discount factor")
+    parser.add_argument(
+        "--min_leaf",
+        type=int,
+        default=1,
+        help="minmum number of samples within a leaf",
+    )
+    parser.add_argument(
+        "--subsample_cols",
+        type=float,
+        default=0.8,
+        help="subsampling ratio of features used for training each tree",
+    )
+    parser.add_argument(
+        "--max_bin",
+        type=int,
+        default=4,
+        help="maximum number of bins (used only for xgboost)",
+    )
+    parser.add_argument("--depth", type=int, default=6, help="maximum depth")
+    parser.add_argument(
+        "--number_of_trees", type=int, default=5, help="number of trees"
+    )
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     args = parser.parse_args()
 
     result = []
-    for s in range(args.seed, args.seed + args.num_trials):
-        result.append(experiment(args.model, args.eta, s))
+    for s in range(
+        args.seed,
+        args.seed + args.num_trials,
+    ):
+        result.append(
+            experiment(
+                args.model,
+                args.eta,
+                args.min_leaf,
+                args.subsample_cols,
+                args.max_bin,
+                args.depth,
+                args.number_of_trees,
+                s,
+            )
+        )
 
     averaged_result = np.array(result).mean(axis=0)
     if averaged_result[0] > averaged_result[1]:
