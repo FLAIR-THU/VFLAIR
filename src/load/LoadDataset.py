@@ -31,6 +31,7 @@ from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
+DATA_PATH = '../../../share_dataset/'
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
@@ -149,31 +150,31 @@ def load_dataset_per_party(args, index):
     args.idx_test = None
     if args.dataset == "cifar100":
         half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+        train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+        test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
     elif args.dataset == "cifar20":
         half_dim = 16
-        train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+        train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+        test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
     elif args.dataset == "cifar10":
         half_dim = 16
-        train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+        train_dst = datasets.CIFAR10(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         train_dst = (torch.tensor(data), label)
-        test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+        test_dst = datasets.CIFAR10(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (torch.tensor(data), label)
@@ -193,13 +194,13 @@ def load_dataset_per_party(args, index):
             selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
-        X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 60000, 'Train')
-        # X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 600, 'Train')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         train_dst = (data, label)
-        X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 40000, 'Test')
-        # X_image, X_text, Y = get_labeled_data('../../../share_dataset/NUS_WIDE', selected_labels, 400, 'Test')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         test_dst = (data, label)
@@ -220,7 +221,7 @@ def load_dataset_per_party(args, index):
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
             half_dim = 15
-            df = pd.read_csv("../../../share_dataset/BreastCancer/wdbc.data",header = 0)
+            df = pd.read_csv(DATA_PATH+"BreastCancer/wdbc.data",header = 0)
             X = df.iloc[:, 2:].values
             y = df.iloc[:, 1].values
             y = np.where(y=='B',0,1)
@@ -228,12 +229,12 @@ def load_dataset_per_party(args, index):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
         elif args.dataset == 'diabetes':
             half_dim = 4
-            df = pd.read_csv("../../../share_dataset/Diabetes/diabetes.csv",header = 0)
+            df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
         elif args.dataset == 'adult_income':
-            df = pd.read_csv("../../../share_dataset/Income/adult.csv",header = 0)
+            df = pd.read_csv(DATA_PATH+"Income/adult.csv",header = 0)
             df = df.drop_duplicates()
             # 'age', 'workclass', 'fnlwgt', 'education', 'educational-num',
             # 'marital-status', 'occupation', 'relationship', 'race', 'gender',
@@ -258,7 +259,7 @@ def load_dataset_per_party(args, index):
             # half_dim = int(X.shape[1]//2) acc=0.77
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
         elif args.dataset == 'criteo':
-            df = pd.read_csv("../../../share_dataset/Criteo/criteo.csv",nrows=100000)
+            df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
             print("criteo dataset loaded")
             half_dim = (df.shape[1]-1)//2
             X = df.iloc[:, :-1].values
@@ -273,7 +274,7 @@ def load_dataset_per_party(args, index):
     elif args.dataset in TEXT_DATA:
         if args.dataset == 'news20':
             texts, labels, labels_index = [], {}, []
-            Text_dir = '../share_dataset/news20/'
+            Text_dir = DATA_PATH+'news20/'
             for name in sorted(os.listdir(Text_dir)):
                 #  every file_folder under the root_file_folder should be labels with a unique number
                 labels[name] = len(labels) # 
@@ -343,22 +344,22 @@ def load_dataset_per_party_backdoor(args, index):
         # load image datasets
         if args.dataset == "cifar100":
             half_dim = 16
-            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+            train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+            test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         elif args.dataset == "cifar20":
             assert args.num_classes == 20
             half_dim = 16
-            train_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+            train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR100("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+            test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         elif args.dataset == "cifar10":
             half_dim = 16
-            train_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=True, transform=transform_fn)
+            train_dst = datasets.CIFAR10(DATA_PATH, download=True, train=True, transform=transform_fn)
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
-            test_dst = datasets.CIFAR10("../../../share_dataset/", download=True, train=False, transform=transform_fn)
+            test_dst = datasets.CIFAR10(DATA_PATH, download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
         else:
             assert args.dataset == "mnist"
@@ -386,8 +387,8 @@ def load_dataset_per_party_backdoor(args, index):
             args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
     # elif args.dataset_name == 'nuswide':
     #     half_dim = [634, 1000]
-    #     train_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'train')
-    #     test_dst = NUSWIDEDataset('../../../share_dataset/NUS_WIDE', 'test')
+    #     train_dst = NUSWIDEDataset(DATA_PATH+'NUS_WIDE', 'train')
+    #     test_dst = NUSWIDEDataset(DATA_PATH+'NUS_WIDE', 'test')
     # args.train_dataset = train_dst
     # args.val_dataset = test_dst
     else:
