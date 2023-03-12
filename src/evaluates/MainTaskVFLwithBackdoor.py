@@ -12,7 +12,7 @@ import numpy as np
 import time
 import copy
 
-from models.vision import resnet18, MLP2
+# from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *

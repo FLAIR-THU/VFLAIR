@@ -1,19 +1,12 @@
+import os, sys
+sys.path.append(os.pardir)
+
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from torch.nn.parameter import Parameter
 from torch.nn.modules.module import Module
-from sklearn.metrics import f1_score
-import numpy as np
-import scipy.sparse as sp
-from copy import copy, deepcopy
-from torch.autograd import Function
-from torch.autograd import Variable
-# from dgl.nn.pytorch.conv import SAGEConv,SGConv,GATConv,GINConv,GraphConv
-
-# import utils.cora_utils
 
 
 class GraphConvolution(Module):

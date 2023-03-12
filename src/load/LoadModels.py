@@ -5,9 +5,8 @@ import argparse
 import numpy as np
 import pickle
 
-from models.vision import *
-from models.gcn import *
-from models.model_templates import *
+from models.bottom_models import *
+from models.global_models import *
 from models.autoencoder import *
 
 def load_models(args):

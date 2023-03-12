@@ -21,6 +21,19 @@ import copy
 
 tp = transforms.ToTensor()
 
+def MSE_PSNR(batch_real_image, batch_dummy_image):
+    '''
+    compute MSE and PSNR
+    :param batch_real_image:
+    :param batch_dummy_image:
+    :return:
+    '''
+    # print(batch_real_image.size(),batch_dummy_image.size())
+    batch_real_image = batch_real_image.reshape(batch_dummy_image.size())
+    mse = torch.mean((batch_real_image-batch_dummy_image)**2)
+    psnr = 20 * torch.log10(1/torch.sqrt(mse))
+    return mse.item(), psnr.item()
+
 def remove_exponent(num):
     num = Decimal(num)
     return num.to_integral() if num == num.to_integral() else num.normalize()

@@ -7,19 +7,15 @@ import random
 import logging
 import argparse
 import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
-from torchvision import datasets
-# from torch.types import Device
-import torch.utils
-import torch.backends.cudnn as cudnn
+# import torch.nn as nn
+# import torchvision.transforms as transforms
+# from torchvision import datasets
+# import torch.utils
+# import torch.backends.cudnn as cudnn
 # from tensorboardX import SummaryWriter
 
 from load.LoadConfigs import load_configs
 from load.LoadParty import load_parties
-from models.vision import *
-from utils.basic_functions import *
-from utils.constants import *
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
 
@@ -33,21 +29,13 @@ def set_seed(seed=0):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-tp = transforms.ToTensor()
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-     ])
-transform_fn = transforms.Compose([
-    transforms.ToTensor()
-])
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='basic_configs', help='configure json file path')
+    parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
     set_seed(args.seed)

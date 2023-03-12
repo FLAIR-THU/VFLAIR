@@ -11,7 +11,7 @@ import numpy as np
 import time
 import copy
 
-from models.vision import resnet18, MLP2
+# from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 # from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
@@ -208,6 +208,10 @@ class MainTaskVFL(object):
                 #     self.middle_epoch_state = self.save_state()
                 # ====== train batch (end) ======
 
+            self.trained_models = self.save_state(True)
+            if self.args.save_model == True:
+                self.save_trained_models()
+
             # validation
             if (i + 1) % print_every == 0:
                 print("validate and test")
@@ -339,6 +343,8 @@ class MainTaskVFL(object):
         if BEFORE_MODEL_UPDATE:
             return {
                 "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+                # type(model) = <class 'xxxx.ModelName'>
+                "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in range(self.args.k)]+[str(type(self.parties[self.args.k-1].global_model)).split('.')[-1].split('\'')[-2]]
             }
         else:
             return {
@@ -351,6 +357,18 @@ class MainTaskVFL(object):
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss)
             }
+        
+    def save_trained_models(self):
+        dir_path = self.exp_res_dir + f'trained_models/parties{self.k}_topmodel{self.args.apply_trainable_layer}_epoch{self.epochs}/'
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        if self.args.apply_defense:
+            file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
+        else:
+            file_path = dir_path + 'NoDefense.pkl'
+        torch.save(([self.trained_models["model"][i].state_dict() for i in range(len(self.trained_models["model"]))],
+                    self.trained_models["model_names"]), 
+                  file_path)
 
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)

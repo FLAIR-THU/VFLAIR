@@ -25,11 +25,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "attack": {
-        "name": "BatchLabelReconstruction",
+        "name": "DataReconstruction",
         "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 10000,
+            "lr": 0.0001,
+            "epochs": 100,
             "early_stop": 0,
             "early_stop_threshold": 0.0
         }

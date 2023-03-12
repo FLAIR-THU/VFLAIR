@@ -3,15 +3,13 @@ import sys
 
 sys.path.append(os.pardir)
 
+import torch
 from torch.utils.data import DataLoader
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
 from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor
-from load.LoadModels import *
-from models.autoencoder import *
-from models.model_templates import *
-from models.vision import *
+from load.LoadModels import load_models_per_party
 
 
 class Party(object):
@@ -121,28 +119,28 @@ class Party(object):
         # args.local_model()
         pass
 
-    def local_backward_old(self, gradient, local_pred):
-        # update local model
-        self.local_model_optimizer.zero_grad()
-        # ########## for passive local mid loss (start) ##########
-        if (
-            self.args.apply_mid == True
-            and (self.index in self.args.defense_configs["party"])
-            and (self.index < self.args.k - 1)
-        ):
-            self.local_model.mid_loss.backward(retain_graph=True)
-            self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
-        # ########## for passive local mid loss (end) ##########
-        self.weights_grad_a = torch.autograd.grad(
-            local_pred,
-            self.local_model.parameters(),
-            grad_outputs=gradient,
-            retain_graph=True,
-        )
-        for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-            if w.requires_grad:
-                w.grad = g.detach()
-        self.local_model_optimizer.step()
+    # def local_backward_old(self, gradient, local_pred):
+    #     # update local model
+    #     self.local_model_optimizer.zero_grad()
+    #     # ########## for passive local mid loss (start) ##########
+    #     if (
+    #         self.args.apply_mid == True
+    #         and (self.index in self.args.defense_configs["party"])
+    #         and (self.index < self.args.k - 1)
+    #     ):
+    #         self.local_model.mid_loss.backward(retain_graph=True)
+    #         self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
+    #     # ########## for passive local mid loss (end) ##########
+    #     self.weights_grad_a = torch.autograd.grad(
+    #         local_pred,
+    #         self.local_model.parameters(),
+    #         grad_outputs=gradient,
+    #         retain_graph=True,
+    #     )
+    #     for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+    #         if w.requires_grad:
+    #             w.grad = g.detach()
+    #     self.local_model_optimizer.step()
 
     def local_backward(self):
         # update local model

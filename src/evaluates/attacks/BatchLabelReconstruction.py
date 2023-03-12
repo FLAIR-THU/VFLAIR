@@ -9,7 +9,7 @@ import copy
 import pickle 
 
 from evaluates.attacks.attacker import Attacker
-from models.model_templates import ClassificationModelHostHead, ClassificationModelHostTrainableHead
+from models.global_models import ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 
 
