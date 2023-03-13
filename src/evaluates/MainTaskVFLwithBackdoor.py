@@ -108,7 +108,9 @@ class MainTaskVFLwithBackdoor(object):
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
             gradient = self.launch_defense(gradient, "gradients")        
-
+        if self.args.apply_dcae == True:
+            gradient = self.launch_defense(gradient, "gradients")  
+            
         # ######### for backdoor start #########
         for ik in range(self.k-1): # Only Passive Parties do
             gradient[ik][-2] = gradient[ik][-1]
