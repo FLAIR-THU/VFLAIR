@@ -239,7 +239,7 @@ def GradientSparsification(args, original_object):
     else:
         return original_object
     
-    def discrete(original_tensor,W):
+def discrete(original_tensor,W):
     _mu = float(torch.mean(original_tensor).item())  #np.mean(original_object) 
     _sigma = torch.var(original_tensor).item()  #np.std(original_object)
     _sigma = float(_sigma**0.5)           
