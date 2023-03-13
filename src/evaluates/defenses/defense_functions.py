@@ -238,7 +238,41 @@ def GradientSparsification(args, original_object):
         return new_object
     else:
         return original_object
+    
+    def discrete(original_tensor,W):
+    _mu = float(torch.mean(original_tensor).item())  #np.mean(original_object) 
+    _sigma = torch.var(original_tensor).item()  #np.std(original_object)
+    _sigma = float(_sigma**0.5)           
+    A = np.linspace(_mu-_sigma, _mu+_sigma, num=W , endpoint=True, retstep=False, dtype=None)
 
+    new_tensor = torch.empty(original_tensor.shape[0],original_tensor.shape[1])
+    for i in range(original_tensor.shape[0]):
+        for j in range(original_tensor.shape[1]):
+            element = original_tensor[i][j].item()
+            if element <= A[0]:
+                new_tensor[i][j]=A[0]
+            elif element >= A[-1]:
+                new_tensor[i][j]=A[-1]
+            else:
+                for nodes in A:
+                    if element > nodes:
+                        new_tensor[i][j]=nodes
+                        break
+    return new_tensor
+
+def DiscreteSGD(args, original_object):
+    original_object = original_object[0] # list [tensor1 tensor2]
+    W = args.defense_configs['bin_numbers']+1
+    
+    new_object = []
+    if W >= 2:
+        with torch.no_grad():
+            for ik in range(len(original_object)):
+                new_object.append(discrete(original_object[ik],W))
+    else:
+        print('Error: bin_numbers should be > 1')
+        return original_object
+    return new_object
     # TODO
     # ######################## defense start ############################
     # ######################## defense3: marvell ############################
