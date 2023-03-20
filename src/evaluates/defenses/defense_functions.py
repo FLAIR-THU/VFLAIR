@@ -176,8 +176,11 @@ class DPLaplacianNoiseApplyer():
         return tensor
 
 def LaplaceDP(args, original_object):
-    dp_strength = args.defense_configs['dp_strength']
     original_object = original_object[0]
+    
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    
     if dp_strength > 0.0:
         location = 0.0
         threshold = 0.2  # 1e9
@@ -200,6 +203,7 @@ def LaplaceDP(args, original_object):
 
 def GaussianDP(args, original_object):
     original_object = original_object[0]
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
     if dp_strength > 0.0:
         location = 0.0
@@ -220,6 +224,7 @@ def GaussianDP(args, original_object):
 
 def GradientSparsification(args, original_object):
     original_object = original_object[0]
+    assert ('gradient_sparse_rate' in args.defense_configs) , "missing defense parameter: 'gradient_sparse_rate'"
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
     while grad_spars_ratio > 1.0:
         grad_spars_ratio = grad_spars_ratio / 100.0
@@ -263,7 +268,7 @@ def discrete(original_tensor,W):
 def DiscreteSGD(args, original_object):
     original_object = original_object[0] # list [tensor1 tensor2]
     W = args.defense_configs['bin_numbers']+1
-    
+    assert ('bin_numbers' in args.defense_configs) , "missing defense parameter: 'bin_numbers'"
     new_object = []
     if W >= 2:
         with torch.no_grad():
