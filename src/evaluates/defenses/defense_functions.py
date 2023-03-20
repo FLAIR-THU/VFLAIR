@@ -262,6 +262,7 @@ def discrete(original_tensor,W):
                 for nodes in A:
                     if element > nodes:
                         new_tensor[i][j]=nodes
+                    else:
                         break
     return new_tensor
 
