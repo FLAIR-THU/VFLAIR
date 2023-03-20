@@ -13,14 +13,19 @@ def load_configs(config_file_name, args):
     
     # args.main_lr, learning rate for main task
     args.main_lr = config_dict['lr'] if('lr' in config_dict) else 0.001
+    
     # args.main_epochs, iterations for main task
     args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else 50
+    
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
+    
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
+    
     # args.Q ,iteration_per_aggregation for FedBCD
     args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
+    assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
     # # args.early_stop, if use early stop
     # args.main_early_stop = config_dict['main_early_stop'] if ('main_early_stop' in config_dict) else 0
     # args.main_early_stop_param = config_dict['main_early_stop_param'] if ('main_early_stop_param' in config_dict) else 0.0001
@@ -93,9 +98,8 @@ def load_configs(config_file_name, args):
                 args.apply_mid = True
             elif 'cae' in args.defense_name.casefold():
                 args.apply_cae = True
-            elif 'dcae' in args.defense_name.casefold():
-                args.apply_cae = True
-                args.apply_dcae = True
+                if 'dcae' in args.defense_name.casefold():
+                    args.apply_dcae = True
         else:
             assert 'name' in config_dict['defense'], "missing defense name"
     
