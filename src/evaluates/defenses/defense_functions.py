@@ -243,42 +243,48 @@ def GradientSparsification(args, original_object):
         return new_object
     else:
         return original_object
+
     
 def discrete(original_tensor,W):
-    _mu = float(torch.mean(original_tensor).item())  #np.mean(original_object) 
-    _sigma = torch.var(original_tensor).item()  #np.std(original_object)
-    _sigma = float(_sigma**0.5)           
-    A = np.linspace(_mu-_sigma, _mu+_sigma, num=W , endpoint=True, retstep=False, dtype=None)
+    _mu = torch.mean(original_tensor).item() #np.mean(original_object) 
+    _sigma = torch.std(original_tensor).item()  #np.std(original_object)     
+    A = np.linspace(_mu-2*_sigma, _mu+2*_sigma, num=W , endpoint=True, retstep=False, dtype=None)
 
     new_tensor = torch.empty(original_tensor.shape[0],original_tensor.shape[1])
     for i in range(original_tensor.shape[0]):
         for j in range(original_tensor.shape[1]):
             element = original_tensor[i][j].item()
-            if element <= A[0]:
-                new_tensor[i][j]=A[0]
-            elif element >= A[-1]:
-                new_tensor[i][j]=A[-1]
+            if element <= (A[0]+A[1])/2:
+                new_tensor[i][j]= A[0]
+            elif element >= (A[-1]+A[-2])/2:
+                new_tensor[i][j]= A[-1]
             else:
-                for nodes in A:
-                    if element > nodes:
-                        new_tensor[i][j]=nodes
+                for nodes_num in range(len(A)-1):
+                    if element > (A[nodes_num] + A[nodes_num+1])/2 :
+                        new_tensor[i][j] = A[nodes_num+1]
                     else:
                         break
+
     return new_tensor
 
 def DiscreteSGD(args, original_object):
+    #print('=========')
     original_object = original_object[0] # list [tensor1 tensor2]
+    assert ('bin_numbers' in args.defense_configs) , "missing defense parameter: bin_numbers"
     W = args.defense_configs['bin_numbers']+1
-    assert ('bin_numbers' in args.defense_configs) , "missing defense parameter: 'bin_numbers'"
+    
     new_object = []
     if W >= 2:
         with torch.no_grad():
             for ik in range(len(original_object)):
-                new_object.append(discrete(original_object[ik],W))
+                #print(original_object[ik].size())
+                new_object.append(discrete(original_object[ik],W).to(args.device))
     else:
         print('Error: bin_numbers should be > 1')
         return original_object
+
     return new_object
+
     # TODO
     # ######################## defense start ############################
     # ######################## defense3: marvell ############################
