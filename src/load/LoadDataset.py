@@ -76,48 +76,39 @@ def dataset_partition(args, index, dst, half_dim):
             assert (args.k == 2), "total number of parties not supported for data partitioning"
             return None
     elif args.dataset in TABULAR_DATA:
-        if args.k == 2:
-            if index == 0:
-                return (dst[0][:, :half_dim], None)
-            elif index == 1:
-                return (dst[0][:, half_dim:], dst[1])
-            else:
-                assert index <= 1, "invalide party index"
-                return None
-        elif args.k == 4:
-            half_dim = int(half_dim//2)
-            if index == 3:
-                return (dst[0][:, half_dim*3:], dst[1])
-            else:
-                # passive party does not have label
-                if index <= 2:
-                    return (dst[0][:, half_dim*index:half_dim*(index+1)], None)
-                else:
-                    assert index <= 3, "invalide party index"
-                    return None
-    elif args.dataset in TEXT_DATA: 
-        if args.k == 2:
-            if index == 0:
-                return (dst[0][:, :half_dim], None)
-            elif index == 1:
-                return (dst[0][:, half_dim:], dst[1])
-            else:
-                assert index <= 1, "invalide party index"
-                return None
-        elif args.k == 4:
-            half_dim = int(half_dim//2)
-            if index == 3:
-                return (dst[0][:, half_dim*3:], dst[1])
-            else:
-                # passive party does not have label
-                if index <= 2:
-                    return (dst[0][:, half_dim*index:half_dim*(index+1)], None)
-                else:
-                    assert index <= 3, "invalide party index"
-                    return None
+        dim_list=[]
+        for ik in range(args.k):
+            dim_list.append(int(args.model_list[str(ik)]['input_dim']))
+            if len(dim_list)>1:
+                dim_list[-1]=dim_list[-1]+dim_list[-2]
+        dim_list.insert(0,0)
+
+        if index == (args.k-1):
+            return (dst[0][:, dim_list[index]:], dst[1])
         else:
-            assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
-            return None
+            # passive party does not have label
+            if index <= (args.k-1):  
+                return (dst[0][:, dim_list[index]:dim_list[index+1]], None)
+            else:
+                assert index <= (args.k-1), "invalide party index"
+                return None
+    elif args.dataset in TEXT_DATA: 
+        dim_list=[]
+        for ik in range(args.k):
+            dim_list.append(int(args.model_list[str(ik)]['input_dim']))
+            if len(dim_list)>1:
+                dim_list[-1]=dim_list[-1]+dim_list[-2]
+        dim_list.insert(0,0)
+
+        if index == (args.k-1):
+            return (dst[0][:, dim_list[index]:], dst[1])
+        else:
+            # passive party does not have label
+            if index <= (args.k-1):  
+                return (dst[0][:, dim_list[index]:dim_list[index+1]], None)
+            else:
+                assert index <= (args.k-1), "invalide party index"
+                return None
     elif args.dataset in GRAPH_DATA: #args.dataset == 'cora':
         assert args.k == 2, 'more than 2 party is not supported for cora'
         if index == 0:
