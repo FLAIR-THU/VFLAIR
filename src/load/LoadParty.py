@@ -8,7 +8,7 @@ def load_parties(args):
     # party 0,1,2,...,args.k-2||,args,k-1
     args.parties = [None] * args.k 
 
-    assert args.k > 1
+    assert args.k >= 1
     # for passive party 0,1,2,...,args.k-2
     for ik in range(args.k-1):
         args.parties[ik] = PassiveParty(args, ik)

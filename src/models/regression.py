@@ -14,5 +14,5 @@ class LogisticRegressionModel(nn.Module):
         )
 
     def forward(self, x):
-        out = F.sigmoid(self.layer(x))
+        out = self.layer(x) #F.sigmoid(self.layer(x))
         return out
