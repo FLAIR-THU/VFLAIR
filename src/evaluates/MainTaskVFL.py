@@ -179,7 +179,7 @@ class MainTaskVFL(object):
 
         test_acc = 0.0
         # Early Stop
-        lowest_loss = 1000000
+        last_loss = 1000000
         early_stop_count = 0
 
         for i_epoch in range(self.epochs):
@@ -261,13 +261,13 @@ class MainTaskVFL(object):
                         i_epoch, self.loss, self.train_acc, self.test_acc))
                     
                     # Early Stop Assessment
-                    if self.loss < lowest_loss:
-                        lowest_loss = self.loss
+                    if self.loss < last_loss:       
                         early_stop_count = 0
                     else:
                         early_stop_count +=1
+                    last_loss = self.loss
                     
-                    if early_stop_count > self.early_stop_threshold:
+                    if early_stop_count >= self.early_stop_threshold:
                         self.final_epoch = i_epoch
                         break
     
@@ -284,7 +284,7 @@ class MainTaskVFL(object):
     def train_graph(self):
         test_acc = 0.0
         # Early Stop
-        lowest_loss = 1000000
+        last_loss = 1000000
         early_stop_count = 0
 
         for i_epoch in range(self.epochs):
@@ -353,13 +353,13 @@ class MainTaskVFL(object):
                     i_epoch, self.loss, self.train_acc, self.test_acc))
                 
                 # Early Stop Assessment
-                if self.loss < lowest_loss:
-                    lowest_loss = self.loss
+                if self.loss < last_loss:       
                     early_stop_count = 0
                 else:
                     early_stop_count +=1
+                last_loss = self.loss
                 
-                if early_stop_count > self.early_stop_threshold:
+                if early_stop_count >= self.early_stop_threshold:
                     self.final_epoch = i_epoch
                     break
         
