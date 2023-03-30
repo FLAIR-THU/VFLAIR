@@ -18,6 +18,9 @@ def load_configs(config_file_name, args):
     # args.main_epochs, iterations for main task
     args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else 50
     
+    # args.early_stop_threshold, early stop max epoch
+    args.early_stop_threshold = config_dict['early_stop_threshold'] if('early_stop_threshold' in config_dict) else 5
+    
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
     assert (args.k % 1 == 0 and args.k>0), "k should be positive integers"
