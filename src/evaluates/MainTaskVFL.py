@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 import numpy as np
@@ -114,6 +115,11 @@ class MainTaskVFL(object):
             onehot_target.scatter_(1, target, 1)
         return onehot_target
 
+    def LR_Decay(self,i_epoch):
+        for ik in range(self.k):
+            self.parties[ik].LR_decay(i_epoch)
+        self.parties[self.k-1].global_LR_decay(i_epoch)
+        
     def train_batch(self, parties_data, batch_label):
         encoder = self.args.encoder
         if self.args.apply_cae:
@@ -181,7 +187,8 @@ class MainTaskVFL(object):
         # Early Stop
         last_loss = 1000000
         early_stop_count = 0
-
+        LR_passive_list = []
+        LR_active_list = []
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
@@ -219,6 +226,12 @@ class MainTaskVFL(object):
             self.trained_models = self.save_state(True)
             if self.args.save_model == True:
                 self.save_trained_models()
+
+            # LR decay
+            self.LR_Decay(i_epoch)
+            # LR record
+            LR_passive_list.append(self.parties[0].give_current_lr())
+            LR_active_list.append(self.parties[1].give_current_lr())
 
             # validation
             if (i + 1) % print_every == 0:
@@ -278,6 +291,14 @@ class MainTaskVFL(object):
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
+        #LR scopes
+        xx = [i for i in range(len(LR_passive_list))]
+        plt.figure()
+        plt.plot(xx,LR_passive_list,'o-', color='b', alpha=0.8, linewidth=1, label='passive0')
+        plt.plot(xx,LR_active_list,'o-', color='r', alpha=0.8, linewidth=1, label='active1')
+        plt.legend()
+        plt.savefig('./exp_result/LR_Scope.png')
+
         return test_acc
 
 

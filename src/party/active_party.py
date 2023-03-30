@@ -71,6 +71,13 @@ class ActiveParty(Party):
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient
 
+    def global_LR_decay(self,i_epoch):
+        if self.global_model_optimizer != None: 
+            eta_0 = self.args.main_lr
+            eta_t = eta_0/((i_epoch+1)**0.5)
+            for param_group in self.global_model_optimizer.param_groups:
+                param_group['lr'] = eta_t
+                
     def global_backward_old(self, pred, loss):
         if self.global_model_optimizer != None: 
             # active party with trainable global layer

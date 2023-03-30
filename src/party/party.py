@@ -107,7 +107,15 @@ class Party(object):
     # def prepare_defender(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.defender = DefenderLoader(args, index)
+    def give_current_lr(self):
+        return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
+    def LR_decay(self,i_epoch):
+        eta_0 = self.args.main_lr
+        eta_t = eta_0/((i_epoch+1)**0.5)
+        for param_group in self.local_model_optimizer.param_groups:
+            param_group['lr'] = eta_t
+            
     def obtain_local_data(self, data):
         self.local_batch_data = data
 

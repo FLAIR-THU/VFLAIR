@@ -45,10 +45,7 @@ def load_configs(config_file_name, args):
     # args.model_list, specify the types of models
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
-<<<<<<< HEAD
         #print('config_model_dict:',(len(config_model_dict)-2))
-=======
->>>>>>> origin/add_defense
         assert ((len(config_model_dict)-2)==args.k), 'please alter party number k, model number should be equal to party number'
         
         model_dict = {}
