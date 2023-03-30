@@ -1,7 +1,7 @@
 {
-    "epochs": 100,
+    "epochs": 50,
     "lr": 0.05,
-    "k": 2,
+    "k": 3,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "num_exp": 10,
@@ -12,13 +12,19 @@
     "model_list":{
         "0": {
             "type": "MLP2_128",
-            "input_dim": 15,
+            "input_dim": 10,
             "output_dim": 2,
             "path": ""
         },
         "1": {
             "type": "MLP2_128",
-            "input_dim": 15,
+            "input_dim": 10,
+            "output_dim": 2,
+            "path": ""
+        },
+        "2": {
+            "type": "MLP2_128",
+            "input_dim": 10,
             "output_dim": 2,
             "path": ""
         },

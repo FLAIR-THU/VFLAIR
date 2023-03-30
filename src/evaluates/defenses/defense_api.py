@@ -9,11 +9,14 @@ def DefenderLoader(args, index):
     elif args.defense_name in ['MID']:
         # for future use, create a defender
         return None
-    elif args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteGradient', 'MARVELL', 'CAE', 'DCAE']:
+    elif args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteGradient', 'MARVELL', 'CAE', 'DCAE','DiscreteSGD']:
         # simple function, no need for defender at class
         return None
 
 def apply_defense(args, *params):
-    if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification']:
+    if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteSGD']:
         gradient_list = params
         return globals()[args.defense_name](args, gradient_list)
+    elif args.defense_name in ['DCAE']:
+        gradient_list = params
+        return globals()['DiscreteSGD'](args, gradient_list)

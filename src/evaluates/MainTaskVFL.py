@@ -68,6 +68,10 @@ class MainTaskVFL(object):
         self.train_acc = None
         self.flag = 1
 
+        # Early Stop
+        self.early_stop_threshold = args.early_stop_threshold
+        self.final_epoch = 0
+
         # some state of VFL throughout training process
         self.first_epoch_state = None
         self.middle_epoch_state = None
@@ -174,6 +178,10 @@ class MainTaskVFL(object):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
 
         test_acc = 0.0
+        # Early Stop
+        last_loss = 1000000
+        early_stop_count = 0
+
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
@@ -251,11 +259,22 @@ class MainTaskVFL(object):
                     # tqdm_train.set_postfix(postfix)
                     print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc))
-        
+                    
+                    # Early Stop Assessment
+                    if self.loss < last_loss:       
+                        early_stop_count = 0
+                    else:
+                        early_stop_count +=1
+                    last_loss = self.loss
+                    
+                    if early_stop_count >= self.early_stop_threshold:
+                        self.final_epoch = i_epoch
+                        break
+    
         if self.args.apply_defense == True:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
@@ -264,6 +283,10 @@ class MainTaskVFL(object):
 
     def train_graph(self):
         test_acc = 0.0
+        # Early Stop
+        last_loss = 1000000
+        early_stop_count = 0
+
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             self.parties_data = [(self.parties[ik].train_data, self.parties[ik].train_label) for ik in range(self.k)]
@@ -328,11 +351,22 @@ class MainTaskVFL(object):
                 # tqdm_train.set_postfix(postfix)
                 print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                     i_epoch, self.loss, self.train_acc, self.test_acc))
+                
+                # Early Stop Assessment
+                if self.loss < last_loss:       
+                    early_stop_count = 0
+                else:
+                    early_stop_count +=1
+                last_loss = self.loss
+                
+                if early_stop_count >= self.early_stop_threshold:
+                    self.final_epoch = i_epoch
+                    break
         
         if self.args.apply_defense == True:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
         else:
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, self.test_acc)
         append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         

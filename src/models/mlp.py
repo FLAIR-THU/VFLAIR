@@ -84,7 +84,7 @@ class MLP2_128(nn.Module):
         super(MLP2_128, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Linear(input_dim, 128, bias=True),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         )
 
         self.layer2 = nn.Sequential(

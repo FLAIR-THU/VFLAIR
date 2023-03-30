@@ -66,6 +66,10 @@ class MainTaskVFLwithBackdoor(object):
         self.train_acc = None
         self.flag = 1
 
+        # Early Stop
+        self.early_stop_threshold = args.early_stop_threshold
+        self.final_epoch = 0
+
         # some state of VFL throughout training process
         self.first_epoch_state = None
         self.middle_epoch_state = None
@@ -108,7 +112,9 @@ class MainTaskVFLwithBackdoor(object):
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
             gradient = self.launch_defense(gradient, "gradients")        
-
+        if self.args.apply_dcae == True:
+            gradient = self.launch_defense(gradient, "gradients")  
+            
         # ######### for backdoor start #########
         for ik in range(self.k-1): # Only Passive Parties do
             gradient[ik][-2] = gradient[ik][-1]
@@ -171,7 +177,7 @@ class MainTaskVFLwithBackdoor(object):
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
-            predict_prob = self.parties[ik].encoder.decoder(predict_prob)
+            predict_prob = self.parties[self.k-1].encoder.decoder(predict_prob)
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
@@ -190,6 +196,10 @@ class MainTaskVFLwithBackdoor(object):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
 
         test_acc = 0.0
+        # Early Stop
+        last_loss = 1000000
+        early_stop_count = 0
+
         train_acc_history = []
         test_acc_histoty = []
         backdoor_acc_history = []
@@ -271,7 +281,7 @@ class MainTaskVFLwithBackdoor(object):
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
-                            dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                            dec_predict_prob = self.parties[self.k-1].encoder.decoder(enc_predict_prob)
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
                             predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -292,7 +302,7 @@ class MainTaskVFLwithBackdoor(object):
                     test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
                     enc_predict_prob = F.softmax(test_logit, dim=-1)
                     if self.args.apply_cae == True:
-                        dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                        dec_predict_prob = self.parties[self.k-1].encoder.decoder(enc_predict_prob)
                         predict_label = torch.argmax(dec_predict_prob, dim=-1)
                     else:
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -312,6 +322,17 @@ class MainTaskVFLwithBackdoor(object):
                     test_acc_histoty.append(self.test_acc)
                     backdoor_acc_history.append(self.backdoor_acc)
 
+                    # Early Stop Assessment
+                    if self.loss < last_loss:       
+                        early_stop_count = 0
+                    else:
+                        early_stop_count +=1
+                    last_loss = self.loss
+                    
+                    if early_stop_count >= self.early_stop_threshold:
+                        self.final_epoch = i_epoch
+                        break
+
         # if self.args.apply_cae == True:
         #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
         # elif self.args.apply_mid == True:
@@ -323,10 +344,10 @@ class MainTaskVFLwithBackdoor(object):
 
         if self.args.apply_defense == True:
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
         else:
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
-            exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
 
         # if self.args.apply_defense:
         #     exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'

@@ -63,6 +63,8 @@ def dataset_partition(args, index, dst, half_dim):
                 else:
                     assert index <= 3, "invalide party index"
                     return None
+        elif args.k == 1: # Centralized Training
+            return (dst[0], dst[1])
         else:
             assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
             return None
@@ -83,6 +85,12 @@ def dataset_partition(args, index, dst, half_dim):
                 dim_list[-1]=dim_list[-1]+dim_list[-2]
         dim_list.insert(0,0)
 
+<<<<<<< HEAD
+=======
+        if args.k == 1: # Centralized Training
+            return (dst[0], dst[1])
+        
+>>>>>>> origin/add_defense
         if index == (args.k-1):
             return (dst[0][:, dim_list[index]:], dst[1])
         else:
@@ -100,6 +108,12 @@ def dataset_partition(args, index, dst, half_dim):
                 dim_list[-1]=dim_list[-1]+dim_list[-2]
         dim_list.insert(0,0)
 
+<<<<<<< HEAD
+=======
+        if args.k == 1:
+            return (dst[0], dst[1])
+            
+>>>>>>> origin/add_defense
         if index == (args.k-1):
             return (dst[0][:, dim_list[index]:], dst[1])
         else:

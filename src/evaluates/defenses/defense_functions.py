@@ -176,8 +176,11 @@ class DPLaplacianNoiseApplyer():
         return tensor
 
 def LaplaceDP(args, original_object):
-    dp_strength = args.defense_configs['dp_strength']
     original_object = original_object[0]
+    
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    
     if dp_strength > 0.0:
         location = 0.0
         threshold = 0.2  # 1e9
@@ -200,6 +203,7 @@ def LaplaceDP(args, original_object):
 
 def GaussianDP(args, original_object):
     original_object = original_object[0]
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
     if dp_strength > 0.0:
         location = 0.0
@@ -220,6 +224,7 @@ def GaussianDP(args, original_object):
 
 def GradientSparsification(args, original_object):
     original_object = original_object[0]
+    assert ('gradient_sparse_rate' in args.defense_configs) , "missing defense parameter: 'gradient_sparse_rate'"
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
     while grad_spars_ratio > 1.0:
         grad_spars_ratio = grad_spars_ratio / 100.0
@@ -238,6 +243,47 @@ def GradientSparsification(args, original_object):
         return new_object
     else:
         return original_object
+
+    
+def discrete(original_tensor,W):
+    _mu = torch.mean(original_tensor).item() #np.mean(original_object) 
+    _sigma = torch.std(original_tensor).item()  #np.std(original_object)     
+    A = np.linspace(_mu-2*_sigma, _mu+2*_sigma, num=W , endpoint=True, retstep=False, dtype=None)
+
+    new_tensor = torch.empty(original_tensor.shape[0],original_tensor.shape[1])
+    for i in range(original_tensor.shape[0]):
+        for j in range(original_tensor.shape[1]):
+            element = original_tensor[i][j].item()
+            if element <= (A[0]+A[1])/2:
+                new_tensor[i][j]= A[0]
+            elif element >= (A[-1]+A[-2])/2:
+                new_tensor[i][j]= A[-1]
+            else:
+                for nodes_num in range(len(A)-1):
+                    if element > (A[nodes_num] + A[nodes_num+1])/2 :
+                        new_tensor[i][j] = A[nodes_num+1]
+                    else:
+                        break
+
+    return new_tensor
+
+def DiscreteSGD(args, original_object):
+    #print('=========')
+    original_object = original_object[0] # list [tensor1 tensor2]
+    assert ('bin_numbers' in args.defense_configs) , "missing defense parameter: bin_numbers"
+    W = args.defense_configs['bin_numbers']+1
+    
+    new_object = []
+    if W >= 2:
+        with torch.no_grad():
+            for ik in range(len(original_object)):
+                #print(original_object[ik].size())
+                new_object.append(discrete(original_object[ik],W).to(args.device))
+    else:
+        print('Error: bin_numbers should be > 1')
+        return original_object
+
+    return new_object
 
     # TODO
     # ######################## defense start ############################
