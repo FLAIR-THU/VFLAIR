@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='basic_configs', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test/mnist_bli_configs', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
@@ -44,6 +44,8 @@ if __name__ == '__main__':
         cuda_id = args.gpu
         torch.cuda.set_device(cuda_id)
         print(f'running on cuda{torch.cuda.current_device()}')
+    else:
+        print('running on cpu')
 
     # load configs from *.json files
     args = load_configs(args.configs, args)

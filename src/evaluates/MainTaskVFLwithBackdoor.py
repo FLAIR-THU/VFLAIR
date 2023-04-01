@@ -322,16 +322,17 @@ class MainTaskVFLwithBackdoor(object):
                     test_acc_histoty.append(self.test_acc)
                     backdoor_acc_history.append(self.backdoor_acc)
 
+                    self.final_epoch = i_epoch
                     # Early Stop Assessment
-                    if self.loss < last_loss:       
-                        early_stop_count = 0
-                    else:
-                        early_stop_count +=1
-                    last_loss = self.loss
+                    # if self.loss < last_loss:       
+                    #     early_stop_count = 0
+                    # else:
+                    #     early_stop_count +=1
+                    # last_loss = self.loss
                     
-                    if early_stop_count >= self.early_stop_threshold:
-                        self.final_epoch = i_epoch
-                        break
+                    # if early_stop_count >= self.early_stop_threshold:
+                    #     self.final_epoch = i_epoch
+                    #     break
 
         # if self.args.apply_cae == True:
         #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
@@ -343,11 +344,21 @@ class MainTaskVFLwithBackdoor(object):
         #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
 
         if self.args.apply_defense == True:
+            if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
+                defense_param = self.args.defense_configs['lambda']
+            elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
+                defense_param = self.args.defense_configs['dp_strength']
+            elif self.args.defense_name == "GradientSparsification":
+                defense_param = self.args.defense_configs['gradient_sparse_rate']
+
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
+            (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
+             sum(backdoor_acc_history)/len(backdoor_acc_history),\
+                 str(self.args.attack_name), self.args.defense_name, defense_param)
         else:
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
-            exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.final_epoch, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
+            exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
 
         # if self.args.apply_defense:
         #     exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'

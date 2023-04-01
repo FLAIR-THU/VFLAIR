@@ -7,11 +7,12 @@ import time
 import numpy as np
 import copy
 import pickle 
+import matplotlib.pyplot as plt
+import itertools 
 
 from evaluates.attacks.attacker import Attacker
-from models.global_models import ClassificationModelHostHead, ClassificationModelHostTrainableHead
+from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
-
 
 class BatchLabelReconstruction(Attacker):
     def __init__(self, top_vfl, args):
@@ -64,16 +65,34 @@ class BatchLabelReconstruction(Attacker):
             self.exp_res_path = self.exp_res_dir + self.file_name
             
             # collect necessary information
-            pred_a = self.vfl_info['predict'][ik]        
-            self_data = self.vfl_info['data'][ik][0]
-            original_dy_dx = self.vfl_info['local_model_gradient'][ik]
-            local_model = self.vfl_info['model'][ik]
-            true_label = self.vfl_info['label'].to(self.device)
+            pred_list = self.vfl_info['predict']
+            pred_a = self.vfl_info['predict'][ik] # [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)]
+            pred_b = self.vfl_info['predict'][1] # active party 
             
-            local_model_copy = copy.deepcopy(local_model)
-            local_model = local_model.to(self.device)
-            local_model_copy.eval()
+            self_data = self.vfl_info['data'][ik][0]#copy.deepcopy(self.parties_data)
+            active_data = self.vfl_info['data'][1][0] # Active party data
 
+            local_gradient = self.vfl_info['gradient'][ik] 
+            # [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)]
+            original_dy_dx_old = self.vfl_info['local_model_gradient'][ik] # gradient calculated for local model update
+            #[copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)]
+            
+            net_a = self.vfl_info['model'][0].to(self.device)
+            net_b = self.vfl_info['model'][1].to(self.device)
+            global_model = self.vfl_info['global_model'].to(self.device)
+            
+            global_pred = self.vfl_info['global_pred'].to(self.device)
+            pred_a = net_a(self_data).to(self.device).requires_grad_(True)
+            pred_b = net_b(active_data).to(self.device).requires_grad_(True) # real pred_b   fake:dummy pred_b
+            #local_model = self.vfl_info['model'][ik]
+            #local_model_copy = copy.deepcopy(local_model)
+            #local_model = local_model.to(self.device)
+            #local_model_copy.eval()
+            global_model.eval()
+            net_a.eval()
+
+            true_label = self.vfl_info['label'].to(self.device) # copy.deepcopy(self.gt_one_hot_label)
+            
             # ################## debug: for checking if saved results are right (start) ##################
             print(f"sample_count = {pred_a.size()[0]}, number of classes = {pred_a.size()[1]}, {self.label_size}")
             # pickle.dump(self.vfl_info, open('./vfl_info.pkl','wb'))
@@ -88,37 +107,115 @@ class BatchLabelReconstruction(Attacker):
             sample_count = pred_a.size()[0]
             recovery_history = []
             recovery_rate_history = [[], []]
+            
             for i in range(2):
-                if i == 0: #non_trainable_top_model
-                    dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-                    dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-                    dummy_model = ClassificationModelHostHead().to(self.device)
-                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr, weight_decay=0.0)
+                # if i == 0: #non_trainable_top_model
+                #     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+                #     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+                #     dummy_model = ClassificationModelHostHead().to(self.device)
+                #     optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr, weight_decay=0.0)
+                # else:
+                #     assert i == 1 #trainable_top_model,  can use user define models instead
+                #     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
+                #     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
+                #     dummy_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
+                #     optimizer = torch.optim.Adam([dummy_pred_b, dummy_label] + list(dummy_model.parameters()), lr=self.lr)
+                
+                # set fake pred_b
+                dummy_pred_b = torch.randn(pred_a.size()).to(self.device)
+                dummy_label = torch.randn((sample_count,self.label_size)).to(self.device)
+                dummy_pred_b.requires_grad = True
+                dummy_label.requires_grad = True
+                
+                # Load Top Model
+                if i == 0:
+                    # ############# Problem real top model should be global_model?? #######
+                    active_aggregate_model = ClassificationModelHostHead() 
+                    dummy_active_aggregate_model = ClassificationModelHostHead()
+                    #para = torch.tensor[]
+                    #print(para.is_leaf)
+                    optimizer = torch.optim.Adam([dummy_label,dummy_pred_b], lr=self.lr,betas=(0.9, 0.999),
+                eps=1e-08,
+                weight_decay=0,
+                amsgrad=False)
                 else:
-                    assert i == 1 #trainable_top_model,  can use user define models instead
-                    dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-                    dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-                    dummy_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
-                    optimizer = torch.optim.Adam([dummy_pred_b, dummy_label] + list(dummy_model.parameters()), lr=self.lr)
+                    assert i == 1 
+                    active_aggregate_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
+                    dummy_active_aggregate_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
+                    optimizer = torch.optim.Adam(itertools.chain([dummy_pred_b, dummy_label],list(dummy_active_aggregate_model.parameters())), lr=self.lr,betas=(0.9, 0.999),
+                eps=1e-08,
+                weight_decay=0,
+                amsgrad=False) #  
+                active_aggregate_model = active_aggregate_model.to(self.device) # real top model
+                dummy_active_aggregate_model = dummy_active_aggregate_model.to(self.device) # dummy top model
 
+                # In Active Party: calculate Real Pred and L
+                pred = active_aggregate_model([pred_a, pred_b]) # real pred
+                loss = self.criterion(pred, true_label) # real loss
+                pred_a_gradients = torch.autograd.grad(loss, pred_a, retain_graph=True, create_graph=True) # gradient given to a
+                pred_a_gradients_clone = pred_a_gradients[0].detach().clone()
+                # real L
+                original_dy_dx = torch.autograd.grad(pred_a, net_a.parameters(), grad_outputs=pred_a_gradients_clone,retain_graph=True,allow_unused=True)
+                
+                # ######## There's a problem ##########
+                # Check if calculated original_dy_dx == original_dy_dx loaded from vfl_info
+                for kk in range(len(original_dy_dx)):
+                    if original_dy_dx[kk].equal(original_dy_dx_old[kk]):
+                        print('OK')
+                    else:
+                        print('NOT')
+                # ######## There's a problem ##########
+
+                # === Begin Attack ===
                 print(f"BLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
                 start_time = time.time()
-                for iters in range(1, self.epochs + 1):
+
+                end_iter = self.epochs + 1
+                if i ==1:
+                    end_iter = 10000
+                for iters in range(1, end_iter):
                     # s_time = time.time()
+                    
                     def closure():
                         optimizer.zero_grad()
-                        dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b])
-                        
+
+                        # fake pred/loss using fake top model/fake label
+                        dummy_pred = dummy_active_aggregate_model([pred_a, dummy_pred_b])
                         dummy_onehot_label = F.softmax(dummy_label, dim=-1)
                         dummy_loss = self.criterion(dummy_pred, dummy_onehot_label)
-                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model_copy.parameters(), create_graph=True)
+                        # dummy L
+                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, net_a.parameters(), create_graph=True)
+                        
+                        # loss: L-L'
+                        grad_diff = 0
+                        for (gx, gy) in zip(dummy_dy_dx_a, original_dy_dx):
+                            grad_diff += ((gx - gy) ** 2).sum()
+                        grad_diff.backward(retain_graph=True)
+
+                        if iters%200==0:
+                            print('Iters',iters,' grad_diff:',grad_diff.item())
+                        return grad_diff
+                    
+                    '''
+                    def closure():
+                        optimizer.zero_grad()
+
+                        # output
+                        dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b]) # output
+                        dummy_onehot_label = F.softmax(dummy_label, dim=-1)
+                        dummy_loss = self.criterion(dummy_pred, dummy_onehot_label) # output
+                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model_copy.parameters(), create_graph=True)# fake L
+                        
+                        # loss  fakeL:dummy_dy_dx_a   realL:original_dy_dx
                         grad_diff = 0
                         for (gx, gy) in zip(dummy_dy_dx_a, original_dy_dx):
                             grad_diff += ((gx - gy) ** 2).sum()
                         grad_diff.backward()
+                        if iters%200==0:
+                            print('Iters',iters,' grad_diff:',grad_diff.item())
                         return grad_diff
-                    
-                    rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
+                    '''
+                    # rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
                     # print(f"iter={iters}::rec_rate={rec_rate}")
                     optimizer.step(closure)
                     e_time = time.time()
@@ -127,26 +224,34 @@ class BatchLabelReconstruction(Attacker):
                     if self.early_stop == 1:
                         if closure().item() < self.early_stop_threshold:
                             break
-                
-                # print("appending dummy_label")
-                # recovery_history.append(dummy_label)
-                # print(dummy_label, true_label)
+                    
+                    rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
+                    if iters%200==0:
+                        print('Iters',iters,' rec_rate:',rec_rate)
+                    recovery_rate_history[i].append(rec_rate)
+                    end_time = time.time()
 
-                rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
-                recovery_rate_history[i].append(rec_rate)
-                end_time = time.time()
                 print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (sample_count, self.label_size, index, rec_rate, end_time - start_time))
             
-            avg_rec_rate_trainable = sum(recovery_rate_history[0])/len(recovery_rate_history[0])
-            avg_rec_rate_non_trainable = sum(recovery_rate_history[1])/len(recovery_rate_history[1])
-            best_rec_rate = max(avg_rec_rate_trainable,avg_rec_rate_non_trainable)
+            final_rec_rate_trainable = recovery_rate_history[0][-1] #sum(recovery_rate_history[0])/len(recovery_rate_history[0])
+            final_rec_rate_non_trainable = recovery_rate_history[1][-1] #sum(recovery_rate_history[1])/len(recovery_rate_history[1])
+            best_rec_rate = max(final_rec_rate_trainable,final_rec_rate_non_trainable)
+
             print(f"BLI, if self.args.apply_defense={self.args.apply_defense}")
             if self.args.apply_defense == True:
-                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, best_rec_rate, str(recovery_rate_history), str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, best_rec_rate,  str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+                # str(recovery_rate_history),
             else:
-                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (sample_count, self.label_size, index, best_rec_rate, str(recovery_rate_history))
+                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf" % (sample_count, self.label_size, index, best_rec_rate)# str(recovery_rate_history)
             append_exp_res(self.exp_res_path, exp_result)
         
+        # xx = [i for i in range(len(recovery_rate_history[0]))]
+        # plt.figure()
+        # plt.plot(xx,recovery_rate_history[0],'o-', color='b', alpha=0.8, linewidth=1, label='trainable')
+        # plt.plot(xx,recovery_rate_history[1],'o-', color='r', alpha=0.8, linewidth=1, label='non-trainable')
+        # plt.legend()
+        # plt.savefig('./exp_result/BLI_Recovery_history.png')
+
         # return best_rec_rate
         print("returning from BLI")
         # return recovery_history
