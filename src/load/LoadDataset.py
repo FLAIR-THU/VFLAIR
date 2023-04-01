@@ -31,7 +31,7 @@ from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
-DATA_PATH = '../../../share_dataset/'
+DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']

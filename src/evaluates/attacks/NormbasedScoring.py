@@ -153,7 +153,7 @@ class NormbasedScoring(Attacker):
 
             norm_leak_acc = update_all_norm_leak_auc(
                 norm_leak_auc_dict={'only':''},
-                grad_list=[tf_pred_a_gradients_clone],
+                grad_list=[tf_pred_a_gradients_clone[pos_idx:pos_idx+1]],
                 y=tf_true_label)
 
             end_time = time.time()
