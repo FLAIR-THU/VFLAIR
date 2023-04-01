@@ -24,6 +24,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
 
+LABEL_INFERENCE_LIST = ["BatchLabelReconstruction","DirectionbasedScoring","NormbasedScoring"]
 
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
@@ -224,8 +225,8 @@ class MainTaskVFL(object):
                 # ====== train batch (end) ======
 
             if self.args.apply_attack == True:
-                if self.args.attack_name == "BatchLabelReconstruction" and i_epoch==1:
-                    print('Launch BLI Attack, Only train 1 epoch')
+                if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
+                    print('Launch Label Inference Attack, Only train 1 epoch')
                     break    
 
             self.trained_models = self.save_state(True)

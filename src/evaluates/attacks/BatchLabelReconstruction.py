@@ -187,25 +187,7 @@ class BatchLabelReconstruction(Attacker):
                             print('Iters',iters,' grad_diff:',grad_diff.item())
                         return grad_diff
                     
-                    '''
-                    def closure():
-                        optimizer.zero_grad()
-
-                        # output
-                        dummy_pred = dummy_model([local_model_copy(self_data), dummy_pred_b]) # output
-                        dummy_onehot_label = F.softmax(dummy_label, dim=-1)
-                        dummy_loss = self.criterion(dummy_pred, dummy_onehot_label) # output
-                        dummy_dy_dx_a = torch.autograd.grad(dummy_loss, local_model_copy.parameters(), create_graph=True)# fake L
-                        
-                        # loss  fakeL:dummy_dy_dx_a   realL:original_dy_dx
-                        grad_diff = 0
-                        for (gx, gy) in zip(dummy_dy_dx_a, original_dy_dx):
-                            grad_diff += ((gx - gy) ** 2).sum()
-                        grad_diff.backward()
-                        if iters%200==0:
-                            print('Iters',iters,' grad_diff:',grad_diff.item())
-                        return grad_diff
-                    '''
+                    
                     # rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
                     # print(f"iter={iters}::rec_rate={rec_rate}")
                     optimizer.step(closure)
@@ -230,10 +212,11 @@ class BatchLabelReconstruction(Attacker):
 
             print(f"BLI, if self.args.apply_defense={self.args.apply_defense}")
             if self.args.apply_defense == True:
-                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, best_rec_rate,  str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-                # str(recovery_rate_history),
+                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+                
             else:
-                exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf" % (sample_count, self.label_size, index, best_rec_rate)# str(recovery_rate_history)
+                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate)# str(recovery_rate_history)
+            
             append_exp_res(self.exp_res_path, exp_result)
         
         # xx = [i for i in range(len(recovery_rate_history[0]))]

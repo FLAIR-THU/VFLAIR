@@ -1,6 +1,6 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
@@ -24,10 +24,10 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "GradientSparsification",
+    "attack": {
+        "name": "DirectionbasedScoring",
         "parameters": {
-            "gradient_sparse_rate": 100.0
+            "party": [0]
         }
     }
 }
