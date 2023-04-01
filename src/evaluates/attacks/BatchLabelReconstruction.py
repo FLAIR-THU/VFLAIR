@@ -74,7 +74,7 @@ class BatchLabelReconstruction(Attacker):
 
             local_gradient = self.vfl_info['gradient'][ik] 
             # [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)]
-            original_dy_dx_old = self.vfl_info['local_model_gradient'][ik] # gradient calculated for local model update
+            original_dy_dx = self.vfl_info['local_model_gradient'][ik] # gradient calculated for local model update
             #[copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)]
             
             net_a = self.vfl_info['model'][0].to(self.device)
@@ -130,7 +130,7 @@ class BatchLabelReconstruction(Attacker):
                 # Load Top Model
                 if i == 0:
                     # ############# Problem real top model should be global_model?? #######
-                    active_aggregate_model = ClassificationModelHostHead() 
+                    active_aggregate_model = global_model #ClassificationModelHostHead() 
                     dummy_active_aggregate_model = ClassificationModelHostHead()
                     #para = torch.tensor[]
                     #print(para.is_leaf)
@@ -140,7 +140,7 @@ class BatchLabelReconstruction(Attacker):
                 amsgrad=False)
                 else:
                     assert i == 1 
-                    active_aggregate_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
+                    active_aggregate_model = global_model #ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
                     dummy_active_aggregate_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
                     optimizer = torch.optim.Adam(itertools.chain([dummy_pred_b, dummy_label],list(dummy_active_aggregate_model.parameters())), lr=self.lr,betas=(0.9, 0.999),
                 eps=1e-08,
@@ -149,31 +149,22 @@ class BatchLabelReconstruction(Attacker):
                 active_aggregate_model = active_aggregate_model.to(self.device) # real top model
                 dummy_active_aggregate_model = dummy_active_aggregate_model.to(self.device) # dummy top model
 
-                # In Active Party: calculate Real Pred and L
-                pred = active_aggregate_model([pred_a, pred_b]) # real pred
-                loss = self.criterion(pred, true_label) # real loss
-                pred_a_gradients = torch.autograd.grad(loss, pred_a, retain_graph=True, create_graph=True) # gradient given to a
-                pred_a_gradients_clone = pred_a_gradients[0].detach().clone()
-                # real L
-                original_dy_dx = torch.autograd.grad(pred_a, net_a.parameters(), grad_outputs=pred_a_gradients_clone,retain_graph=True,allow_unused=True)
+                # # In Active Party: calculate Real Pred and L
+                # pred = active_aggregate_model([pred_a, pred_b]) # real pred
+                # loss = self.criterion(pred, true_label) # real loss
+                # pred_a_gradients = torch.autograd.grad(loss, pred_a, retain_graph=True, create_graph=True) # gradient given to a
+                # pred_a_gradients_clone = pred_a_gradients[0].detach().clone()
+                # # real L
+                # original_dy_dx = torch.autograd.grad(pred_a, net_a.parameters(), grad_outputs=pred_a_gradients_clone,retain_graph=True,allow_unused=True)
                 
-                # ######## There's a problem ##########
-                # Check if calculated original_dy_dx == original_dy_dx loaded from vfl_info
-                for kk in range(len(original_dy_dx)):
-                    if original_dy_dx[kk].equal(original_dy_dx_old[kk]):
-                        print('OK')
-                    else:
-                        print('NOT')
-                # ######## There's a problem ##########
+                
 
                 # === Begin Attack ===
                 print(f"BLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
                 start_time = time.time()
 
-                end_iter = self.epochs + 1
-                if i ==1:
-                    end_iter = 10000
-                for iters in range(1, end_iter):
+                
+                for iters in range(1, self.epochs + 1):
                     # s_time = time.time()
                     
                     def closure():

@@ -21,15 +21,15 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "attack": {
         "name": "BatchLabelReconstruction",
         "parameters": {
             "party": [0],
             "lr": 0.01,
-            "epochs": 5000
+            "epochs": 10000
         }
     }
 }
