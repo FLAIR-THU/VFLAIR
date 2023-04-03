@@ -303,7 +303,6 @@ def load_dataset_per_party(args, index):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
             # ADDED: in config: input_dim = X.shape[1]//2 need to change according to categories included
             half_dim = int(X.shape[1]//2) #42491
-                    
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
         y_train = torch.tensor(y_train)
@@ -402,7 +401,6 @@ def load_dataset_per_party_backdoor(args, index):
     test_dst = dataset_partition(args,index,test_dst,half_dim)
     train_poison_dst = dataset_partition(args,index,train_poison_dst,half_dim)
     test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
-    
     # important
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst, args.train_target_list, args.test_target_list
-
+    

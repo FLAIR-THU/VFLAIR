@@ -28,7 +28,7 @@ class ActiveParty(Party):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
         self.test_dst = ActiveDataset(self.test_data, self.test_label)
-    
+
     def update_local_pred(self, pred):
         self.pred_received[self.args.k-1] = pred
     
@@ -63,6 +63,11 @@ class ActiveParty(Party):
     
     def give_gradient(self):
         pred_list = self.pred_received 
+
+        if self.gt_one_hot_label == None:
+            print('give gradient:self.gt_one_hot_label == None')
+            assert 1>2
+
         self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
         pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
         # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient

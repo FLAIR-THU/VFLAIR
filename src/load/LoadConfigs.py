@@ -84,6 +84,7 @@ def load_configs(config_file_name, args):
    # if attacker appears
     args.apply_attack = False
     args.apply_backdoor = False
+    args.apply_nl = False # noisy label attack
     args.apply_mid = False
     args.apply_cae = False
     args.apply_dcae = False
@@ -94,6 +95,8 @@ def load_configs(config_file_name, args):
             args.attack_configs = config_dict['attack']['parameters'] if('parameters' in config_dict['attack']) else None
             if 'backdoor' in args.attack_name.casefold():
                 args.apply_backdoor = True
+            if 'noisylabel' in args.attack_name.casefold():
+                args.apply_nl = True
         else:
             assert 'name' in config_dict['attack'], "missing attack name"
     

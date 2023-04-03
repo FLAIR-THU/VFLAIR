@@ -20,6 +20,7 @@ from evaluates.defenses.defense_functions import *
 from utils.constants import *
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
+from utils.noisy_label_functions import add_noise
 from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
@@ -55,6 +56,7 @@ class MainTaskVFL(object):
 
         self.parties_data = None
         self.gt_one_hot_label = None
+        self.clean_one_hot_label  = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
@@ -122,14 +124,16 @@ class MainTaskVFL(object):
         self.parties[self.k-1].global_LR_decay(i_epoch)
         
     def train_batch(self, parties_data, batch_label):
+        '''
+        batch_label: self.gt_one_hot_label   may be noisy
+        '''
         encoder = self.args.encoder
         if self.args.apply_cae:
             assert encoder != None, "[error] encoder is None for CAE"
             _, gt_one_hot_label = encoder(batch_label)              
         else:
             gt_one_hot_label = batch_label
-        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
-        # print('current_label:', gt_one_hot_label)
+        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label # obtain local batch label for active party
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
@@ -142,9 +146,9 @@ class MainTaskVFL(object):
                     self.parties[ik].obtain_local_data(parties_data[ik][0])
                 
                 # exchange info between parties
-                self.pred_transmit() # partyk存下所有party的pred
-                self.gradient_transmit() # partyk计算gradient传输给passive parties
-                
+                self.pred_transmit() 
+                self.gradient_transmit() 
+
                 if self.flag == 0 and (self.train_acc == None or self.train_acc < STOPPING_ACC[self.dataset_name]):
                     self.rounds = self.rounds + 1
                 else:
@@ -168,12 +172,20 @@ class MainTaskVFL(object):
                 self.parties[self.k-1].local_backward()
                 self.parties[self.k-1].global_backward()
         
+        # ###### Noisy Label Attack #######
+        # convert back to clean label to get true acc
+        if self.args.apply_nl==True:
+            real_batch_label = self.clean_one_hot_label
+        else:
+            real_batch_label = batch_label
+        # ###### Noisy Label Attack #######
+
         pred = self.parties[self.k-1].global_pred
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
             predict_prob = self.parties[ik].encoder.decoder(predict_prob)
-        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(batch_label, dim=-1)).item()
+        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
 
@@ -195,33 +207,40 @@ class MainTaskVFL(object):
             i = -1
             data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
             for parties_data in zip(*data_loader_list):
+                self.gt_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
+                self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
+                
+                # ###### Noisy Label Attack ######
+                if self.args.apply_nl==True:
+                    # noisy label
+                    self.clean_one_hot_label = self.gt_one_hot_label
+                    self.gt_one_hot_label = add_noise(self.args, self.gt_one_hot_label)
+                    # if self.clean_one_hot_label.equal(self.gt_one_hot_label):
+                    #     print('Noise not good')
+                    # else:
+                    #     print('Noise OK')
+                # ###### Noisy Label Attack ######
                 self.parties_data = parties_data
+
+              
                 i += 1
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
                 self.parties[self.k-1].global_model.train()
-
-                # print("train", parties_data[0][0].size(),parties_data[self.k-1][0].size(),parties_data[self.k-1][1].size())
-                self.gt_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
-                self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
-                # print("parties' data have size:", parties_data[0][0].size(), parties_data[self.k-1][0].size(), parties_data[self.k-1][1].size())
-                
+\
                 # ====== train batch (start) ======
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state = self.save_state(True)
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
-                
-                self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
-            
+
+                self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
+                #  self.gt_one_hot_label
+
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs//2 and i == 0:
                     self.middle_epoch_state.update(self.save_state(False))
-                # if i == 0 and i_epoch == 0:
-                #     self.first_epoch_state = self.save_state()
-                # elif i_epoch == self.epochs//2 and i == 0:
-                #     self.middle_epoch_state = self.save_state()
                 # ====== train batch (end) ======
 
             if self.args.apply_attack == True:
@@ -253,6 +272,7 @@ class MainTaskVFL(object):
                     data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
                     for parties_data in zip(*data_loader_list):
                         # print("test", parties_data[0][0].size(),parties_data[self.k-1][0].size(),parties_data[self.k-1][1].size())
+
                         gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                         gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
 
@@ -335,6 +355,12 @@ class MainTaskVFL(object):
 
             self.gt_one_hot_label = self.label_to_one_hot(self.parties_data[self.k-1][1], self.num_classes)
             self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
+            # ###### Noisy Label Attack ######
+            if self.args.apply_nl==True:
+                # noisy label
+                self.clean_one_hot_label = self.gt_one_hot_label
+                self.gt_one_hot_label = add_noise(self.args, self.gt_one_hot_label)
+            # ###### Noisy Label Attack ######
 
             # ====== train batch (start) ======            
             if i_epoch == 0:
@@ -351,8 +377,8 @@ class MainTaskVFL(object):
             # ====== train batch (end) ======   
 
             if self.args.apply_attack == True:
-                if self.args.attack_name == "BatchLabelReconstruction" and i_epoch==1:
-                    print('Launch BLI Attack, Only train 1 epoch')
+                if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
+                    print('Launch Label Inference Attack, Only train 1 epoch')
                     break         
 
             # validation
