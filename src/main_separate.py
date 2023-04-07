@@ -14,10 +14,17 @@ import torch
 # import torch.backends.cudnn as cudnn
 # from tensorboardX import SummaryWriter
 
-from load.LoadConfigs import load_configs
+from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
+from utils.basic_functions import append_exp_res
+import warnings
+warnings.filterwarnings("ignore")
+
+TARGETED_BACKDOOR = ['ReplacementBackdoor'] # main_acc  backdoor_acc
+UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature'] # main_acc
+LABEL_INFERENCE = ['BatchLabelReconstruction','NormbasedScoring','DirectionbasedScoring'] # label_recovery
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -29,12 +36,108 @@ def set_seed(seed=0):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
+
+def evaluate_untargeted_backdoor(args):
+    for index in args.untargeted_backdoor_index:
+        args = load_attack_configs(args.configs, args, index)
+        args = load_parties(args)
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+
+        if args.apply_backdoor == True:
+            vfl = MainTaskVFLwithBackdoor(args)
+            main_acc, backdoor_acc = vfl.train()
+        else:
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
+        
+        attack_metric = None
+        attack_metric_name = 'None'
+
+        # Save record for different defense method
+        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        print(exp_result)
+        append_exp_res(args.exp_res_path, exp_result)
+
+
+    return
+
+def evaluate_label_inference(args):
+    # Basic VFL Training Pipeline
+    i=0
+    for index in args.label_inference_index:
+        args = load_attack_configs(args.configs, args, index)
+        args = load_parties(args)
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+
+        
+        if i == 0: # Only train once for all label_inference_attack
+            if args.apply_backdoor == True:
+                vfl = MainTaskVFLwithBackdoor(args)
+                main_acc, backdoor_acc = vfl.train()
+            else:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
+            i = i + 1
+        
+        main_acc = None
+        attack_metric = vfl.evaluate_attack()
+        attack_metric_name = 'label_recovery_rate'
+    
+        # Save record for different defense method
+        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        print(exp_result)
+        append_exp_res(args.exp_res_path, exp_result)
+
+
+def evaluate_targeted_backdoor(args):
+    # mark that backdoor data is never prepared
+    args.target_label = None
+    args.train_poison_list = None
+    args.train_target_list = None
+    args.test_poison_list = None
+    args.test_target_list = None
+    for index in args.targeted_backdoor_index:
+        args = load_attack_configs(args.configs, args, index)
+        args = load_parties(args)
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+
+        # Targeted Backdoor VFL Training pipeline
+        if args.apply_backdoor == True:
+            vfl = MainTaskVFLwithBackdoor(args)
+            main_acc, backdoor_acc = vfl.train()
+        else:
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
+        
+        attack_metric = backdoor_acc
+        attack_metric_name = 'backdoor_acc'
+       
+        # Save record for different defense method
+        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        print(exp_result)
+        append_exp_res(args.exp_res_path, exp_result)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test/mnist_nl_configs', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test_attack', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
@@ -47,45 +150,44 @@ if __name__ == '__main__':
     else:
         print('running on cpu')
 
-    # load configs from *.json files
-    args = load_configs(args.configs, args)
+    
+    ####### load configs from *.json files #######
+    ############ Basic Configs ############
+    args = load_basic_configs(args.configs, args)
+    
     assert args.dataset_split != None, "dataset_split attribute not found config json file"
     assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
     args.dataset = args.dataset_split['dataset_name']
     print(args.dataset)
-    # print(args.attack_methods)
 
-    # for _ in range(args.num_exp):
-    
-    # mark that backdoor data is never prepared
-    args.target_label = None
-    args.train_poison_list = None
-    args.train_target_list = None
-    args.test_poison_list = None
-    args.test_target_list = None
-    
-    args.exp_res_dir = f'exp_result/main/{args.dataset}/'
-    args = load_parties(args)
+    print('======= Defense ========')
+    print('Defense_Name:',args.defense_name)
+    print('Defense_Config:',str(args.defense_configs))
+
+    print('===== Total Attack Tested:',args.attack_num,' ======')
+    print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
+    print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
+    print('label_inference:',args.label_inference_list,args.label_inference_index)
+    print('=================================')
+
+    # Save record for different defense method
+    args.exp_res_dir = f'exp_result/{args.dataset}/'
     if not os.path.exists(args.exp_res_dir):
         os.makedirs(args.exp_res_dir)
-    filename = f'partyNum={args.k},model={args.model_list[str(0)]["type"]},lr={args.main_lr},' \
-        f'epochs={args.main_epochs}.txt'
+    filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
     args.exp_res_path = args.exp_res_dir + filename
-    
-    # if have inference time attack, use another VFL pipeline
-    if args.apply_backdoor == True:
-        vfl = MainTaskVFLwithBackdoor(args)
-        # no other attacks, only backdoor attack, may change later
-        args.apply_attack = False
-    else:
-        vfl = MainTaskVFL(args)
-    
-    if args.dataset not in ['cora']:
-        vfl.train()
-    else:
-        vfl.train_graph()
 
-    if args.apply_attack == True:
-        vfl.evaluate_attack()
+    if args.targeted_backdoor_list != []:
+        evaluate_targeted_backdoor(args)
+
+    if args.untargeted_backdoor_list != []:
+        evaluate_untargeted_backdoor(args)
+
+    if args.label_inference_list != []:
+        evaluate_label_inference(args)
+    
+
+
+    
     
     

@@ -183,12 +183,12 @@ class MainTaskVFLwithBackdoor(object):
         return loss.item(), train_acc
 
     def train(self):
-        self.exp_res_dir = self.exp_res_dir + f'Backdoor/{self.k}/'
-        if not os.path.exists(self.exp_res_dir):
-            os.makedirs(self.exp_res_dir)
-        filename = self.exp_res_path.split("/")[-1]
-        self.exp_res_path = self.exp_res_dir + filename
-        print(f"self.exp_res_path={self.exp_res_path}")
+        # self.exp_res_dir = self.exp_res_dir + f'Backdoor/{self.k}/'
+        # if not os.path.exists(self.exp_res_dir):
+        #     os.makedirs(self.exp_res_dir)
+        # filename = self.exp_res_path.split("/")[-1]
+        # self.exp_res_path = self.exp_res_dir + filename
+        # print(f"self.exp_res_path={self.exp_res_path}")
 
         print_every = 1
 
@@ -334,15 +334,8 @@ class MainTaskVFLwithBackdoor(object):
                     #     self.final_epoch = i_epoch
                     #     break
 
-        # if self.args.apply_cae == True:
-        #     exp_result = f"bs|num_class|epochsLlr|recovery_rate,%d|%d|%d|%lf %lf CAE wiht lambda %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_configs['lambda'])
-        # elif self.args.apply_mid == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf MID wiht party %s" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, str(self.args.defense_configs['party']))
-        # elif self.args.apply_defense == True:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf (Defense: %s %s)" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.args.defense_name, str(self.args.defense_configs))
-        # else:
-        #     exp_result = f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc)
-
+        backdoor_acc = sum(backdoor_acc_history)/len(backdoor_acc_history)
+        test_acc = sum(test_acc_histoty)/len(test_acc_histoty)
         if self.args.apply_defense == True:
             if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
                 defense_param = self.args.defense_configs['lambda']
@@ -360,16 +353,10 @@ class MainTaskVFLwithBackdoor(object):
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
             exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
 
-        # if self.args.apply_defense:
-        #     exp_result = f'{str(self.args.defense_name)}(params:{str(self.args.defense_configs)})::'
-        # else:
-        #     exp_result = 'NoDefense::'
-        # exp_result = exp_result + f"bs|num_class|epochs|lr|recovery_rate,%d|%d|%d|%lf %lf %lf" % (self.batch_size, self.num_classes, self.epochs, self.lr, self.test_acc, self.backdoor_acc)
-        
-        append_exp_res(self.exp_res_path, exp_result)
+        #append_exp_res(self.exp_res_path, exp_result)
         print(exp_result)
         
-        return test_acc
+        return test_acc,backdoor_acc
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
         if BEFORE_MODEL_UPDATE:
@@ -407,7 +394,7 @@ class MainTaskVFLwithBackdoor(object):
                         print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (dummy_label.size()[0], self.num_classes, ik, rec_rate, end_time - start_time))
                     best_rec_rate = max(recovery_rate_history)
                     exp_result = f"bs|num_class|attack_party_index|recovery_rate,%d|%d|%d|%lf|%s" % (dummy_label.size()[0], self.num_classes, ik, best_rec_rate, str(recovery_rate_history))
-                    append_exp_res(self.parties[ik].attacker.exp_res_path, exp_result)
+                    #append_exp_res(self.parties[ik].attacker.exp_res_path, exp_result)
         else:
             # further extention
             pass

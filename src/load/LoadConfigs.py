@@ -5,7 +5,11 @@ import json
 import argparse
 from models.autoencoder import AutoEncoder
 
-def load_configs(config_file_name, args):
+TARGETED_BACKDOOR = ['ReplacementBackdoor']
+UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature']
+LABEL_INFERENCE = ['BatchLabelReconstruction','NormbasedScoring','DirectionbasedScoring']
+
+def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
@@ -81,26 +85,25 @@ def load_configs(config_file_name, args):
         args.apply_trainable_layer = 0
         args.global_model = 'ClassificationModelHostHead'
     
-   # if attacker appears
-    args.apply_attack = False
-    args.apply_backdoor = False
-    args.apply_nl = False # noisy label attack
-    args.apply_mid = False
-    args.apply_cae = False
-    args.apply_dcae = False
-    if 'attack' in config_dict:
-        if 'name' in config_dict['attack']:
-            args.apply_attack = True
-            args.attack_name = config_dict['attack']['name']
-            args.attack_configs = config_dict['attack']['parameters'] if('parameters' in config_dict['attack']) else None
-            if 'backdoor' in args.attack_name.casefold():
-                args.apply_backdoor = True
-            if 'noisylabel' in args.attack_name.casefold():
-                args.apply_nl = True
-        else:
-            assert 'name' in config_dict['attack'], "missing attack name"
-    
+    # Check: Centralized Training
+    if args.k ==1 :
+        print('k=1, Launch Centralized Training, All Attack&Defense dismissed, Q set to 1')
+        args.apply_attack = False # bli/ns/ds attack
+        args.apply_backdoor = False # replacement backdoor attack
+        args.apply_nl = False # noisy label attack
+        args.apply_mf = False # missing feature attack
+        args.apply_defense = False
+        args.apply_mid = False
+        args.apply_cae = False
+        args.apply_dcae = False
+        args.Q=1
+        return args
+
+    # if defense appears
     args.apply_defense = False
+    args.apply_mid = False # mid defense
+    args.apply_cae = False # cae defense
+    args.apply_dcae = False # dcae defense
     if 'defense' in config_dict:
         if 'name' in config_dict['defense']:
             args.apply_defense = True
@@ -114,17 +117,143 @@ def load_configs(config_file_name, args):
                     args.apply_dcae = True
         else:
             assert 'name' in config_dict['defense'], "missing defense name"
+    else:
+        args.defense_name = 'None'
+        args.defense_configs = 'None'
+        print('===== No Defense ======')
+    # get Info: args.defense_param  args.defense_param_name
+    if args.apply_defense == True:
+        if args.defense_name == "CAE" or args.defense_name=="DCAE" or args.defense_name=="MID":
+            args.defense_param = args.defense_configs['lambda']
+            args.defense_param_name = 'lambda'
+        elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
+            args.defense_param = args.defense_configs['dp_strength']
+            args.defense_param_name = 'dp_strength'
+        elif args.defense_name == "GradientSparsification":
+            args.defense_param = args.defense_configs['gradient_sparse_rate']
+            args.defense_param_name = 'gradient_sparse_rate'
+        else:
+            args.defense_param = 'None'
+            args.defense_param_name = 'No_Defense'
+    else:
+        args.defense_param = 'None'
+        args.defense_param_name = 'No_Defense'
     
+    # if there's attack   Mark attack type
+    args.attack_num = 0
+    args.targeted_backdoor_list = []
+    args.targeted_backdoor_index = []
+    args.untargeted_backdoor_list = []
+    args.untargeted_backdoor_index = []
+    args.label_inference_list = []
+    args.label_inference_index = []
+    args.apply_attack = False
+    if 'attack_list' in config_dict:
+        if len(config_dict['attack_list'])>0:
+            attack_config_dict = config_dict['attack_list']
+            args.attack_num = len(attack_config_dict)
+            args.apply_attack = True
+            for ik in range(args.attack_num):
+                if 'name' in attack_config_dict[str(ik)]:
+                    _name = attack_config_dict[str(ik)]['name']
+                    if _name in TARGETED_BACKDOOR:
+                        args.targeted_backdoor_list.append(_name)
+                        args.targeted_backdoor_index.append(ik)
+                    
+                    elif _name in UNTARGETED_BACKDOOR:
+                        args.untargeted_backdoor_list.append(_name)
+                        args.untargeted_backdoor_index.append(ik)
+                    
+                    elif _name in LABEL_INFERENCE:
+                        args.label_inference_list.append(_name)
+                        args.label_inference_index.append(ik)
+                else:
+                    assert 'name' in attack_config_dict[str(ik)], 'missing attack name'
+        else:
+            assert len(config_dict['attack_list'])>0, 'empty attack_list'
+    else:
+        print('===== No Attack ======')
+    
+    return args   
+
+def load_attack_configs(config_file_name, args, index):
+    '''
+    load attack[index] in attack_list
+    '''
+    config_file_path = './configs/'+config_file_name+'.json'
+    config_file = open(config_file_path,"r")
+    config_dict = json.load(config_file)
+
+    # init args about attacks
+    assert args.apply_attack == True 
+    args.attack_type = None
+    args.apply_backdoor = False # replacement backdoor attack
+    args.apply_nl = False # noisy label attack
+    args.apply_mf = False # missing feature attack
+    
+    # choose attack[index]
+    attack_config_dict = config_dict['attack_list'][str(index)]
+
+    if 'name' in attack_config_dict:
+        args.attack_name = attack_config_dict['name']
+        args.attack_configs = attack_config_dict['parameters'] if('parameters' in attack_config_dict) else None
+        
+        if args.attack_name in TARGETED_BACKDOOR:
+            args.attack_type = 'targeted_backdoor'
+            if 'backdoor' in args.attack_name.casefold():
+                args.apply_backdoor = True
+            if 'noisylabel' in args.attack_name.casefold():
+                args.apply_nl = True
+            if 'missingfeature' in args.attack_name.casefold():
+                args.apply_mf = True
+        elif args.attack_name in UNTARGETED_BACKDOOR:
+            args.attack_type = 'untargeted_backdoor'
+        elif args.attack_name in LABEL_INFERENCE:
+            args.attack_type = 'label_inference'
+        else:
+            assert 0 , 'attack type not supported'
+        
+        if args.attack_name == 'NoisyLabel':
+            args.attack_param_name = 'noise_type'
+            args.attack_param = str(attack_config_dict['parameters']['noise_type'])+'_'+str(attack_config_dict['parameters']['noise_rate'])
+        elif args.attack_name == 'MissingFeature':
+            args.attack_param_name = 'missing_rate'
+            args.attack_param = str(attack_config_dict['parameters']['missing_rate'])
+        elif args.attack_name == 'BatchLabelReconstruction':
+            args.attack_param_name = 'attack_lr'
+            args.attack_param = str(attack_config_dict['parameters']['lr'])
+        else:
+            args.attack_param_name = 'None'
+            args.attack_param = None
+        
+    else:
+        assert 'name' in attack_config_dict, "missing attack name"
+
+    # Check: Centralized Training
     if args.k ==1 :
         print('k=1, Launch Centralized Training, All Attack&Defense dismissed, Q set to 1')
-        args.apply_attack = False
-        args.apply_backdoor = False
+        args.apply_attack = False # bli/ns/ds attack
+        args.apply_backdoor = False # replacement backdoor attack
+        args.apply_nl = False # noisy label attack
+        args.apply_mf = False # missing feature attack
+        args.apply_defense = False
         args.apply_mid = False
         args.apply_cae = False
         args.apply_dcae = False
         args.Q=1
-    # important
     return args
+
+def init_attack_defense(args):
+    args.apply_attack = False 
+    args.apply_backdoor = False # replacement backdoor attack
+    args.apply_nl = False # noisy label attack
+    args.apply_mf = False # missing feature attack
+    args.apply_defense = False
+    args.apply_mid = False
+    args.apply_cae = False
+    args.apply_dcae = False
+    return args
+    
 
 
 if __name__ == '__main__':

@@ -59,10 +59,10 @@ class BatchLabelReconstruction(Attacker):
         self.set_seed(123)
         for ik in self.party: # attacker party #ik
             index = ik
-            self.exp_res_dir = self.exp_res_dir + f'{index}/'
-            if not os.path.exists(self.exp_res_dir):
-                os.makedirs(self.exp_res_dir)
-            self.exp_res_path = self.exp_res_dir + self.file_name
+            # self.exp_res_dir = self.exp_res_dir + f'{index}/'
+            # if not os.path.exists(self.exp_res_dir):
+            #     os.makedirs(self.exp_res_dir)
+            # self.exp_res_path = self.exp_res_dir + self.file_name
             
             # collect necessary information
             pred_list = self.vfl_info['predict']
@@ -109,18 +109,6 @@ class BatchLabelReconstruction(Attacker):
             recovery_rate_history = [[], []]
             
             for i in range(2):
-                # if i == 0: #non_trainable_top_model
-                #     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-                #     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-                #     dummy_model = ClassificationModelHostHead().to(self.device)
-                #     optimizer = torch.optim.Adam([dummy_pred_b, dummy_label], lr=self.lr, weight_decay=0.0)
-                # else:
-                #     assert i == 1 #trainable_top_model,  can use user define models instead
-                #     dummy_pred_b = torch.randn(pred_a.size()).to(self.device).requires_grad_(True)
-                #     dummy_label = torch.randn((sample_count,self.label_size)).to(self.device).requires_grad_(True)
-                #     dummy_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes).to(self.device)
-                #     optimizer = torch.optim.Adam([dummy_pred_b, dummy_label] + list(dummy_model.parameters()), lr=self.lr)
-                
                 # set fake pred_b
                 dummy_pred_b = torch.randn(pred_a.size()).to(self.device)
                 dummy_label = torch.randn((sample_count,self.label_size)).to(self.device)
@@ -134,18 +122,12 @@ class BatchLabelReconstruction(Attacker):
                     dummy_active_aggregate_model = ClassificationModelHostHead()
                     #para = torch.tensor[]
                     #print(para.is_leaf)
-                    optimizer = torch.optim.Adam([dummy_label,dummy_pred_b], lr=self.lr,betas=(0.9, 0.999),
-                eps=1e-08,
-                weight_decay=0,
-                amsgrad=False)
+                    optimizer = torch.optim.Adam([dummy_label,dummy_pred_b], lr=self.lr,betas=(0.9, 0.999),eps=1e-08,weight_decay=0,amsgrad=False)
                 else:
                     assert i == 1 
                     active_aggregate_model = global_model #ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
                     dummy_active_aggregate_model = ClassificationModelHostTrainableHead(self.k*self.num_classes, self.num_classes)
-                    optimizer = torch.optim.Adam(itertools.chain([dummy_pred_b, dummy_label],list(dummy_active_aggregate_model.parameters())), lr=self.lr,betas=(0.9, 0.999),
-                eps=1e-08,
-                weight_decay=0,
-                amsgrad=False) #  
+                    optimizer = torch.optim.Adam(itertools.chain([dummy_pred_b, dummy_label],list(dummy_active_aggregate_model.parameters())), lr=self.lr,betas=(0.9, 0.999),eps=1e-08,weight_decay=0,amsgrad=False) #  
                 active_aggregate_model = active_aggregate_model.to(self.device) # real top model
                 dummy_active_aggregate_model = dummy_active_aggregate_model.to(self.device) # dummy top model
 
@@ -158,7 +140,6 @@ class BatchLabelReconstruction(Attacker):
                 # original_dy_dx = torch.autograd.grad(pred_a, net_a.parameters(), grad_outputs=pred_a_gradients_clone,retain_graph=True,allow_unused=True)
                 
                 
-
                 # === Begin Attack ===
                 print(f"BLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
                 start_time = time.time()
@@ -183,8 +164,8 @@ class BatchLabelReconstruction(Attacker):
                             grad_diff += ((gx - gy) ** 2).sum()
                         grad_diff.backward(retain_graph=True)
 
-                        if iters%200==0:
-                            print('Iters',iters,' grad_diff:',grad_diff.item())
+                        # if iters%200==0:
+                        #     print('Iters',iters,' grad_diff:',grad_diff.item())
                         return grad_diff
                     
                     
@@ -199,8 +180,8 @@ class BatchLabelReconstruction(Attacker):
                             break
                     
                     rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
-                    if iters%200==0:
-                        print('Iters',iters,' rec_rate:',rec_rate)
+                    # if iters%200==0:
+                    #     print('Iters',iters,' rec_rate:',rec_rate)
                     recovery_rate_history[i].append(rec_rate)
                     end_time = time.time()
 
@@ -211,13 +192,13 @@ class BatchLabelReconstruction(Attacker):
             best_rec_rate = max(final_rec_rate_trainable,final_rec_rate_non_trainable)
 
             print(f"BLI, if self.args.apply_defense={self.args.apply_defense}")
-            if self.args.apply_defense == True:
-                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            # if self.args.apply_defense == True:
+            #     exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
                 
-            else:
-                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate)# str(recovery_rate_history)
+            # else:
+            #     exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, best_rec_rate)# str(recovery_rate_history)
             
-            append_exp_res(self.exp_res_path, exp_result)
+            # append_exp_res(self.exp_res_path, exp_result)
         
         # xx = [i for i in range(len(recovery_rate_history[0]))]
         # plt.figure()
@@ -226,6 +207,7 @@ class BatchLabelReconstruction(Attacker):
         # plt.legend()
         # plt.savefig('./exp_result/BLI_Recovery_history.png')
 
-        # return best_rec_rate
+        
         print("returning from BLI")
+        return best_rec_rate
         # return recovery_history

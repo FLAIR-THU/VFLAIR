@@ -196,6 +196,15 @@ class MainTaskVFL(object):
         for ik in range(self.k):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
 
+        # ####### missing feature attack ######
+        # load attack features
+        if self.args.apply_mf == True:
+            assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
+            assert 'party' in self.args.attack_configs, 'need parameter: party'
+            attacker_id = self.args.attack_configs['party']
+            missing_rate = self.args.attack_configs['missing_rate']
+        # ####### missing feature attack ######
+
         test_acc = 0.0
         # Early Stop
         last_loss = 1000000
@@ -227,7 +236,6 @@ class MainTaskVFL(object):
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
                 self.parties[self.k-1].global_model.train()
-\
                 # ====== train batch (start) ======
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state = self.save_state(True)
@@ -278,7 +286,14 @@ class MainTaskVFL(object):
 
                         pred_list = []
                         for ik in range(self.k):
-                            pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+                            # ####### missing feature attack ######
+                            if (self.args.apply_mf == True) and (ik in attacker_id) and (np.random.random() < missing_rate):
+                                #print('attacker:',ik)
+                                pred_list.append(torch.zeros_like(self.parties[ik].local_model(parties_data[ik][0])))
+                            # ####### missing feature attack ######
+                            else:
+                                pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+                        
                         test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
@@ -311,23 +326,23 @@ class MainTaskVFL(object):
                     #     self.final_epoch = i_epoch
                     #     break
     
-        if self.args.apply_defense == True:
-            if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
-                defense_param = self.args.defense_configs['lambda']
-            elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
-                defense_param = self.args.defense_configs['dp_strength']
-            elif self.args.defense_name == "GradientSparsification":
-                defense_param = self.args.defense_configs['gradient_sparse_rate']
+        # if self.args.apply_defense == True:
+        #     if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
+        #         defense_param = self.args.defense_configs['lambda']
+        #     elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
+        #         defense_param = self.args.defense_configs['dp_strength']
+        #     elif self.args.defense_name == "GradientSparsification":
+        #         defense_param = self.args.defense_configs['gradient_sparse_rate']
 
-            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
-            (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
-             sum(backdoor_acc_history)/len(backdoor_acc_history),\
-                 str(self.args.attack_name), self.args.defense_name, defense_param)
-        else:
-            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
-        append_exp_res(self.exp_res_path, exp_result)
-        print(exp_result)
+        #     # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
+        #     (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
+        #      sum(backdoor_acc_history)/len(backdoor_acc_history),\
+        #          str(self.args.attack_name), self.args.defense_name, defense_param)
+        # else:
+        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
+        # #append_exp_res(self.exp_res_path, exp_result)
+        # print(exp_result)
         
         #LR scopes
         xx = [i for i in range(len(LR_passive_list))]
@@ -337,7 +352,7 @@ class MainTaskVFL(object):
         plt.legend()
         plt.savefig('./exp_result/LR_Scope.png')
 
-        return test_acc
+        return self.test_acc
 
 
     def train_graph(self):
@@ -433,26 +448,25 @@ class MainTaskVFL(object):
                 #     
                 #     break
         
-        if self.args.apply_defense == True:
-            if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
-                defense_param = self.args.defense_configs['lambda']
-            elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
-                defense_param = self.args.defense_configs['dp_strength']
-            elif self.args.defense_name == "GradientSparsification":
-                defense_param = self.args.defense_configs['gradient_sparse_rate']
+        # if self.args.apply_defense == True:
+        #     if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
+        #         defense_param = self.args.defense_configs['lambda']
+        #     elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
+        #         defense_param = self.args.defense_configs['dp_strength']
+        #     elif self.args.defense_name == "GradientSparsification":
+        #         defense_param = self.args.defense_configs['gradient_sparse_rate']
 
-            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
-            (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
-             sum(backdoor_acc_history)/len(backdoor_acc_history),\
-                 str(self.args.attack_name), self.args.defense_name, defense_param)
-        else:
-            exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
+        #     # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
+        #     (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
+        #      str(self.args.attack_name), self.args.defense_name, defense_param)
+        # else:
+        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
         
-        append_exp_res(self.exp_res_path, exp_result)
-        print(exp_result)
+        # #append_exp_res(self.exp_res_path, exp_result)
+        # print(exp_result)
         
-        return test_acc
+        return self.test_acc
 
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
@@ -493,7 +507,8 @@ class MainTaskVFL(object):
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)
         if self.attacker != None:
-            self.attacker.attack()
+            attack_acc = self.attacker.attack()
+        return attack_acc
 
     def launch_defense(self, gradients_list, type):
         if type == 'gradients':

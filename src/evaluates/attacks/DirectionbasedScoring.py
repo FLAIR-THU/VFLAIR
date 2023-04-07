@@ -87,10 +87,10 @@ class DirectionbasedScoring(Attacker):
         self.set_seed(123)
         for ik in self.party: # attacker party #ik
             index = ik
-            self.exp_res_dir = self.exp_res_dir + f'{index}/'
-            if not os.path.exists(self.exp_res_dir):
-                os.makedirs(self.exp_res_dir)
-            self.exp_res_path = self.exp_res_dir + self.file_name
+            # self.exp_res_dir = self.exp_res_dir + f'{index}/'
+            # if not os.path.exists(self.exp_res_dir):
+            #     os.makedirs(self.exp_res_dir)
+            # self.exp_res_path = self.exp_res_dir + self.file_name
             
             # collect necessary information
             pred_list = self.vfl_info['predict']
@@ -170,12 +170,12 @@ class DirectionbasedScoring(Attacker):
                     % (sample_count, self.label_size, cosine_leak_acc,  end_time - start_time))
 
             #print(f"DS, if self.args.apply_defense={self.args.apply_defense}")
-            if self.args.apply_defense == True:
-                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, cosine_leak_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
+            # if self.args.apply_defense == True:
+            #     exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf|%s (AttackConfig: %s) (Defense: %s %s)" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, cosine_leak_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
                 
-            else:
-                exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, cosine_leak_acc)# str(recovery_rate_history)
-            append_exp_res(self.exp_res_path, exp_result)
+            # else:
+            #     exp_result = f"bs|num_class|attack_party_index|Q|top_trainable|acc,%d|%d|%d|%d|%d|%lf" % (sample_count, self.label_size, index, self.args.Q, self.args.apply_trainable_layer, cosine_leak_acc)# str(recovery_rate_history)
+            # append_exp_res(self.exp_res_path, exp_result)
         
         # xx = [i for i in range(len(recovery_rate_history[0]))]
         # plt.figure()
@@ -184,5 +184,6 @@ class DirectionbasedScoring(Attacker):
         # plt.legend()
         # plt.savefig('./exp_result/BLI_Recovery_history.png')
 
-        # return best_rec_rate
-        print("returning from BS")
+        print("returning from DirectionbasedScoring")
+        return cosine_leak_acc
+        
