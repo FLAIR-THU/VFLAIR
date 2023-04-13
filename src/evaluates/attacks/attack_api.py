@@ -9,4 +9,7 @@ from evaluates.attacks.NoisyLabel import NoisyLabel
 
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name
+    if attacker_name == "DataLabelReconstruction":
+        assert args.batch_size == 1,'DataLabelReconstruction: require batchsize=1'
+        attacker_name == "BatchLabelReconstruction"
     return globals()[attacker_name](vfl, args)

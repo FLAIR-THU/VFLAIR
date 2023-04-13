@@ -41,17 +41,45 @@
             }
         },
         "1":{
-            "name": "DirectionbasedScoring",
+            "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
         "2":{
-            "name": "NormbasedScoring",
+            "name": "DirectionbasedScoring",
             "parameters": {
                 "party": [0]
             }
+        },
+        "3":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 100
+            }
+        },
+        "4": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "5": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "6":{
+            "name": "DataLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 100
+            }
         }
-        }
-    
+    }
 }

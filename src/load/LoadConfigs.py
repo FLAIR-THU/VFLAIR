@@ -7,7 +7,7 @@ from models.autoencoder import AutoEncoder
 
 TARGETED_BACKDOOR = ['ReplacementBackdoor']
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature']
-LABEL_INFERENCE = ['BatchLabelReconstruction','NormbasedScoring','DirectionbasedScoring']
+LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring','PassiveModelCompletion']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -191,6 +191,14 @@ def load_attack_configs(config_file_name, args, index):
     args.apply_nl = False # noisy label attack
     args.apply_mf = False # missing feature attack
     
+    # No Attack
+    if index == -1:
+        print('No Attack==============================')
+        args.attack_name='No_Attack'
+        args.attack_param_name = 'None'
+        args.attack_param = None
+        return args
+    
     # choose attack[index]
     attack_config_dict = config_dict['attack_list'][str(index)]
 
@@ -230,7 +238,7 @@ def load_attack_configs(config_file_name, args, index):
         assert 'name' in attack_config_dict, "missing attack name"
 
     # Check: Centralized Training
-    if args.k ==1 :
+    if args.k ==1:
         print('k=1, Launch Centralized Training, All Attack&Defense dismissed, Q set to 1')
         args.apply_attack = False # bli/ns/ds attack
         args.apply_backdoor = False # replacement backdoor attack
@@ -241,6 +249,7 @@ def load_attack_configs(config_file_name, args, index):
         args.apply_cae = False
         args.apply_dcae = False
         args.Q=1
+
     return args
 
 def init_attack_defense(args):

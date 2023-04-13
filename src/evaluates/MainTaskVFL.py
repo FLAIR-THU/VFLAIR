@@ -251,10 +251,10 @@ class MainTaskVFL(object):
                     self.middle_epoch_state.update(self.save_state(False))
                 # ====== train batch (end) ======
 
-            if self.args.apply_attack == True:
-                if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
-                    print('Launch Label Inference Attack, Only train 1 epoch')
-                    break    
+            # if self.args.apply_attack == True:
+            #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
+            #         print('Launch Label Inference Attack, Only train 1 epoch')
+            #         break    
 
             self.trained_models = self.save_state(True)
             if self.args.save_model == True:
@@ -391,10 +391,10 @@ class MainTaskVFL(object):
                 self.middle_epoch_state.update(self.save_state(False))
             # ====== train batch (end) ======   
 
-            if self.args.apply_attack == True:
-                if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
-                    print('Launch Label Inference Attack, Only train 1 epoch')
-                    break         
+            # if self.args.apply_attack == True:
+            #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
+            #         print('Launch Label Inference Attack, Only train 1 epoch')
+            #         break         
 
             # validation
             print("validate and test")
