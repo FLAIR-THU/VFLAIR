@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 TARGETED_BACKDOOR = ['ReplacementBackdoor'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature'] # main_acc
-LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring','PassiveModelCompletion'] # label_recovery
+LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring'] # label_recovery
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -36,17 +36,20 @@ def set_seed(seed=0):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-def evaluate_no_attack(args):
+
+def evaluate_untargeted_backdoor(args):
     # No Attack
     args = load_attack_configs(args.configs, args, -1)
     args = load_parties(args)
-
-    vfl = MainTaskVFL(args)
-    if args.dataset not in ['cora']:
-        main_acc = vfl.train()
+    if args.apply_backdoor == True:
+            vfl = MainTaskVFLwithBackdoor(args)
+            main_acc, backdoor_acc = vfl.train()
     else:
-        main_acc = vfl.train_graph()
-
+        vfl = MainTaskVFL(args)
+        if args.dataset not in ['cora']:
+            main_acc = vfl.train()
+        else:
+            main_acc = vfl.train_graph()
     main_acc_noattack = main_acc
     attack_metric = main_acc_noattack - main_acc
     attack_metric_name = 'acc_loss'
@@ -55,41 +58,28 @@ def evaluate_no_attack(args):
         (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
-    return vfl, main_acc_noattack
 
-
-def evaluate_label_inference(args):
-    # Basic VFL Training Pipeline
-    i=0
-    for index in args.label_inference_index:
+    for index in args.untargeted_backdoor_index:
         args = load_attack_configs(args.configs, args, index)
-        # args = load_parties(args)
+        args = load_parties(args)
+        
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
-        if args.attack_name == 'PassiveModelCompletion':
-            args.need_auxiliary = 1
-            args = load_parties(args) # include load dataset with auxiliary data
+        # if args.attack_name == "MissingFeature":
+        #     print('MissingFeature in eav....')
+        #     continue
+
+        if args.apply_backdoor == True:
+            vfl = MainTaskVFLwithBackdoor(args)
+            main_acc, backdoor_acc = vfl.train()
+        else:
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
                 main_acc = vfl.train()
             else:
                 main_acc = vfl.train_graph()
-        else:  
-            args.need_auxiliary = 0
-            args = load_parties(args)
-            # if i == 0: # Only train once for all label_inference_attack
-            #     vfl = MainTaskVFL(args)
-            #     if args.dataset not in ['cora']:
-            #         main_acc = vfl.train()
-            #     else:
-            #         main_acc = vfl.train_graph()
-            #     i = i + 1
-            vfl = args.basic_vfl
-            main_acc = args.main_acc_noattack
-        
-        attack_metric = vfl.evaluate_attack()
-        attack_metric_name = 'label_recovery_rate'
-    
+        attack_metric = main_acc_noattack - main_acc
+        attack_metric_name = 'acc_loss'
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
             (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
@@ -97,23 +87,48 @@ def evaluate_label_inference(args):
         append_exp_res(args.exp_res_path, exp_result)
 
 
-def evaluate_untargeted_backdoor(args):
-    
-    for index in args.untargeted_backdoor_index:
+def evaluate_label_inference(args):
+    # Basic VFL Training Pipeline
+    i=0
+    for index in args.label_inference_index:
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
-        
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
-
-        vfl = MainTaskVFL(args)
-        if args.dataset not in ['cora']:
-            main_acc = vfl.train()
+        if args.attack_name == "DataLabelReconstruction":
+            # change to batchsize=1
+            old_batch_size = args.batch_size
+            args.batch_size = 1
+            args = load_parties(args)
+            
+            if args.apply_backdoor == True:
+                vfl = MainTaskVFLwithBackdoor(args)
+                main_acc, backdoor_acc = vfl.train()
+            else:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
+            
+            # recover back to original 
+            args.batch_size = old_batch_size
+            args = load_parties(args)
         else:
-            main_acc = vfl.train_graph()
-
-        attack_metric = args.main_acc_noattack - main_acc
-        attack_metric_name = 'acc_loss'
+            if i == 0: # Only train once for all label_inference_attack
+                if args.apply_backdoor == True:
+                    vfl = MainTaskVFLwithBackdoor(args)
+                    main_acc, backdoor_acc = vfl.train()
+                else:
+                    vfl = MainTaskVFL(args)
+                    if args.dataset not in ['cora']:
+                        main_acc = vfl.train()
+                    else:
+                        main_acc = vfl.train_graph()
+                i = i + 1
+            attack_metric = vfl.evaluate_attack()
+            attack_metric_name = 'label_recovery_rate'
+    
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
             (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
@@ -156,69 +171,57 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,102):
-        set_seed(seed)
+    set_seed(args.seed)
 
-        if args.device == 'cuda':
-            cuda_id = args.gpu
-            torch.cuda.set_device(cuda_id)
-            print(f'running on cuda{torch.cuda.current_device()}')
-        else:
-            print('running on cpu')
+    if args.device == 'cuda':
+        cuda_id = args.gpu
+        torch.cuda.set_device(cuda_id)
+        print(f'running on cuda{torch.cuda.current_device()}')
+    else:
+        print('running on cpu')
 
-        
-        ####### load configs from *.json files #######
-        ############ Basic Configs ############
-        args = load_basic_configs(args.configs, args)
-        args.need_auxiliary = 0 # no auxiliary dataset for attacker
-        for mode in [0,1]:
-            if mode == 0:
-                args.global_model = 'ClassificationModelHostHead'
-            else:
-                args.global_model = 'ClassificationModelHostTrainableHead'
-            args.apply_trainable_layer = mode
+    
+    ####### load configs from *.json files #######
+    ############ Basic Configs ############
+    args = load_basic_configs(args.configs, args)
+    
+    assert args.dataset_split != None, "dataset_split attribute not found config json file"
+    assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
+    args.dataset = args.dataset_split['dataset_name']
+    print(args.dataset)
 
-            print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
-            print('================================\n')
-        
-            assert args.dataset_split != None, "dataset_split attribute not found config json file"
-            assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
-            args.dataset = args.dataset_split['dataset_name']
-            print(args.dataset)
+    print('======= Defense ========')
+    print('Defense_Name:',args.defense_name)
+    print('Defense_Config:',str(args.defense_configs))
 
-            print('======= Defense ========')
-            print('Defense_Name:',args.defense_name)
-            print('Defense_Config:',str(args.defense_configs))
+    print('===== Total Attack Tested:',args.attack_num,' ======')
+    print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
+    print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
+    print('label_inference:',args.label_inference_list,args.label_inference_index)
+    print('=================================')
 
-            print('===== Total Attack Tested:',args.attack_num,' ======')
-            print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
-            print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
-            print('label_inference:',args.label_inference_list,args.label_inference_index)
-            print('=================================')
+    # Save record for different defense method
+    args.exp_res_dir = f'exp_result/{args.dataset}/'
+    if not os.path.exists(args.exp_res_dir):
+        os.makedirs(args.exp_res_dir)
+    filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
+    args.exp_res_path = args.exp_res_dir + filename
 
-            # Save record for different defense method
-            args.exp_res_dir = f'exp_result/{args.dataset}/'
-            if not os.path.exists(args.exp_res_dir):
-                os.makedirs(args.exp_res_dir)
-            filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
-            args.exp_res_path = args.exp_res_dir + filename
+    if args.targeted_backdoor_list != []:
+        evaluate_targeted_backdoor(args)
 
-            args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
-            if args.label_inference_list != []:
-                evaluate_label_inference(args)
+    if args.untargeted_backdoor_list != []:
+        evaluate_untargeted_backdoor(args)
 
-            if args.untargeted_backdoor_list != []:
-                evaluate_untargeted_backdoor(args)
-
-            if args.targeted_backdoor_list != []:
-                evaluate_targeted_backdoor(args)
+    if args.label_inference_list != []:
+        evaluate_label_inference(args)
 
     
 

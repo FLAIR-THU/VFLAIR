@@ -152,7 +152,13 @@ def load_dataset_per_party(args, index):
         train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
+        if args.need_auxiliary == 1:
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
         train_dst = (torch.tensor(data), label)
+
         test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
@@ -162,7 +168,13 @@ def load_dataset_per_party(args, index):
         train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
+        if args.need_auxiliary == 1:
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
         train_dst = (torch.tensor(data), label)
+        
         test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
@@ -172,7 +184,13 @@ def load_dataset_per_party(args, index):
         train_dst = datasets.CIFAR10(DATA_PATH, download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
+        if args.need_auxiliary == 1:
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
         train_dst = (torch.tensor(data), label)
+
         test_dst = datasets.CIFAR10(DATA_PATH, download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
@@ -182,7 +200,13 @@ def load_dataset_per_party(args, index):
         train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
-        train_dst = (data, label)
+        if args.need_auxiliary == 1:
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
+        train_dst = (torch.tensor(data), label)
+
         test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
@@ -197,7 +221,13 @@ def load_dataset_per_party(args, index):
         # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
-        train_dst = (data, label)
+        if args.need_auxiliary == 1:
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
+        train_dst = (torch.tensor(data), label)
+        
         X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test')
         # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
@@ -214,6 +244,17 @@ def load_dataset_per_party(args, index):
             args.idx_train = torch.LongTensor(idx_train)
             args.idx_test = torch.LongTensor(idx_test)
             label = torch.LongTensor(label).to(args.device)
+            
+            # Not available for auxiliary dataset
+            # if args.need_auxiliary == 1:
+            #     data = [adj, features]
+            #     data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            #     X_aux = torch.tensor(X_aux)
+            #     y_aux = torch.tensor(y_aux)
+            #     aux_dst = (X_aux,y_aux)
+            #     adj= data[0]
+            #     features = data[1]
+            
             train_dst = ([adj, features], label)
             test_dst = ([adj, features, target_nodes], label)
         half_dim = -1
@@ -264,6 +305,12 @@ def load_dataset_per_party(args, index):
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
+        
+        if args.need_auxiliary == 1:
+            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
         y_train = torch.tensor(y_train)
@@ -303,6 +350,13 @@ def load_dataset_per_party(args, index):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
             # ADDED: in config: input_dim = X.shape[1]//2 need to change according to categories included
             half_dim = int(X.shape[1]//2) #42491
+        
+        if args.need_auxiliary == 1:
+            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=0)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
+
         X_train = torch.tensor(X_train)
         X_test = torch.tensor(X_test)
         y_train = torch.tensor(y_train)
@@ -312,21 +366,32 @@ def load_dataset_per_party(args, index):
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
+    
     if not args.dataset in GRAPH_DATA:
         if not args.dataset == 'nuswide':
             train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
             test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+            if args.need_auxiliary == 1:
+                aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
         else:
             train_dst = ([train_dst[0][0].to(args.device),train_dst[0][1].to(args.device)],train_dst[1].to(args.device))
             test_dst = ([test_dst[0][0].to(args.device),test_dst[0][1].to(args.device)],test_dst[1].to(args.device))
+            if args.need_auxiliary == 1:
+                aux_dst = ([aux_dst[0][0].to(args.device),aux_dst[0][1].to(args.device)],aux_dst[1].to(args.device))
         train_dst = dataset_partition(args,index,train_dst,half_dim)
         test_dst = dataset_partition(args,index,test_dst,half_dim)
+        if args.need_auxiliary == 1:
+            aux_dst = dataset_partition(args,index,aux_dst,half_dim)
     else:
         train_dst, args = dataset_partition(args,index,train_dst,half_dim)
         test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
-    
+        
     # important
-    return args, half_dim, train_dst, test_dst
+    if args.need_auxiliary == 1:
+        
+        return args, half_dim, train_dst, test_dst, aux_dst
+    else:
+        return args, half_dim, train_dst, test_dst
 
 def prepare_poison_target_list(args):
     args.target_label = random.randint(0, args.num_classes-1)

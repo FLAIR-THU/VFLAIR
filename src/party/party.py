@@ -21,12 +21,16 @@ class Party(object):
         self.half_dim = -1
         self.train_data = None
         self.test_data = None
+        self.aux_data = None
         self.train_label = None
         self.test_label = None
+        self.aux_label = None
         self.train_dst = None
         self.test_dst = None
+        self.aux_dst = None
         self.train_loader = None
         self.test_loader = None
+        self.aux_loader = None
         self.local_batch_data = None
         # backdoor poison data and label and target images list
         self.train_poison_data = None
@@ -78,6 +82,14 @@ class Party(object):
                 self.train_target_list,
                 self.test_target_list,
             ) = load_dataset_per_party_backdoor(args, index)
+        elif args.need_auxiliary == 1:
+            (
+                args,
+                self.half_dim,
+                (self.train_data, self.train_label),
+                (self.test_data, self.test_label),
+                (self.aux_data, self.aux_label)
+            ) = load_dataset_per_party(args, index)
         else:
             (
                 args,
@@ -89,6 +101,8 @@ class Party(object):
     def prepare_data_loader(self, batch_size):
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size)
+        if self.args.need_auxiliary == 1:
+            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
     def prepare_model(self, args, index):
         # prepare model and optimizer

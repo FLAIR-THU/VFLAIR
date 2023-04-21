@@ -6,10 +6,11 @@ from evaluates.attacks.DataReconstruct import DataReconstruction
 from evaluates.attacks.DirectionbasedScoring import DirectionbasedScoring
 from evaluates.attacks.NormbasedScoring import NormbasedScoring
 from evaluates.attacks.NoisyLabel import NoisyLabel
+from evaluates.attacks.PassiveModelCompletion import PassiveModelCompletion
 
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name
-    if attacker_name == "DataLabelReconstruction":
-        assert args.batch_size == 1,'DataLabelReconstruction: require batchsize=1'
-        attacker_name == "BatchLabelReconstruction"
+    # if attacker_name == "DataLabelReconstruction":
+    #     assert args.batch_size == 1,'DataLabelReconstruction: require batchsize=1'
+    #     attacker_name == "BatchLabelReconstruction"
     return globals()[attacker_name](vfl, args)

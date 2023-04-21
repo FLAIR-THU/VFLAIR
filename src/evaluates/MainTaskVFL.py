@@ -79,6 +79,7 @@ class MainTaskVFL(object):
         # some state of VFL throughout training process
         self.first_epoch_state = None
         self.middle_epoch_state = None
+        self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
     
     def pred_transmit(self): # Active party gets pred from passive parties
@@ -315,42 +316,17 @@ class MainTaskVFL(object):
                         i_epoch, self.loss, self.train_acc, self.test_acc))
                     
                     self.final_epoch = i_epoch
-                    # Early Stop Assessment
-                    # if self.loss < last_loss:       
-                    #     early_stop_count = 0
-                    # else:
-                    #     early_stop_count +=1
-                    # last_loss = self.loss
-                    
-                    # if early_stop_count >= self.early_stop_threshold:
-                    #     self.final_epoch = i_epoch
-                    #     break
-    
-        # if self.args.apply_defense == True:
-        #     if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
-        #         defense_param = self.args.defense_configs['lambda']
-        #     elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
-        #         defense_param = self.args.defense_configs['dp_strength']
-        #     elif self.args.defense_name == "GradientSparsification":
-        #         defense_param = self.args.defense_configs['gradient_sparse_rate']
-
-        #     # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
-        #     (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
-        #      sum(backdoor_acc_history)/len(backdoor_acc_history),\
-        #          str(self.args.attack_name), self.args.defense_name, defense_param)
-        # else:
-        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
-        # #append_exp_res(self.exp_res_path, exp_result)
-        # print(exp_result)
+        self.final_state = self.save_state(True) # model  global model
+        self.final_state.update(self.save_party_data()) 
+        
         
         #LR scopes
-        xx = [i for i in range(len(LR_passive_list))]
-        plt.figure()
-        plt.plot(xx,LR_passive_list,'o-', color='b', alpha=0.8, linewidth=1, label='passive0')
-        plt.plot(xx,LR_active_list,'o-', color='r', alpha=0.8, linewidth=1, label='active1')
-        plt.legend()
-        plt.savefig('./exp_result/LR_Scope.png')
+        # xx = [i for i in range(len(LR_passive_list))]
+        # plt.figure()
+        # plt.plot(xx,LR_passive_list,'o-', color='b', alpha=0.8, linewidth=1, label='passive0')
+        # plt.plot(xx,LR_active_list,'o-', color='r', alpha=0.8, linewidth=1, label='active1')
+        # plt.legend()
+        # plt.savefig('./exp_result/LR_Scope.png')
 
         return self.test_acc
 
@@ -447,24 +423,8 @@ class MainTaskVFL(object):
                 # if early_stop_count >= self.early_stop_threshold:
                 #     
                 #     break
-        
-        # if self.args.apply_defense == True:
-        #     if self.args.defense_name == "CAE" or self.args.defense_name=="DCAE" or self.args.defense_name=="MID":
-        #         defense_param = self.args.defense_configs['lambda']
-        #     elif self.args.defense_name == "GaussianDP" or self.args.defense_name=="LaplaceDP":
-        #         defense_param = self.args.defense_configs['dp_strength']
-        #     elif self.args.defense_name == "GradientSparsification":
-        #         defense_param = self.args.defense_configs['gradient_sparse_rate']
-
-        #     # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
-        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
-        #     (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
-        #      str(self.args.attack_name), self.args.defense_name, defense_param)
-        # else:
-        #     exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc,%d|%d|%d|%d|%d|%lf %lf" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc)
-        
-        # #append_exp_res(self.exp_res_path, exp_result)
-        # print(exp_result)
+        self.final_state = self.save_state(True) # model  global model
+        self.final_state.update(self.save_party_data()) 
         
         return self.test_acc
 
@@ -491,6 +451,22 @@ class MainTaskVFL(object):
                 "global_pred":self.parties[self.k-1].global_pred
                 
             }
+
+    def save_party_data(self):
+        return {
+            "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
+            "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
+            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+            "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
+            "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
+            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            # "aux_loader": [copy.deepcopy(self.parties[ik].aux_loader) for ik in range(self.k)],
+            # "train_loader": [copy.deepcopy(self.parties[ik].train_loader) for ik in range(self.k)],
+            # "test_loader": [copy.deepcopy(self.parties[ik].test_loader) for ik in range(self.k)],
+            "batchsize": self.args.batch_size,
+            "num_classes": self.args.num_classes
+        }
+        
         
     def save_trained_models(self):
         dir_path = self.exp_res_dir + f'trained_models/parties{self.k}_topmodel{self.args.apply_trainable_layer}_epoch{self.epochs}/'

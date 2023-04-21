@@ -14,20 +14,7 @@ from evaluates.attacks.attacker import Attacker
 from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 
-def label_to_one_hot(target, num_classes=10):
-    # print('label_to_one_hot:', target, type(target))
-    try:
-        _ = target.size()[1]
-        # print("use target itself", target.size())
-        onehot_target = target.type(torch.float32)
-    except:
-        target = torch.unsqueeze(target, 1)
-        # print("use unsqueezed target", target.size())
-        onehot_target = torch.zeros(target.size(0), num_classes)
-        onehot_target.scatter_(1, target, 1)
-    return onehot_target
-
-class BatchLabelReconstruction(Attacker):
+class DataLabelReconstruction(Attacker):
     def __init__(self, top_vfl, args):
         super().__init__(args)
         self.args = args
@@ -82,10 +69,10 @@ class BatchLabelReconstruction(Attacker):
             pred_a = self.vfl_info['predict'][ik] # [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)]
             pred_b = self.vfl_info['predict'][1] # active party 
             
-            self_data = self.vfl_info['data'][ik][0]#copy.deepcopy(self.parties_data)
+            self_data = self.vfl_info['data'][ik][0]  #copy.deepcopy(self.parties_data)
             active_data = self.vfl_info['data'][1][0] # Active party data
 
-            local_gradient = self.vfl_info['gradient'][ik] 
+            local_gradient = self.vfl_info['gradient'][ik]
             # [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)]
             original_dy_dx = self.vfl_info['local_model_gradient'][ik] # gradient calculated for local model update
             #[copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)]
@@ -154,7 +141,7 @@ class BatchLabelReconstruction(Attacker):
                 
                 
                 # === Begin Attack ===
-                print(f"BLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
+                print(f"DLI iteration for type{i}, self.device={self.device}, {dummy_pred_b.device}, {dummy_label.device}")
                 start_time = time.time()
 
                 

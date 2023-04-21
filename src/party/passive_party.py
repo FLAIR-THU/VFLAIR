@@ -3,6 +3,8 @@ sys.path.append(os.pardir)
 
 from party.party import Party
 from dataset.party_dataset import PassiveDataset
+from dataset.party_dataset import ActiveDataset
+
 
 class PassiveParty(Party):
     def __init__(self, args, index):
@@ -12,3 +14,5 @@ class PassiveParty(Party):
         super().prepare_data(args, index)
         self.train_dst = PassiveDataset(self.train_data)
         self.test_dst = PassiveDataset(self.test_data)
+        if self.args.need_auxiliary == 1:
+            self.aux_dst = ActiveDataset(self.aux_data, self.aux_label)
