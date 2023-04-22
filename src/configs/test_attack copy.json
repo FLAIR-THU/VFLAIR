@@ -80,6 +80,15 @@
                 "lr": 0.05,
                 "epochs": 100
             }
+        },
+        "7":{
+            "name": "PassiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration":500,
+                "epochs": 1,
+                "lr": 2e-3
+            }
         }
     }
 }

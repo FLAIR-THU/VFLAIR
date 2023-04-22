@@ -134,44 +134,69 @@ class MainTaskVFL(object):
             _, gt_one_hot_label = encoder(batch_label)              
         else:
             gt_one_hot_label = batch_label
-        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label # obtain local batch label for active party
+        
+        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
+        # allocate data to each party
+        for ik in range(self.k):
+            self.parties[ik].obtain_local_data(parties_data[ik][0])
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
-        # == FedBCD ==
-        for q in range(self.Q):
-            # print('inner iteration q=',q)
-            if q == 0: #before first iteration, Exchange party 1,2...k
-                # allocate data to each party
-                for ik in range(self.k):
-                    self.parties[ik].obtain_local_data(parties_data[ik][0])
-                
-                # exchange info between parties
-                self.pred_transmit() 
-                self.gradient_transmit() 
+        # ======== FedBCD ============
+        if self.args.BCD_type == 'p' or self.Q ==1 : # parallel FedBCD & noBCD situation
+            for q in range(self.Q):
+                # print('inner iteration q=',q)
+                if q == 0: #before first iteration, Exchange party 1,2...k
+                    # allocate data to each party
+                    for ik in range(self.k):
+                        self.parties[ik].obtain_local_data(parties_data[ik][0])
+                    
+                    # exchange info between parties
+                    self.pred_transmit() # partyk存下所有party的pred
+                    self.gradient_transmit() # partyk计算gradient传输给passive parties
+                    
+                    if self.flag == 0 and (self.train_acc == None or self.train_acc < STOPPING_ACC[self.dataset_name]):
+                        self.rounds = self.rounds + 1
+                    else:
+                        self.flag = 1
 
-                if self.flag == 0 and (self.train_acc == None or self.train_acc < STOPPING_ACC[self.dataset_name]):
-                    self.rounds = self.rounds + 1
-                else:
-                    self.flag = 1
-
-                # update parameters for all parties
-                for ik in range(self.k):
-                    self.parties[ik].local_backward()
-                self.parties[self.k-1].global_backward()
-            
-            else: # FedBCD: in other iterations, no communication happen, no defense&attack
-                # ==== update parameters ====
-                # for passive parties
-                for ik in range(self.k-1):
-                    _pred, _pred_clone= self.parties[ik].give_pred() # 更新local_pred
-                    self.parties[ik].local_backward() # self.pred_gradients_list_clone[ik], self.pred_list[ik]
-                
-                # for active party k
-                _pred, _pred_clone = self.parties[self.k-1].give_pred() # 更新local_pred
-                _gradient = self.parties[self.k-1].give_gradient() # 更新local_gradient
-                self.parties[self.k-1].local_backward()
-                self.parties[self.k-1].global_backward()
+                    # update parameters for all parties
+                    self.parties[self.k-1].global_backward()
+                    for ik in range(self.k):
+                        self.parties[ik].local_backward()
+                else: # FedBCD: in other iterations, no communication happen, no defense&attack
+                    # ==== update parameters ====
+                    # for passive parties
+                    for ik in range(self.k-1):
+                        _pred, _pred_clone= self.parties[ik].give_pred() # update local_pred
+                        self.parties[ik].local_backward() # self.pred_gradients_list_clone[ik], self.pred_list[ik]
+                    
+                    # for active party k
+                    _pred, _pred_clone = self.parties[self.k-1].give_pred() # 更新local_pred
+                    _gradient = self.parties[self.k-1].give_gradient() # 更新local_gradient
+                    self.parties[self.k-1].global_backward()
+                    self.parties[self.k-1].local_backward()
+        else: # Sequential FedBCD
+            for q in range(self.Q):
+                # print('inner iteration q=',q)
+                if q == 0: #first iteration, active party gets pred from passsive party
+                    self.pred_transmit() 
+                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    # active party: update parameters 
+                    self.parties[self.k-1].local_backward()
+                    self.parties[self.k-1].global_backward()
+                elif q < self.Q-1: # active party do additional iterations
+                    self.parties[self.k-1].give_pred(self)
+                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    # active party: update parameters 
+                    self.parties[self.k-1].local_backward()
+                    self.parties[self.k-1].global_backward()
+                elif q == self.Q-1: # last round
+                    self.gradient_transmit() # active party transmit grad to passive parties
+                    for ik in range(self.k): # passive party do local update
+                        self.parties[ik].local_backward() 
+                    self.parties[self.k-1].global_backward()
+        # ============= FedBCD ===================
         
         # ###### Noisy Label Attack #######
         # convert back to clean label to get true acc

@@ -3,7 +3,8 @@
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
-    "iteration_per_aggregation": 1,
+    "iteration_per_aggregation": 5,
+    "BCD_type": "p",
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -23,16 +24,5 @@
         },
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
-    },
-    "attack_list": {
-        "0":{
-            "name": "PassiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration":500,
-                "epochs": 1,
-                "lr": 2e-3
-            }
-        }
     }
 }

@@ -35,6 +35,8 @@ def load_basic_configs(config_file_name, args):
     # args.Q ,iteration_per_aggregation for FedBCD
     args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
     assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
+    args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
+    assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
     
     # # args.early_stop, if use early stop
     # args.main_early_stop = config_dict['main_early_stop'] if ('main_early_stop' in config_dict) else 0
@@ -184,8 +186,6 @@ def load_attack_configs(config_file_name, args, index):
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
 
-    # init args about attacks
-    assert args.apply_attack == True 
     args.attack_type = None
     args.apply_backdoor = False # replacement backdoor attack
     args.apply_nl = False # noisy label attack
@@ -199,6 +199,8 @@ def load_attack_configs(config_file_name, args, index):
         args.attack_param = None
         return args
     
+    # init args about attacks
+    assert args.apply_attack == True 
     # choose attack[index]
     attack_config_dict = config_dict['attack_list'][str(index)]
 
