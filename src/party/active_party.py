@@ -83,29 +83,6 @@ class ActiveParty(Party):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
                 
-    def global_backward_old(self, pred, loss):
-        if self.global_model_optimizer != None: 
-            # active party with trainable global layer
-            _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
-            _gradients_clone = _gradients[0].detach().clone()
-            # update local model
-            self.global_model_optimizer.zero_grad()
-            
-            if self.args.apply_trainable_layer == True:
-                weights_grad_a = torch.autograd.grad(pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(self.global_model.parameters(), weights_grad_a):
-                    if w.requires_grad:
-                        w.grad = g.detach()
-            elif self.args.apply_mid == True: # no trainable top model but mid models
-                parameters = []
-                for mid_model in self.global_model.mid_model_list:
-                    parameters += list(mid_model.parameters())
-                weights_grad_a = torch.autograd.grad(pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(parameters, weights_grad_a):
-                    if w.requires_grad:
-                        w.grad = g.detach()
-            self.global_model_optimizer.step()
-
 
     def global_backward(self):
         if self.global_model_optimizer != None: 

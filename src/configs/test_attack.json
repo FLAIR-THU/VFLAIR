@@ -1,9 +1,9 @@
 {
-    "epochs": 5,
+    "epochs": 3,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
-    "iteration_per_aggregation": 5,
+    "iteration_per_aggregation": 1,
     "BCD_type": "p",
     "dataset":{
         "dataset_name": "mnist",
@@ -24,5 +24,13 @@
         },
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [0],
+            "lr": 0.001,
+            "lambda": 0.001
+        }
     }
 }

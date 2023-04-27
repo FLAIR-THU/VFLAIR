@@ -65,16 +65,19 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     # some defense need model, add here
     if args.apply_defense == True:
         if 'MID' in args.defense_name.upper():
-            print(f"begin to load mid model for party {index}")
+            
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [args.k-1]
                 print('[warning] default active party selected for applying MID')
             if not 'lambda' in args.defense_configs:
                 args.defense_configs['lambda'] = 0.001
                 print('[warning] default hyper-parameter lambda selected for applying MID')
+            
             mid_lr = args.defense_configs['lr'] if ('lr' in args.defense_configs) else args.main_lr
             if index in args.defense_configs['party']:
+                print(f"begin to load mid model for party {index}")
                 if index == args.k-1:
+                    print(f"load global mid model for party {index}")
                     # add args.k-1 MID model at active party with global_model
                     mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1) for _ in range(args.k-1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
@@ -94,16 +97,19 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                             [{'params': global_model.global_model.parameters(), 'lr': args.main_lr},              
                             {'params': parameters, 'lr': mid_lr}])
                 else:
-                    print(f"load mid model for party {index}")
+                    print(f"load local mid model for party {index}")
                     # add MID model at passive party with local_model
+                    print('lambda for passive party local mid model:',args.defense_configs['lambda'])
                     mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)
+
                     # update optimizer
                     local_model_optimizer = torch.optim.Adam(
                         [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                          {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
+        
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
             if index == args.k-1:
                 # only active party can have encoder and decoder for CAE

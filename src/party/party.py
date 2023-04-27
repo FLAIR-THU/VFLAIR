@@ -41,6 +41,7 @@ class Party(object):
         self.test_target_list = None
         # local model
         self.local_model = None
+        self.old_local_model = None
         self.local_model_optimizer = None
         # global_model
         self.global_model = None
@@ -114,6 +115,7 @@ class Party(object):
             self.global_model_optimizer,
         ) = load_models_per_party(args, index)
 
+
     # def prepare_attacker(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.attacker = AttackerLoader(args, index, self.local_model)
@@ -133,46 +135,21 @@ class Party(object):
     def obtain_local_data(self, data):
         self.local_batch_data = data
 
-    # def party_attack(self, args, *params):
-    #     if self.index in args.attack_configs['party']:
-    #         return self.attacker.attack(self.local_batch_data, self.weights_grad_a, *params)
 
     def local_forward():
         # args.local_model()
         pass
 
-    # def local_backward_old(self, gradient, local_pred):
-    #     # update local model
-    #     self.local_model_optimizer.zero_grad()
-    #     # ########## for passive local mid loss (start) ##########
-    #     if (
-    #         self.args.apply_mid == True
-    #         and (self.index in self.args.defense_configs["party"])
-    #         and (self.index < self.args.k - 1)
-    #     ):
-    #         self.local_model.mid_loss.backward(retain_graph=True)
-    #         self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
-    #     # ########## for passive local mid loss (end) ##########
-    #     self.weights_grad_a = torch.autograd.grad(
-    #         local_pred,
-    #         self.local_model.parameters(),
-    #         grad_outputs=gradient,
-    #         retain_graph=True,
-    #     )
-    #     for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-    #         if w.requires_grad:
-    #             w.grad = g.detach()
-    #     self.local_model_optimizer.step()
-
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
         # ########## for passive local mid loss (start) ##########
+        # if passive party in defense party, do
         if (
             self.args.apply_mid == True
             and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1)
-        ):
+            ):
             self.local_model.mid_loss.backward(retain_graph=True)
             self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
         # ########## for passive local mid loss (end) ##########

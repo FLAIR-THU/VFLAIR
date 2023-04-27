@@ -163,7 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98):
+    for seed in range(97,98): # test 10 times 107
         set_seed(seed)
 
         if args.device == 'cuda':
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         ############ Basic Configs ############
         args = load_basic_configs(args.configs, args)
         args.need_auxiliary = 0 # no auxiliary dataset for attacker
-        for mode in [0,1]:
+        for mode in [0]: # 1
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'
             else:
