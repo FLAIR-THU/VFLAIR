@@ -90,19 +90,30 @@ class ActiveParty(Party):
             _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
             _gradients_clone = _gradients[0].detach().clone()
             
-            # update local model
+            if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
+                return # no need to update
+
+            # update global model
             self.global_model_optimizer.zero_grad()
-            if self.args.apply_trainable_layer == True:
-                weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(self.global_model.parameters(), weights_grad_a):
-                    if w.requires_grad:
-                        w.grad = g.detach()
-            elif self.args.apply_mid == True: # no trainable top model but mid models
-                parameters = []
+
+            parameters = []
+            
+            if self.args.apply_mid == True: 
+                # mid parameters
                 for mid_model in self.global_model.mid_model_list:
                     parameters += list(mid_model.parameters())
-                weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(parameters, weights_grad_a):
-                    if w.requires_grad:
-                        w.grad = g.detach()
+                # trainable layer parameters
+                if self.args.apply_trainable_layer == True:
+                    parameters += list(self.global_model.global_model.parameters())
+                    weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
+                    for w, g in zip(parameters, weights_grad_a):
+                        if w.requires_grad:
+                            w.grad = g.detach()
+            else:
+                # trainable layer parameters
+                if self.args.apply_trainable_layer == True:
+                    weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                    for w, g in zip(self.global_model.parameters(), weights_grad_a):
+                        if w.requires_grad:
+                            w.grad = g.detach()
             self.global_model_optimizer.step()

@@ -181,10 +181,11 @@ class MainTaskVFL(object):
 
             # active party transmit grad to passive parties
             self.gradient_transmit() 
-            
+
             # passive party do Q iterations
             for _q in range(self.Q):
                 for ik in range(self.k-1): 
+                    _pred, _pred_clone= self.parties[ik].give_pred() 
                     self.parties[ik].local_backward() 
         # ============= FedBCD ===================
         
@@ -331,10 +332,10 @@ class MainTaskVFL(object):
                         i_epoch, self.loss, self.train_acc, self.test_acc))
                     
                     self.final_epoch = i_epoch
-        self.final_state = self.save_state(True) # model  global model
+        self.final_state = self.save_state(True) 
+        self.final_state.update(self.save_state(False)) 
         self.final_state.update(self.save_party_data()) 
-        
-        
+           
         #LR scopes
         # xx = [i for i in range(len(LR_passive_list))]
         # plt.figure()
@@ -438,7 +439,8 @@ class MainTaskVFL(object):
                 # if early_stop_count >= self.early_stop_threshold:
                 #     
                 #     break
-        self.final_state = self.save_state(True) # model  global model
+        self.final_state = self.save_state(True) 
+        self.final_state.update(self.save_state(False)) 
         self.final_state.update(self.save_party_data()) 
         
         return self.test_acc
@@ -475,9 +477,9 @@ class MainTaskVFL(object):
             "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
             "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
             "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
-            # "aux_loader": [copy.deepcopy(self.parties[ik].aux_loader) for ik in range(self.k)],
-            # "train_loader": [copy.deepcopy(self.parties[ik].train_loader) for ik in range(self.k)],
-            # "test_loader": [copy.deepcopy(self.parties[ik].test_loader) for ik in range(self.k)],
+            "aux_loader": [copy.deepcopy(self.parties[ik].aux_loader) for ik in range(self.k)],
+            "train_loader": [copy.deepcopy(self.parties[ik].train_loader) for ik in range(self.k)],
+            "test_loader": [copy.deepcopy(self.parties[ik].test_loader) for ik in range(self.k)],
             "batchsize": self.args.batch_size,
             "num_classes": self.args.num_classes
         }

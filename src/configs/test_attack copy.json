@@ -89,6 +89,16 @@
                 "epochs": 1,
                 "lr": 2e-3
             }
+        },
+        "8":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "epochs": 10,
+                "lr":0.001,
+                "data_number": 2048,
+                "batch_size": 128
+            }
         }
     }
 }

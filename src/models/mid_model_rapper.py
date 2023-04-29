@@ -66,7 +66,7 @@ class Active_global_MID_model(nn.Module):
         assert len(x)-1 == len(self.mid_model_list)
         z_list = []
         self.mid_loss_list = []
-        # all passive party have a mid_model
+        # give all passive party a mid_model
         for i in range(len(x)-1):
             _z, mid_loss = self.mid_model_list[i](x[i])
             z_list.append(_z)

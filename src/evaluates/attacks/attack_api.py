@@ -8,6 +8,8 @@ from evaluates.attacks.NormbasedScoring import NormbasedScoring
 from evaluates.attacks.NoisyLabel import NoisyLabel
 from evaluates.attacks.PassiveModelCompletion import PassiveModelCompletion
 
+from evaluates.attacks.GenerativeRegressionNetwork import GenerativeRegressionNetwork
+
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name
     # if attacker_name == "DataLabelReconstruction":

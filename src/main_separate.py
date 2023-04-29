@@ -25,6 +25,7 @@ warnings.filterwarnings("ignore")
 TARGETED_BACKDOOR = ['ReplacementBackdoor'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature'] # main_acc
 LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring','PassiveModelCompletion'] # label_recovery
+FEATURE_INFERENCE = ['GenerativeRegressionNetwork']
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -57,6 +58,24 @@ def evaluate_no_attack(args):
     append_exp_res(args.exp_res_path, exp_result)
     return vfl, main_acc_noattack
 
+def evaluate_feature_inference(args):
+    for index in args.feature_inference_index:
+        args = load_attack_configs(args.configs, args, index)
+        args = load_parties(args)
+        
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+        vfl = args.basic_vfl
+        main_acc = args.main_acc_noattack
+        
+        attack_metric = vfl.evaluate_attack()
+        attack_metric_name = 'feature_recovery_pnsr'
+        
+        # Save record for different defense method
+        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        print(exp_result)
+        append_exp_res(args.exp_res_path, exp_result)
 
 def evaluate_label_inference(args):
     # Basic VFL Training Pipeline
@@ -69,11 +88,14 @@ def evaluate_label_inference(args):
         if args.attack_name == 'PassiveModelCompletion':
             args.need_auxiliary = 1
             args = load_parties(args) # include load dataset with auxiliary data
+            # actual train = train-aux
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
                 main_acc = vfl.train()
             else:
                 main_acc = vfl.train_graph()
+            args.main_acc_noattack_withaux = main_acc
+            args.basic_vfl_withaux = vfl
         else:  
             args.need_auxiliary = 0
             args = load_parties(args)
@@ -156,14 +178,14 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98): # test 10 times 107
+    for seed in range(97,107): # test 10 times 107
         set_seed(seed)
 
         if args.device == 'cuda':
@@ -178,7 +200,7 @@ if __name__ == '__main__':
         ############ Basic Configs ############
         args = load_basic_configs(args.configs, args)
         args.need_auxiliary = 0 # no auxiliary dataset for attacker
-        for mode in [0]: # 1
+        for mode in [0,1]: # 1
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'
             else:
@@ -201,6 +223,7 @@ if __name__ == '__main__':
             print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
             print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
             print('label_inference:',args.label_inference_list,args.label_inference_index)
+            print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
             print('=================================')
 
             # Save record for different defense method
@@ -209,6 +232,7 @@ if __name__ == '__main__':
                 os.makedirs(args.exp_res_dir)
             filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
             args.exp_res_path = args.exp_res_dir + filename
+            print(args.exp_res_path)
 
             args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
             if args.label_inference_list != []:
@@ -219,6 +243,9 @@ if __name__ == '__main__':
 
             if args.targeted_backdoor_list != []:
                 evaluate_targeted_backdoor(args)
+            
+            if args.feature_inference_list != []:
+                evaluate_feature_inference(args)
 
     
 

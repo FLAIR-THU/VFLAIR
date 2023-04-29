@@ -8,6 +8,7 @@ from models.autoencoder import AutoEncoder
 TARGETED_BACKDOOR = ['ReplacementBackdoor']
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature']
 LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring','PassiveModelCompletion']
+FEATURE_INFERENCE = ['GenerativeRegressionNetwork']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -141,6 +142,14 @@ def load_basic_configs(config_file_name, args):
         args.defense_param = 'None'
         args.defense_param_name = 'No_Defense'
     
+    # Detail Specifications about defense_name
+    if args.defense_name=="MID":
+        if args.defense_configs['party'] == [0]:
+            args.defense_name="MID_Passive"
+        else:
+            args.defense_name="MID_Active"
+
+
     # if there's attack   Mark attack type
     args.attack_num = 0
     args.targeted_backdoor_list = []
@@ -149,6 +158,8 @@ def load_basic_configs(config_file_name, args):
     args.untargeted_backdoor_index = []
     args.label_inference_list = []
     args.label_inference_index = []
+    args.feature_inference_list = []
+    args.feature_inference_index = []
     args.apply_attack = False
     if 'attack_list' in config_dict:
         if len(config_dict['attack_list'])>0:
@@ -169,6 +180,10 @@ def load_basic_configs(config_file_name, args):
                     elif _name in LABEL_INFERENCE:
                         args.label_inference_list.append(_name)
                         args.label_inference_index.append(ik)
+
+                    elif _name in FEATURE_INFERENCE:
+                        args.feature_inference_list.append(_name)
+                        args.feature_inference_index.append(ik)
                 else:
                     assert 'name' in attack_config_dict[str(ik)], 'missing attack name'
         else:
@@ -220,6 +235,8 @@ def load_attack_configs(config_file_name, args, index):
             args.attack_type = 'untargeted_backdoor'
         elif args.attack_name in LABEL_INFERENCE:
             args.attack_type = 'label_inference'
+        elif args.attack_name in FEATURE_INFERENCE:
+            args.attack_type = 'feature_inference'
         else:
             assert 0 , 'attack type not supported'
         
