@@ -120,8 +120,14 @@ class GenerativeRegressionNetwork(Attacker):
             # Init Generator
             last_batch_data_a = self.vfl_info['data'][1][0] # active party 
             last_batch_data_b = self.vfl_info['data'][0][0] # passive party 
-            dim_a = last_batch_data_a.size()[1]*last_batch_data_a.size()[2]*last_batch_data_a.size()[3]
-            dim_b = last_batch_data_b.size()[1]*last_batch_data_b.size()[2]*last_batch_data_b.size()[3]
+            if self.args.dataset == 'nuswide':
+                print('dim_a:',last_batch_data_a.size())
+                print('dim_b:',last_batch_data_b.size())
+                dim_a = last_batch_data_a.size()[1]
+                dim_b = last_batch_data_b.size()[1]
+            else: # mnist cifar
+                dim_a = last_batch_data_a.size()[1]*last_batch_data_a.size()[2]*last_batch_data_a.size()[3]
+                dim_b = last_batch_data_b.size()[1]*last_batch_data_b.size()[2]*last_batch_data_b.size()[3]
             self.netG = Generator(dim_a+dim_b, dim_b)
             self.netG = self.netG.to(self.device)
             self.optimizerG = torch.optim.Adam(self.netG.parameters(), lr = self.lr)
@@ -175,12 +181,17 @@ class GenerativeRegressionNetwork(Attacker):
                     self.optimizerG.zero_grad()
                     # generate "fake inputs"
                     noise_data_b = torch.randn(batch_data_b.size()).to(self.device) # attack from passive side, data_b is at active side need to be generated from noise at passive side
-
-                    generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2))
+                    # print('batch_data_b:',batch_data_b.size())
+                    # print('torch.cat:',batch_data_a.size(),noise_data_b.size())
+                    # print('cat:',torch.cat((batch_data_a,noise_data_b),dim=1).size())
+                    if self.args.dataset == 'nuswide':
+                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=1))
+                    else:
+                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2))
                     generated_data_b = generated_data_b.reshape(batch_data_b.size())
                     # compute logits of generated/real data
                     pred_a = net_a(batch_data_a)
-                    pred_b = net_a(batch_data_b)
+                    pred_b = net_b(batch_data_b)
                     dummy_pred_b = net_b(generated_data_b)
                     # aggregate logits of clients
                     real_pred = global_model([pred_a, pred_b])
@@ -203,7 +214,12 @@ class GenerativeRegressionNetwork(Attacker):
                     # PSNR = []
                     with torch.no_grad():
                         noise_data_b = torch.randn(test_data_b.size()).to(self.device)
-                        generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))
+                        
+                        if self.args.dataset == 'nuswide':
+                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=1))
+                        else:
+                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))
+                        
                         mse, psnr = self.MSE_PSNR(test_data_b, generated_data_b)
                         rand_mse,rand_pnsr = self.MSE_PSNR(test_data_b, noise_data_b)
                         mse_reduction = rand_mse-mse

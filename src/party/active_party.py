@@ -98,7 +98,7 @@ class ActiveParty(Party):
 
             parameters = []
             
-            if self.args.apply_mid == True: 
+            if (self.args.apply_mid == True) and (1 in self.args.defense_configs['party']): 
                 # mid parameters
                 for mid_model in self.global_model.mid_model_list:
                     parameters += list(mid_model.parameters())

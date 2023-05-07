@@ -443,18 +443,71 @@ def data_poison(images, poison_list, k, dataset):
 
 
 def generate_poison_data(data, label, poison_list, _type, k, dataset):
-    mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
+    '''
+    generate poisoned image data
+    '''
+    
+    if dataset == 'nuswide':
+        # X_image = data[0]
+        # X_test = data[1]
+        # data = torch.tensor([torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]）
+        # mixed_data_image, poison_list = data_poison(data[0], poison_list, k, dataset)
+        # poison_data_image = copy.deepcopy(mixed_data_image[poison_list])
+        mixed_data_text, poison_list = data_poison_text(data[1], poison_list, k, dataset)
+        poison_data_text = copy.deepcopy(mixed_data_text[poison_list])
+
+        poison_data_image = torch.tensor(data[0][poison_list])
+        poison_data_text = torch.tensor(poison_data_text)
+        poison_data =[poison_data_image,poison_data_text]
+        #torch.tensor([data[0][poison_list],poison_data_text].cpu().numpy())
+        poison_label = copy.deepcopy(label[poison_list])
+        # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
+        if _type == 'train':
+            data[0] = torch.tensor(np.delete(data[0].cpu().numpy(), poison_list, axis=0))
+            data[1] = torch.tensor(np.delete(data[1].cpu().numpy(), poison_list, axis=0))
+            label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
+
+        return data, label, poison_data, poison_label
+
+    else:
+        mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
+        poison_data = copy.deepcopy(mixed_data[poison_list])
+        poison_label = copy.deepcopy(label[poison_list])
+        # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
+        if _type == 'train':
+            data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
+            label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
+
+        # print(torch.argmax(label,axis=1)==target_label)
+        # print(np.where(torch.argmax(label,axis=1)==target_label))
+        # print(np.where(torch.argmax(label,axis=1)==target_label)[0])
+        # target_list = random.sample(list(np.where(torch.argmax(label,axis=1)==target_label)[0]), 10)
+
+        return data, label, poison_data, poison_label
+
+def data_poison_text(texts, poison_list, k, dataset):
+    target_text_value = [1]
+    
+    if 'nuswide' in dataset.casefold():
+        if k == 2: # 1 party poison, passive party-0 poison
+            texts[poison_list,-1] = target_text_value[0]
+        else:
+            assert k == 2, "poison type not supported yet"
+    else:
+        assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+    return texts, poison_list
+
+def generate_poison_data_text(data, label, poison_list, _type, k, dataset):
+    '''
+    generate poisoned text data
+    '''
+    mixed_data, poison_list = data_poison_text(data, poison_list, k, dataset)
     poison_data = copy.deepcopy(mixed_data[poison_list])
     poison_label = copy.deepcopy(label[poison_list])
     # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
     if _type == 'train':
         data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
         label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
-
-    # print(torch.argmax(label,axis=1)==target_label)
-    # print(np.where(torch.argmax(label,axis=1)==target_label))
-    # print(np.where(torch.argmax(label,axis=1)==target_label)[0])
-    # target_list = random.sample(list(np.where(torch.argmax(label,axis=1)==target_label)[0]), 10)
 
     return data, label, poison_data, poison_label
 

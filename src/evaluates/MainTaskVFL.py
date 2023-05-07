@@ -201,7 +201,7 @@ class MainTaskVFL(object):
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
-            predict_prob = self.parties[ik].encoder.decoder(predict_prob)
+            predict_prob = self.parties[self.k-1].encoder.decoder(predict_prob)
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc

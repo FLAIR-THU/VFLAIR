@@ -60,6 +60,7 @@ def load_basic_models(args,index):
 
 
 def load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer):
+    print('Load Defense models')
     # no defense at all, set some variables as None
     args.encoder = None
     # some defense need model, add here

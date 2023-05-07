@@ -69,7 +69,7 @@ def evaluate_feature_inference(args):
         main_acc = args.main_acc_noattack
         
         attack_metric = vfl.evaluate_attack()
-        attack_metric_name = 'feature_recovery_pnsr'
+        attack_metric_name = 'mse_reduction'
         
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
@@ -185,8 +185,9 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,107): # test 10 times 107
+    for seed in range(97,102): # test 10 times 107
         set_seed(seed)
+        print('================= iter seed ',seed,' =================')
 
         if args.device == 'cuda':
             cuda_id = args.gpu
@@ -200,7 +201,7 @@ if __name__ == '__main__':
         ############ Basic Configs ############
         args = load_basic_configs(args.configs, args)
         args.need_auxiliary = 0 # no auxiliary dataset for attacker
-        for mode in [0,1]: # 1
+        for mode in [0,1]:
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'
             else:
@@ -208,24 +209,21 @@ if __name__ == '__main__':
             args.apply_trainable_layer = mode
 
             print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
-            print('================================\n')
+            #print('================================')
         
             assert args.dataset_split != None, "dataset_split attribute not found config json file"
             assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
             args.dataset = args.dataset_split['dataset_name']
-            print(args.dataset)
+            # print(args.dataset)
 
             print('======= Defense ========')
             print('Defense_Name:',args.defense_name)
             print('Defense_Config:',str(args.defense_configs))
-
             print('===== Total Attack Tested:',args.attack_num,' ======')
             print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
             print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
             print('label_inference:',args.label_inference_list,args.label_inference_index)
             print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
-            print('=================================')
-
             # Save record for different defense method
             args.exp_res_dir = f'exp_result/{args.dataset}/'
             if not os.path.exists(args.exp_res_dir):
@@ -233,6 +231,7 @@ if __name__ == '__main__':
             filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
             args.exp_res_path = args.exp_res_dir + filename
             print(args.exp_res_path)
+            print('=================================\n')
 
             args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
             if args.label_inference_list != []:

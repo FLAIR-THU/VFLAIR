@@ -27,7 +27,7 @@ transform_fn = transforms.Compose([
     transforms.ToTensor()
 ])
 
-from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data
+from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data,label_to_onehot
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
@@ -217,21 +217,35 @@ def load_dataset_per_party(args, index):
             selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train')
-        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
-        data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
-        label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
-        if args.need_auxiliary == 1:
-            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
-            X_aux = torch.tensor(X_aux)
-            y_aux = torch.tensor(y_aux)
-            aux_dst = (X_aux,y_aux)
-        train_dst = (torch.tensor(data), label)
+
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
         
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test')
+        if args.need_auxiliary == 1:
+            index_list = [_i for _i in range (0, len(X_image))] 
+            aux_list = random.sample(index_list,int(0.1*len(X_image)) )
+            train_list = list(set(index_list)- set(aux_list))
+            label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+            label = label_to_onehot(label, num_classes=args.num_classes)
+
+            X_aux = [torch.tensor(X_image[aux_list], dtype=torch.float32), torch.tensor(X_text[aux_list], dtype=torch.float32)]
+            y_aux = label[aux_list] #torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+            aux_dst = (X_aux,y_aux)
+
+            data = [torch.tensor(X_image[train_list], dtype=torch.float32), torch.tensor(X_text[train_list], dtype=torch.float32)]
+            label =label[train_list]
+            # print('aux:',X_aux[0].shape,X_aux[1].shape,y_aux.shape)
+            # print('train:',data[0].shape,data[1].shape,label.shape)
+        else:
+            data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+            label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+            label = label_to_onehot(label, num_classes=args.num_classes)
+            
+        train_dst = (data, label) # (torch.tensor(data),label)
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
         # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        label = label_to_onehot(label, num_classes=args.num_classes)
         test_dst = (data, label)
         print("nuswide dataset [test]:", data[0].shape, data[1].shape, label.shape)
     elif args.dataset in GRAPH_DATA:
@@ -454,13 +468,63 @@ def load_dataset_per_party_backdoor(args, index):
     #     test_dst = NUSWIDEDataset(DATA_PATH+'NUS_WIDE', 'test')
     # args.train_dataset = train_dst
     # args.val_dataset = test_dst
+    elif args.dataset == 'nuswide':
+        print('load backdoor data for nuswide')
+        half_dim = [634, 1000] # 634:image  1000:text
+        if args.num_classes == 5:
+            selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
+        elif args.num_classes == 2:
+            selected_labels = ['clouds','person'] # class_num = 2
+        print('begin load')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train') # 60000
+        train_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        train_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        print('train load over')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test') # 40000
+        test_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        test_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        print('test load over')
+        # poison image datasets
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_data[0])), int(0.01 * len(train_data[0])))
+            args.test_poison_list = random.sample(range(len(test_data[0])), int(0.01 * len(test_data[0])))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        print(f"party#{index} target label={args.target_label}")
+
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            # print('args.num_classes:',args.num_classes)
+            # print('args.target_label:',args.target_label)
+            # print('train_label:',train_label.size(),train_label[100:110])
+            # assert 1>2
+            args.train_target_list = random.sample(list(np.where(train_label==args.target_label)[0]), args.num_classes)
+            args.test_target_list = random.sample(list(np.where(test_label==args.target_label)[0]), args.num_classes)
+        # transform label to onehot
+        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
-
-    train_dst = (train_data.to(args.device),train_label.to(args.device))
-    test_dst = (test_data.to(args.device),test_label.to(args.device))
-    train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
-    test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
+    
+    if not args.dataset == 'nuswide':
+        train_dst = (train_data.to(args.device),train_label.to(args.device))
+        test_dst = (test_data.to(args.device),test_label.to(args.device))
+        train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
+        test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
+    else:
+        train_dst = ([train_data[0].to(args.device),train_data[1].to(args.device)],train_label.to(args.device))
+        test_dst = ([test_data[0].to(args.device),test_data[1].to(args.device)],test_label.to(args.device))
+        train_poison_dst = ([train_poison_data[0].to(args.device),train_poison_data[1].to(args.device)],train_poison_label.to(args.device))
+        test_poison_dst = ([test_poison_data[0].to(args.device),test_poison_data[1].to(args.device)],test_poison_label.to(args.device))
 
     train_dst = dataset_partition(args,index,train_dst,half_dim)
     test_dst = dataset_partition(args,index,test_dst,half_dim)

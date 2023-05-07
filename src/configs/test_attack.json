@@ -1,96 +1,39 @@
 {
-    "epochs": 30,
-    "lr": 0.01,
+    "epochs": 3,
+    "lr": 0.05,
     "k": 2,
-    "batch_size": 256,
+    "batch_size": 1024,
     "iteration_per_aggregation": 1,
-    "early_stop_threshold": 5,
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+        "dataset_name": "nuswide",
+        "num_classes": 2
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 1000,
+            "output_dim": 2,
+            "path": ""
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 634,
+            "output_dim": 2,
+            "path": ""
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "attack_list": {
         "0":{
-            "name": "NoisyLabel",
-            "parameters": {
-                "party": [1],
-                "noise_rate": 0.2,
-                "noise_type": "asymmetric"
-            }
-        },
-        "1":{
-            "name": "NormbasedScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "2":{
-            "name": "DirectionbasedScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "3":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 100
-            }
-        },
-        "4": {
-            "name": "MissingFeature",
-            "parameters": {
-                "party": [0],
-                "missing_rate": 0.25
-            }
-        },
-        "5": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "6":{
-            "name": "PassiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration":500,
-                "epochs": 1,
-                "lr": 2e-3
-            }
-        },
-        "7":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
-                "epochs": 10,
+                "epochs": 5,
                 "lr":0.001,
                 "data_number": 2048,
                 "batch_size": 128
             }
-        }
-    },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "dp_strength": 0.0001
         }
     }
 }

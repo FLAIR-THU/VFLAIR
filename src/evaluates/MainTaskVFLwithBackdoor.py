@@ -236,7 +236,6 @@ class MainTaskVFLwithBackdoor(object):
                 for ik in range(self.k):
                     parties_data[ik][0] = torch.cat((parties_data[ik][0], self.parties[ik].train_poison_data[[poison_id]], self.parties[ik].train_data[[target_id]]), axis=0)
                 parties_data[self.k-1][1] = torch.cat((parties_data[self.k-1][1], self.parties[self.k-1].train_poison_label[[poison_id]], self.label_to_one_hot(torch.tensor([self.args.target_label]), self.num_classes)), axis=0)
-                # print("see what label looks like", parties_data[self.k-1][1].size(), self.parties[self.k-1].train_poison_label[[poison_id]], self.label_to_one_hot(torch.tensor([self.args.target_label]), self.num_classes))
                 # ######### for backdoor end #########
                 self.parties_data = parties_data
                 i += 1
@@ -358,6 +357,8 @@ class MainTaskVFLwithBackdoor(object):
                 defense_param = self.args.defense_configs['dp_strength']
             elif self.args.defense_name == "GradientSparsification":
                 defense_param = self.args.defense_configs['gradient_sparse_rate']
+            else:
+                defense_param = 0
 
             # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
             exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \

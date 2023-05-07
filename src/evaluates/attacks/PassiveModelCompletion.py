@@ -93,9 +93,6 @@ class PassiveModelCompletion(Attacker):
             # measure data loading time
             data_time.update(time.time() - end)
 
-            # in vertical federated learning scenario, attacker(party A) only has part of features, i.e. half of the img.
-            # inputs_x = clip_function(inputs_x, args.half)
-            # inputs_u = clip_function(inputs_u, args.half)
             inputs_x = inputs_x.type(torch.float)
             inputs_u = inputs_u.type(torch.float)
 
@@ -198,18 +195,17 @@ class PassiveModelCompletion(Attacker):
                 inputs = inputs.type(torch.float)
                 outputs = model(inputs).type(torch.float)
                 targets = targets.type(torch.float)
+
+                print('Output/Target',type(outputs),type(targets))
                 loss = criterion(outputs, targets)
 
                 # measure accuracy and record loss
                 prec1, preck = accuracy(outputs, targets, topk=(1, 2)) # top k accuracy default k=2
-                if num_classes == 2:
-                    prec, rec = precision_recall(outputs, targets)
-                    precision.update(prec, inputs.size(0))
-                    recall.update(rec, inputs.size(0))
-                    # print("batch_id", batch_idx, end='')
-                    # print(" precision", precision.avg, end='')
-                    # print(", recall", recall.avg, end='')
-                    # print("  F1", 2 * (precision.avg * recall.avg) / (precision.avg + recall.avg))
+                # if num_classes == 2:
+                #     print('outputs,targets:',outputs)
+                #     prec, rec = precision_recall(outputs, targets)
+                #     precision.update(prec, inputs.size(0))
+                #     recall.update(rec, inputs.size(0))
 
                 losses.update(loss.item(), inputs.size(0))
                 top1.update(prec1.item(), inputs.size(0))
@@ -220,13 +216,13 @@ class PassiveModelCompletion(Attacker):
                 end = time.time()
                 # print('one batch done')
         print("Dataset Overall Statistics:")
-        if num_classes == 2:
-            print("  precision", precision.avg, end='')
-            print("  recall", recall.avg, end='')
-            if (precision.avg + recall.avg) != 0:
-                print("  F1", 2 * (precision.avg * recall.avg) / (precision.avg + recall.avg), end='')
-            else:
-                print(f"F1:0")
+        # if num_classes == 2:
+        #     print("  precision", precision.avg, end='')
+        #     print("  recall", recall.avg, end='')
+        #     if (precision.avg + recall.avg) != 0:
+        #         print("  F1", 2 * (precision.avg * recall.avg) / (precision.avg + recall.avg), end='')
+        #     else:
+        #         print(f"F1:0")
         print("top 1 accuracy:{}, top {} accuracy:{}".format(top1.avg, 2, topk.avg)) # topkacc default k=2
         return losses.avg, top1.avg
 
