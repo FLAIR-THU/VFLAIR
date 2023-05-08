@@ -1,8 +1,8 @@
 {
-    "epochs": 3,
+    "epochs": 18,
     "lr": 0.05,
     "k": 2,
-    "batch_size": 1024,
+    "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "nuswide",
@@ -23,17 +23,5 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "attack_list": {
-        "0":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "epochs": 5,
-                "lr":0.001,
-                "data_number": 2048,
-                "batch_size": 128
-            }
-        }
     }
 }

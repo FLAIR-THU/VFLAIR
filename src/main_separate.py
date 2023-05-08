@@ -68,11 +68,11 @@ def evaluate_feature_inference(args):
         vfl = args.basic_vfl
         main_acc = args.main_acc_noattack
         
-        attack_metric = vfl.evaluate_attack()
+        rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
         
         # Save record for different defense method
-        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+        exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{rand_mse}|{mse}" %\
             (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)

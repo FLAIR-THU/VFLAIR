@@ -232,4 +232,4 @@ class GenerativeRegressionNetwork(Attacker):
             print(f'batch_size=%d,class_num=%d,party_index=%d,psnr=%lf' % (self.batch_size, self.label_size, index, psnr))
 
         print("returning from GRN")
-        return mse_reduction
+        return rand_mse,mse
