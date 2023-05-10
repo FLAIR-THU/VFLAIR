@@ -110,16 +110,43 @@ class GenerativeRegressionNetwork(Attacker):
             assert ik == 1, 'Only Active party launch feature inference attack'
             index = ik
             # collect necessary information
-            net_b = self.vfl_info['model'][0].to(self.device) # Passive
-            net_a = self.vfl_info['model'][1].to(self.device) # Active
-            global_model = self.vfl_info['global_model'].to(self.device)
+            net_b = self.vfl_info['final_model'][0].to(self.device) # Passive
+            net_a = self.vfl_info['final_model'][1].to(self.device) # Active
+            global_model = self.vfl_info['final_global_model'].to(self.device)
+            
+            print('global model for trainable = ',self.args.apply_trainable_layer)
+            print(global_model)
+            
             global_model.eval()
             net_b.eval()
             net_a.eval()
 
             # Init Generator
+            '''
+            "data": copy.deepcopy(self.parties_data), 
+                "label": copy.deepcopy(self.gt_one_hot_label),
+                "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
+                "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
+                "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+                "train_acc": copy.deepcopy(self.train_acc),
+                "loss": copy.deepcopy(self.loss),
+                "global_pred":self.parties[self.k-1].global_pred
+            '''
             last_batch_data_a = self.vfl_info['data'][1][0] # active party 
             last_batch_data_b = self.vfl_info['data'][0][0] # passive party 
+            last_pred_a = self.vfl_info['predict'][1]
+            last_pred_b = self.vfl_info['predict'][0]
+
+            global_pred = self.vfl_info['global_pred'].to(self.device)
+            test_pred = global_model([last_pred_a, last_pred_b])
+            # global_pred.equal(test_pred)
+
+            assert last_pred_b.equal(net_b(last_batch_data_b))
+            assert last_pred_a.equal(net_a(last_batch_data_a))
+
+            
+
+            assert 1>2
             if self.args.dataset == 'nuswide':
                 print('dim_a:',last_batch_data_a.size())
                 print('dim_b:',last_batch_data_b.size())
@@ -156,6 +183,10 @@ class GenerativeRegressionNetwork(Attacker):
 
             test_data_a =  self.vfl_info['test_data'][1][:int(0.2*data_number)] # Active Test Data
             test_data_b =  self.vfl_info['test_data'][0][:int(0.2*data_number)] # Passive Test Data
+
+            print('datanumber:',data_number)
+            print(test_data_a.size())
+            print(test_data_b.size())
 
             train_data_list = [_data[:data_number] for _data in self.vfl_info['train_data']]
             train_label = self.vfl_info['train_label'][1][:data_number]
