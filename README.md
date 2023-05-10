@@ -16,7 +16,7 @@
 
 ## Code Structure
 
- ![VFLow](PlatForm/VFLow.png)
+ ![VFLow](VFLow.png)
 
 
 ```
