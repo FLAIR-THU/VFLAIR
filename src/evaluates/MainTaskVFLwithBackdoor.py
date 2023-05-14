@@ -110,7 +110,7 @@ class MainTaskVFLwithBackdoor(object):
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
         # defense applied on gradients
-        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
+        if self.args.apply_defense == True and self.args.apply_dcor ==False and self.args.apply_mid == False and self.args.apply_cae == False:
             gradient = self.launch_defense(gradient, "gradients")        
         if self.args.apply_dcae == True:
             gradient = self.launch_defense(gradient, "gradients")  
@@ -291,6 +291,7 @@ class MainTaskVFLwithBackdoor(object):
                         pred_list = []
                         for ik in range(self.k):
                             pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
+                            
                         test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)

@@ -4,7 +4,7 @@ sys.path.append(os.pardir)
 import torch
 
 from party.party import Party
-from utils.basic_functions import cross_entropy_for_onehot
+from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
 
 class ActiveParty(Party):
@@ -49,6 +49,11 @@ class ActiveParty(Party):
             for mid_loss in self.global_model.mid_loss_list:
                 loss = loss + mid_loss
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+        elif self.args.apply_dcor:
+            
+            self.distance_correlation_lambda = self.args.defense_configs['lambda']
+            # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
+            loss = loss + self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[0], gt_one_hot_label)) # pred_a: passive pred
         # ########## for active mid model loss (end) ##########
         return pred, loss
 

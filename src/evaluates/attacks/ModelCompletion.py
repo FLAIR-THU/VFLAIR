@@ -17,7 +17,7 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from utils.pmc_functions import precision_recall,interleave_offsets,interleave, SemiLoss,WeightEMA,AverageMeter,InferenceHead,accuracy
 from dataset.party_dataset import ActiveDataset
 
-class PassiveModelCompletion(Attacker):
+class ModelCompletion(Attacker):
     def __init__(self, top_vfl, args):
         super().__init__(args)
         self.args = args
@@ -196,7 +196,6 @@ class PassiveModelCompletion(Attacker):
                 outputs = model(inputs).type(torch.float)
                 targets = targets.type(torch.float)
 
-                print('Output/Target',type(outputs),type(targets))
                 loss = criterion(outputs, targets)
 
                 # measure accuracy and record loss
@@ -273,32 +272,35 @@ class PassiveModelCompletion(Attacker):
             criterion = nn.CrossEntropyLoss()
             
             # === Begin Attack ===
-            print(f"PMC Attack, self.device={self.device}")
+            print(f"MC Attack, self.device={self.device}")
             start_time = time.time()
             test_accs = []
-            best_acc = 0
+            a_best_acc = 0
+            p_best_acc = 0
             print("---Label inference on complete training dataset:")
             # Attack iterations
             for epoch in range(self.epochs):
                 print('\nEpoch: [%d | %d]' % (epoch + 1, self.epochs))
 
                 train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer, train_criterion, epoch, num_classes)
-                print("---Label inference on complete training dataset:")
-                _, train_acc = self.validate(complete_train_loader, ema_model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
-                print("\n---Label inference on testing dataset:")
-                test_loss, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
-
-
-                # is_best = train_acc > best_acc
-                best_acc = max(train_acc, best_acc)
-                test_accs.append(test_acc)   #not now
+                
+                print("---AMC: Label inference on complete training dataset:")
+                _, a_train_acc = self.validate(complete_train_loader, ema_model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
+                a_best_acc = max(a_train_acc, a_best_acc)
+                
+                print("---PMC: Label inference on complete training dataset:")
+                _, p_train_acc = self.validate(complete_train_loader, model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
+                p_best_acc = max(p_train_acc, p_best_acc)
+                # print("\n---Label inference on testing dataset:")
+                # test_loss, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
+                # test_accs.append(test_acc)   #not now
 
             print(f"PMC, if self.args.apply_defense={self.args.apply_defense}")
-            print('Best top 1 accuracy:')
-            print(best_acc)
+            print('AMC Best top 1 accuracy:',a_best_acc)
+            print('PMC Best top 1 accuracy:',p_best_acc)
 
-            print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
+            # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
         
-        print("returning from PMC")
-        return best_acc
+        print("returning from PMC/AMC")
+        return a_best_acc,p_best_acc
         # return recovery_history

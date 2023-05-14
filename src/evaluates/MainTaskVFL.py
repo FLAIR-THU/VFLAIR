@@ -21,11 +21,11 @@ from utils.constants import *
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
+from utils.noisy_sample_functions import noisy_sample
 from evaluates.attacks.attack_api import AttackerLoader
 
-tf.compat.v1.enable_eager_execution() 
 
-LABEL_INFERENCE_LIST = ["BatchLabelReconstruction","DirectionbasedScoring","NormbasedScoring"]
+tf.compat.v1.enable_eager_execution() 
 
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
@@ -96,9 +96,11 @@ class MainTaskVFL(object):
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
         # defense applied on gradients
-        if self.args.apply_defense == True and self.args.apply_mid == False and self.args.apply_cae == False:
-            gradient = self.launch_defense(gradient, "gradients")        
-
+        if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
+            gradient = self.launch_defense(gradient, "gradients")   
+        if self.args.apply_dcae == True:
+            gradient = self.launch_defense(gradient, "gradients")  
+            
         # active party update local gradient
         self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
         # active party transfer gradient to passive parties
@@ -308,6 +310,11 @@ class MainTaskVFL(object):
                                 #print('attacker:',ik)
                                 pred_list.append(torch.zeros_like(self.parties[ik].local_model(parties_data[ik][0])))
                             # ####### missing feature attack ######
+                            # ####### Noisy Sample #########
+                            elif self.args.apply_ns == True and (ik in self.args.attack_configs['party']):
+                                scale = self.args.attack_configs['lambda']
+                                pred_list.append( self.parties[ik].local_model( noisy_sample(parties_data[ik][0],scale) ) )
+                            # ####### Noisy Sample #########
                             else:
                                 pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
                         

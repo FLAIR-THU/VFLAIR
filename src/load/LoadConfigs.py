@@ -6,9 +6,10 @@ import argparse
 from models.autoencoder import AutoEncoder
 
 TARGETED_BACKDOOR = ['ReplacementBackdoor']
-UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature']
-LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','NormbasedScoring','DirectionbasedScoring','PassiveModelCompletion']
-FEATURE_INFERENCE = ['GenerativeRegressionNetwork']
+UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample']
+LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
+'DirectionbasedScoring','ModelCompletion']
+FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -94,6 +95,7 @@ def load_basic_configs(config_file_name, args):
         args.apply_attack = False # bli/ns/ds attack
         args.apply_backdoor = False # replacement backdoor attack
         args.apply_nl = False # noisy label attack
+        args.apply_ns = False # noisy sample attack
         args.apply_mf = False # missing feature attack
         args.apply_defense = False
         args.apply_mid = False
@@ -107,6 +109,7 @@ def load_basic_configs(config_file_name, args):
     args.apply_mid = False # mid defense
     args.apply_cae = False # cae defense
     args.apply_dcae = False # dcae defense
+    args.apply_dcor = False # distance corrilation
     if 'defense' in config_dict:
         if 'name' in config_dict['defense']:
             args.apply_defense = True
@@ -118,6 +121,8 @@ def load_basic_configs(config_file_name, args):
                 args.apply_cae = True
                 if 'dcae' in args.defense_name.casefold():
                     args.apply_dcae = True
+            elif 'distancecorrelation' in args.defense_name.casefold():
+                args.apply_dcor = True
         else:
             assert 'name' in config_dict['defense'], "missing defense name"
     else:
@@ -126,7 +131,7 @@ def load_basic_configs(config_file_name, args):
         print('===== No Defense ======')
     # get Info: args.defense_param  args.defense_param_name
     if args.apply_defense == True:
-        if args.defense_name == "CAE" or args.defense_name=="DCAE" or args.defense_name=="MID":
+        if args.defense_name == "CAE" or args.defense_name=="DCAE" or args.defense_name=="MID" or args.defense_name=="DistanceCorrelation":
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
@@ -135,6 +140,9 @@ def load_basic_configs(config_file_name, args):
         elif args.defense_name == "GradientSparsification":
             args.defense_param = args.defense_configs['gradient_sparse_rate']
             args.defense_param_name = 'gradient_sparse_rate'
+        elif args.defense_name == "GradPerturb":
+            args.defense_param = args.defense_configs['perturb_epsilon']
+            args.defense_param_name = 'perturb_epsilon'
         else:
             args.defense_param = 'None'
             args.defense_param_name = 'No_Defense'
@@ -204,6 +212,7 @@ def load_attack_configs(config_file_name, args, index):
     args.attack_type = None
     args.apply_backdoor = False # replacement backdoor attack
     args.apply_nl = False # noisy label attack
+    args.apply_ns = False # noisy sample attack
     args.apply_mf = False # missing feature attack
     
     # No Attack
@@ -227,16 +236,22 @@ def load_attack_configs(config_file_name, args, index):
             args.attack_type = 'targeted_backdoor'
             if 'backdoor' in args.attack_name.casefold():
                 args.apply_backdoor = True
-            if 'noisylabel' in args.attack_name.casefold():
-                args.apply_nl = True
-            if 'missingfeature' in args.attack_name.casefold():
-                args.apply_mf = True
+            
         elif args.attack_name in UNTARGETED_BACKDOOR:
             args.attack_type = 'untargeted_backdoor'
+            if 'noisylabel' in args.attack_name.casefold():
+                args.apply_nl = True
+            if 'noisysample' in args.attack_name.casefold():
+                args.apply_ns = True
+            if 'missingfeature' in args.attack_name.casefold():
+                args.apply_mf = True
+
         elif args.attack_name in LABEL_INFERENCE:
             args.attack_type = 'label_inference'
+
         elif args.attack_name in FEATURE_INFERENCE:
             args.attack_type = 'feature_inference'
+
         else:
             assert 0 , 'attack type not supported'
         
@@ -249,6 +264,9 @@ def load_attack_configs(config_file_name, args, index):
         elif args.attack_name == 'BatchLabelReconstruction':
             args.attack_param_name = 'attack_lr'
             args.attack_param = str(attack_config_dict['parameters']['lr'])
+        elif args.attack_name == 'NoisySample':
+            args.attack_param_name = 'epsilon'
+            args.attack_param = str(attack_config_dict['parameters']['lambda'])
         else:
             args.attack_param_name = 'None'
             args.attack_param = None
@@ -262,6 +280,7 @@ def load_attack_configs(config_file_name, args, index):
         args.apply_attack = False # bli/ns/ds attack
         args.apply_backdoor = False # replacement backdoor attack
         args.apply_nl = False # noisy label attack
+        args.apply_ns = False # noisy sample attack
         args.apply_mf = False # missing feature attack
         args.apply_defense = False
         args.apply_mid = False
@@ -275,6 +294,7 @@ def init_attack_defense(args):
     args.apply_attack = False 
     args.apply_backdoor = False # replacement backdoor attack
     args.apply_nl = False # noisy label attack
+    args.apply_ns = False # noisy sample attack
     args.apply_mf = False # missing feature attack
     args.apply_defense = False
     args.apply_mid = False

@@ -1,0 +1,94 @@
+{
+    "epochs": 3,
+    "lr": 0.01,
+    "k": 2,
+    "batch_size": 2048,
+    "iteration_per_aggregation": 1,
+    "early_stop_threshold": 5,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "GradPerturb",
+        "parameters": {
+            "perturb_epsilon": 0.001,
+            "model_path": ""
+        }
+    },
+    "defense1": {
+        "name": "dCor",
+        "parameters": {
+            "lambda": 0.001,
+            "model_path": ""
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "2":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 10,
+                "batch_size": 32
+            }
+        },
+        "8":{
+            "name": "GenerativeRegressionNetworkOLD",
+            "parameters": {
+                "party": [1],
+                "epochs": 5,
+                "lr":0.001,
+                "data_number": 2048,
+                "batch_size": 128
+            }
+        },
+        "3":{
+            "name": "ModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration":500,
+                "epochs": 1,
+                "lr": 2e-3
+            }
+        },
+        "4":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "lambda": 0.01
+            }
+        }
+    }
+}

@@ -17,23 +17,6 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from dataset.party_dataset import PassiveDataset
 from dataset.party_dataset import ActiveDataset
 
-def cal_ssim(im1,im2):
-    assert len(im1.shape) == 2 and len(im2.shape) == 2
-    assert im1.shape == im2.shape
-    mu1 = im1.mean()
-    mu2 = im2.mean()
-    sigma1 = np.sqrt(((im1 - mu1) ** 2).mean())
-    sigma2 = np.sqrt(((im2 - mu2) ** 2).mean())
-    sigma12 = ((im1 - mu1) * (im2 - mu2)).mean()
-    k1, k2, L = 0.01, 0.03, 255
-    C1 = (k1*L) ** 2
-    C2 = (k2*L) ** 2
-    C3 = C2/2
-    l12 = (2*mu1*mu2 + C1)/(mu1 ** 2 + mu2 ** 2 + C1)
-    c12 = (2*sigma1*sigma2 + C2)/(sigma1 ** 2 + sigma2 ** 2 + C2)
-    s12 = (sigma12 + C3)/(sigma1*sigma2 + C3)
-    ssim = l12 * c12 * s12
-    return ssim
 
 
 def label_to_one_hot(target, num_classes=10):
@@ -90,7 +73,7 @@ class GenerativeRegressionNetwork(Attacker):
         self.party = args.attack_configs['party'] # parties that launch attacks
         self.lr = args.attack_configs['lr']
         self.epochs = args.attack_configs['epochs']
-        #self.data_number = args.attack_configs['data_number'] #2048
+        self.data_number = args.attack_configs['data_number'] #2048
         self.grn_batch_size = args.attack_configs['batch_size'] #64
         self.unknownVarLambda = 0.25 # by default
         
@@ -130,46 +113,87 @@ class GenerativeRegressionNetwork(Attacker):
             net_b = self.vfl_info['final_model'][0].to(self.device) # Passive
             net_a = self.vfl_info['final_model'][1].to(self.device) # Active
             global_model = self.vfl_info['final_global_model'].to(self.device)
+            
+            print('global model for trainable = ',self.args.apply_trainable_layer)
+            print(global_model)
+            
             global_model.eval()
             net_b.eval()
             net_a.eval()
 
+            # Init Generator
+            '''
+            "data": copy.deepcopy(self.parties_data), 
+                "label": copy.deepcopy(self.gt_one_hot_label),
+                "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
+                "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
+                "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+                "train_acc": copy.deepcopy(self.train_acc),
+                "loss": copy.deepcopy(self.loss),
+                "global_pred":self.parties[self.k-1].global_pred
+            '''
+            last_batch_data_a = self.vfl_info['data'][1][0] # active party 
+            last_batch_data_b = self.vfl_info['data'][0][0] # passive party 
+            last_pred_a = self.vfl_info['predict'][1]
+            last_pred_b = self.vfl_info['predict'][0]
 
-            # Test Data
-            test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
-            test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
+            global_pred = self.vfl_info['global_pred'].to(self.device)
+            test_pred = global_model([last_pred_a, last_pred_b])
 
-            # Train with Aux Dataset
-            #data_number = self.data_number
-            batch_size = self.grn_batch_size
-            aux_data_a = self.vfl_info["aux_data"][1]
-            aux_data_b = self.vfl_info["aux_data"][0]
-            aux_label = self.vfl_info["aux_label"][-1]
-            aux_dst_a = ActiveDataset(aux_data_a, aux_label)
-            aux_loader_a = DataLoader(aux_dst_a, batch_size=batch_size)
-            aux_dst_b = PassiveDataset(aux_data_b)
-            aux_loader_b = DataLoader(aux_dst_b, batch_size=batch_size)
-            aux_loader_list = [aux_loader_b,aux_loader_a]
-            # Test Data
-            test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
-            test_data_b =  self.vfl_info['test_data'][0]# Passive Test Data
 
-            # Initalize Generator
             if self.args.dataset == 'nuswide':
-                dim_a = test_data_a.size()[1]
-                dim_b = test_data_b.size()[1]
+                print('dim_a:',last_batch_data_a.size())
+                print('dim_b:',last_batch_data_b.size())
+                dim_a = last_batch_data_a.size()[1]
+                dim_b = last_batch_data_b.size()[1]
             else: # mnist cifar
-                dim_a = test_data_a.size()[1]*test_data_a.size()[2]*test_data_a.size()[3]
-                dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
+                dim_a = last_batch_data_a.size()[1]*last_batch_data_a.size()[2]*last_batch_data_a.size()[3]
+                dim_b = last_batch_data_b.size()[1]*last_batch_data_b.size()[2]*last_batch_data_b.size()[3]
             self.netG = Generator(dim_a+dim_b, dim_b)
             self.netG = self.netG.to(self.device)
             self.optimizerG = torch.optim.Adam(self.netG.parameters(), lr = self.lr)
+            '''
+            "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
+            "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
+            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+            "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
+            "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
+            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            "aux_loader": [copy.deepcopy(self.parties[ik].aux_loader) for ik in range(self.k)],
+            "train_loader": [copy.deepcopy(self.parties[ik].train_loader) for ik in range(self.k)],
+            "test_loader": [copy.deepcopy(self.parties[ik].test_loader) for ik in range(self.k)],
+            "batchsize": self.args.batch_size,
+            "num_classes": self.args.num_classes
+            '''
+            # Train with all dataset
+            # train_loader_list = self.vfl_info['train_loader'] 
+            # test_loader_list = self.vfl_info['test_loader']
+            # test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
+            # test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
             
+            # Train with partial dataset
+            data_number = self.data_number
+            batch_size = self.grn_batch_size
+
+            test_data_a =  self.vfl_info['test_data'][1][:int(0.2*data_number)] # Active Test Data
+            test_data_b =  self.vfl_info['test_data'][0][:int(0.2*data_number)] # Passive Test Data
+
+
+            train_data_list = [_data[:data_number] for _data in self.vfl_info['train_data']]
+            train_label = self.vfl_info['train_label'][1][:data_number]
+            # test_data_list = [_data[:int(0.2*data_number)] for _data in self.vfl_info['test_data']]
+            # test_label = self.vfl_info['test_label'][1][:int(0.2*data_number)]
+            train_loader_a = DataLoader(ActiveDataset(train_data_list[1], train_label), batch_size=batch_size)
+            train_loader_b = DataLoader(PassiveDataset(train_data_list[0]), batch_size=batch_size)
+            # test_loader_a = DataLoader(ActiveDataset(test_data_list[1], test_label), batch_size=batch_size)
+            # test_loader_b = DataLoader(PassiveDataset(test_data_list[0]), batch_size=batch_size)
+            train_loader_list = [train_loader_b,train_loader_a]
+            #test_loader_list = [test_loader_b,test_loader_a]
 
             print('========= Feature Inference Training ========')
             for i_epoch in range(self.epochs):
                 self.netG.train()
-                for parties_data in zip(*aux_loader_list):
+                for parties_data in zip(*train_loader_list):
                     self.gt_one_hot_label = label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                     self.parties_data = parties_data

@@ -6,9 +6,10 @@ from evaluates.attacks.DataReconstruct import DataReconstruction
 from evaluates.attacks.DirectionbasedScoring import DirectionbasedScoring
 from evaluates.attacks.NormbasedScoring import NormbasedScoring
 from evaluates.attacks.NoisyLabel import NoisyLabel
-from evaluates.attacks.PassiveModelCompletion import PassiveModelCompletion
-
+from evaluates.attacks.ModelCompletion import ModelCompletion
+from evaluates.attacks.DirectLabelScoring import DirectLabelScoring
 from evaluates.attacks.GenerativeRegressionNetwork import GenerativeRegressionNetwork
+from evaluates.attacks.ResSFL import ResSFL
 
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name

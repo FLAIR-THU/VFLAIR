@@ -285,6 +285,55 @@ def DiscreteSGD(args, original_object):
 
     return new_object
 
+
+
+# GradPerturb
+def perturb(real_object, scale):
+    # print(real_onehot_label.size(),type(real_onehot_label))
+    perturb_object = torch.zeros(real_object.size()).float()
+    # print('real_object:',perturb_object.size()) # [2048,10]
+    # print('perturb_object:',perturb_object.size()) # [2048,10]
+
+    pure_gradients = torch.zeros((real_object.size(1),real_object.size(1))).float()
+    # print('pure_gradients:',pure_gradients.size()) # [10,10]
+
+    # for i in range(real_object.size(1)):
+    #     # pure_gradients[i][i] += 1.0
+    #     pure_gradients[i][i] += 1.0
+
+    u = torch.zeros((1,real_object.size(1))).float()
+    # print('u:',u.size()) # [1,10]
+    dist_laplace = torch.distributions.laplace.Laplace(0.0, (2/scale)) # sample for Laplace(2/epsilon) to garantee epsilon-dp
+
+    for i in range(real_object.size(0)):
+        for j in range(real_object.size(1)):
+            # pure_gradients[i][i] += 1.0
+            pure_gradients[j][j] = real_object[i][j]
+
+        u = dist_laplace.sample((1,real_object.size(1)))
+        perturb_object[i] = real_object[i] + torch.mm(u,pure_gradients)
+    return perturb_object
+
+def GradPerturb(args, original_object):
+    #print('=========')
+    
+    original_object = original_object[0]
+    assert ('perturb_epsilon' in args.defense_configs) , "missing defense parameter: 'perturb_epsilon'"
+    perturb_epsilon = args.defense_configs['perturb_epsilon']
+
+    if perturb_epsilon > 0.0:
+        new_object = []
+        # print('original_object:',len(original_object))
+        # print('original_object:',original_object[0].size())
+        with torch.no_grad():
+            # scale = dp_strength
+            for ik in range(len(original_object)):
+                _new = perturb(original_object[ik], perturb_epsilon)
+                new_object.append(_new.to(args.device))
+                # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+        return new_object
+    else:
+        return original_object
     # TODO
     # ######################## defense start ############################
     # ######################## defense3: marvell ############################

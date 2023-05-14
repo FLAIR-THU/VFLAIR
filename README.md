@@ -26,10 +26,7 @@ VFLow
 │   |   ├── attacks              # Attack Simulator,Implementation of attacks
 │   |   ├── defenses             # Implementation of defenses
 │   |   ├── MainTaskVFL          # Pipeline for BasicVFL/VFLwithLI/VFLwithFR
-│   |   ├── MainTaskVFL          # Pipeline for VFLwithBackdoor
-│   |   ├── monitors            
-│   |   ├── communication.py       
-│   |   ├── fed_runner.py       
+│   |   ├── MainTaskVFL          # Pipeline for VFLwithBackdoor     
 │   |   ├── ... ..
 │   ├── load                      # Load Configurations into training pipeline
 │   |   ├── LoadConfigs.py        # Load basic parameters   

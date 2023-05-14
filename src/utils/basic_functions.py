@@ -21,6 +21,51 @@ import copy
 
 tp = transforms.ToTensor()
 
+# For Distance Corrrelation Defense
+def pairwise_dist(A, B):
+    """
+    Computes pairwise distances between each elements of A and each elements of
+    B.
+    Args:
+        A,    [m,d] matrix
+        B,    [n,d] matrix
+    Returns:
+        D,    [m,n] matrix of pairwise distances
+    """
+    # with tf.variable_scope('pairwise_dist'):
+    # squared norms of each row in A and B
+    na = torch.sum(torch.square(A), 1)
+    nb = torch.sum(torch.square(B), 1)
+
+    # na as a row and nb as a column vectors
+    na = torch.reshape(na, [-1, 1])
+    nb = torch.reshape(nb, [1, -1])
+
+    # return pairwise euclidead difference matrix
+    D = torch.sqrt(torch.maximum(na - 2 * torch.mm(A, B.T) + nb + 1e-20, torch.tensor(0.0)))
+    return D
+    
+def tf_distance_cov_cor(input1, input2, debug=False):
+    # n = tf.cast(tf.shape(input1)[0], tf.float32)
+    n = torch.tensor(float(input1.size()[0]))
+    a = pairwise_dist(input1, input1)
+    b = pairwise_dist(input2, input2)
+    
+    # A = a - tf.reduce_mean(a,axis=1) - tf.expand_dims(tf.reduce_mean(a,axis=0),axis=1) + tf.reduce_mean(a)
+    A = a - torch.mean(a,axis=1) - torch.unsqueeze(torch.mean(a,axis=0),axis=1) + torch.mean(a)
+    B = b - torch.mean(b,axis=1) - torch.unsqueeze(torch.mean(b,axis=0),axis=1) + torch.mean(b)
+
+    dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2))
+    dVarXX = torch.sqrt(torch.sum(A * A) / (n ** 2))
+    dVarYY = torch.sqrt(torch.sum(B * B) / (n ** 2))
+
+    dCorXY = dCovXY / torch.sqrt(dVarXX * dVarYY)
+    if debug:
+        print(("tf distance cov: {} and cor: {}, dVarXX: {}, dVarYY:{}").format(
+            dCovXY, dCorXY,dVarXX, dVarYY))
+    # return dCovXY, dCorXY
+    return dCorXY
+
 def MSE_PSNR(batch_real_image, batch_dummy_image):
     '''
     compute MSE and PSNR

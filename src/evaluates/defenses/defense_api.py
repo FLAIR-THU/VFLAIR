@@ -14,7 +14,7 @@ def DefenderLoader(args, index):
         return None
 
 def apply_defense(args, *params):
-    if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteSGD']:
+    if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteSGD','GradPerturb']:
         gradient_list = params
         return globals()[args.defense_name](args, gradient_list)
     elif args.defense_name in ['DCAE']:

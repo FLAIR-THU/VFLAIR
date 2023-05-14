@@ -11,6 +11,9 @@ from evaluates.defenses.defense_api import DefenderLoader
 from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor
 from load.LoadModels import load_models_per_party
 
+from utils.noisy_label_functions import add_noise
+from utils.noisy_sample_functions import noisy_sample
+
 
 class Party(object):
     def __init__(self, args, index):
@@ -64,7 +67,13 @@ class Party(object):
         return
 
     def give_pred(self):
-        self.local_pred = self.local_model(self.local_batch_data)
+        # ####### Noisy Sample #########
+        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
+            scale = self.args.attack_configs['lambda']
+            self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
+        # ####### Noisy Sample #########
+        else:
+            self.local_pred = self.local_model(self.local_batch_data)
         self.local_pred_clone = self.local_pred.detach().clone()
         return self.local_pred, self.local_pred_clone
 
