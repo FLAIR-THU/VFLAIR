@@ -312,7 +312,7 @@ class MainTaskVFL(object):
                             # ####### missing feature attack ######
                             # ####### Noisy Sample #########
                             elif self.args.apply_ns == True and (ik in self.args.attack_configs['party']):
-                                scale = self.args.attack_configs['lambda']
+                                scale = self.args.attack_configs['noise_lambda']
                                 pred_list.append( self.parties[ik].local_model( noisy_sample(parties_data[ik][0],scale) ) )
                             # ####### Noisy Sample #########
                             else:
