@@ -266,6 +266,9 @@ if __name__ == '__main__':
             print(args.exp_res_path)
             print('=================================\n')
 
+            iterinfo='===== iter '+str(seed)+' ===='
+            append_exp_res(args.exp_res_path, iterinfo)
+
             args.basic_vfl_withaux = None
             args.main_acc_noattack_withaux = None
 

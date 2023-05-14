@@ -27,7 +27,7 @@
     "defense": {
         "name": "DistanceCorrelation",
         "parameters": {
-            "lambda": 0.001,
+            "lambda": 0.0001,
             "model_path": ""
         }
     },

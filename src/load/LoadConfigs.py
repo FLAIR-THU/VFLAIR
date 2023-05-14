@@ -265,8 +265,8 @@ def load_attack_configs(config_file_name, args, index):
             args.attack_param_name = 'attack_lr'
             args.attack_param = str(attack_config_dict['parameters']['lr'])
         elif args.attack_name == 'NoisySample':
-            args.attack_param_name = 'epsilon'
-            args.attack_param = str(attack_config_dict['parameters']['lambda'])
+            args.attack_param_name = 'noise_lambda'
+            args.attack_param = str(attack_config_dict['parameters']['noise_lambda'])
         else:
             args.attack_param_name = 'None'
             args.attack_param = None
