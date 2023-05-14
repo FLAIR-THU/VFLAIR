@@ -328,7 +328,7 @@ def GradPerturb(args, original_object):
         with torch.no_grad():
             # scale = dp_strength
             for ik in range(len(original_object)):
-                _new = perturb(original_object[ik], perturb_epsilon)
+                _new = perturb(original_object[ik].cpu(), perturb_epsilon)
                 new_object.append(_new.to(args.device))
                 # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
         return new_object

@@ -95,7 +95,7 @@ class DirectLabelScoring(Attacker):
                         pred_label.append(_gradient.argmin(dim=0))
                     #assert 1>2, 'cannot find single opposite signed gradient'
 
-            one_hot_pred_label = label_to_one_hot(torch.tensor(pred_label), self.num_classes)
+            one_hot_pred_label = label_to_one_hot(torch.tensor(pred_label), self.num_classes).to(self.device)
             true_label = self.vfl_info['label'].to(self.device) # copy.deepcopy(self.gt_one_hot_label)
             rec_rate = self.calc_label_recovery_rate(one_hot_pred_label, true_label)
 

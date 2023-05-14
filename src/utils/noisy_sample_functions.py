@@ -11,6 +11,8 @@ def noisy_sample(origin_sample,scale):
     
     # add laplace noise
     dist_a = torch.distributions.laplace.Laplace(location, scale)
-    noisy_sample =  origin_sample + dist_a.sample(origin_sample.shape) # (torch.div(origin_sample, norm_factor_a) +
+    # noisy_sample =  origin_sample + dist_a.sample(origin_sample.shape) 
+    noisy_sample =  origin_sample + dist_a.sample(origin_sample.shape).to(origin_sample.device)
+    # (torch.div(origin_sample, norm_factor_a) +
     # print('noisy_sample:',noisy_sample.size())
     return noisy_sample

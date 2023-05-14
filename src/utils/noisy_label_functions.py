@@ -82,6 +82,7 @@ def add_noise(args,true_label):
                 #print('Add Noise')
                 true_label[i] = (true_label[i] - 1) % num_classes #np.random.randint(0,args.num_classes)
 
-    noisy_label = label_to_one_hot(true_label, args.num_classes)
+    #noisy_label = label_to_one_hot(true_label, args.num_classes)
+    noisy_label = label_to_one_hot(true_label.cpu(), args.num_classes).to(args.device)
     #print(true_label.size())
     return noisy_label
