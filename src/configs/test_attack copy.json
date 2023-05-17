@@ -26,69 +26,11 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GradPerturb",
+        "name": "MID",
         "parameters": {
-            "perturb_epsilon": 0.001,
-            "model_path": ""
-        }
-    },
-    "defense1": {
-        "name": "dCor",
-        "parameters": {
-            "lambda": 0.001,
-            "model_path": ""
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        },
-        "2":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 10,
-                "batch_size": 32
-            }
-        },
-        "8":{
-            "name": "GenerativeRegressionNetworkOLD",
-            "parameters": {
-                "party": [1],
-                "epochs": 5,
-                "lr":0.001,
-                "data_number": 2048,
-                "batch_size": 128
-            }
-        },
-        "3":{
-            "name": "ModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration":500,
-                "epochs": 1,
-                "lr": 2e-3
-            }
-        },
-        "4":{
-            "name": "NoisySample",
-            "parameters": {
-                "party": [0],
-                "lambda": 0.01
-            }
+            "party": [0,1],
+            "lr": 0.001,
+            "lambda": 0.0
         }
     }
 }

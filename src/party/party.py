@@ -69,7 +69,7 @@ class Party(object):
     def give_pred(self):
         # ####### Noisy Sample #########
         if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
-            scale = self.args.attack_configs['lambda']
+            scale = self.args.attack_configs['noise_lambda']
             self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
         # ####### Noisy Sample #########
         else:

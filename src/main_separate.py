@@ -70,7 +70,7 @@ def evaluate_feature_inference(args):
         # actual train = train-aux
         if args.basic_vfl_withaux != None:
             vfl = args.basic_vfl_withaux
-            main_acc = args.main_acc_noattack_withaux = main_acc
+            main_acc = args.main_acc_noattack_withaux
         else:
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
@@ -211,14 +211,14 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test_attack copy', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,102): # test 5 times 
+    for seed in range(97,98): # test 5 times 
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
 
