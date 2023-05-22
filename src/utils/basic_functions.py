@@ -491,7 +491,6 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
     '''
     generate poisoned image data
     '''
-    
     if dataset == 'nuswide':
         # X_image = data[0]
         # X_test = data[1]
@@ -511,9 +510,19 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
             data[0] = torch.tensor(np.delete(data[0].cpu().numpy(), poison_list, axis=0))
             data[1] = torch.tensor(np.delete(data[1].cpu().numpy(), poison_list, axis=0))
             label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
+        return data, label, poison_data, poison_label
+    
+    elif dataset in ['breast_cancer_diagnose','diabetes','adult_income','criteo']:
+        mixed_data_text, poison_list = data_poison_text(data, poison_list, k, dataset)
+        poison_data = copy.deepcopy(mixed_data_text[poison_list])
+        poison_data = torch.tensor(poison_data)
+        poison_label = copy.deepcopy(label[poison_list])
+        if _type == 'train':
+            data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
+            label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
 
         return data, label, poison_data, poison_label
-
+    
     else:
         mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
         poison_data = copy.deepcopy(mixed_data[poison_list])
@@ -531,13 +540,23 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
         return data, label, poison_data, poison_label
 
 def data_poison_text(texts, poison_list, k, dataset):
+    '''
+    text or tabular data
+    trigger: set the last element as target_text_value(1)
+    '''
     target_text_value = [1]
-    
+
     if 'nuswide' in dataset.casefold():
         if k == 2: # 1 party poison, passive party-0 poison
             texts[poison_list,-1] = target_text_value[0]
         else:
             assert k == 2, "poison type not supported yet"
+    elif dataset in ['breast_cancer_diagnose','diabetes','criteo','adult_income']:
+        if k == 2: # 1 party poison, passive party-0 poison
+            texts[poison_list,-1] = target_text_value[0]
+        else:
+            assert k == 2, "poison type not supported yet"
+  
     else:
         assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return texts, poison_list

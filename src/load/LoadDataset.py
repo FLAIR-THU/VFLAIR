@@ -377,6 +377,7 @@ def load_dataset_per_party(args, index):
         y_test = torch.tensor(y_test)
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
+
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
@@ -460,14 +461,9 @@ def load_dataset_per_party_backdoor(args, index):
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
         if args.train_target_list == None:
             assert args.test_target_list == None
-            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), 10)
-            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), 10)
-    # elif args.dataset_name == 'nuswide':
-    #     half_dim = [634, 1000]
-    #     train_dst = NUSWIDEDataset(DATA_PATH+'NUS_WIDE', 'train')
-    #     test_dst = NUSWIDEDataset(DATA_PATH+'NUS_WIDE', 'test')
-    # args.train_dataset = train_dst
-    # args.val_dataset = test_dst
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), args.num_classes)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), args.num_classes)
+  
     elif args.dataset == 'nuswide':
         print('load backdoor data for nuswide')
         half_dim = [634, 1000] # 634:image  1000:text
@@ -512,6 +508,84 @@ def load_dataset_per_party_backdoor(args, index):
         train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
         test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
 
+    elif args.dataset in TABULAR_DATA:
+        if args.dataset == 'breast_cancer_diagnose':
+            half_dim = 15
+            df = pd.read_csv(DATA_PATH+"BreastCancer/wdbc.data",header = 0)
+            X = df.iloc[:, 2:].values
+            y = df.iloc[:, 1].values
+            y = np.where(y=='B',0,1)
+            y = np.squeeze(y)
+            train_data, test_data, train_label, test_label= train_test_split(X, y, test_size=0.20, random_state=1)
+        elif args.dataset == 'diabetes':
+            half_dim = 4
+            df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, random_state=1)
+        elif args.dataset == 'adult_income':
+            df = pd.read_csv(DATA_PATH+"Income/adult.csv",header = 0)
+            df = df.drop_duplicates()
+            # 'age', 'workclass', 'fnlwgt', 'education', 'educational-num',
+            # 'marital-status', 'occupation', 'relationship', 'race', 'gender',
+            # 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+            # 'income'
+            # category_columns_index = [1,3,5,6,7,8,9,13]
+            # num_category_of_each_column = [9,16,7,15,6,5,2,42]
+            category_columns = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'gender','native-country']
+            for _column in category_columns:
+                # Get one hot encoding of columns B
+                one_hot = pd.get_dummies(df[_column], prefix=_column)
+                # Drop column B as it is now encoded
+                df = df.drop(_column,axis = 1)
+                # Join the encoded df
+                df = df.join(one_hot)
+            y = df['income'].values
+            y = np.where(y=='<=50K',0,1)
+            df = df.drop('income',axis=1)
+            X = df.values
+            half_dim = 6+9 #=15 acc=0.83
+            # half_dim = 6+9+16+7+15 #=53 acc=0.77
+            # half_dim = int(X.shape[1]//2) acc=0.77
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.30, random_state=1)
+        elif args.dataset == 'criteo':
+            df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
+            print("criteo dataset loaded")
+            half_dim = (df.shape[1]-1)//2
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, shuffle=False)
+ 
+        train_data = torch.tensor(train_data).type(torch.float32)  
+        test_data = torch.tensor(test_data).type(torch.float32)  
+        train_label = torch.tensor(train_label)
+        test_label = torch.tensor(test_label)
+        # poison text datasets
+        if args.target_label == None:
+            args.target_label = random.randint(0, args.num_classes-1)
+            args.train_poison_list = random.sample(range(len(train_label)), int(0.01 * len(train_label)))
+            args.test_poison_list = random.sample(range(len(test_label)), int(0.01 * len(test_label)))
+        else:
+            assert args.train_poison_list != None , "[[inner error]]"
+            assert args.train_target_list != None, "[[inner error]]"
+            assert args.test_poison_list != None, "[[inner error]]"
+            assert args.test_target_list != None, "[[inner error]]"
+        print(f"party#{index} target label={args.target_label}")
+
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+
+        # transform label to onehot
+        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+
+        if args.train_target_list == None:
+            assert args.test_target_list == None
+            args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), args.num_classes)
+            args.test_target_list = random.sample(list(np.where(torch.argmax(test_label,axis=1)==args.target_label)[0]), args.num_classes)
+  
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
