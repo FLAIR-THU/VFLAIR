@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 TARGETED_BACKDOOR = ['ReplacementBackdoor'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
 LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','DirectLabelScoring','NormbasedScoring','DirectionbasedScoring','ModelCompletion'] # label_recovery
-FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
+FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -59,6 +59,7 @@ def evaluate_no_attack(args):
     return vfl, main_acc_noattack
 
 def evaluate_feature_inference(args):
+    vfl = None
     for index in args.feature_inference_index:
         args = load_attack_configs(args.configs, args, index)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
@@ -68,22 +69,19 @@ def evaluate_feature_inference(args):
         args = load_parties(args)
         
         # actual train = train-aux
-        if args.basic_vfl_withaux != None:
-            vfl = args.basic_vfl_withaux
-            main_acc = args.main_acc_noattack_withaux
-        else:
-            vfl = MainTaskVFL(args)
-            if args.dataset not in ['cora']:
-                main_acc = vfl.train()
-            else:
-                main_acc = vfl.train_graph()
-            args.main_acc_noattack_withaux = main_acc
-            args.basic_vfl_withaux = vfl
+        # if args.basic_vfl_withaux != None:
+        #     vfl = args.basic_vfl_withaux
+        #     main_acc = args.main_acc_noattack_withaux
         # else:
-        #     args = load_parties(args)
-        #     vfl = args.basic_vfl
-        #     main_acc = args.main_acc_noattack
-            
+        
+        vfl = MainTaskVFL(args)
+        if args.dataset not in ['cora']:
+            main_acc = vfl.train()
+        else:
+            main_acc = vfl.train_graph()
+        args.main_acc_noattack_withaux = main_acc
+        args.basic_vfl_withaux = vfl
+
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
         
@@ -139,15 +137,23 @@ def evaluate_label_inference(args):
             #     i = i + 1
             vfl = args.basic_vfl
             main_acc = args.main_acc_noattack
-        
-            attack_metric = vfl.evaluate_attack()
-            attack_metric_name = 'label_recovery_rate'
-        
-            # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
-                (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
-            print(exp_result)
-            append_exp_res(args.exp_res_path, exp_result)
+
+            if args.attack_name == 'NormbasedScoring' or args.attack_name == 'DirectionbasedScoring':
+                attack_acc,attack_auc = vfl.evaluate_attack()
+                attack_metric_name = 'label_recovery_rate'
+                # Save record for different defense method
+                exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_acc}|{attack_auc}" %\
+                    (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+                print(exp_result)
+                append_exp_res(args.exp_res_path, exp_result)
+            else:
+                attack_metric = vfl.evaluate_attack()
+                attack_metric_name = 'label_recovery_rate'
+                # Save record for different defense method
+                exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+                    (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+                print(exp_result)
+                append_exp_res(args.exp_res_path, exp_result)
 
 
 def evaluate_untargeted_backdoor(args):
@@ -214,12 +220,13 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack copy', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test_attack_ns', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
     for seed in range(97,102): # test 5 times 
         set_seed(seed)
+        args.current_seed = seed
         print('================= iter seed ',seed,' =================')
 
         if args.device == 'cuda':
@@ -258,7 +265,7 @@ if __name__ == '__main__':
             print('label_inference:',args.label_inference_list,args.label_inference_index)
             print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
             # Save record for different defense method
-            args.exp_res_dir = f'exp_result/{args.dataset}/{str(mode)}/'
+            args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
             if not os.path.exists(args.exp_res_dir):
                 os.makedirs(args.exp_res_dir)
             filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
@@ -271,6 +278,8 @@ if __name__ == '__main__':
 
             args.basic_vfl_withaux = None
             args.main_acc_noattack_withaux = None
+            args.basic_vfl = None
+            args.main_acc_noattack = None
 
             args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
             if args.label_inference_list != []:
