@@ -108,10 +108,10 @@ class Party(object):
             ) = load_dataset_per_party(args, index)
 
     def prepare_data_loader(self, batch_size):
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)
-        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size)
-        if self.args.need_auxiliary == 1:
-            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size,shuffle=True)
+        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size,shuffle=True)
+        if self.args.need_auxiliary == 1 and self.aux_dst != None:
+            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)
 
     def prepare_model(self, args, index):
         # prepare model and optimizer

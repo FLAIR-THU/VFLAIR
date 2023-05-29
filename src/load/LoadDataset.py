@@ -141,6 +141,7 @@ def dataset_partition(args, index, dst, half_dim):
         return None
 
 def load_dataset_per_party(args, index):
+    print('load_dataset_per_party  args.need_auxiliary = ',args.need_auxiliary)
     args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
 
@@ -153,7 +154,7 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         if args.need_auxiliary == 1:
-            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
@@ -169,7 +170,7 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         if args.need_auxiliary == 1:
-            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
@@ -185,7 +186,7 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         if args.need_auxiliary == 1:
-            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
@@ -201,10 +202,11 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(train_dst, args.num_classes)
         # train_dst = SimpleDataset(data, label)
         if args.need_auxiliary == 1:
-            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=0)
+            data, X_aux, label, y_aux = train_test_split(data, label, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
+            print('aux_dst:',X_aux.size(),y_aux.size())
         train_dst = (torch.tensor(data), label)
 
         test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
@@ -280,13 +282,13 @@ def load_dataset_per_party(args, index):
             y = df.iloc[:, 1].values
             y = np.where(y=='B',0,1)
             y = np.squeeze(y)
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
         elif args.dataset == 'diabetes':
             half_dim = 4
             df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=1)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
         elif args.dataset == 'adult_income':
             df = pd.read_csv(DATA_PATH+"Income/adult.csv",header = 0)
             df = df.drop_duplicates()
@@ -311,7 +313,7 @@ def load_dataset_per_party(args, index):
             half_dim = 6+9 #=15 acc=0.83
             # half_dim = 6+9+16+7+15 #=53 acc=0.77
             # half_dim = int(X.shape[1]//2) acc=0.77
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=1)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=args.current_seed)
         elif args.dataset == 'criteo':
             df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
             print("criteo dataset loaded")
@@ -321,7 +323,7 @@ def load_dataset_per_party(args, index):
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
         
         if args.need_auxiliary == 1:
-            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=0)
+            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
@@ -361,12 +363,12 @@ def load_dataset_per_party(args, index):
             X = vectorizer.fit_transform(texts)
             X = np.array(X.A)
             y = np.array(labels_index)
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
             # ADDED: in config: input_dim = X.shape[1]//2 need to change according to categories included
             half_dim = int(X.shape[1]//2) #42491
         
         if args.need_auxiliary == 1:
-            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=0)
+            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
             y_aux = torch.tensor(y_aux)
             aux_dst = (X_aux,y_aux)
@@ -516,13 +518,13 @@ def load_dataset_per_party_backdoor(args, index):
             y = df.iloc[:, 1].values
             y = np.where(y=='B',0,1)
             y = np.squeeze(y)
-            train_data, test_data, train_label, test_label= train_test_split(X, y, test_size=0.20, random_state=1)
+            train_data, test_data, train_label, test_label= train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
         elif args.dataset == 'diabetes':
             half_dim = 4
             df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
-            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, random_state=1)
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
         elif args.dataset == 'adult_income':
             df = pd.read_csv(DATA_PATH+"Income/adult.csv",header = 0)
             df = df.drop_duplicates()
@@ -547,7 +549,7 @@ def load_dataset_per_party_backdoor(args, index):
             half_dim = 6+9 #=15 acc=0.83
             # half_dim = 6+9+16+7+15 #=53 acc=0.77
             # half_dim = int(X.shape[1]//2) acc=0.77
-            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.30, random_state=1)
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.30, random_state=args.current_seed)
         elif args.dataset == 'criteo':
             df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
             print("criteo dataset loaded")

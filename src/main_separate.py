@@ -225,9 +225,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     for seed in range(97,102): # test 5 times 
-        set_seed(seed)
         args.current_seed = seed
+        set_seed(seed)
         print('================= iter seed ',seed,' =================')
+        
+        args = load_basic_configs(args.configs, args)
+        args.need_auxiliary = 0 # no auxiliary dataset for attacker
 
         if args.device == 'cuda':
             cuda_id = args.gpu
@@ -239,15 +242,16 @@ if __name__ == '__main__':
         
         ####### load configs from *.json files #######
         ############ Basic Configs ############
-        args = load_basic_configs(args.configs, args)
-        args.need_auxiliary = 0 # no auxiliary dataset for attacker
-        for mode in [0,1]:
+        
+        for mode in [1]:
+            
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'
             else:
                 args.global_model = 'ClassificationModelHostTrainableHead'
             args.apply_trainable_layer = mode
-
+            
+            
             print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
             #print('================================')
         

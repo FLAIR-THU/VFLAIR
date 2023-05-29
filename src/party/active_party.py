@@ -2,7 +2,7 @@ import sys, os
 sys.path.append(os.pardir)
 
 import torch
-
+from torch.utils.data import DataLoader
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
@@ -28,6 +28,9 @@ class ActiveParty(Party):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
         self.test_dst = ActiveDataset(self.test_data, self.test_label)
+        if self.args.need_auxiliary == 1:
+            self.aux_dst = ActiveDataset(self.aux_data, self.aux_label)
+            # self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)
 
     def update_local_pred(self, pred):
         self.pred_received[self.args.k-1] = pred
@@ -90,6 +93,7 @@ class ActiveParty(Party):
                 
 
     def global_backward(self):
+
         if self.global_model_optimizer != None: 
             # active party with trainable global layer
             _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)

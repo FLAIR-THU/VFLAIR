@@ -129,19 +129,6 @@ class ResSFL(Attacker):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = True
 
-    def MSE_PSNR(self, batch_real_image, batch_dummy_image):
-        '''
-        compute MSE and PSNR
-        :param batch_real_image:
-        :param batch_dummy_image:
-        :return:
-        '''
-        # print(batch_real_image.size(),batch_dummy_image.size())
-        batch_real_image = batch_real_image.reshape(batch_dummy_image.size())
-        mse = torch.mean((batch_real_image-batch_dummy_image)**2)
-        #psnr = 20 * torch.log10(1/torch.sqrt(mse))
-        return mse.cpu().numpy()#, psnr.cpu().numpy()
-
     def attack(self):
         self.set_seed(123)
         print_every = 1
@@ -200,12 +187,16 @@ class ResSFL(Attacker):
 
                     decoder.train()
 
-                    img = batch_data_b # target img
+                    # target img
+                    img = batch_data_b 
+                    
+                    # Known Information : intermediate representation
                     with torch.no_grad():
                         ir = net_b(batch_data_b) 
                     img, ir = img.type(torch.FloatTensor), ir.type(torch.FloatTensor)
                     img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
                     
+                    # recovered image
                     output = decoder(ir)
                     img = img.reshape(output.size())
                     # print('ir:',ir.size())
@@ -235,6 +226,17 @@ class ResSFL(Attacker):
                         img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
                         
                         output = decoder(ir) # reconstruction result
+
+                        if i_epoch == self.epochs -1:
+                            print()
+                            data_to_be_visualized = output[0].reshape(img[0].size())
+                            plt.imshow(data_to_be_visualized[0])
+                            plt.savefig('exp_result/' + 'dummy.png')
+                            plt.close()
+                            origin_data = img[0][0]
+                            plt.imshow(origin_data)
+                            plt.savefig('exp_result/' + 'origin.png')
+                            plt.close()
 
                         img = img.reshape(output.size())
                         rand_img = torch.randn(img.size()).to(self.device)

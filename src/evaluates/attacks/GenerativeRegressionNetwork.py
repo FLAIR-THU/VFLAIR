@@ -167,8 +167,12 @@ class GenerativeRegressionNetwork(Attacker):
             
 
             print('========= Feature Inference Training ========')
+            mark =0
+            
+                
             for i_epoch in range(self.epochs):
                 self.netG.train()
+                
                 for parties_data in zip(*aux_loader_list):
                     self.gt_one_hot_label = label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
@@ -200,7 +204,7 @@ class GenerativeRegressionNetwork(Attacker):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
                     # print(unknown_var_loss, ((pred.detach() - ground_truth_pred.detach())**2).sum())
                     # print((pred.detach() - ground_truth_pred.detach())[-5:])
-                    loss = (((F.softmax(dummy_pred,dim=-1).detach() - F.softmax(real_pred,dim=-1).detach())**2).sum() + self.unknownVarLambda * unknown_var_loss * 1000)
+                    loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() + self.unknownVarLambda * unknown_var_loss * 1000)
                     loss.backward()
                     self.optimizerG.step() 
 
@@ -223,11 +227,16 @@ class GenerativeRegressionNetwork(Attacker):
                         mse_reduction = rand_mse-mse
                         # MSE.append(mse)
                         # PSNR.append(psnr)
-                    print('Epoch {}% \t train_loss:{:.2f} mse_reduction:{:.2f} psnr_addition:{:.2f}'.format(
-                        i_epoch, loss.item(), rand_mse-mse, psnr-rand_pnsr))
+                    print('Epoch {}% \t train_loss:{:.2f} mse:{:.2f}'.format(
+                        i_epoch, loss.item(), mse))
+            
+            for name, param in self.netG.named_parameters():
+                if mark == 0:
+                    print(name, param)
+                    mark = mark + 1
             
             print(f"GRN, if self.args.apply_defense={self.args.apply_defense}")
-            print(f'batch_size=%d,class_num=%d,party_index=%d,psnr=%lf' % (self.batch_size, self.label_size, index, psnr))
+            print(f'batch_size=%d,class_num=%d,party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
 
         print("returning from GRN")
         return rand_mse,mse
