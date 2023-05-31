@@ -223,7 +223,7 @@ def GaussianDP(args, original_object):
         return original_object
 
 def GradientSparsification(args, original_object):
-    print("using gradient sparsification function")
+    # print("using gradient sparsification function")
     original_object = original_object[0]
     assert ('gradient_sparse_rate' in args.defense_configs) , "missing defense parameter: 'gradient_sparse_rate'"
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
