@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 2,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -23,6 +23,14 @@
         },
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "attack_list": {
+        "0": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        }
     }
 
 }

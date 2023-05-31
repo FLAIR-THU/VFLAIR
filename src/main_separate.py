@@ -22,7 +22,7 @@ from utils.basic_functions import append_exp_res
 import warnings
 warnings.filterwarnings("ignore")
 
-TARGETED_BACKDOOR = ['ReplacementBackdoor'] # main_acc  backdoor_acc
+TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
 LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','DirectLabelScoring','NormbasedScoring','DirectionbasedScoring','ModelCompletion'] # label_recovery
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
@@ -68,17 +68,15 @@ def evaluate_feature_inference(args):
         args.need_auxiliary = 1
         args = load_parties(args)
         
-        # actual train = train-aux
-        # if args.basic_vfl_withaux != None:
-        #     vfl = args.basic_vfl_withaux
-        #     main_acc = args.main_acc_noattack_withaux
-        # else:
-        
-        vfl = MainTaskVFL(args)
-        if args.dataset not in ['cora']:
-            main_acc = vfl.train()
+        if args.basic_vfl_withaux == None:
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
         else:
-            main_acc = vfl.train_graph()
+            main_acc = args.main_acc_noattack_withaux 
+            vfl = args.basic_vfl_withaux 
         args.main_acc_noattack_withaux = main_acc
         args.basic_vfl_withaux = vfl
 
@@ -103,11 +101,15 @@ def evaluate_label_inference(args):
             args.need_auxiliary = 1
             args = load_parties(args) # include load dataset with auxiliary data
             # actual train = train-aux
-            vfl = MainTaskVFL(args)
-            if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+            if args.basic_vfl_withaux == None:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
             else:
-                main_acc = vfl.train_graph()
+                main_acc = args.main_acc_noattack_withaux 
+                vfl = args.basic_vfl_withaux
             args.main_acc_noattack_withaux = main_acc
             args.basic_vfl_withaux = vfl
 
@@ -165,7 +167,6 @@ def evaluate_untargeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        print('args.apply_ns=',args.apply_ns)
 
         vfl = MainTaskVFL(args)
         if args.dataset not in ['cora']:
@@ -181,7 +182,6 @@ def evaluate_untargeted_backdoor(args):
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
 
-
 def evaluate_targeted_backdoor(args):
     # mark that backdoor data is never prepared
     args.target_label = None
@@ -195,20 +195,40 @@ def evaluate_targeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        # Targeted Backdoor VFL Training pipeline
-        if args.apply_backdoor == True:
-            vfl = MainTaskVFLwithBackdoor(args)
-            main_acc, backdoor_acc = vfl.train()
-        else:
-            vfl = MainTaskVFL(args)
-            if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+        if args.attack_name == 'ASB':
+            args.need_auxiliary = 1
+            args = load_parties(args) # include load dataset with auxiliary data
+            
+            if args.basic_vfl_withaux == None:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
             else:
-                main_acc = vfl.train_graph()
+                main_acc = args.main_acc_noattack_withaux 
+                vfl = args.basic_vfl_withaux 
+            args.main_acc_noattack_withaux = main_acc
+            args.basic_vfl_withaux = vfl
+            
+            attack_metric = vfl.evaluate_attack()
+            attack_metric_name = 'attack_acc'
+
+        else:
+            # Targeted Backdoor VFL Training pipeline
+            if args.apply_backdoor == True:
+                vfl = MainTaskVFLwithBackdoor(args)
+                main_acc, backdoor_acc = vfl.train()
+            else:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
+            
+            attack_metric = backdoor_acc
+            attack_metric_name = 'backdoor_acc'
         
-        attack_metric = backdoor_acc
-        attack_metric_name = 'backdoor_acc'
-       
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
             (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
@@ -243,7 +263,7 @@ if __name__ == '__main__':
         ####### load configs from *.json files #######
         ############ Basic Configs ############
         
-        for mode in [1]:
+        for mode in [0]:
             
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'

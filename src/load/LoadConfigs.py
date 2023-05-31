@@ -5,7 +5,7 @@ import json
 import argparse
 from models.autoencoder import AutoEncoder
 
-TARGETED_BACKDOOR = ['ReplacementBackdoor']
+TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB']
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample']
 LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
 'DirectionbasedScoring','ModelCompletion']

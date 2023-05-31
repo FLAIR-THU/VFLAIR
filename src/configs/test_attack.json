@@ -123,6 +123,15 @@
                 "epochs": 10,
                 "batch_size": 32
             }
+        },
+        "12":{
+            "name": "ASB",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 3,
+                "inner_iterations": 5
+            }
         }
     }
     

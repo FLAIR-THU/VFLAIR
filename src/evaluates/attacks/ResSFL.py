@@ -227,16 +227,16 @@ class ResSFL(Attacker):
                         
                         output = decoder(ir) # reconstruction result
 
-                        if i_epoch == self.epochs -1:
-                            print()
-                            data_to_be_visualized = output[0].reshape(img[0].size())
-                            plt.imshow(data_to_be_visualized[0])
-                            plt.savefig('exp_result/' + 'dummy.png')
-                            plt.close()
-                            origin_data = img[0][0]
-                            plt.imshow(origin_data)
-                            plt.savefig('exp_result/' + 'origin.png')
-                            plt.close()
+                        # if i_epoch == self.epochs -1:
+                        #     print()
+                        #     data_to_be_visualized = output[0].reshape(img[0].size())
+                        #     plt.imshow(data_to_be_visualized[0])
+                        #     plt.savefig('exp_result/' + 'dummy.png')
+                        #     plt.close()
+                        #     origin_data = img[0][0]
+                        #     plt.imshow(origin_data)
+                        #     plt.savefig('exp_result/' + 'origin.png')
+                        #     plt.close()
 
                         img = img.reshape(output.size())
                         rand_img = torch.randn(img.size()).to(self.device)

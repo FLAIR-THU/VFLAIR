@@ -94,7 +94,7 @@ class GenerativeRegressionNetwork(Attacker):
         self.grn_batch_size = args.attack_configs['batch_size'] #64
         self.unknownVarLambda = 0.25 # by default
         
-        self.criterion = cross_entropy_for_onehot
+        # self.criterion = cross_entropy_for_onehot
    
     
     def set_seed(self,seed=0):
@@ -133,7 +133,15 @@ class GenerativeRegressionNetwork(Attacker):
             global_model.eval()
             net_b.eval()
             net_a.eval()
-
+            # Freeze Net
+            for name, parameter in global_model.named_parameters():
+                parameter.requires_grad = False
+            for name, parameter in net_a.named_parameters():
+                parameter.requires_grad = False
+            for name, parameter in net_b.named_parameters():
+                parameter.requires_grad = False
+            
+            criterion = nn.MSELoss()
 
             # Test Data
             test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
@@ -163,16 +171,13 @@ class GenerativeRegressionNetwork(Attacker):
                 dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
             self.netG = Generator(dim_a+dim_b, dim_b)
             self.netG = self.netG.to(self.device)
+            for name, parameter in self.netG.named_parameters():
+                parameter.requires_grad = True
             self.optimizerG = torch.optim.Adam(self.netG.parameters(), lr = self.lr)
-            
 
             print('========= Feature Inference Training ========')
-            mark =0
-            
-                
             for i_epoch in range(self.epochs):
                 self.netG.train()
-                
                 for parties_data in zip(*aux_loader_list):
                     self.gt_one_hot_label = label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
@@ -183,28 +188,30 @@ class GenerativeRegressionNetwork(Attacker):
                     self.optimizerG.zero_grad()
                     # generate "fake inputs"
                     noise_data_b = torch.randn(batch_data_b.size()).to(self.device) # attack from passive side, data_b is at active side need to be generated from noise at passive side
+                    noise_data_b.requires_grad = False
                     # print('batch_data_b:',batch_data_b.size())
                     # print('torch.cat:',batch_data_a.size(),noise_data_b.size())
                     # print('cat:',torch.cat((batch_data_a,noise_data_b),dim=1).size())
                     if self.args.dataset == 'nuswide':
-                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=1))
+                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=1)).requires_grad_(True).to(self.device)
                     else:
-                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2))
-                    generated_data_b = generated_data_b.reshape(batch_data_b.size())
+                        generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2)).requires_grad_(True).to(self.device)
+                    generated_data_b = generated_data_b.reshape(batch_data_b.size()).requires_grad_(True).to(self.device)
                     # compute logits of generated/real data
                     pred_a = net_a(batch_data_a)
                     pred_b = net_b(batch_data_b)
-                    dummy_pred_b = net_b(generated_data_b)
+                    dummy_pred_b = net_b(generated_data_b).requires_grad_(True).to(self.device)
                     # aggregate logits of clients
                     real_pred = global_model([pred_a, pred_b])
-                    dummy_pred = global_model([pred_a, dummy_pred_b])
+                    dummy_pred = global_model([pred_a, dummy_pred_b]).requires_grad_(True).to(self.device)
 
                     unknown_var_loss = 0.0
                     for i in range(generated_data_b.size(0)):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
                     # print(unknown_var_loss, ((pred.detach() - ground_truth_pred.detach())**2).sum())
                     # print((pred.detach() - ground_truth_pred.detach())[-5:])
-                    loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() + self.unknownVarLambda * unknown_var_loss * 1000)
+                    loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() + \
+                        self.unknownVarLambda * unknown_var_loss * 1000)
                     loss.backward()
                     self.optimizerG.step() 
 
@@ -218,25 +225,24 @@ class GenerativeRegressionNetwork(Attacker):
                         noise_data_b = torch.randn(test_data_b.size()).to(self.device)
                         
                         if self.args.dataset == 'nuswide':
-                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=1))
+                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=1)).to(self.device)
                         else:
-                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))
+                            generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2)).to(self.device)
                         
-                        mse, psnr = self.MSE_PSNR(test_data_b, generated_data_b)
-                        rand_mse,rand_pnsr = self.MSE_PSNR(test_data_b, noise_data_b)
-                        mse_reduction = rand_mse-mse
+                        # mse, psnr = self.MSE_PSNR(test_data_b, generated_data_b)
+                        # rand_mse,rand_pnsr = self.MSE_PSNR(test_data_b, noise_data_b)
+                        origin_data = test_data_b.reshape(generated_data_b.size()).to(self.device)
+                        noise_data = noise_data_b.reshape(generated_data_b.size()).to(self.device)
+                        mse = criterion(generated_data_b, origin_data)
+                        rand_mse = criterion(noise_data, origin_data)
+                       
                         # MSE.append(mse)
                         # PSNR.append(psnr)
-                    print('Epoch {}% \t train_loss:{:.2f} mse:{:.2f}'.format(
-                        i_epoch, loss.item(), mse))
+                    print('Epoch {}% \t train_loss:{:.2f} mse_reduction:{:.2f}'.format(
+                        i_epoch, loss.item(), rand_mse-mse))
             
-            for name, param in self.netG.named_parameters():
-                if mark == 0:
-                    print(name, param)
-                    mark = mark + 1
-            
-            print(f"GRN, if self.args.apply_defense={self.args.apply_defense}")
-            print(f'batch_size=%d,class_num=%d,party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
+            # print(f"GRN, if self.args.apply_defense={self.args.apply_defense}")
+            # print(f'batch_size=%d,class_num=%d,party_index=%d,psnr=%lf' % (self.batch_size, self.label_size, index, psnr))
 
         print("returning from GRN")
         return rand_mse,mse

@@ -10,6 +10,7 @@ from evaluates.attacks.ModelCompletion import ModelCompletion
 from evaluates.attacks.DirectLabelScoring import DirectLabelScoring
 from evaluates.attacks.GenerativeRegressionNetwork import GenerativeRegressionNetwork
 from evaluates.attacks.ResSFL import ResSFL
+from evaluates.attacks.ASB import ASB
 
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name
