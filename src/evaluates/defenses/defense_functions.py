@@ -223,6 +223,7 @@ def GaussianDP(args, original_object):
         return original_object
 
 def GradientSparsification(args, original_object):
+    print("using gradient sparsification function")
     original_object = original_object[0]
     assert ('gradient_sparse_rate' in args.defense_configs) , "missing defense parameter: 'gradient_sparse_rate'"
     grad_spars_ratio = args.defense_configs['gradient_sparse_rate']
@@ -238,7 +239,7 @@ def GradientSparsification(args, original_object):
             for ik in range(len(original_object)):
                 a_thr = torch.quantile(torch.abs(original_object[ik]), grad_spars_ratio)
                 gradients_res_a = torch.where(torch.abs(original_object[ik]).double() < a_thr.item(),
-                                                        original_object[ik].double(), float(0.)).to(args.device)
+                                                        float(0.), original_object[ik].double()).to(args.device)
                 new_object.append(original_object[ik] - gradients_res_a)
         return new_object
     else:
