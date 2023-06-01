@@ -248,7 +248,8 @@ def GradientSparsification(args, original_object):
     
 def discrete(args, ik, original_tensor, W):
     _mu = torch.mean(original_tensor).item() #np.mean(original_object) 
-    _sigma = torch.std(original_tensor).item()  #np.std(original_object)     
+    _sigma = torch.std(original_tensor).item()  #np.std(original_object)   
+
     if args.bin_size[ik] == None:
         args.bin_size[ik] = (3*_sigma)/(W//2)
     # A = np.linespace(_mu-(W//2)*args.bin_size[ik], _mu+(W//2)*args.bin_size[ik], num=W , endpoint=True, retstep=False, dtype=None)
@@ -287,13 +288,12 @@ def DiscreteSGD(args, original_object):
     new_object = []
     if W >= 2:
         with torch.no_grad():
-            for ik in range(len(original_object)-1):
+            for ik in range(len(original_object)):
                 #print(original_object[ik].size())
-                new_object.append(args, ik, discrete(original_object[ik],W).to(args.device))
+                new_object.append(discrete(args, ik, original_object[ik],W).to(args.device))
     else:
         print('Error: bin_numbers should be > 1')
         return original_object
-
     return new_object
 
 
