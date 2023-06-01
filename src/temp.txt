@@ -1,0 +1,19 @@
+================= iter seed  97  =================
+running on cuda1
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: DCAE
+Defense_Config: {'bin_numbers': 12, 'input_dim': 10, 'encode_dim': 62, 'lambda': 0.5, 'model_path': '../trained_CAE_models/autoencoder_10_0.5_1642396797'}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: [] []
+label_inference: ['BatchLabelReconstruction'] [0]
+feature_inference: [] []
+exp_result/mnist/Q1/0/DCAE_0.5,model=MLP2.txt
+=================================
+
+======= Test Attack 0 :  BatchLabelReconstruction  =======
+attack configs: {'party': [0], 'lr': 0.05, 'epochs': 10000}
+load_dataset_per_party  args.need_auxiliary =  0
+Load Defense models
+load_dataset_per_party  args.need_auxiliary =  0
