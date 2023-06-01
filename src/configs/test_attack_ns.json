@@ -33,6 +33,17 @@
             "lambda": 0.0,
             "model_path": "../trained_CAE_models/autoencoder_10_0.0_1631093149"
         }
+    },
+    "attack_list": {
+        "0":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 10,
+                "batch_size": 32
+            }
+        }
     }
     
 
