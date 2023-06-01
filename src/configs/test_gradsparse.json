@@ -25,9 +25,13 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GradientSparsification",
+        "name": "DCAE",
         "parameters": {
-            "gradient_sparse_rate": 98.0
+            "bin_numbers": 12,
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 0.5,
+            "model_path": "../trained_CAE_models/autoencoder_10_0.5_1642396797"
         }
     },
     "attack_list": {

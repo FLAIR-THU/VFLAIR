@@ -109,6 +109,7 @@ def load_basic_configs(config_file_name, args):
     args.apply_mid = False # mid defense
     args.apply_cae = False # cae defense
     args.apply_dcae = False # dcae defense
+    args.bin_size = [None for _ in range(args.k-1)] # for discrete bins
     args.apply_dcor = False # distance corrilation
     if 'defense' in config_dict:
         if 'name' in config_dict['defense']:
