@@ -39,6 +39,7 @@ def set_seed(seed=0):
 
 def evaluate_no_attack(args):
     # No Attack
+    set_seed(args.current_seed)
     args = load_attack_configs(args.configs, args, -1)
     args = load_parties(args)
 
@@ -61,11 +62,15 @@ def evaluate_no_attack(args):
 def evaluate_feature_inference(args):
     vfl = None
     for index in args.feature_inference_index:
+        set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        args.need_auxiliary = 1
+        if args.attack_name == 'ResSFL':
+            args.need_auxiliary = 1
+        else:
+            args.need_auxiliary = 0 # GRN
         args = load_parties(args)
         
         if args.basic_vfl_withaux == None:
@@ -95,6 +100,7 @@ def evaluate_label_inference(args):
     # Basic VFL Training Pipeline
     i=0
     for index in args.label_inference_index:
+        set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         # args = load_parties(args)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
@@ -163,6 +169,7 @@ def evaluate_label_inference(args):
 def evaluate_untargeted_backdoor(args):
     
     for index in args.untargeted_backdoor_index:
+        set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
         
@@ -185,6 +192,7 @@ def evaluate_untargeted_backdoor(args):
         append_exp_res(args.exp_res_path, exp_result)
 
 def evaluate_targeted_backdoor(args):
+    
     # mark that backdoor data is never prepared
     args.target_label = None
     args.train_poison_list = None
@@ -192,6 +200,7 @@ def evaluate_targeted_backdoor(args):
     args.test_poison_list = None
     args.test_target_list = None
     for index in args.targeted_backdoor_index:
+        set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
@@ -239,7 +248,7 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack_mc', help='configure json file path')
@@ -307,7 +316,7 @@ if __name__ == '__main__':
             args.basic_vfl = None
             args.main_acc_noattack = None
 
-            args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
+            # args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
             
             if args.label_inference_list != []:
                 evaluate_label_inference(args)

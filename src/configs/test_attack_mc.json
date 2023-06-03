@@ -29,8 +29,8 @@
             "name": "ModelCompletion",
             "parameters": {
                 "party": [0],
-                "val_iteration": 1024,
-                "epochs": 3,
+                "val_iteration": 2000,
+                "epochs": 1,
                 "lr": 2e-3
             }
         }

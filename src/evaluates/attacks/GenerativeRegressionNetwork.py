@@ -134,22 +134,29 @@ class GenerativeRegressionNetwork(Attacker):
             net_b.eval()
             net_a.eval()
 
-
-            # Test Data
-            test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
-            test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
-
             # Train with Aux Dataset
             #data_number = self.data_number
             batch_size = self.grn_batch_size
-            aux_data_a = self.vfl_info["aux_data"][1]
-            aux_data_b = self.vfl_info["aux_data"][0]
-            aux_label = self.vfl_info["aux_label"][-1]
-            aux_dst_a = ActiveDataset(aux_data_a, aux_label)
-            aux_loader_a = DataLoader(aux_dst_a, batch_size=batch_size)
-            aux_dst_b = PassiveDataset(aux_data_b)
-            aux_loader_b = DataLoader(aux_dst_b, batch_size=batch_size)
-            aux_loader_list = [aux_loader_b,aux_loader_a]
+            
+            # aux_data_a = self.vfl_info["aux_data"][1]
+            # aux_data_b = self.vfl_info["aux_data"][0]
+            # aux_label = self.vfl_info["aux_label"][-1]
+            # aux_dst_a = ActiveDataset(aux_data_a, aux_label)
+            # aux_loader_a = DataLoader(aux_dst_a, batch_size=batch_size)
+            # aux_dst_b = PassiveDataset(aux_data_b)
+            # aux_loader_b = DataLoader(aux_dst_b, batch_size=batch_size)
+            # aux_loader_list = [aux_loader_b,aux_loader_a]
+
+            train_data_a = self.vfl_info["train_data"][1]
+            train_data_b = self.vfl_info["train_data"][0]
+            train_label = self.vfl_info["train_data"][-1]
+            train_dst_a = ActiveDataset(train_data_a, train_label)
+            train_loader_a = DataLoader(train_dst_a, batch_size=batch_size)
+            train_dst_b = PassiveDataset(train_data_b)
+            train_loader_b = DataLoader(train_dst_b, batch_size=batch_size)
+            train_loader_list = [train_loader_b,train_loader_a]
+
+
             # Test Data
             test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
             test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
@@ -175,7 +182,7 @@ class GenerativeRegressionNetwork(Attacker):
             print('========= Feature Inference Training ========')
             for i_epoch in range(self.epochs):
                 self.netG.train()
-                for parties_data in zip(*aux_loader_list):
+                for parties_data in zip(*train_loader_list):
                     self.gt_one_hot_label = label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                     self.parties_data = parties_data

@@ -318,15 +318,32 @@ class ModelCompletion(Attacker):
             train_label = self.vfl_info["train_label"][-1]     
             test_data = self.vfl_info["test_data"][index]
             test_label = self.vfl_info["test_label"][-1] # onli active party have data
-
+          
+            aux_indx = []
+            get_times = [0 for _i in range(self.num_classes)]
+            idx = 0
+            while min(get_times) < 4 and idx<len(aux_label):
+                current_label = int(torch.argmax(aux_label[idx], dim=-1))
+                
+                if get_times[current_label]<4:
+                    aux_indx.append(idx)
+                    get_times[current_label] = get_times[current_label] +1
+                idx = idx +1
+            
+            aux_data = aux_data[aux_indx]
+            aux_label = aux_label[aux_indx]
+            # print(get_times)
+            # print(torch.argmax(aux_label, dim=-1))
+            # print(aux_data.size())
+            
             aux_dst = ActiveDataset(aux_data, aux_label)
             aux_loader = DataLoader(aux_dst, batch_size=batch_size)
             
             train_dst = ActiveDataset(train_data, train_label)
             train_loader = DataLoader(train_dst, batch_size=batch_size)
             
-            # test_dst = ActiveDataset(test_data, test_label)
-            # test_loader = DataLoader(test_dst, batch_size=batch_size)
+            test_dst = ActiveDataset(test_data, test_label)
+            test_loader = DataLoader(test_dst, batch_size=batch_size)
 
             complete_train_data = torch.cat([aux_data,train_data],dim=0)
             complete_train_label = torch.cat([aux_label,train_label],dim=0)
@@ -383,12 +400,12 @@ class ModelCompletion(Attacker):
 
                 train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer, train_criterion, epoch, num_classes)
                 
-                print("---AMC: Label inference on complete training dataset:")
-                _, a_train_acc = self.validate(complete_train_loader, ema_model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
+                print("---AMC: Label inference on test dataset:")
+                _, a_train_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
                 a_best_acc = max(a_train_acc, a_best_acc)
                 
-                print("---PMC: Label inference on complete training dataset:")
-                _, p_train_acc = self.validate(complete_train_loader, model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
+                print("---PMC: Label inference on test dataset:")
+                _, p_train_acc = self.validate(test_loader, model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
                 p_best_acc = max(p_train_acc, p_best_acc)
                 # print("\n---Label inference on testing dataset:")
                 # test_loss, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
