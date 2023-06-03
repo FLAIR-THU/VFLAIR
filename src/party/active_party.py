@@ -12,6 +12,7 @@ class ActiveParty(Party):
         super().__init__(args, index)
         self.criterion = cross_entropy_for_onehot
         self.encoder = args.encoder
+        # print(f"in active party, encoder=None? {self.encoder==None}, {self.encoder}")
         self.train_index = args.idx_train
         self.test_index = args.idx_test
         

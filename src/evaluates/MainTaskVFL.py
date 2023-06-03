@@ -203,7 +203,7 @@ class MainTaskVFL(object):
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
-            predict_prob = self.parties[self.k-1].encoder.decoder(predict_prob)
+            predict_prob = encoder.decoder(predict_prob)
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         return loss.item(), train_acc
@@ -322,7 +322,7 @@ class MainTaskVFL(object):
 
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
-                            dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                            dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
                             predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -416,7 +416,7 @@ class MainTaskVFL(object):
 
                 enc_predict_prob = F.softmax(test_logit, dim=-1)
                 if self.args.apply_cae == True:
-                    dec_predict_prob = self.parties[ik].encoder.decoder(enc_predict_prob)
+                    dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
