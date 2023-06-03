@@ -33,49 +33,6 @@ def update_all_norm_leak_auc(norm_leak_auc_dict, grad_list, y):
         #             predicted_value= tf.norm(grad, axis=-1, keepdims=False), # torch.norm(grad,dim=-1, keepdim=False), #
         #             m_auc=norm_leak_auc_dict[key])
 
-# def update_all_norm_leak_auc(norm_leak_auc_dict, grad_list, y):
-#     for (key, grad) in zip(norm_leak_auc_dict.keys(), grad_list):
-#         # flatten each example's grad to one-dimensional
-#         grad = tf.reshape(grad, shape=(grad.shape[0], -1))
-
-#         if grad.shape[1] == 1: # the last layer's logit
-#             grad = tf.reshape(grad, shape=[-1])
-#             auc = update_auc(y=y,
-#                 predicted_value=grad,
-#                 m_auc=norm_leak_auc_dict[key])
-
-#         else:
-#             auc = update_auc(y=y,
-#                        predicted_value=tf.norm(grad, axis=-1, keepdims=False),
-#                        m_auc=norm_leak_auc_dict[key])
-#         # not only update the epoch average above
-#         # also log this current batch value on the tensorboard
-#         if auc:
-#             with shared_var.writer.as_default():
-#                 tf.summary.scalar(name=key+'_batch',
-#                                   data=auc,
-#                                   step=shared_var.counter)
-
-# def update_auc(y, predicted_value, m_auc):
-#     auc = compute_auc(y, predicted_value)
-#     if auc:
-#         m_auc.update_state(auc)
-#     return auc
-
-# def compute_auc(y, predicted_value):
-#     # get rid of the 2nd dimension in  [n, 1]
-#     predicted_value = tf.reshape(predicted_value, shape=(-1))
-#     if tf.reduce_sum(y) == 0: # no positive examples in this batch
-#         return None
-#     # m_auc.update_state(0.5) # currently set as 0.5 in some sense this is not well defined
-#     val_max = tf.math.reduce_max(predicted_value)
-#     val_min = tf.math.reduce_min(predicted_value)
-#     pred = (predicted_value - val_min + 1e-16) / (val_max - val_min + 1e-16)
-#     # create this is to avoid putting all different batches of examples in the same epoch together
-#     auc = roc_auc_score(y_true=y.numpy(), y_score=pred.numpy())
-#     return auc
-
-
         ###### auc #######
         # positive_index = tf.where(y>0)
         # negative_index = tf.where(y==0)
