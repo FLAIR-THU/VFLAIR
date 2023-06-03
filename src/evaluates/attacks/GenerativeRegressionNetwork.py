@@ -152,7 +152,7 @@ class GenerativeRegressionNetwork(Attacker):
             aux_loader_list = [aux_loader_b,aux_loader_a]
             # Test Data
             test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
-            test_data_b =  self.vfl_info['test_data'][0]# Passive Test Data
+            test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
 
             # Initalize Generator
             if self.args.dataset == 'nuswide':
@@ -210,8 +210,9 @@ class GenerativeRegressionNetwork(Attacker):
                     # print(unknown_var_loss, ((pred.detach() - ground_truth_pred.detach())**2).sum())
                     # print((pred.detach() - ground_truth_pred.detach())[-5:])
                     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
-                    + self.unknownVarLambda * unknown_var_loss * 1000)
+                    + self.unknownVarLambda * unknown_var_loss * 0.25)
                     
+                    train_mse = criterion(generated_data_b, batch_data_b)
                     
                     loss.backward()
                     self.optimizerG.step() 
@@ -241,8 +242,8 @@ class GenerativeRegressionNetwork(Attacker):
                        
                         # MSE.append(mse)
                         # PSNR.append(psnr)
-                    print('Epoch {}% \t train_loss:{:.2f} mse:{:.2f} '.format(
-                        i_epoch, loss.item(), mse))
+                    print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} '.format(
+                        i_epoch, loss.item(), train_mse, mse))
             
             # mark = 0
             # for name, param in self.netG.named_parameters():

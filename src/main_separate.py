@@ -80,6 +80,8 @@ def evaluate_feature_inference(args):
         args.main_acc_noattack_withaux = main_acc
         args.basic_vfl_withaux = vfl
 
+        vfl.save_trained_models()
+
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
         
