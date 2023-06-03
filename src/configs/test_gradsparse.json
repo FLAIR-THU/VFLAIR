@@ -6,32 +6,29 @@
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 10
+        "num_classes": 2
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
+        "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "attack_list": {
         "0":{
-            "name": "GenerativeRegressionNetwork",
+            "name": "NormbasedScoring",
             "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 60,
-                "batch_size": 32
+                "party": [0]
             }
         }
     }

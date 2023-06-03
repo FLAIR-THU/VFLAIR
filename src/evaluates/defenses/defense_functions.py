@@ -240,7 +240,8 @@ def GradientSparsification(args, original_object):
                 a_thr = torch.quantile(torch.abs(original_object[ik]), grad_spars_ratio)
                 gradients_res_a = torch.where(torch.abs(original_object[ik]).double() < a_thr.item(),
                                                         float(0.), original_object[ik].double()).to(args.device)
-                new_object.append(original_object[ik] - gradients_res_a)
+                new_object.append(original_object[ik])
+                # new_object.append(original_object[ik] - gradients_res_a)
         return new_object
     else:
         return original_object
