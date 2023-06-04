@@ -154,8 +154,11 @@ class ModelCompletion(Attacker):
             # mixed_input = list(torch.split(mixed_input, batch_size))
             # mixed_input = interleave(mixed_input, batch_size)
 
-            targets_x = torch.tensor(targets_x,dtype=torch.float32)
-            logits_x = torch.tensor(model(inputs_x),dtype=torch.float32)
+            # targets_x = torch.tensor(targets_x,dtype=torch.float32)
+            # logits_x = torch.tensor(model(inputs_x),dtype=torch.float32)
+
+            outputs = model(inputs_x).type(torch.float)
+            targets = targets_x.type(torch.float)
             # for input in mixed_input[1:]:
             #     logits.append(model(input))
 
@@ -164,8 +167,11 @@ class ModelCompletion(Attacker):
             # logits_x = logits[0]
             #logits_u = torch.cat(logits[1:], dim=0)
             # (self,outputs_x, targets_x, outputs_u, targets_u, epoch, all_epochs):
-            print(targets_x.size(),logits_x.size())
-            loss = criterion(targets_x,logits_x) #  
+            # print(targets_x.size(),logits_x.size())
+            loss = criterion(targets,outputs) #  
+
+            # record loss
+            losses.update(loss.item(), inputs_x.size(0))
             
             # compute gradient and do SGD step
             optimizer.zero_grad()
@@ -250,23 +256,41 @@ class ModelCompletion(Attacker):
             train_label = self.vfl_info["train_label"][-1]     
             test_data = self.vfl_info["test_data"][index]
             test_label = self.vfl_info["test_label"][-1] # onli active party have data
-
             n_labeled_per_class = self.n_labeled_per_class
-            aux_indx = []
-            get_times = [0 for _i in range(self.num_classes)]
-            idx = 0
 
-            labels = np.array((torch.argmax(aux_label, dim=-1)))
+
+            labels = np.array((torch.argmax(train_label, dim=-1)))
             train_labeled_idxs = []
             train_unlabeled_idxs = []
-            for i in range(self.num_classes):
+            for i in range(num_classes):
                 idxs = np.where(labels == i)[0]
                 np.random.shuffle(idxs)
                 train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+                train_unlabeled_idxs.extend(idxs[n_labeled_per_class:])
             np.random.shuffle(train_labeled_idxs)
+            np.random.shuffle(train_unlabeled_idxs)
 
-            aux_data = aux_data[train_labeled_idxs]
-            aux_label = aux_label[train_labeled_idxs]
+            aux_data = train_data[train_labeled_idxs]
+            aux_label = train_label[train_labeled_idxs]
+
+            train_data = train_data[train_unlabeled_idxs]
+            train_label = train_label[train_unlabeled_idxs]
+            
+            # aux_indx = []
+            # get_times = [0 for _i in range(self.num_classes)]
+            # idx = 0
+
+            # labels = np.array((torch.argmax(aux_label, dim=-1)))
+            # train_labeled_idxs = []
+            # train_unlabeled_idxs = []
+            # for i in range(self.num_classes):
+            #     idxs = np.where(labels == i)[0]
+            #     np.random.shuffle(idxs)
+            #     train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+            # np.random.shuffle(train_labeled_idxs)
+
+            # aux_data = aux_data[train_labeled_idxs]
+            # aux_label = aux_label[train_labeled_idxs]
 
             aux_dst = ActiveDataset(aux_data, aux_label)
             aux_loader = DataLoader(aux_dst, batch_size=batch_size,shuffle=True)
@@ -320,7 +344,7 @@ class ModelCompletion(Attacker):
             for epoch in range(self.epochs): # self.epochs: cifar-5, BC_IDC-1, liver-5
                 print('\nEpoch: [%d | %d]' % (epoch + 1, self.epochs))
 
-                train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
+                train_loss = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
                                                          criterion, epoch, num_classes)
                 
                 print("---MC: Label inference on test dataset:")

@@ -126,7 +126,7 @@ def evaluate_label_inference(args):
             attack_metric_name = 'label_recovery_rate'
 
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
@@ -144,7 +144,7 @@ def evaluate_label_inference(args):
             attack_metric = vfl.evaluate_attack()
             attack_metric_name = 'label_recovery_rate'
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
@@ -269,7 +269,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98): # test 5 times 
+    for seed in range(97,102): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')

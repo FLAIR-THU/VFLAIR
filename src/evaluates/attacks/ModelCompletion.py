@@ -263,18 +263,34 @@ class ModelCompletion(Attacker):
             get_times = [0 for _i in range(self.num_classes)]
             idx = 0
 
-            labels = np.array((torch.argmax(aux_label, dim=-1)))
+            # labels = np.array((torch.argmax(aux_label, dim=-1)))
+            # train_labeled_idxs = []
+            # train_unlabeled_idxs = []
+            # for i in range(self.num_classes):
+            #     idxs = np.where(labels == i)[0]
+            #     np.random.shuffle(idxs)
+            #     train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+            # np.random.shuffle(train_labeled_idxs)
+
+            # aux_data = aux_data[train_labeled_idxs]
+            # aux_label = aux_label[train_labeled_idxs]
+
+            labels = np.array((torch.argmax(train_label, dim=-1)))
             train_labeled_idxs = []
             train_unlabeled_idxs = []
-            for i in range(self.num_classes):
+            for i in range(num_classes):
                 idxs = np.where(labels == i)[0]
                 np.random.shuffle(idxs)
                 train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+                train_unlabeled_idxs.extend(idxs[n_labeled_per_class:])
             np.random.shuffle(train_labeled_idxs)
+            np.random.shuffle(train_unlabeled_idxs)
 
-            aux_data = aux_data[train_labeled_idxs]
-            aux_label = aux_label[train_labeled_idxs]
+            aux_data = train_data[train_labeled_idxs]
+            aux_label = train_label[train_labeled_idxs]
 
+            train_data = train_data[train_unlabeled_idxs]
+            train_label = train_label[train_unlabeled_idxs]
     
             # while min(get_times) < n_label_per_class and idx<len(aux_label):
             #     current_label = int(torch.argmax(aux_label[idx], dim=-1))
