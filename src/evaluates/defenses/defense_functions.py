@@ -232,16 +232,16 @@ def GradientSparsification(args, original_object):
     if grad_spars_ratio > 0.0:
         new_object = []
         with torch.no_grad():
-        #     percent = grad_spars_ratio / 100.0 # percent to drop
-        #     if self.gradients_res_a is not None and \
-        #             pred_a_gradients_clone.shape[0] == self.gradients_res_a.shape[0]:
-        #         pred_a_gradients_clone = pred_a_gradients_clone + self.gradients_res_a
+            percent = grad_spars_ratio / 100.0 # percent to drop
             for ik in range(len(original_object)):
+                if args.gradients_res_a[ik] is not None and \
+                        original_object[ik].shape[0] == args.gradients_res_a[ik].shape[0]:
+                    original_object[ik] = original_object[ik] + args.gradients_res_a[ik]
                 a_thr = torch.quantile(torch.abs(original_object[ik]), grad_spars_ratio)
-                gradients_res_a = torch.where(torch.abs(original_object[ik]).double() < a_thr.item(),
-                                                        float(0.), original_object[ik].double()).to(args.device)
-                new_object.append(original_object[ik])
-                # new_object.append(original_object[ik] - gradients_res_a)
+                args.gradients_res_a[ik] = torch.where(torch.abs(original_object[ik]).double() < a_thr.item(),
+                                                        original_object[ik].double(), float(0.)).to(args.device)
+                # new_object.append(original_object[ik])
+                new_object.append(original_object[ik] - args.gradients_res_a[ik])
         return new_object
     else:
         return original_object
