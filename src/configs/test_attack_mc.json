@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 10,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -29,8 +29,8 @@
             "name": "ModelCompletion",
             "parameters": {
                 "party": [0],
-                "val_iteration": 2000,
-                "epochs": 1,
+                "val_iteration": 1024,
+                "epochs": 10,
                 "lr": 2e-3
             }
         }

@@ -14,86 +14,10 @@ import itertools
 from evaluates.attacks.attacker import Attacker
 from models.global_models import *
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
-from utils.pmc_functions import precision_recall,interleave_offsets,interleave, SemiLoss,WeightEMA,AverageMeter,InferenceHead,accuracy
+from utils.pmc_functions import * #precision_recall,interleave_offsets,interleave, SemiLoss,WeightEMA,AverageMeter,InferenceHead,accuracy
 from dataset.party_dataset import ActiveDataset
 
 import torch.nn.init as init
-
-def weights_init_ones(m):
-    # classname = m.__class__.__name__
-    # print(classname)
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-        init.ones_(m.weight)
-
-
-class BottomModelPlus(nn.Module):
-    def __init__(self, bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True):
-        super(BottomModelPlus, self).__init__()
-        self.bottom_model = bottom_model #BottomModel(dataset_name=None)
-
-        dict_activation_func_type = {'ReLU': F.relu, 'Sigmoid': F.sigmoid, 'None': None}
-        self.activation_func = dict_activation_func_type[activation_func_type]
-        self.num_layer = num_layer
-        self.use_bn = use_bn
-
-        self.fc_1 = nn.Linear(size_bottom_out, size_bottom_out, bias=True)
-        self.bn_1 = nn.BatchNorm1d(size_bottom_out)
-        self.fc_1.apply(weights_init_ones)
-
-        self.fc_2 = nn.Linear(size_bottom_out, size_bottom_out, bias=True)
-        self.bn_2 = nn.BatchNorm1d(size_bottom_out)
-        self.fc_2.apply(weights_init_ones)
-
-        self.fc_3 = nn.Linear(size_bottom_out, size_bottom_out, bias=True)
-        self.bn_3 = nn.BatchNorm1d(size_bottom_out)
-        self.fc_3.apply(weights_init_ones)
-
-        self.fc_4 = nn.Linear(size_bottom_out, size_bottom_out, bias=True)
-        self.bn_4 = nn.BatchNorm1d(size_bottom_out)
-        self.fc_4.apply(weights_init_ones)
-
-        self.fc_final = nn.Linear(size_bottom_out, num_classes, bias=True)
-        self.bn_final = nn.BatchNorm1d(size_bottom_out)
-        self.fc_final.apply(weights_init_ones)
-
-    def forward(self, x):
-        x = self.bottom_model(x)
-
-        if self.num_layer >= 2:
-            if self.use_bn:
-                x = self.bn_1(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_1(x)
-
-        if self.num_layer >= 3:
-            if self.use_bn:
-                x = self.bn_2(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_2(x)
-
-        if self.num_layer >= 4:
-            if self.use_bn:
-                x = self.bn_3(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_3(x)
-
-        if self.num_layer >= 5:
-            if self.use_bn:
-                x = self.bn_4(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_4(x)
-
-        if self.use_bn:
-            x = self.bn_final(x)
-        if self.activation_func:
-            x = self.activation_func(x)
-        x = self.fc_final(x)
-
-        return x
 
 
 
@@ -226,8 +150,8 @@ class ModelCompletion(Attacker):
             # (self,outputs_x, targets_x, outputs_u, targets_u, epoch, all_epochs):
             x_length = logits_x.size()[0] # x_length batch_size
             Lx, Lu, w = criterion(logits_x, mixed_target[:x_length], logits_u, mixed_target[x_length:],
-                                epoch+ batch_idx / val_iteration,self.epochs) #  
-            loss = Lx + w * Lu
+                                epoch+ batch_idx / val_iteration, self.epochs) #  
+            loss = Lx # + w * Lu
 
             # record loss
             losses.update(loss.item(), inputs_x.size(0))
@@ -322,7 +246,7 @@ class ModelCompletion(Attacker):
             aux_indx = []
             get_times = [0 for _i in range(self.num_classes)]
             idx = 0
-            while min(get_times) < 4 and idx<len(aux_label):
+            while min(get_times) < 10 and idx<len(aux_label):
                 current_label = int(torch.argmax(aux_label[idx], dim=-1))
                 
                 if get_times[current_label]<4:
@@ -366,20 +290,13 @@ class ModelCompletion(Attacker):
 
                 return model
 
-            model = create_model(bottom_model,ema=False, size_bottom_out=num_classes, num_classes=num_classes)
-            ema_model = create_model(bottom_model,ema=True, size_bottom_out=num_classes, num_classes=num_classes)
-            # bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True)
-            # Load Inference Head (fake top model) label_size = bottom_model_out
-            # model = InferenceHead(bottom_model,self.label_size, num_classes, 1,activation_func_type='ReLU', use_bn=True)
-            # ema_model = InferenceHead(bottom_model,self.label_size, num_classes, 1,activation_func_type='ReLU', use_bn=True)
-            
+            model = create_model(copy.deepcopy(bottom_model),ema=False, size_bottom_out=num_classes, num_classes=num_classes)
+            # fix parameters
+            ema_model = create_model(copy.deepcopy(bottom_model),ema=True, size_bottom_out=num_classes, num_classes=num_classes)
+           
             model = model.to(self.device) # dummy top model
             ema_model = ema_model.to(self.device)
             
-            for param in model.parameters():
-                param.requires_grad_(True)
-            for param in ema_model.parameters():
-                param.requires_grad_(True)
 
             # Optimizers & Criterion
             optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
@@ -391,32 +308,27 @@ class ModelCompletion(Attacker):
             print(f"MC Attack, self.device={self.device}")
             start_time = time.time()
             test_accs = []
-            a_best_acc = 0
-            p_best_acc = 0
+
+            best_acc = 0
             print("---Label inference on complete training dataset:")
             # Attack iterations
             for epoch in range(self.epochs): # self.epochs: cifar-5, BC_IDC-1, liver-5
                 print('\nEpoch: [%d | %d]' % (epoch + 1, self.epochs))
 
-                train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer, train_criterion, epoch, num_classes)
-                
-                print("---AMC: Label inference on test dataset:")
-                _, a_train_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
-                a_best_acc = max(a_train_acc, a_best_acc)
+                train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
+                                                         train_criterion, epoch, num_classes)
                 
                 print("---PMC: Label inference on test dataset:")
-                _, p_train_acc = self.validate(test_loader, model, criterion, epoch, mode='Train Stats',num_classes=num_classes)
-                p_best_acc = max(p_train_acc, p_best_acc)
-                # print("\n---Label inference on testing dataset:")
-                # test_loss, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
-                # test_accs.append(test_acc)   #not now
+                _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
+                best_acc = max(test_acc, best_acc)
+
 
             print(f"PMC, if self.args.apply_defense={self.args.apply_defense}")
-            print('AMC Best top 1 accuracy:',a_best_acc)
-            print('PMC Best top 1 accuracy:',p_best_acc)
+            print('PMC Best top 1 accuracy:',best_acc)
+            #print('PMC Best top 1 accuracy:',p_best_acc)
 
             # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
-        
+        p_best_acc = 0
         print("returning from PMC/AMC")
-        return a_best_acc,p_best_acc
+        return best_acc,p_best_acc
         # return recovery_history

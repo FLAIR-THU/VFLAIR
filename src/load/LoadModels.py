@@ -8,6 +8,21 @@ import pickle
 from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
+from utils.optimizers import *
+
+def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
+    model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
+                                num_layer=2,
+                                activation_func_type='ReLU',
+                                use_bn=0)
+    model = model
+
+    if ema:
+        for param in model.parameters():
+            param.detach_()
+
+    return model
+
 
 def load_models(args):
     args.net_list = [None] * args.k
@@ -56,6 +71,15 @@ def load_basic_models(args,index):
             global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
             # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr)
     
+    # if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
+    #     print('AMC: use Malicious optimizer for party', index)
+    #     # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
+    #     local_model_optimizer = optimizers.MaliciousSGD(
+    #                 list(local_model.parameters()),
+    #                 lr=args.main_lr, momentum=0.9,
+    #                 weight_decay=5e-4)
+
+
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
@@ -97,6 +121,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         global_model_optimizer = torch.optim.Adam(
                             [{'params': global_model.global_model.parameters(), 'lr': args.main_lr},              
                             {'params': parameters, 'lr': mid_lr}])
+                        
                 else:
                     print(f"load local mid model for party {index}")
                     # add MID model at passive party with local_model
@@ -107,9 +132,18 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     local_model = local_model.to(args.device)
 
                     # update optimizer
+                    # if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
+                    #     print('AMC: use Malicious optimizer for party', index)
+                    #     # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
+                    #     local_model_optimizer = optimizers.MaliciousSGD(
+                    #                 list(local_model.parameters()),
+                    #                 lr=args.main_lr, momentum=0.9,
+                    #                 weight_decay=5e-4)
+                    # else:
                     local_model_optimizer = torch.optim.Adam(
                         [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
-                         {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
+                        {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
+
         
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
             if index == args.k-1:
