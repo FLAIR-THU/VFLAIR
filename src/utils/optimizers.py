@@ -41,7 +41,6 @@ class MaliciousSGD(Optimizer):
             group.setdefault('nesterov', False)
 
     def step(self, closure=None):
-
         loss = None
         if closure is not None:
             loss = closure()

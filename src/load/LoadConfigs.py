@@ -8,7 +8,7 @@ from models.autoencoder import AutoEncoder
 TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB']
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample']
 LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
-'DirectionbasedScoring','ModelCompletion']
+'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
 def load_basic_configs(config_file_name, args):

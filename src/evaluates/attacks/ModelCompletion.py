@@ -20,6 +20,18 @@ from dataset.party_dataset import ActiveDataset
 import torch.nn.init as init
 
 
+def label_to_one_hot(target, num_classes=10):
+    # print('label_to_one_hot:', target, type(target))
+    try:
+        _ = target.size()[1]
+        # print("use target itself", target.size())
+        onehot_target = target.type(torch.float32)
+    except:
+        target = torch.unsqueeze(target, 1)
+        # print("use unsqueezed target", target.size())
+        onehot_target = torch.zeros(target.size(0), num_classes)
+        onehot_target.scatter_(1, target, 1)
+    return onehot_target
 
 class ModelCompletion(Attacker):
     def __init__(self, top_vfl, args):
@@ -36,9 +48,9 @@ class ModelCompletion(Attacker):
         self.lr = args.attack_configs['lr']
         self.epochs = args.attack_configs['epochs']
         self.label_size = args.num_classes
-        self.batch_size = args.batch_size
+        self.batch_size = args.attack_configs['batch_size']
         self.val_iteration = args.attack_configs['val_iteration']
-
+        self.n_labeled_per_class  = args.attack_configs['n_labeled_per_class']
         #self.hidden_size = args.attack_configs['hidden_size']
 
         self.dummy_active_top_trainable_model = None
@@ -103,6 +115,9 @@ class ModelCompletion(Attacker):
             batch_size = inputs_x.size(0)
 
             # Transform label to one-hot
+   
+            if len(targets_x.size()) == 1:
+                targets_x = targets_x.unsqueeze(1)
             if targets_x.size()[1] ==1:
                 targets_x = label_to_one_hot(targets_x, num_classes=num_classes)
             # targets_x = targets_x.view(-1, 1).type(torch.long)
@@ -242,44 +257,60 @@ class ModelCompletion(Attacker):
             train_label = self.vfl_info["train_label"][-1]     
             test_data = self.vfl_info["test_data"][index]
             test_label = self.vfl_info["test_label"][-1] # onli active party have data
-          
+
+            n_labeled_per_class = self.n_labeled_per_class
             aux_indx = []
             get_times = [0 for _i in range(self.num_classes)]
             idx = 0
-            while min(get_times) < 10 and idx<len(aux_label):
-                current_label = int(torch.argmax(aux_label[idx], dim=-1))
+
+            labels = np.array((torch.argmax(aux_label, dim=-1)))
+            train_labeled_idxs = []
+            train_unlabeled_idxs = []
+            for i in range(self.num_classes):
+                idxs = np.where(labels == i)[0]
+                np.random.shuffle(idxs)
+                train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+            np.random.shuffle(train_labeled_idxs)
+
+            aux_data = aux_data[train_labeled_idxs]
+            aux_label = aux_label[train_labeled_idxs]
+
+    
+            # while min(get_times) < n_label_per_class and idx<len(aux_label):
+            #     current_label = int(torch.argmax(aux_label[idx], dim=-1))
                 
-                if get_times[current_label]<4:
-                    aux_indx.append(idx)
-                    get_times[current_label] = get_times[current_label] +1
-                idx = idx +1
+            #     if get_times[current_label]<n_label_per_class:
+            #         aux_indx.append(idx)
+            #         get_times[current_label] = get_times[current_label] +1
+            #     idx = idx +1
             
-            aux_data = aux_data[aux_indx]
-            aux_label = aux_label[aux_indx]
+            # aux_data = aux_data[aux_indx]
+            # aux_label = aux_label[aux_indx]
+            
             # print(get_times)
             # print(torch.argmax(aux_label, dim=-1))
             # print(aux_data.size())
             
             aux_dst = ActiveDataset(aux_data, aux_label)
-            aux_loader = DataLoader(aux_dst, batch_size=batch_size)
+            aux_loader = DataLoader(aux_dst, batch_size=batch_size,shuffle=True)
             
             train_dst = ActiveDataset(train_data, train_label)
-            train_loader = DataLoader(train_dst, batch_size=batch_size)
+            train_loader = DataLoader(train_dst, batch_size=batch_size,shuffle=True)
             
             test_dst = ActiveDataset(test_data, test_label)
-            test_loader = DataLoader(test_dst, batch_size=batch_size)
+            test_loader = DataLoader(test_dst, batch_size=10*batch_size,shuffle=True)
 
-            complete_train_data = torch.cat([aux_data,train_data],dim=0)
-            complete_train_label = torch.cat([aux_label,train_label],dim=0)
-            complete_train_dst = ActiveDataset(complete_train_data, complete_train_label)
-            complete_train_loader = DataLoader(complete_train_dst, batch_size=batch_size)
+            # complete_train_data = torch.cat([aux_data,train_data],dim=0)
+            # complete_train_label = torch.cat([aux_label,train_label],dim=0)
+            # complete_train_dst = ActiveDataset(complete_train_data, complete_train_label)
+            # complete_train_loader = DataLoader(complete_train_dst, batch_size=batch_size)
             
             bottom_model = self.vfl_info['model'][index].to(self.device)  # local bottom model for attacker
             bottom_model.eval()
             
             def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
                 model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
-                                            num_layer=2,
+                                            num_layer=4,
                                             activation_func_type='ReLU',
                                             use_bn=0)
                 model = model
@@ -328,7 +359,7 @@ class ModelCompletion(Attacker):
             #print('PMC Best top 1 accuracy:',p_best_acc)
 
             # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
-        p_best_acc = 0
+
         print("returning from PMC/AMC")
-        return best_acc,p_best_acc
+        return best_acc
         # return recovery_history

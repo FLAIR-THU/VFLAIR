@@ -24,7 +24,8 @@ warnings.filterwarnings("ignore")
 
 TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
-LABEL_INFERENCE = ['BatchLabelReconstruction','DataLabelReconstruction','DirectLabelScoring','NormbasedScoring','DirectionbasedScoring','ModelCompletion'] # label_recovery
+LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
+'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
 
 def set_seed(seed=0):
@@ -105,7 +106,7 @@ def evaluate_label_inference(args):
         # args = load_parties(args)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
-        if args.attack_name == 'ModelCompletion':
+        if args.attack_name == 'PassiveModelCompletion':
             args.need_auxiliary = 1
             args = load_parties(args) # include load dataset with auxiliary data
             # actual train = train-aux
@@ -121,20 +122,33 @@ def evaluate_label_inference(args):
             args.main_acc_noattack_withaux = main_acc
             args.basic_vfl_withaux = vfl
 
-            a_best_acc,p_best_acc = vfl.evaluate_attack()
+            attack_metric = vfl.evaluate_attack()
             attack_metric_name = 'label_recovery_rate'
 
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{p_best_acc}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
 
+        elif args.attack_name == 'ActiveModelCompletion':
+            args.need_auxiliary = 1
+            args = load_parties(args) # include load dataset with auxiliary data
+            # actual train = train-aux
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
+
+            attack_metric = vfl.evaluate_attack()
+            attack_metric_name = 'label_recovery_rate'
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|ActiveModelCompletion|{args.attack_param}|{main_acc}|{a_best_acc}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
+
         else:  
             args.need_auxiliary = 0
             args = load_parties(args)
@@ -248,7 +262,7 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack_mc', help='configure json file path')
@@ -316,7 +330,7 @@ if __name__ == '__main__':
             args.basic_vfl = None
             args.main_acc_noattack = None
 
-            # args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
+            args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
             
             if args.label_inference_list != []:
                 evaluate_label_inference(args)
