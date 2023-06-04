@@ -100,17 +100,17 @@ class ModelCompletion(Attacker):
             except StopIteration:
                 labeled_train_iter = iter(labeled_trainloader)
                 inputs_x, targets_x = next(labeled_train_iter)
-            try:
-                inputs_u, _ = next(unlabeled_train_iter)
-            except StopIteration:
-                unlabeled_train_iter = iter(unlabeled_trainloader)
-                inputs_u, _ = next(unlabeled_train_iter)
+            # try:
+            #     inputs_u, _ = next(unlabeled_train_iter)
+            # except StopIteration:
+            #     unlabeled_train_iter = iter(unlabeled_trainloader)
+            #     inputs_u, _ = next(unlabeled_train_iter)
 
             # measure data loading time
             data_time.update(time.time() - end)
 
             inputs_x = inputs_x.type(torch.float)
-            inputs_u = inputs_u.type(torch.float)
+            # inputs_u = inputs_u.type(torch.float)
 
             batch_size = inputs_x.size(0)
 
@@ -124,56 +124,49 @@ class ModelCompletion(Attacker):
             # targets_x = torch.zeros(batch_size, num_classes).scatter_(1, targets_x, 1)
             
             inputs_x, targets_x = inputs_x.to(self.device), targets_x.to(self.device) #.cuda(non_blocking=True)
-            inputs_u = inputs_u.to(self.device)
+            # inputs_u = inputs_u.to(self.device)
 
-            with torch.no_grad():
-                targets_x.view(-1, 1).type(torch.long)  # compute guessed labels of unlabel samples
-                outputs_u = model(inputs_u)
-                p = torch.softmax(outputs_u, dim=1)
-                pt = p ** (1 / 0.8)
-                targets_u = pt / pt.sum(dim=1, keepdim=True)
-                targets_u = targets_u.detach()
+            # with torch.no_grad():
+            #     targets_x.view(-1, 1).type(torch.long)  # compute guessed labels of unlabel samples
+                # outputs_u = model(inputs_u)
+                # p = torch.softmax(outputs_u, dim=1)
+                # pt = p ** (1 / 0.8)
+                # targets_u = pt / pt.sum(dim=1, keepdim=True)
+                # targets_u = targets_u.detach()
 
             # mixup
-            all_inputs = torch.cat([inputs_x, inputs_u], dim=0)
-            all_targets = torch.cat([targets_x, targets_u], dim=0)
+            # all_inputs = torch.cat([inputs_x, inputs_u], dim=0)
+            # all_targets = torch.cat([targets_x, targets_u], dim=0)
 
-            l = np.random.beta(0.75, 0.75) # alpha = 0.75
+            # l = np.random.beta(0.75, 0.75) # alpha = 0.75
 
-            l = max(l, 1 - l)
+            # l = max(l, 1 - l)
 
-            idx = torch.randperm(all_inputs.size(0))
+            # idx = torch.randperm(all_inputs.size(0))
 
-            input_a, input_b = all_inputs, all_inputs[idx]
-            target_a, target_b = all_targets, all_targets[idx]
+            # input_a, input_b = all_inputs, all_inputs[idx]
+            # target_a, target_b = all_targets, all_targets[idx]
 
-            mixed_input = l * input_a + (1 - l) * input_b
-            mixed_target = l * target_a + (1 - l) * target_b
+            # mixed_input = l * input_a + (1 - l) * input_b
+            # mixed_target = l * target_a + (1 - l) * target_b
 
-            # interleave labeled and unlabeled samples between batches to get correct batch norm calculation
-            mixed_input = list(torch.split(mixed_input, batch_size))
-            mixed_input = interleave(mixed_input, batch_size)
+            # # interleave labeled and unlabeled samples between batches to get correct batch norm calculation
+            # mixed_input = list(torch.split(mixed_input, batch_size))
+            # mixed_input = interleave(mixed_input, batch_size)
 
-            logits = [model(mixed_input[0])]
-            for input in mixed_input[1:]:
-                logits.append(model(input))
+            targets_x = torch.tensor(targets_x,dtype=torch.float32)
+            logits_x = torch.tensor(model(inputs_x),dtype=torch.float32)
+            # for input in mixed_input[1:]:
+            #     logits.append(model(input))
 
             # put interleaved samples back
-            logits = interleave(logits, batch_size)
-            logits_x = logits[0]
-            logits_u = torch.cat(logits[1:], dim=0)
+            # logits = interleave(logits, batch_size)
+            # logits_x = logits[0]
+            #logits_u = torch.cat(logits[1:], dim=0)
             # (self,outputs_x, targets_x, outputs_u, targets_u, epoch, all_epochs):
-            x_length = logits_x.size()[0] # x_length batch_size
-            Lx, Lu, w = criterion(logits_x, mixed_target[:x_length], logits_u, mixed_target[x_length:],
-                                epoch+ batch_idx / val_iteration, self.epochs) #  
-            loss = Lx + w * Lu
-
-            # record loss
-            losses.update(loss.item(), inputs_x.size(0))
-            losses_x.update(Lx.item(), inputs_x.size(0))
-            losses_u.update(Lu.item(), inputs_x.size(0))
-            ws.update(w, inputs_x.size(0))
-
+            print(targets_x.size(),logits_x.size())
+            loss = criterion(targets_x,logits_x) #  
+            
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
@@ -186,7 +179,7 @@ class ModelCompletion(Attacker):
             # print('one batch training done')
             if batch_idx % 250 == 0:
                 print("batch_idx:", batch_idx, " loss:", losses.avg)
-        return losses.avg, losses_x.avg, losses_u.avg
+        return losses.avg
 
     def validate(self,valloader, model, criterion, epoch, mode, num_classes):
         batch_time = AverageMeter()
@@ -275,22 +268,6 @@ class ModelCompletion(Attacker):
             aux_data = aux_data[train_labeled_idxs]
             aux_label = aux_label[train_labeled_idxs]
 
-    
-            # while min(get_times) < n_label_per_class and idx<len(aux_label):
-            #     current_label = int(torch.argmax(aux_label[idx], dim=-1))
-                
-            #     if get_times[current_label]<n_label_per_class:
-            #         aux_indx.append(idx)
-            #         get_times[current_label] = get_times[current_label] +1
-            #     idx = idx +1
-            
-            # aux_data = aux_data[aux_indx]
-            # aux_label = aux_label[aux_indx]
-            
-            # print(get_times)
-            # print(torch.argmax(aux_label, dim=-1))
-            # print(aux_data.size())
-            
             aux_dst = ActiveDataset(aux_data, aux_label)
             aux_loader = DataLoader(aux_dst, batch_size=batch_size,shuffle=True)
             
@@ -300,10 +277,7 @@ class ModelCompletion(Attacker):
             test_dst = ActiveDataset(test_data, test_label)
             test_loader = DataLoader(test_dst, batch_size=10*batch_size,shuffle=True)
 
-            # complete_train_data = torch.cat([aux_data,train_data],dim=0)
-            # complete_train_label = torch.cat([aux_label,train_label],dim=0)
-            # complete_train_dst = ActiveDataset(complete_train_data, complete_train_label)
-            # complete_train_loader = DataLoader(complete_train_dst, batch_size=batch_size)
+      
             
             bottom_model = self.vfl_info['model'][index].to(self.device)  # local bottom model for attacker
             bottom_model.eval()
@@ -312,7 +286,7 @@ class ModelCompletion(Attacker):
                 model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
                                             num_layer=2,
                                             activation_func_type='ReLU',
-                                            use_bn=True)
+                                            use_bn=0)
                 model = model
 
                 if ema:
@@ -332,7 +306,7 @@ class ModelCompletion(Attacker):
             # Optimizers & Criterion
             optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
             ema_optimizer = WeightEMA(model, ema_model, lr=self.lr, alpha=0.999) # ema_decay = 0.999
-            train_criterion = SemiLoss()
+            # train_criterion = SemiLoss()
             criterion = nn.CrossEntropyLoss()
             
             # === Begin Attack ===
@@ -347,7 +321,7 @@ class ModelCompletion(Attacker):
                 print('\nEpoch: [%d | %d]' % (epoch + 1, self.epochs))
 
                 train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
-                                                         train_criterion, epoch, num_classes)
+                                                         criterion, epoch, num_classes)
                 
                 print("---MC: Label inference on test dataset:")
                 _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)

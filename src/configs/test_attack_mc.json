@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 3,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -24,17 +24,9 @@
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0,1],
-            "lr": 0.001,
-            "lambda": 1e-6
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "PassiveModelCompletion",
+            "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
@@ -45,7 +37,7 @@
             }
         },
         "1":{
-            "name": "ActiveModelCompletion",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
