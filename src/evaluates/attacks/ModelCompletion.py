@@ -275,7 +275,7 @@ class ModelCompletion(Attacker):
             # aux_data = aux_data[train_labeled_idxs]
             # aux_label = aux_label[train_labeled_idxs]
 
-            labels = np.array((torch.argmax(train_label, dim=-1)))
+            labels = np.array((torch.argmax(train_label.cpu(), dim=-1)))
             train_labeled_idxs = []
             train_unlabeled_idxs = []
             for i in range(num_classes):
