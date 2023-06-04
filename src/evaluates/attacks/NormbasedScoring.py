@@ -34,10 +34,22 @@ def update_all_norm_leak_auc(norm_leak_auc_dict, grad_list, y):
         #             m_auc=norm_leak_auc_dict[key])
 
         ###### auc #######
+        # positive_index = tf.where(y>0)
+        # negative_index = tf.where(y==0)
+        # print(f"positive gradients:{tf.squeeze(tf.gather(grad, positive_index))}")
+        # print(f"negative gradients:{tf.squeeze(tf.gather(grad, negative_index))}")
+
         predicted_value = tf.norm(grad, axis=-1, keepdims=False)
         predicted_value = tf.reshape(predicted_value, shape=(-1))
         if tf.reduce_sum(y) == 0: # no positive examples in this batch
             return None
+        
+        
+        # positive_values = tf.squeeze(tf.gather(predicted_value, positive_index))
+        # negative_values = tf.squeeze(tf.gather(predicted_value, negative_index))
+        # print(f"positive mean={tf.reduce_mean(positive_values)}, std={tf.math.reduce_std(positive_values)}")
+        # print(f"negative mean={tf.reduce_mean(negative_values)}, std={tf.math.reduce_std(negative_values)}")
+
         val_max = tf.math.reduce_max(predicted_value)
         val_min = tf.math.reduce_min(predicted_value)
         predicted_value = (predicted_value - val_min + 1e-16) / (val_max - val_min + 1e-16)
