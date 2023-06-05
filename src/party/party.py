@@ -67,13 +67,7 @@ class Party(object):
         return
 
     def give_pred(self):
-        # ####### Noisy Sample #########
-        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
-            scale = self.args.attack_configs['noise_lambda']
-            self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
-        # ####### Noisy Sample #########
-        else:
-            self.local_pred = self.local_model(self.local_batch_data)
+        self.local_pred = self.local_model(self.local_batch_data)
         self.local_pred_clone = self.local_pred.detach().clone()
         return self.local_pred, self.local_pred_clone
 
@@ -106,6 +100,13 @@ class Party(object):
                 (self.train_data, self.train_label),
                 (self.test_data, self.test_label),
             ) = load_dataset_per_party(args, index)
+        
+        # ####### Noisy Sample #########
+        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
+            scale = self.args.attack_configs['noise_lambda']
+            self.train_data = noisy_sample(self.train_data,scale)
+            # self.test_data = noisy_sample(self.test_data,scale)
+        # ####### Noisy Sample #########
 
     def prepare_data_loader(self, batch_size):
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size,shuffle=True)

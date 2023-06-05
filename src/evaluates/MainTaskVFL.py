@@ -310,11 +310,6 @@ class MainTaskVFL(object):
                                 #print('attacker:',ik)
                                 pred_list.append(torch.zeros_like(self.parties[ik].local_model(parties_data[ik][0])))
                             # ####### missing feature attack ######
-                            # ####### Noisy Sample #########
-                            elif self.args.apply_ns == True and (ik in self.args.attack_configs['party']):
-                                scale = self.args.attack_configs['noise_lambda']
-                                pred_list.append( self.parties[ik].local_model( noisy_sample(parties_data[ik][0],scale) ) )
-                            # ####### Noisy Sample #########
                             else:
                                 pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
                         

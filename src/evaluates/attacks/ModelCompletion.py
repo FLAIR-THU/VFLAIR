@@ -326,7 +326,7 @@ class ModelCompletion(Attacker):
             
             def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
                 model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
-                                            num_layer=2,
+                                            num_layer=1,
                                             activation_func_type='ReLU',
                                             use_bn=True)
                 model = model

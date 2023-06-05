@@ -402,10 +402,8 @@ def load_dataset_per_party(args, index):
     else:
         train_dst, args = dataset_partition(args,index,train_dst,half_dim)
         test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
-        
     # important
     if args.need_auxiliary == 1:
-        
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst

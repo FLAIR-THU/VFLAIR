@@ -1,40 +1,35 @@
 {
-    "epochs": 3,
+    "epochs": 2,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 2
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
-    "defense": {
-        "name": "GradientSparsification",
-        "parameters": {
-            "gradient_sparse_rate": 99.0
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "DirectionbasedScoring",
+            "name": "NoisySample",
             "parameters": {
-                "party": [0]
+                "party": [0],
+                "noise_lambda": 2
             }
         }
     }
