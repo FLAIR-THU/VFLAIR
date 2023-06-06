@@ -77,7 +77,7 @@ def load_basic_models(args,index):
         # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
         local_model_optimizer = MaliciousSGD(
                     list(local_model.parameters()),
-                    lr=args.main_lr, momentum=0.2,
+                    lr=args.main_lr, momentum=0.0,
                     weight_decay=5e-4)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
@@ -138,7 +138,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
                         local_model_optimizer = MaliciousSGD(
                                     list(local_model.parameters()),
-                                    lr=args.main_lr, momentum=0.2,
+                                    lr=args.main_lr, momentum=0.0,
                                     weight_decay=5e-4)
                         # assert 1>2
                     else:

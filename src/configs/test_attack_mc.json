@@ -24,9 +24,17 @@
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [0,1],
+            "lr": 0.001,
+            "lambda": 1e-6
+        }
+    },
     "attack_list": {
         "0":{
-            "name": "ActiveModelCompletion",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
@@ -37,7 +45,7 @@
             }
         },
         "1":{
-            "name": "PassiveModelCompletion",
+            "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
