@@ -544,16 +544,15 @@ def data_poison_text(texts, poison_list, k, dataset):
     text or tabular data
     trigger: set the last element as target_text_value(1)
     '''
-    target_text_value = [1]
 
     if 'nuswide' in dataset.casefold():
         if k == 2: # 1 party poison, passive party-0 poison
-            texts[poison_list,-1] = target_text_value[0]
+            texts[poison_list,-1] = 0
         else:
             assert k == 2, "poison type not supported yet"
-    elif dataset in ['breast_cancer_diagnose','diabetes','criteo','adult_income']:
-        if k == 2: # 1 party poison, passive party-0 poison
-            texts[poison_list,-1] = target_text_value[0]
+    elif 'breast_cancer_diagnose' in dataset.casefold():
+        if k == 2: # first feature of attacker(pasive party 0) set to 0.1
+            texts[poison_list,0] = 0.1
         else:
             assert k == 2, "poison type not supported yet"
   

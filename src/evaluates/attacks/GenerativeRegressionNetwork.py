@@ -71,6 +71,7 @@ class Generator(nn.Module):
         )
 
     def forward(self, x):
+        x = torch.tensor(x,dtype=torch.float32)
         return self.net(x)
 
 
@@ -162,7 +163,7 @@ class GenerativeRegressionNetwork(Attacker):
             test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
 
             # Initalize Generator
-            if self.args.dataset == 'nuswide':
+            if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
                 dim_a = test_data_a.size()[1]
                 dim_b = test_data_b.size()[1]
             else: # mnist cifar
@@ -195,7 +196,7 @@ class GenerativeRegressionNetwork(Attacker):
                     # print('batch_data_b:',batch_data_b.size())
                     # print('torch.cat:',batch_data_a.size(),noise_data_b.size())
                     # print('cat:',torch.cat((batch_data_a,noise_data_b),dim=1).size())
-                    if self.args.dataset == 'nuswide':
+                    if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
                         generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=1))
                     else:
                         generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2))
@@ -233,7 +234,7 @@ class GenerativeRegressionNetwork(Attacker):
                     with torch.no_grad():
                         noise_data_b = torch.randn(test_data_b.size()).to(self.device)
                         
-                        if self.args.dataset == 'nuswide':
+                        if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
                             generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=1))
                         else:
                             generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))

@@ -25,13 +25,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "DistanceCorrelation",
-        "parameters": {
-            "lambda": 0.0001,
-            "model_path": ""
-        }
-    },
     "attack_list": {
         "0":{
             "name": "NormbasedScoring",
@@ -54,65 +47,52 @@
             }
         },
         "3":{
-            "name": "PassiveModelCompletion",
+            "name": "ModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":8,
-                "lr": 2e-3,
-                "n_labeled_per_class": 8
+                "epochs": 3,
+                "lr": 2e-3
             }
         },
         "4":{
-            "name": "ActiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
-            }
-        },
-        "5":{
             "name": "DirectLabelScoring",
             "parameters": {
                 "party": [0]
             }
         },
 
-        "6": {
+        "5": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "7":{
+        "6":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 2
             }
         },
-        "8": {
+
+        "9": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
-        
-        "9":{
+        "10":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
-                "lr": 1e-3,
+                "lr": 1e-4,
                 "epochs": 50,
-                "batch_size": 32
+                "batch_size": 16
             }
         },
-        "10":{
+        "11":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],

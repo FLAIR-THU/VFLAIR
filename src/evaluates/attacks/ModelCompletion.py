@@ -101,10 +101,10 @@ class ModelCompletion(Attacker):
                 labeled_train_iter = iter(labeled_trainloader)
                 inputs_x, targets_x = next(labeled_train_iter)
             try:
-                inputs_u, _targets_u = next(unlabeled_train_iter)
+                inputs_u, _ = next(unlabeled_train_iter)
             except StopIteration:
                 unlabeled_train_iter = iter(unlabeled_trainloader)
-                inputs_u, _targets_u = next(unlabeled_train_iter)
+                inputs_u, _ = next(unlabeled_train_iter)
 
             # measure data loading time
             data_time.update(time.time() - end)
@@ -133,7 +133,6 @@ class ModelCompletion(Attacker):
                 pt = p ** (1 / 0.8)
                 targets_u = pt / pt.sum(dim=1, keepdim=True)
                 targets_u = targets_u.detach()
-            # print(torch.argmax(targets_u, dim=-1), torch.argmax(_targets_u, dim=-1))
 
             # mixup
             all_inputs = torch.cat([inputs_x, inputs_u], dim=0)
@@ -260,31 +259,48 @@ class ModelCompletion(Attacker):
             test_label = self.vfl_info["test_label"][-1] # onli active party have data
 
             n_labeled_per_class = self.n_labeled_per_class
-            aux_indx = []
-            get_times = [0 for _i in range(self.num_classes)]
-            idx = 0
+            
+            train_label = label_to_one_hot(train_label,self.num_classes)
+            aux_label = label_to_one_hot(aux_label,self.num_classes)
+            test_label = label_to_one_hot(test_label,self.num_classes)
 
-            labels = np.array((torch.argmax(aux_label, dim=-1)).cpu())
-            # print(f"in mc attack, aux_labels={labels[:5]}, party_index={index}, batch_size={batch_size}, n_labeled_per_class={n_labeled_per_class}, num_classes={self.num_classes}")
+            print('all_train_data:',train_data.size())
+            print('all_train_label:',train_label.size())
+            # labels = np.array((torch.argmax(aux_label, dim=-1)))
+            # train_labeled_idxs = []
+            # train_unlabeled_idxs = []
+            # for i in range(self.num_classes):
+            #     idxs = np.where(labels == i)[0]
+            #     np.random.shuffle(idxs)
+            #     train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+            # np.random.shuffle(train_labeled_idxs)
+
+            # aux_data = aux_data[train_labeled_idxs]
+            # aux_label = aux_label[train_labeled_idxs]
+
+            if len(train_label.size())==2:
+                labels = np.array((torch.argmax(train_label.cpu(), dim=-1)))
+            else:
+                labels = np.array(train_label.cpu())
+
             train_labeled_idxs = []
             train_unlabeled_idxs = []
-            for i in range(self.num_classes):
+            for i in range(num_classes):
                 idxs = np.where(labels == i)[0]
                 np.random.shuffle(idxs)
                 train_labeled_idxs.extend(idxs[:n_labeled_per_class])
+                train_unlabeled_idxs.extend(idxs[n_labeled_per_class:])
             np.random.shuffle(train_labeled_idxs)
+            np.random.shuffle(train_unlabeled_idxs)
 
-            aux_data = aux_data[train_labeled_idxs]
-            aux_label = aux_label[train_labeled_idxs]
-            # for label in aux_label:
-            #     print(label)
+            aux_data = train_data[train_labeled_idxs]
+            aux_label = train_label[train_labeled_idxs]
 
-            # for i, (data, label) in enumerate(zip(aux_data,aux_label)):
-            #     print(i,label)
-            #     from torchvision.utils import save_image
-            #     save_image(data, os.path.join(f"./temp/{i}_{label}_real.jpg"),nrow=10,padding=2,pad_value=0.)
+            train_data = train_data[train_unlabeled_idxs]
+            train_label = train_label[train_unlabeled_idxs]
 
-    
+            
+            print('train_unlabeled_idxs:',len(train_unlabeled_idxs))
             # while min(get_times) < n_label_per_class and idx<len(aux_label):
             #     current_label = int(torch.argmax(aux_label[idx], dim=-1))
                 
@@ -303,6 +319,8 @@ class ModelCompletion(Attacker):
             aux_dst = ActiveDataset(aux_data, aux_label)
             aux_loader = DataLoader(aux_dst, batch_size=batch_size,shuffle=True)
             
+            print('train_data:',train_data.size())
+            print('batch_size:',batch_size)
             train_dst = ActiveDataset(train_data, train_label)
             train_loader = DataLoader(train_dst, batch_size=batch_size,shuffle=True)
             
@@ -319,10 +337,9 @@ class ModelCompletion(Attacker):
             
             def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
                 model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
-                                            # num_layer=4,
                                             num_layer=1,
                                             activation_func_type='ReLU',
-                                            use_bn=1)
+                                            use_bn=True)
                 model = model
 
                 if ema:
@@ -359,13 +376,13 @@ class ModelCompletion(Attacker):
                 train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
                                                          train_criterion, epoch, num_classes)
                 
-                print("---PMC: Label inference on test dataset:")
+                print("---MC: Label inference on test dataset:")
                 _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
                 best_acc = max(test_acc, best_acc)
 
 
-            print(f"PMC, if self.args.apply_defense={self.args.apply_defense}")
-            print('PMC Best top 1 accuracy:',best_acc)
+            print(f"MC, if self.args.apply_defense={self.args.apply_defense}")
+            print('MC Best top 1 accuracy:',best_acc)
             #print('PMC Best top 1 accuracy:',p_best_acc)
 
             # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))

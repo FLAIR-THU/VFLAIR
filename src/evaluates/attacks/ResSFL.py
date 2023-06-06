@@ -163,14 +163,16 @@ class ResSFL(Attacker):
             '''
             test_data_b = [batchsize,1,28,14]
             '''
-            if self.args.dataset == 'nuswide':
+            if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
                 dim_a = test_data_a.size()[1]
                 dim_b = test_data_b.size()[1]
+
             else: # mnist cifar
                 dim_a = test_data_a.size()[1]*test_data_a.size()[2]*test_data_a.size()[3]
                 dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
             
             criterion = nn.MSELoss()
+            test_data_b = torch.tensor(test_data_b,dtype=torch.float32)
             latent_dim = net_b(test_data_b).size()[1]
             decoder = custom_AE(latent_dim, dim_b).to(self.device)
             #custom_AE(input_nc=input_nc, output_nc=3, input_dim=input_dim, output_dim=32).to(self.device)

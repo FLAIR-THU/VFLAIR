@@ -13,7 +13,7 @@ from copy import deepcopy, copy
 
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
-
+from sklearn.preprocessing import MinMaxScaler
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
@@ -42,10 +42,10 @@ def dataset_partition(args, index, dst, half_dim):
         if args.k == 2:
             if index == 0:
                 return (dst[0][:, :, :half_dim, :], None)
-                # return (dst[0][:, :, :, :half_dim].reshape(dst[0].size(0),dst[0].size(1),dst[0].size(2)//2,dst[0].size(3)), None)
+                # return (dst[0][:, :, half_dim:, :], None)
             elif index == 1:
                 return (dst[0][:, :, half_dim:, :], dst[1])
-                # return (dst[0][:, :, :, half_dim:].reshape(dst[0].size(0),dst[0].size(1),dst[0].size(2)//2,dst[0].size(3)), dst[1])
+                # return (dst[0][:, :, :half_dim, :], dst[1])
             else:
                 assert index <= 1, "invalide party index"
                 return None
@@ -283,6 +283,11 @@ def load_dataset_per_party(args, index):
             y = np.where(y=='B',0,1)
             y = np.squeeze(y)
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
+            
+            scaler = MinMaxScaler()
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.fit_transform(X_test)
+
         elif args.dataset == 'diabetes':
             half_dim = 4
             df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
@@ -402,10 +407,8 @@ def load_dataset_per_party(args, index):
     else:
         train_dst, args = dataset_partition(args,index,train_dst,half_dim)
         test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
-        
     # important
     if args.need_auxiliary == 1:
-        
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
