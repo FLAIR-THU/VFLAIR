@@ -42,7 +42,7 @@ class ActiveParty(Party):
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
         pred = self.global_model(pred_list)
-        if self.train_index != None:
+        if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
             else:
@@ -55,7 +55,6 @@ class ActiveParty(Party):
                 loss = loss + mid_loss
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
         elif self.args.apply_dcor:
-            
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
             loss = loss + self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[0], gt_one_hot_label)) # pred_a: passive pred
