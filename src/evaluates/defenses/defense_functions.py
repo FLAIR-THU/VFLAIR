@@ -187,7 +187,7 @@ def LaplaceDP(args, original_object):
         new_object = []
         with torch.no_grad():
             scale = dp_strength
-            for ik in range(len(original_object)):
+            for ik in range(len(original_object)-1):
                 # clip 2-norm per sample
                 # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
                 norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
@@ -197,6 +197,7 @@ def LaplaceDP(args, original_object):
                 new_object.append(torch.div(original_object[ik], norm_factor_a) + \
                                         dist_a.sample(original_object[ik].shape).to(args.device))
             # print("norm of gradients after laplace:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
         return new_object
     else:
         return original_object
@@ -211,13 +212,14 @@ def GaussianDP(args, original_object):
         new_object = []
         with torch.no_grad():
             scale = dp_strength
-            for ik in range(len(original_object)):
+            for ik in range(len(original_object)-1):
                 # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
                 norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
                                         threshold + 1e-6).clamp(min=1.0)
                 new_object.append(torch.div(original_object[ik], norm_factor_a) + \
                                         torch.normal(location, scale, original_object[ik].shape).to(args.device))
                 # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
         return new_object
     else:
         return original_object
@@ -233,7 +235,7 @@ def GradientSparsification(args, original_object):
         new_object = []
         with torch.no_grad():
             percent = grad_spars_ratio / 100.0 # percent to drop
-            for ik in range(len(original_object)):
+            for ik in range(len(original_object)-1):
                 if args.gradients_res_a[ik] is not None and \
                         original_object[ik].shape[0] == args.gradients_res_a[ik].shape[0]:
                     original_object[ik] = original_object[ik] + args.gradients_res_a[ik]
@@ -242,6 +244,7 @@ def GradientSparsification(args, original_object):
                                                         original_object[ik].double(), float(0.)).to(args.device)
                 # new_object.append(original_object[ik])
                 new_object.append(original_object[ik] - args.gradients_res_a[ik])
+            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
         return new_object
     else:
         return original_object
@@ -289,9 +292,10 @@ def DiscreteSGD(args, original_object):
     new_object = []
     if W >= 2:
         with torch.no_grad():
-            for ik in range(len(original_object)):
+            for ik in range(len(original_object)-1):
                 #print(original_object[ik].size())
                 new_object.append(discrete(args, ik, original_object[ik],W).to(args.device))
+            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
     else:
         print('Error: bin_numbers should be > 1')
         return original_object
@@ -339,10 +343,11 @@ def GradPerturb(args, original_object):
         # print('original_object:',original_object[0].size())
         with torch.no_grad():
             # scale = dp_strength
-            for ik in range(len(original_object)):
+            for ik in range(len(original_object)-1):
                 _new = perturb(original_object[ik].cpu(), perturb_epsilon)
                 new_object.append(_new.to(args.device))
                 # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
         return new_object
     else:
         return original_object
