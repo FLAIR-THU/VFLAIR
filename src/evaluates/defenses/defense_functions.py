@@ -300,31 +300,27 @@ def DiscreteSGD(args, original_object):
 
 
 # GradPerturb
-def perturb(real_object, scale):
-    # print(real_onehot_label.size(),type(real_onehot_label))
-    perturb_object = torch.zeros(real_object.size()).float()
-    # print('real_object:',perturb_object.size()) # [2048,10]
-    # print('perturb_object:',perturb_object.size()) # [2048,10]
-
-    pure_gradients = torch.zeros((real_object.size(1),real_object.size(1))).float()
-    # print('pure_gradients:',pure_gradients.size()) # [10,10]
-
-    # for i in range(real_object.size(1)):
-    #     # pure_gradients[i][i] += 1.0
-    #     pure_gradients[i][i] += 1.0
-
-    u = torch.zeros((1,real_object.size(1))).float()
-    # print('u:',u.size()) # [1,10]
+def perturb(args, real_gradient, party_index, scale):
+    # new_gradient = original_gradient + \sum_{c=1}^{num_classes} u_c * gradient_c (gradient calculated as if the sample is from class "c")
+    # C = args.num_classes
+    # print(f"real_gradient.shape={real_gradient.size()}") # (bach_size, num_classes)
+    gradient_each_class = args.parties[args.k-1].gradient_each_class
+    perturbed_gradient = torch.zeros(real_gradient.shape).to(real_gradient.device)
+    # print("gradient_each_class has len, len([0]), len([1]):", len(gradient_each_class), len(gradient_each_class[0]), len(gradient_each_class[1]))
+    u = torch.zeros((real_gradient.size(0),real_gradient.size(1))).float()
     dist_laplace = torch.distributions.laplace.Laplace(0.0, (2/scale)) # sample for Laplace(2/epsilon) to garantee epsilon-dp
+    
+    # for i in range(real_gradient.size(0)): # batch_size
+    u = dist_laplace.sample((real_gradient.size(0),args.num_classes)).to(real_gradient.device)
+    for c in range(real_gradient.size(1)): # num_classes
+        # print(f"u[:,c].reshape(-1,1)={u[:,c].reshape(-1,1)}, gradient_each_class[c][party_index]={gradient_each_class[c][party_index][0]}")
+        # print(f"u[:,c].reshape(-1,1)={u[:,c].reshape(-1,1).shape}, gradient_each_class[c][party_index]={gradient_each_class[c][party_index][0].shape}")
+        # print(type(party_index),party_index)
+        perturbed_gradient += u[:,c].reshape(-1,1) * gradient_each_class[c][party_index][0]
+    perturbed_gradient += real_gradient
+    # perturbed_gradient[i] = real_object[i] + torch.mm(u,pure_gradients)
+    return perturbed_gradient
 
-    for i in range(real_object.size(0)):
-        for j in range(real_object.size(1)):
-            # pure_gradients[i][i] += 1.0
-            pure_gradients[j][j] = real_object[i][j]
-
-        u = dist_laplace.sample((1,real_object.size(1)))
-        perturb_object[i] = real_object[i] + torch.mm(u,pure_gradients)
-    return perturb_object
 
 def GradPerturb(args, original_object):
     #print('=========')
@@ -337,12 +333,14 @@ def GradPerturb(args, original_object):
         new_object = []
         # print('original_object:',len(original_object))
         # print('original_object:',original_object[0].size())
+        
         with torch.no_grad():
             # scale = dp_strength
-            for ik in range(len(original_object)):
-                _new = perturb(original_object[ik].cpu(), perturb_epsilon)
+            for ik in range(len(original_object)-1):
+                _new = perturb(args, original_object[ik], ik, perturb_epsilon)
                 new_object.append(_new.to(args.device))
                 # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+            new_object.append(original_object[-1]) # the active party does not change its own gradient, since it should not harm itself
         return new_object
     else:
         return original_object

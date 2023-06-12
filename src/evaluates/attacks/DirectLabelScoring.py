@@ -67,33 +67,43 @@ class DirectLabelScoring(Attacker):
 
             local_gradient = self.vfl_info['gradient'][ik]
 
-            pred_label = [] 
+            # pred_label = [] 
+            # for _gradient in local_gradient:
+            #     positive = []
+            #     negative = []
+            #     for idx in range(len(_gradient)):
+            #         if _gradient[idx]>= 0:
+            #             positive.append(idx)
+            #         else:
+            #             negative.append(idx)
+
+            #     if len(positive) == 1:
+            #         pred_label.append(positive[0])
+            #     elif len(negative) == 1:
+            #         pred_label.append(negative[0])
+
+            #     else:# for split VFL ?
+            #         print(_gradient)
+            #         # max_idx = _gradient.argmax(dim=0)
+            #         # min_idx = _gradient.argmin(dim=0)
+            #         # if abs(_gradient[max_idx]) > abs(_gradient[min_idx]):
+            #         #     pred_label.append(max_idx)
+            #         # else:
+            #         #     pred_label.append(min_idx)
+            #         if len(negative)<len(positive) :
+            #             pred_label.append(_gradient.argmax(dim=0))
+            #         else:
+            #             pred_label.append(_gradient.argmin(dim=0))
+            #         #assert 1>2, 'cannot find single opposite signed gradient'
+            
+            pred_label = []
             for _gradient in local_gradient:
-                positive = []
-                negative = []
+                pred_idx = -1
                 for idx in range(len(_gradient)):
-                    if _gradient[idx]>= 0:
-                        positive.append(idx)
-                    else:
-                        negative.append(idx)
-
-                if len(positive) == 1:
-                    pred_label.append(positive[0])
-                elif len(negative) == 1:
-                    pred_label.append(negative[0])
-
-                else:# for split VFL ?
-                    # max_idx = _gradient.argmax(dim=0)
-                    # min_idx = _gradient.argmin(dim=0)
-                    # if abs(_gradient[max_idx]) > abs(_gradient[min_idx]):
-                    #     pred_label.append(max_idx)
-                    # else:
-                    #     pred_label.append(min_idx)
-                    if len(negative)<len(positive) :
-                        pred_label.append(_gradient.argmax(dim=0))
-                    else:
-                        pred_label.append(_gradient.argmin(dim=0))
-                    #assert 1>2, 'cannot find single opposite signed gradient'
+                    if _gradient[idx] < 0.0:
+                        pred_idx = idx
+                        break
+                pred_label.append(pred_idx)
 
             one_hot_pred_label = label_to_one_hot(torch.tensor(pred_label), self.num_classes).to(self.device)
             true_label = self.vfl_info['label'].to(self.device) # copy.deepcopy(self.gt_one_hot_label)

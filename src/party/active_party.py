@@ -57,7 +57,8 @@ class ActiveParty(Party):
         elif self.args.apply_dcor:
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
-            loss = loss + self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[0], gt_one_hot_label)) # pred_a: passive pred
+            for ik in range(self.args.k-1):
+                loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
         # ########## for active mid model loss (end) ##########
         return pred, loss
 
@@ -66,6 +67,7 @@ class ActiveParty(Party):
         pred_gradients_list_clone = []
         for ik in range(self.args.k):
             pred_gradients_list.append(torch.autograd.grad(loss, pred_list[ik], retain_graph=True, create_graph=True))
+            # print(f"in gradient_calculation, party#{ik}, loss={loss}, pred_gradeints={pred_gradients_list[-1]}")
             pred_gradients_list_clone.append(pred_gradients_list[ik][0].detach().clone())
         # self.global_backward(pred, loss)
         return pred_gradients_list, pred_gradients_list_clone
@@ -80,6 +82,10 @@ class ActiveParty(Party):
         self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
         pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
         # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
+
+        if self.args.defense_name == "GradPerturb":
+            self.calculate_gradient_each_class(self.global_pred, pred_list)
+
         return pred_gradients_list_clone
     
     def update_local_gradient(self, gradient):
@@ -92,7 +98,6 @@ class ActiveParty(Party):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
                 
-
     def global_backward(self):
 
         if self.global_model_optimizer != None: 
@@ -127,3 +132,22 @@ class ActiveParty(Party):
                         if w.requires_grad:
                             w.grad = g.detach()
             self.global_model_optimizer.step()
+
+    def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
+        # print(f"global_pred.shape={global_pred.size()}") # (batch_size, num_classes)
+        self.gradient_each_class = [[] for _ in range(global_pred.size(1))]
+        one_hot_label = torch.zeros(global_pred.size()).to(global_pred.device)
+        for ic in range(global_pred.size(1)):
+            one_hot_label *= 0.0
+            one_hot_label[:,ic] += 1.0
+            if self.train_index != None: # for graph data
+                if test == False:
+                    loss = self.criterion(global_pred[self.train_index], one_hot_label[self.train_index])
+                else:
+                    loss = self.criterion(global_pred[self.test_index], one_hot_label[self.test_index])
+            else:
+                loss = self.criterion(global_pred, one_hot_label)
+            for ik in range(self.args.k):
+                self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
+        # end of calculate_gradient_each_class, return nothing
+    

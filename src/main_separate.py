@@ -41,8 +41,6 @@ def set_seed(seed=0):
 def evaluate_no_attack(args):
     # No Attack
     set_seed(args.current_seed)
-    args = load_attack_configs(args.configs, args, -1)
-    args = load_parties(args)
 
     vfl = MainTaskVFL(args)
     if args.dataset not in ['cora']:
@@ -269,7 +267,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98): # test 5 times 
+    for seed in range(97,102): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -330,7 +328,10 @@ if __name__ == '__main__':
             args.basic_vfl = None
             args.main_acc_noattack = None
 
-            args.basic_vfl,args.main_acc_noattack = evaluate_no_attack(args)
+            args = load_attack_configs(args.configs, args, -1)
+            args = load_parties(args)
+            
+            args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
             
             if args.label_inference_list != []:
                 evaluate_label_inference(args)
