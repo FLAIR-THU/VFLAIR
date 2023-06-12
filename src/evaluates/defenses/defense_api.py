@@ -13,10 +13,16 @@ def DefenderLoader(args, index):
         # simple function, no need for defender at class
         return None
 
-def apply_defense(args, *params):
-    if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteSGD','GradPerturb']:
-        gradient_list = params
-        return globals()[args.defense_name](args, gradient_list)
-    elif args.defense_name in ['DCAE']:
-        gradient_list = params
-        return globals()['DiscreteSGD'](args, gradient_list)
+def apply_defense(args, _type,*params):
+    if _type == "gradients":
+        if args.defense_name in ['LaplaceDP', 'GaussianDP', 'GradientSparsification', 'DiscreteSGD','GradPerturb']:
+            gradient_list = params
+            return globals()[args.defense_name](args, gradient_list)
+        elif args.defense_name in ['DCAE']:
+            gradient_list = params
+            return globals()['DiscreteSGD'](args, gradient_list)
+    elif _type == "pred":
+        if args.defense_name in ['LaplaceDP', 'GaussianDP']:
+            defense_name = args.defense_name+'_for_pred'
+            gradient_list = params
+            return globals()[defense_name](args, gradient_list)

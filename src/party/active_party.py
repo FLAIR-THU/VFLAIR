@@ -1,6 +1,6 @@
 import sys, os
 sys.path.append(os.pardir)
-
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from party.party import Party
@@ -94,9 +94,10 @@ class ActiveParty(Party):
     def global_LR_decay(self,i_epoch):
         if self.global_model_optimizer != None: 
             eta_0 = self.args.main_lr
-            eta_t = eta_0/((i_epoch+1)**0.5)
+            eta_t = eta_0/(np.sqrt(i_epoch+1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
+        
                 
     def global_backward(self):
 

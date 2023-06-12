@@ -97,6 +97,13 @@ class MainTaskVFLwithBackdoor(object):
                 pred_clone[-1] = pred_clone[-2]
                 # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
             # ######### for backdoor end #########
+
+            # defense applied on pred
+            if self.args.apply_defense == True and self.args.apply_dp == True :
+                # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
+                if (self.k-1 in self.args.attacker_id) and (ik != self.k-1): # attaker won't defend its own attack
+                    pred_clone = self.launch_defense(pred_clone, "pred") 
+
                 
             pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
 
@@ -109,11 +116,21 @@ class MainTaskVFLwithBackdoor(object):
     def gradient_transmit(self):  # partyk(active) as gradient giver
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
+        # # defense applied on gradients
+        # print(len(gradient))
+        # if self.args.apply_defense == True and self.args.apply_dcor ==False and self.args.apply_mid == False and self.args.apply_cae == False:
+        #     gradient = self.launch_defense(gradient, "gradients")        
+        # if self.args.apply_dcae == True:
+        #     gradient = self.launch_defense(gradient, "gradients")  
+        # print(gradient)
+        # assert 1>2
         # defense applied on gradients
-        if self.args.apply_defense == True and self.args.apply_dcor ==False and self.args.apply_mid == False and self.args.apply_cae == False:
-            gradient = self.launch_defense(gradient, "gradients")        
+        if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
+            if (self.k-1) not in self.args.attacker_id:
+                gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
-            gradient = self.launch_defense(gradient, "gradients")  
+            if (self.k-1) not in self.args.attacker_id:
+                gradient = self.launch_defense(gradient, "gradients")  
             
         # ######### for backdoor start #########
         for ik in range(self.k-1): # Only Passive Parties do
@@ -361,13 +378,11 @@ class MainTaskVFLwithBackdoor(object):
             else:
                 defense_param = 0
 
-            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s) (Defense: %s %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs), self.args.defense_name, str(self.args.defense_configs))
             exp_result = f"bs|num_class|Q|top_trainable|final_epoch|lr|acc|backdoor_acc,%d|%d|%d|%d|%d|%lf|%lf|%lf|%s|%s|%lf)" % \
             (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), \
              sum(backdoor_acc_history)/len(backdoor_acc_history),\
                  str(self.args.attack_name), self.args.defense_name, defense_param)
         else:
-            # exp_result = f"bs|num_class|top_trainable|epochs|lr|recovery_rate,%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.apply_trainable_layer, self.epochs, self.lr, self.test_acc, self.backdoor_acc, str(self.args.attack_configs))
             exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
 
         #append_exp_res(self.exp_res_path, exp_result)
@@ -416,12 +431,15 @@ class MainTaskVFLwithBackdoor(object):
             # further extention
             pass
 
-    def launch_defense(self, gradients_list, type):
-        if type == 'gradients':
-            return apply_defense(self.args, gradients_list)
+    def launch_defense(self, gradients_list, _type):
+        
+        if _type == 'gradients':
+            return apply_defense(self.args, _type, gradients_list)
+        elif _type == 'pred':
+            return apply_defense(self.args, _type, gradients_list)
         else:
             # further extention
-            pass
+            return gradients_list
 
     def calc_label_recovery_rate(self, dummy_label, gt_label):
         success = torch.sum(torch.argmax(dummy_label, dim=-1) == torch.argmax(gt_label, dim=-1)).item()

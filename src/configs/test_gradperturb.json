@@ -36,6 +36,14 @@
             "parameters": {
                 "party": [0]
             }
+        },
+        "1":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.01,
+                "epochs": 10000
+            }
         }
     }
 }

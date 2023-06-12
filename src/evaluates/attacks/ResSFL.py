@@ -18,7 +18,7 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from dataset.party_dataset import PassiveDataset
 from dataset.party_dataset import ActiveDataset
 
-
+from evaluates.defenses.defense_functions import LaplaceDP_for_pred,GaussianDP_for_pred
 
 def label_to_one_hot(target, num_classes=10):
     # print('label_to_one_hot:', target, type(target))
@@ -57,44 +57,43 @@ class custom_AE(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-# class custom_AE(nn.Module):
-#     def __init__(self, input_nc=256, output_nc=3, input_dim=8, output_dim=32, activation = "sigmoid"):
-#         super(custom_AE, self).__init__()
-#         upsampling_num = int(np.log2(output_dim // input_dim))
-#         # get [b, 3, 8, 8]
-#         model = []
-#         nc = input_nc
-#         for num in range(upsampling_num - 1):
-#             #TODO: change to Conv2d
-#             model += [nn.Conv2d(nc, int(nc/2), kernel_size=3, stride=1, padding=1)]
-#             model += [nn.ReLU()]
-#             model += [nn.ConvTranspose2d(int(nc/2), int(nc/2), kernel_size=3, stride=2, padding=1, output_padding=1)]
-#             model += [nn.ReLU()]
-#             nc = int(nc/2)
-#         if upsampling_num >= 1:
-#             model += [nn.Conv2d(int(input_nc/(2 ** (upsampling_num - 1))), int(input_nc/(2 ** (upsampling_num - 1))), kernel_size=3, stride=1, padding=1)]
-#             model += [nn.ReLU()]
-#             model += [nn.ConvTranspose2d(int(input_nc/(2 ** (upsampling_num - 1))), output_nc, kernel_size=3, stride=2, padding=1, output_padding=1)]
-#             if activation == "sigmoid":
-#                 model += [nn.Sigmoid()]
-#             elif activation == "tanh":
-#                 model += [nn.Tanh()]
-#         else:
-#             model += [nn.Conv2d(input_nc, input_nc, kernel_size=3, stride=1, padding=1)]
-#             model += [nn.ReLU()]
-#             model += [nn.Conv2d(input_nc, output_nc, kernel_size=3, stride=1, padding=1)]
-#             if activation == "sigmoid":
-#                 model += [nn.Sigmoid()]
-#             elif activation == "tanh":
-#                 model += [nn.Tanh()]
-#         self.m = nn.Sequential(*model)
+# def LaplaceDP_for_pred(args, original_object):
+#     original_object = original_object[0]
+#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+#     dp_strength = args.defense_configs['dp_strength']
+    
+#     if dp_strength > 0.0:
+#         location = 0.0
+#         threshold = 0.2  # 1e9
+#         scale = dp_strength
+#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+#                                     threshold + 1e-6).clamp(min=1.0)
+#         # add laplace noise
+#         dist_a = torch.distributions.laplace.Laplace(location, scale)
+#         original_object = (torch.div(original_object, norm_factor_a) + \
+#                                 dist_a.sample(original_object.shape).to(args.device))
+#         return original_object
+#     else:
+#         return original_object
 
-    # def forward(self, x):
-    #     print('x:',x.size())
-    #     output = self.m(x)
-    #     print('output:',output.size())
-    #     assert 1>2
-    #     return output
+
+# def GaussianDP_for_pred(args, original_object):
+#     original_object = original_object[0]
+#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+#     dp_strength = args.defense_configs['dp_strength']
+#     if dp_strength > 0.0:
+#         location = 0.0
+#         threshold = 0.2  # 1e9
+
+#         scale = dp_strength
+        
+#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+#                                 threshold + 1e-6).clamp(min=1.0)
+#         original_object = (torch.div(original_object, norm_factor_a) + \
+#                                 torch.normal(location, scale, original_object.shape).to(args.device))
+#         return original_object
+#     else:
+#         return original_object
 
 
 class ResSFL(Attacker):
@@ -195,6 +194,16 @@ class ResSFL(Attacker):
                     # Known Information : intermediate representation
                     with torch.no_grad():
                         ir = net_b(batch_data_b) 
+
+                        ####### DP Defense On FR ########
+                        if self.args.apply_dp == True:
+                            if 'laplace' in self.args.defense_name.casefold():
+                                ir = LaplaceDP_for_pred(self.args, [ir])
+                            elif 'gaussian' in self.args.defense_name.casefold():
+                                ir = GaussianDP_for_pred(self.args, [ir])
+                        ####### DP Defense On FR ########
+
+
                     img, ir = img.type(torch.FloatTensor), ir.type(torch.FloatTensor)
                     img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
                     
@@ -224,21 +233,19 @@ class ResSFL(Attacker):
                         img = test_data_b # target img
                         test_pred_b = net_b(test_data_b)
                         ir = test_pred_b 
+                        ####### DP Defense On FR ########
+                        if self.args.apply_dp == True:
+                            if 'laplace' in self.args.defense_name.casefold():
+                                ir = LaplaceDP_for_pred(self.args, [ir])
+                            elif 'gaussian' in self.args.defense_name.casefold():
+                                ir = GaussianDP_for_pred(self.args, [ir])
+                        ####### DP Defense On FR ########
+                        
                         img, ir = img.type(torch.FloatTensor), ir.type(torch.FloatTensor)
                         img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
                         
                         output = decoder(ir) # reconstruction result
 
-                        # if i_epoch == self.epochs -1:
-                        #     print()
-                        #     data_to_be_visualized = output[0].reshape(img[0].size())
-                        #     plt.imshow(data_to_be_visualized[0])
-                        #     plt.savefig('exp_result/' + 'dummy.png')
-                        #     plt.close()
-                        #     origin_data = img[0][0]
-                        #     plt.imshow(origin_data)
-                        #     plt.savefig('exp_result/' + 'origin.png')
-                        #     plt.close()
 
                         img = img.reshape(output.size())
                         rand_img = torch.randn(img.size()).to(self.device)
