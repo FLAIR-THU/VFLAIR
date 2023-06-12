@@ -177,7 +177,6 @@ class DPLaplacianNoiseApplyer():
 
 def LaplaceDP(args, original_object):
     original_object = original_object[0]
-    
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
     
@@ -187,18 +186,41 @@ def LaplaceDP(args, original_object):
         new_object = []
         with torch.no_grad():
             scale = dp_strength
-            for ik in range(len(original_object)-1):
-                # clip 2-norm per sample
-                # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
-                norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
-                                            threshold + 1e-6).clamp(min=1.0)
-                # add laplace noise
-                dist_a = torch.distributions.laplace.Laplace(location, scale)
-                new_object.append(torch.div(original_object[ik], norm_factor_a) + \
-                                        dist_a.sample(original_object[ik].shape).to(args.device))
+            for ik in range(len(original_object)):
+                if ik == args.k-1:
+                    new_object.append(original_object[ik])
+                else:
+                    # clip 2-norm per sample
+                    # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
+                    norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
+                                                threshold + 1e-6).clamp(min=1.0)
+                    # add laplace noise
+                    dist_a = torch.distributions.laplace.Laplace(location, scale)
+                    new_object.append(torch.div(original_object[ik], norm_factor_a) + \
+                                            dist_a.sample(original_object[ik].shape).to(args.device))
             # print("norm of gradients after laplace:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
-            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
         return new_object
+    else:
+        return original_object
+
+
+def LaplaceDP_for_pred(args, original_object):
+    original_object = original_object[0]
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = 0.2  # 1e9
+        with torch.no_grad():
+            scale = dp_strength
+            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                        threshold + 1e-6).clamp(min=1.0)
+            # add laplace noise
+            dist_a = torch.distributions.laplace.Laplace(location, scale)
+            original_object = (torch.div(original_object, norm_factor_a) + \
+                                    dist_a.sample(original_object.shape).to(args.device))
+        return original_object
     else:
         return original_object
 
@@ -212,14 +234,36 @@ def GaussianDP(args, original_object):
         new_object = []
         with torch.no_grad():
             scale = dp_strength
-            for ik in range(len(original_object)-1):
-                # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
-                norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
-                                        threshold + 1e-6).clamp(min=1.0)
-                new_object.append(torch.div(original_object[ik], norm_factor_a) + \
-                                        torch.normal(location, scale, original_object[ik].shape).to(args.device))
-                # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
-            new_object.append(original_object[-1]) # active party's gradient: stay unchanged
+            for ik in range(len(original_object)):
+                if (ik == args.k-1): # gradients type
+                    new_object.append(original_object[args.k-1])
+                else:
+                    # print("norm of gradients:", torch.norm(original_object[ik], dim=1), torch.max(torch.norm(original_object[ik], dim=1)))
+                    norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
+                                            threshold + 1e-6).clamp(min=1.0)
+                    new_object.append(torch.div(original_object[ik], norm_factor_a) + \
+                                            torch.normal(location, scale, original_object[ik].shape).to(args.device))
+                    # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+        return new_object
+    else:
+        return original_object
+
+
+def GaussianDP_for_pred(args, original_object):
+    original_object = original_object[0]
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = 0.2  # 1e9
+        with torch.no_grad():
+            scale = dp_strength
+            
+            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                    threshold + 1e-6).clamp(min=1.0)
+            new_object = (torch.div(original_object, norm_factor_a) + \
+                                    torch.normal(location, scale, original_object.shape).to(args.device))
+            # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
         return new_object
     else:
         return original_object

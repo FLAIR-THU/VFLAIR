@@ -127,7 +127,7 @@
         "12":{
             "name": "ASB",
             "parameters": {
-                "party": [1],
+                "party": [0],
                 "lr": 0.01,
                 "epochs": 3,
                 "inner_iterations": 5

@@ -288,7 +288,7 @@ if __name__ == '__main__':
         ####### load configs from *.json files #######
         ############ Basic Configs ############
         
-        for mode in [0]:
+        for mode in [1]:
             
             if mode == 0:
                 args.global_model = 'ClassificationModelHostHead'

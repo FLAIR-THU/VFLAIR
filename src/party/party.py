@@ -1,6 +1,6 @@
 import os
 import sys
-
+import numpy as np
 sys.path.append(os.pardir)
 
 import torch
@@ -108,10 +108,10 @@ class Party(object):
             ) = load_dataset_per_party(args, index)
 
     def prepare_data_loader(self, batch_size):
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size,shuffle=True)
-        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size,shuffle=True)
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)
+        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # ,shuffle=True
         if self.args.need_auxiliary == 1 and self.aux_dst != None:
-            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)
+            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
     def prepare_model(self, args, index):
         # prepare model and optimizer
@@ -136,9 +136,10 @@ class Party(object):
 
     def LR_decay(self,i_epoch):
         eta_0 = self.args.main_lr
-        eta_t = eta_0/((i_epoch+1)**0.5)
+        eta_t = eta_0/(np.sqrt(i_epoch+1))
         for param_group in self.local_model_optimizer.param_groups:
             param_group['lr'] = eta_t
+        
             
     def obtain_local_data(self, data):
         self.local_batch_data = data

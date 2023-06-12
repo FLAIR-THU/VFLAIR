@@ -85,6 +85,13 @@ class MainTaskVFL(object):
     def pred_transmit(self): # Active party gets pred from passive parties
         for ik in range(self.k):
             pred, pred_detach = self.parties[ik].give_pred()
+
+            # defense applied on pred
+            if self.args.apply_defense == True and self.args.apply_dp == True :
+                # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
+                if (self.k-1 in self.args.attacker_id) and (ik != self.k-1): # attaker won't defend its own attack
+                    pred_detach = self.launch_defense(pred_detach, "pred") 
+
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
@@ -95,11 +102,14 @@ class MainTaskVFL(object):
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
+        
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
-            gradient = self.launch_defense(gradient, "gradients")   
+            if (self.k-1) not in self.args.attacker_id:
+                gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
-            gradient = self.launch_defense(gradient, "gradients")  
+            if (self.k-1) not in self.args.attacker_id:
+                gradient = self.launch_defense(gradient, "gradients")  
             
         # active party update local gradient
         self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
@@ -152,9 +162,9 @@ class MainTaskVFL(object):
                     self.pred_transmit() 
                     self.gradient_transmit() 
                     # update parameters for all parties
-                    self.parties[self.k-1].global_backward()
                     for ik in range(self.k):
                         self.parties[ik].local_backward()
+                    self.parties[self.k-1].global_backward()
                 else: # FedBCD: additional iterations without info exchange
                     # for passive party, do local update without info exchange
                     for ik in range(self.k-1):
@@ -512,9 +522,12 @@ class MainTaskVFL(object):
             attack_acc = self.attacker.attack()
         return attack_acc
 
-    def launch_defense(self, gradients_list, type):
-        if type == 'gradients':
-            return apply_defense(self.args, gradients_list)
+    def launch_defense(self, gradients_list, _type):
+        
+        if _type == 'gradients':
+            return apply_defense(self.args, _type, gradients_list)
+        elif _type == 'pred':
+            return apply_defense(self.args, _type, gradients_list)
         else:
             # further extention
             return gradients_list

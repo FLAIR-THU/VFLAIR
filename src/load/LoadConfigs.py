@@ -40,6 +40,7 @@ def load_basic_configs(config_file_name, args):
     args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
     assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
     
+    args.attacker_id = []
     # # args.early_stop, if use early stop
     # args.main_early_stop = config_dict['main_early_stop'] if ('main_early_stop' in config_dict) else 0
     # args.main_early_stop_param = config_dict['main_early_stop_param'] if ('main_early_stop_param' in config_dict) else 0.0001
@@ -101,11 +102,13 @@ def load_basic_configs(config_file_name, args):
         args.apply_mid = False
         args.apply_cae = False
         args.apply_dcae = False
+        args.apply_dp = False
         args.Q=1
         return args
 
     # if defense appears
     args.apply_defense = False
+    args.apply_dp = False
     args.apply_mid = False # mid defense
     args.apply_cae = False # cae defense
     args.apply_dcae = False # dcae defense
@@ -125,6 +128,8 @@ def load_basic_configs(config_file_name, args):
                     args.apply_dcae = True
             elif 'distancecorrelation' in args.defense_name.casefold():
                 args.apply_dcor = True
+            elif ('gaussian' in args.defense_name.casefold()) or ('laplace' in args.defense_name.casefold()):
+                args.apply_dp = True
         else:
             assert 'name' in config_dict['defense'], "missing defense name"
     else:
@@ -230,6 +235,8 @@ def load_attack_configs(config_file_name, args, index):
     # choose attack[index]
     attack_config_dict = config_dict['attack_list'][str(index)]
 
+    args.attaker_id = attack_config_dict['party'] if('party' in attack_config_dict) else []
+
     if 'name' in attack_config_dict:
         args.attack_name = attack_config_dict['name']
         args.attack_configs = attack_config_dict['parameters'] if('parameters' in attack_config_dict) else None
@@ -288,6 +295,7 @@ def load_attack_configs(config_file_name, args, index):
         args.apply_mid = False
         args.apply_cae = False
         args.apply_dcae = False
+        args.apply_dp = False
         args.Q=1
 
     return args
@@ -302,6 +310,7 @@ def init_attack_defense(args):
     args.apply_mid = False
     args.apply_cae = False
     args.apply_dcae = False
+    args.apply_dp = False
     return args
     
 
