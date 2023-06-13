@@ -380,6 +380,7 @@ def GradPerturb(args, original_object):
     perturb_epsilon = args.defense_configs['perturb_epsilon']
 
     if perturb_epsilon > 0.0:
+        # print("grad_perturb", perturb_epsilon, original_object)
         new_object = []
         # print('original_object:',len(original_object))
         # print('original_object:',original_object[0].size())
@@ -391,9 +392,11 @@ def GradPerturb(args, original_object):
                 new_object.append(_new.to(args.device))
                 # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
             new_object.append(original_object[-1]) # the active party does not change its own gradient, since it should not harm itself
+        # print("grad_perturb before return", perturb_epsilon, original_object)
         return new_object
     else:
         return original_object
+    
     # TODO
     # ######################## defense start ############################
     # ######################## defense3: marvell ############################

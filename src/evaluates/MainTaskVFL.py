@@ -101,7 +101,6 @@ class MainTaskVFL(object):
     
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
-
         
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:

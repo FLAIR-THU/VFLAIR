@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 3,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -27,7 +27,7 @@
     "defense": {
         "name": "GradPerturb",
         "parameters": {
-            "perturb_epsilon": 10.0
+            "perturb_epsilon": 1.0
         }
     },
     "attack_list": {

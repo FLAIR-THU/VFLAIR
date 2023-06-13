@@ -148,6 +148,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
 
         
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
+            # print("CAE in defense_name,", args.defense_name)
             if index == args.k-1:
                 # only active party can have encoder and decoder for CAE
                 assert 'model_path' in args.defense_configs, "[error] no CAE model path given"
