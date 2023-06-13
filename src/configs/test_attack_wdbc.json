@@ -47,58 +47,9 @@
             }
         },
         "3":{
-            "name": "ModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 3,
-                "lr": 2e-3
-            }
-        },
-        "4":{
             "name": "DirectLabelScoring",
             "parameters": {
                 "party": [0]
-            }
-        },
-
-        "5": {
-            "name": "MissingFeature",
-            "parameters": {
-                "party": [0],
-                "missing_rate": 0.25
-            }
-        },
-        "6":{
-            "name": "NoisySample",
-            "parameters": {
-                "party": [0],
-                "noise_lambda": 2
-            }
-        },
-
-        "9": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "10":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-4,
-                "epochs": 50,
-                "batch_size": 16
-            }
-        },
-        "11":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 10,
-                "batch_size": 32
             }
         }
     }
