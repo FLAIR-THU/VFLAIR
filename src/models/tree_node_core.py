@@ -1,121 +1,198 @@
 import math
-from typing import List
+from abc import abstractmethod
+from typing import List, Tuple
+
+import numpy as np
 
 
-def sigmoid(x: float) -> float:
-    sigmoid_range = 34.538776394910684
-    if x <= -1 * sigmoid_range:
-        return 1e-15
-    elif x >= sigmoid_range:
-        return 1.0 - 1e-15
-    else:
-        return 1.0 / (1.0 + math.exp(-1 * x))
-
-
-def softmax(x: List[float]) -> List[float]:
-    n = len(x)
-    max_x = max(x)
-    numerator = [0.0] * n
-    output = [0.0] * n
-    denominator = 0.0
-
-    for i in range(n):
-        numerator[i] = math.exp(x[i] - max_x)
-        denominator += numerator[i]
-
-    for i in range(n):
-        output[i] = numerator[i] / denominator
-
-    return output
-
-
-class LossFunc:
-    """
-    Base structure for loss functions.
-    """
-
+class Node:
     def __init__(self):
+        self.parties = None
+        self.idxs = []
+        self.num_classes = 0
+        self.depth = 0
+        self.active_party_id = 0
+        self.n_job = 0
+        self.party_id = 0
+        self.record_id = 0
+        self.row_count = 0
+        self.num_parties = 0
+        self.score = 0.0
+        self.val = []
+        self.best_party_id = -1
+        self.best_col_id = -1
+        self.best_threshold_id = -1
+        self.best_score = -1 * np.inf
+        self.is_leaf_flag = -1
+        self.is_pure_flag = -1
+        self.secure_flag_exclude_passive_parties = False
+        self.not_splitted_flag = False
+
+    @abstractmethod
+    def get_idxs(self) -> List[int]:
         pass
 
-    def get_loss(self, y_pred: List[List[float]], y: List[float]) -> float:
-        raise NotImplementedError
+    @abstractmethod
+    def get_party_id(self) -> int:
+        pass
 
-    def get_grad(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        raise NotImplementedError
+    @abstractmethod
+    def get_record_id(self) -> int:
+        pass
 
-    def get_hess(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        raise NotImplementedError
+    @abstractmethod
+    def get_val(self) -> List[float]:
+        pass
+
+    @abstractmethod
+    def get_score(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_num_parties(self) -> int:
+        pass
+
+    @abstractmethod
+    def compute_weight(self) -> List[float]:
+        pass
+
+    @abstractmethod
+    def find_split(self) -> Tuple[int, int, int]:
+        pass
+
+    @abstractmethod
+    def make_children_nodes(
+        self, best_party_id: int, best_col_id: int, best_threshold_id: int
+    ):
+        pass
+
+    @abstractmethod
+    def is_leaf(self) -> bool:
+        pass
+
+    @abstractmethod
+    def is_pure(self) -> bool:
+        pass
 
 
-class BCELoss(LossFunc):
-    """
-    Implementation of Binary Cross Entropy Loss.
-    """
+class NodeAPI:
+    def __init__(self) -> None:
+        pass
 
-    def __init__(self):
-        super().__init__()
+    def print(self, node: Node, target_party_id: int = -1) -> str:
+        result, skip_flag = self.recursive_print(node, "", False, target_party_id)
+        if skip_flag:
+            return ""
+        else:
+            return result
 
-    def get_loss(self, y_pred: List[List[float]], y: List[float]) -> float:
-        loss = 0.0
-        n = len(y_pred)
-        for i in range(n):
-            if y[i] == 1:
-                loss += math.log(1 + math.exp(-1 * sigmoid(y_pred[i][0]))) / n
+    def print_leaf(self, node: Node) -> str:
+        node_info = str(node.get_val()[0])
+        node_info += ", " + str(len(node.idxs))
+        return node_info
+
+    def recursive_print(
+        self, node: Node, prefix: str, isleft: bool, target_party_id: int = -1
+    ) -> Tuple[str, bool]:
+        node_info = ""
+        skip_flag = False
+        if node.is_leaf_flag:
+            skip_flag = (
+                node.depth <= 0
+                and target_party_id != -1
+                and node.party_id != target_party_id
+            )
+            if skip_flag:
+                node_info = ""
             else:
-                loss += math.log(1 + math.exp(sigmoid(y_pred[i][0]))) / n
-        return loss
+                node_info = self.print_leaf(node)
+            node_info = prefix + "|-- " + node_info
+            node_info += "\n"
+        else:
+            node_info += str(node.get_party_id())
+            node_info += ", "
+            node_info += str(node.get_record_id())
+            if node.secure_flag_exclude_passive_parties:
+                node_info += " *"
+            node_info = prefix + "|-- " + node_info
 
-    def get_grad(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        element_num = len(y_pred)
-        grad = [[0.0] for i in range(element_num)]
-        for i in range(element_num):
-            grad[i] = [sigmoid(y_pred[i][0]) - y[i]]
-        return grad
+            next_prefix = ""
+            if isleft:
+                next_prefix += "|    "
+            else:
+                next_prefix += "     "
 
-    def get_hess(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        element_num = len(y_pred)
-        hess = [[0.0] for i in range(element_num)]
-        for i in range(element_num):
-            temp_proba = sigmoid(y_pred[i][0])
-            hess[i] = [temp_proba * (1 - temp_proba)]
-        return hess
+            left_node_info_and_skip_flag = self.recursive_print(
+                node.left, prefix + next_prefix, True, target_party_id
+            )
+            right_node_info_and_skip_flag = self.recursive_print(
+                node.right, prefix + next_prefix, False, target_party_id
+            )
+            if left_node_info_and_skip_flag[1] and right_node_info_and_skip_flag[1]:
+                node_info += " -> " + self.print_leaf(node)
+                node_info += "\n"
+            else:
+                node_info += "\n"
+                node_info += left_node_info_and_skip_flag[0]
+                node_info += right_node_info_and_skip_flag[0]
+
+            skip_flag = False
+
+        return node_info, skip_flag
+
+    def predict_row(self, node: Node, xi: List[float]) -> List[float]:
+        que = []
+        que.append(node)
+        while que:
+            temp_node = que.pop(0)
+            if temp_node.is_leaf_flag:
+                return temp_node.val
+            else:
+                if node.parties[temp_node.party_id].is_left(temp_node.record_id, xi):
+                    que.append(temp_node.left)
+                else:
+                    que.append(temp_node.right)
+        nan_vec = [math.nan for _ in range(node.num_classes)]
+        return nan_vec
+
+    def predict(self, node: Node, x_new: List[List[float]]) -> List[List[float]]:
+        x_new_size = len(x_new)
+        y_pred = []
+        for i in range(x_new_size):
+            y_pred.append(self.predict_row(node, x_new[i]))
+        return y_pred
 
 
-class CELoss:
-    def __init__(self, num_classes: int = None):
-        self.num_classes = num_classes
+class Tree:
+    def __init__(self) -> None:
+        self.dtree = None
+        self.nodeapi = NodeAPI()
+        self.num_row = None
 
-    def get_loss(self, y_pred: List[List[float]], y: List[float]) -> float:
-        n = len(y_pred)
-        y_pred_proba = [softmax(y_pred[i]) for i in range(n)]
+    def get_root_node(self) -> Node:
+        return self.dtree
 
-        loss = 0
-        for i in range(n):
-            for c in range(self.num_classes):
-                if y[i] == c:
-                    loss -= math.log(y_pred_proba[i][c])
-        return loss
+    def predict(self, X: List[List[float]]) -> List[List[float]]:
+        return self.nodeapi.predict(self.dtree, X)
 
-    def get_grad(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        n = len(y_pred)
-        y_pred_proba = [softmax(y_pred[i]) for i in range(n)]
+    def extract_train_prediction_from_node(
+        self, node: Node
+    ) -> List[Tuple[List[int], List[List[float]]]]:
+        if node.is_leaf_flag:
+            result = [(node.idxs, [node.val] * len(node.idxs))]
+            return result
+        else:
+            left_result = self.extract_train_prediction_from_node(node.left)
+            right_result = self.extract_train_prediction_from_node(node.right)
+            return left_result + right_result
 
-        grad = [[0] * self.num_classes for _ in range(n)]
+    def get_train_prediction(self) -> List[List[float]]:
+        result = self.extract_train_prediction_from_node(self.dtree)
+        y_train_pred = [[] for _ in range(self.num_row)]
+        for indices, values in result:
+            for i, val in zip(indices, values):
+                y_train_pred[i] = val
+        return y_train_pred
 
-        for i in range(n):
-            for c in range(self.num_classes):
-                grad[i][c] = y_pred_proba[i][c]
-                if y[i] == c:
-                    grad[i][c] -= 1
-        return grad
-
-    def get_hess(self, y_pred: List[List[float]], y: List[float]) -> List[List[float]]:
-        n = len(y_pred)
-        y_pred_proba = [softmax(y_pred[i]) for i in range(n)]
-
-        hess = [[0] * self.num_classes for _ in range(n)]
-
-        for i in range(n):
-            for c in range(self.num_classes):
-                hess[i][c] = y_pred_proba[i][c] * (1 - y_pred_proba[i][c])
-        return hess
+    def print(self, target_party_id: int = -1) -> str:
+        return self.nodeapi.print(self.dtree, target_party_id)
