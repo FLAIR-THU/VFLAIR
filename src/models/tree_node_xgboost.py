@@ -164,7 +164,6 @@ class XGBoostNode(Node):
         sum_grad,
         sum_hess,
         tot_cnt,
-        temp_y_class_cnt,
     ):
         temp_left_class_cnt = [0 for _ in range(self.num_classes)]
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
@@ -172,7 +171,7 @@ class XGBoostNode(Node):
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
             search_results = self.parties[temp_party_id].greedy_search_split(
-                self.gradient, self.hessian, self.y, self.idxs
+                self.gradient, self.hessian, self.idxs
             )
             temp_score, temp_entropy = 0, 0
             temp_left_grad, temp_left_hess, temp_right_grad, temp_right_hess = (
@@ -194,10 +193,6 @@ class XGBoostNode(Node):
                     temp_left_grad[c] = 0
                     temp_left_hess[c] = 0
 
-                for c in range(self.num_classes):
-                    temp_left_class_cnt[c] = 0
-                    temp_right_class_cnt[c] = 0
-
                 for k in range(len(search_results[j])):
                     for c in range(grad_dim):
                         temp_left_grad[c] += search_results[j][k][0][c]
@@ -205,12 +200,6 @@ class XGBoostNode(Node):
 
                     temp_left_size += search_results[j][k][2]
                     # temp_right_size = tot_cnt - temp_left_size
-
-                    for c in range(self.num_classes):
-                        temp_left_class_cnt[c] += search_results[j][k][3][c]
-                        temp_right_class_cnt[c] = (
-                            temp_y_class_cnt[c] - temp_left_class_cnt[c]
-                        )
 
                     skip_flag = False
                     for c in range(grad_dim):
@@ -248,18 +237,15 @@ class XGBoostNode(Node):
                 sum_hess[c] += self.hessian[self.idxs[i]][c]
 
         tot_cnt = self.row_count
-        temp_y_class_cnt = [0 for _ in range(self.num_classes)]
-        for r in range(self.row_count):
-            temp_y_class_cnt[int(self.y[self.idxs[r]])] += 1
 
         if self.use_only_active_party:
             self.find_split_per_party(
-                self.active_party_id, 1, sum_grad, sum_hess, tot_cnt, temp_y_class_cnt
+                self.active_party_id, 1, sum_grad, sum_hess, tot_cnt
             )
         else:
             if self.n_job == 1:
                 self.find_split_per_party(
-                    0, self.num_parties, sum_grad, sum_hess, tot_cnt, temp_y_class_cnt
+                    0, self.num_parties, sum_grad, sum_hess, tot_cnt
                 )
             else:
                 num_parties_per_thread = self.get_num_parties_per_process(
@@ -278,7 +264,6 @@ class XGBoostNode(Node):
                             sum_grad,
                             sum_hess,
                             tot_cnt,
-                            temp_y_class_cnt,
                         ),
                     )
                     threads_parties.append(temp_th)
