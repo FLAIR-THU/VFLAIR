@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 3,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -25,8 +25,9 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "CAE",
+        "name": "DCAE",
         "parameters": {
+            "bin_numbers": 12,
             "input_dim": 10,
             "encode_dim": 62,
             "lambda": 0.1,
