@@ -13,7 +13,7 @@ class XGBoostTree(Tree):
     def fit(
         self,
         parties: List,
-        y: List[float],
+        y: List[int],
         num_classes: int,
         gradient: List[List[float]],
         hessian: List[List[float]],
@@ -61,7 +61,8 @@ class RandomForestTree(Tree):
     def fit(
         self,
         parties: List,
-        y: List[float],
+        y: List[int],
+        y_onehot_encoded: List[List[int]],
         num_classes: int,
         depth: int,
         max_samples_ratio: float = 1.0,
@@ -82,6 +83,7 @@ class RandomForestTree(Tree):
         self.dtree = RandomForestNode(
             parties,
             y,
+            y_onehot_encoded,
             num_classes,
             idxs,
             depth,
@@ -260,11 +262,13 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
+        y_onehot_encoded = [[1 if y[i] == c else 0 for c in range(self.num_classes)] for i in range(len(y))]
         for _ in range(self.num_trees):
             tree = RandomForestTree()
             tree.fit(
                 parties,
                 y,
+                y_onehot_encoded,
                 self.num_classes,
                 self.depth,
                 self.max_samples_ratio,

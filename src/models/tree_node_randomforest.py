@@ -19,6 +19,7 @@ class RandomForestNode(Node):
         self,
         parties_,
         y_,
+        y_onehot_encoded_,
         num_classes_,
         idxs_,
         depth_,
@@ -30,6 +31,7 @@ class RandomForestNode(Node):
         super().__init__()
         self.parties = parties_
         self.y = y_
+        self.y_onehot_encoded = y_onehot_encoded_
         self.num_classes = num_classes_
         self.idxs = idxs_
         self.depth = depth_
@@ -122,7 +124,7 @@ class RandomForestNode(Node):
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
             search_results = self.parties[temp_party_id].greedy_search_split(
-                self.idxs, self.y
+                self.idxs, self.y_onehot_encoded
             )
 
             num_search_results = len(search_results)
@@ -227,6 +229,7 @@ class RandomForestNode(Node):
         self.left = RandomForestNode(
             self.parties,
             self.y,
+            self.y_onehot_encoded,
             self.num_classes,
             left_idxs,
             self.depth - 1,
@@ -239,6 +242,7 @@ class RandomForestNode(Node):
         self.right = RandomForestNode(
             self.parties,
             self.y,
+            self.y_onehot_encoded,
             self.num_classes,
             right_idxs,
             self.depth - 1,
