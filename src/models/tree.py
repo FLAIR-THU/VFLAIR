@@ -69,6 +69,8 @@ class RandomForestTree(Tree):
         active_party_id: int = -1,
         n_job: int = 1,
         seed: int = 0,
+        custom_secure_cond_func: Callable = (lambda _: False),
+        y_onehot_encoded_encrypted=None,
     ):
         idxs = list(range(len(y)))
         if max_samples_ratio < 1.0:
@@ -90,6 +92,8 @@ class RandomForestTree(Tree):
             active_party_id,
             False,
             n_job,
+            custom_secure_cond_func,
+            y_onehot_encoded_encrypted,
         )
 
 
@@ -239,8 +243,10 @@ class RandomForestClassifier:
         max_samples_ratio=1.0,
         num_trees=5,
         active_party_id=-1,
+        use_encryption=False,
         n_job=1,
         seed=0,
+        custom_secure_cond_func=(lambda _: False),
     ):
         self.num_classes = num_classes
         self.subsample_cols = subsample_cols
@@ -248,8 +254,10 @@ class RandomForestClassifier:
         self.max_samples_ratio = max_samples_ratio
         self.num_trees = num_trees
         self.active_party_id = active_party_id
+        self.use_encryption = use_encryption
         self.n_job = n_job
         self.seed = seed
+        self.custom_secure_cond_func = custom_secure_cond_func
         self.estimators = []
 
     def load_estimators(self, estimators):
@@ -262,7 +270,16 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
-        y_onehot_encoded = [[1 if y[i] == c else 0 for c in range(self.num_classes)] for i in range(len(y))]
+        y_onehot_encoded = [
+            [1 if y[i] == c else 0 for c in range(self.num_classes)]
+            for i in range(len(y))
+        ]
+        y_onehot_encoded_encrypted = None
+        if self.use_encryption:
+            y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
+                y_onehot_encoded
+            )
+
         for _ in range(self.num_trees):
             tree = RandomForestTree()
             tree.fit(
@@ -275,6 +292,8 @@ class RandomForestClassifier:
                 self.active_party_id,
                 self.n_job,
                 self.seed,
+                self.custom_secure_cond_func,
+                y_onehot_encoded_encrypted,
             )
             self.estimators.append(tree)
             self.seed += 1

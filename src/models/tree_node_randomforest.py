@@ -27,6 +27,7 @@ class RandomForestNode(Node):
         use_only_active_party_=False,
         n_job_=1,
         custom_secure_cond_func=(lambda _: False),
+        y_onehot_encoded_encrypted=None,
     ):
         super().__init__()
         self.parties = parties_
@@ -39,6 +40,7 @@ class RandomForestNode(Node):
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
         self.custom_secure_cond_func = custom_secure_cond_func
+        self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
 
         self.left = None
         self.right = None
@@ -123,9 +125,26 @@ class RandomForestNode(Node):
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
-            search_results = self.parties[temp_party_id].greedy_search_split(
-                self.idxs, self.y_onehot_encoded
-            )
+            if (
+                temp_party_id != self.active_party_id
+                and self.y_onehot_encoded_encrypted is not None
+            ):
+                search_results_encrypted = self.parties[
+                    temp_party_id
+                ].greedy_search_split(self.idxs, self.y_onehot_encoded_encrypted)
+                search_results = []
+                for j in range(len(search_results_encrypted)):
+                    search_results.append([])
+                    for k in range(len(search_results_encrypted[j])):
+                        tls = search_results_encrypted[j][k][0]
+                        tlc = self.parties[self.active_party_id].decrypt_1dlist(
+                            search_results_encrypted[j][k][1]
+                        )
+                        search_results[-1].append((tls, tlc))
+            else:
+                search_results = self.parties[temp_party_id].greedy_search_split(
+                    self.idxs, self.y_onehot_encoded
+                )
 
             num_search_results = len(search_results)
             for j in range(num_search_results):
@@ -236,6 +255,8 @@ class RandomForestNode(Node):
             self.active_party_id,
             (self.use_only_active_party or left_is_satisfied_secure_cond),
             self.n_job,
+            self.custom_secure_cond_func,
+            self.y_onehot_encoded_encrypted,
         )
         if self.left.is_leaf_flag == 1:
             self.left.party_id = self.party_id
@@ -249,6 +270,8 @@ class RandomForestNode(Node):
             self.active_party_id,
             (self.use_only_active_party or right_is_satisfied_secure_cond),
             self.n_job,
+            self.custom_secure_cond_func,
+            self.y_onehot_encoded_encrypted,
         )
         if self.right.is_leaf_flag == 1:
             self.right.party_id = self.party_id

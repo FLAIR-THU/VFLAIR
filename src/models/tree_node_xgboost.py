@@ -185,9 +185,9 @@ class XGBoostNode(Node):
                     self.gradient_encrypted, self.hessian_encrypted, self.idxs
                 )
                 search_results = []
-                for j in range(len(search_results)):
+                for j in range(len(search_results_encrypted)):
                     search_results.append([])
-                    for k in range(len(search_results[j])):
+                    for k in range(len(search_results_encrypted[j])):
                         tlg = self.parties[self.active_party_id].decrypt_1dlist(
                             search_results_encrypted[j][k][0]
                         )
