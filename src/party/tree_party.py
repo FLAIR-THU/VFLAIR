@@ -156,8 +156,8 @@ class XGBoostParty(Party):
             current_min_idx = 0
             cumulative_left_size = 0
             for p in range(len(percentiles)):
-                temp_grad = np.zeros(grad_dim)
-                temp_hess = np.zeros(grad_dim)
+                temp_grad = [0 for _ in range(grad_dim)]
+                temp_hess = [0 for _ in range(grad_dim)]
                 temp_left_size = 0
 
                 for r in range(current_min_idx, not_missing_values_count):
@@ -184,8 +184,8 @@ class XGBoostParty(Party):
                 cumulative_right_size = 0
 
                 for p in range(len(percentiles) - 1, 0, -1):
-                    temp_grad = np.zeros(grad_dim)
-                    temp_hess = np.zeros(grad_dim)
+                    temp_grad = [0 for _ in range(grad_dim)]
+                    temp_hess = [0 for _ in range(grad_dim)]
                     temp_left_size = 0
 
                     for r in range(current_max_idx, 0, -1):

@@ -67,6 +67,8 @@ class XGBoostNode(Node):
         use_only_active_party_: bool = False,
         n_job_: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
+        gradient_encrypted: list = None,
+        hessian_encrypted: list = None
     ):
         super().__init__()
         self.parties = parties_
@@ -84,6 +86,8 @@ class XGBoostNode(Node):
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
         self.custom_secure_cond_func = custom_secure_cond_func
+        self.gradient_encrypted = gradient_encrypted
+        self.hessian_encrypted = hessian_encrypted
 
         self.best_entropy = None
         self.left = None
@@ -170,15 +174,30 @@ class XGBoostNode(Node):
         grad_dim = len(sum_grad)
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
-            search_results = self.parties[temp_party_id].greedy_search_split(
-                self.gradient, self.hessian, self.idxs
-            )
+            
+            if temp_party_id != self.active_party_id and self.gradient_encrypted is not None:
+                search_results_encrypted = self.parties[temp_party_id].greedy_search_split(
+                    self.gradient_encrypted, self.hessian_encrypted, self.idxs
+                )
+                search_results = []
+                for j in range(len(search_results)):
+                    search_results.append([])
+                    for k in range(len(search_results[j])):
+                        tlg = self.parties[self.active_party_id].decrypt_1dlist(search_results_encrypted[j][k][0])
+                        tlh = self.parties[self.active_party_id].decrypt_1dlist(search_results_encrypted[j][k][1])
+                        tls = search_results_encrypted[j][k][2]
+                        search_results[-1].append((tlg, tlh, tls))
+            else:
+                search_results = self.parties[temp_party_id].greedy_search_split(
+                    self.gradient, self.hessian, self.idxs
+                )
+            
             temp_score, temp_entropy = 0, 0
             temp_left_grad, temp_left_hess, temp_right_grad, temp_right_hess = (
-                [0] * grad_dim,
-                [0] * grad_dim,
-                [0] * grad_dim,
-                [0] * grad_dim,
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
             )
             temp_left_size = 0
             skip_flag = False

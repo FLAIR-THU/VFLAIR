@@ -30,9 +30,36 @@ class Party:
         self.lookup_table = {}
         self.temp_column_subsample = []
         self.temp_thresholds = []
+        
+        self.pk = None
+        self.sk = None
 
         random.seed(self.seed)
 
+    def set_keypair(self, pk, sk):
+        self.pk = pk
+        self.sk = sk
+        
+    def encrypt_2dlist(self, x):
+        results = []
+        for row in x:
+            results.append([])
+            for e in row:
+                results[-1].append(self.pk.encrypt(e))
+        return results
+    
+    def decrypt_1dlist(self, row):
+        results = []
+        for e in row:
+            results.append(self.sk.decrypt(e))
+        return results
+    
+    def decrypt_2dlist(self, mat):
+        results = []
+        for row in mat:
+            results.append(self.decrypt_1dlist(row))
+        return results
+        
     def get_lookup_table(self):
         return self.lookup_table
 
