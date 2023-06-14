@@ -1,5 +1,6 @@
-import numpy as np
 from typing import List, Tuple
+
+import numpy as np
 
 from .tree_core_party import Party
 
@@ -29,8 +30,7 @@ class RandomForestParty(Party):
         self, idxs: List[int], y: List[float]
     ) -> List[List[Tuple[float, List[float]]]]:
         num_thresholds = self.subsample_col_count
-        split_candidates_leftsize_leftposcnt = [
-            [] for _ in range(num_thresholds)]
+        split_candidates_leftsize_leftposcnt = [[] for _ in range(num_thresholds)]
         self.temp_thresholds = [[] for _ in range(num_thresholds)]
 
         row_count = len(idxs)
@@ -65,8 +65,7 @@ class RandomForestParty(Party):
                 temp_left_y_class_cnt = np.zeros(self.num_classes)
                 for r in range(current_min_idx, not_missing_values_count):
                     if x_col[r] <= threshold_candidates[p]:
-                        temp_left_y_class_cnt[int(
-                            y[idxs[x_col_idxs[r]]])] += 1.0
+                        temp_left_y_class_cnt[int(y[idxs[x_col_idxs[r]]])] += 1.0
                         temp_left_size += 1.0
                         cumulative_left_size += 1
                     else:
@@ -83,7 +82,7 @@ class RandomForestParty(Party):
                     self.temp_thresholds[i].append(threshold_candidates[p])
 
         return split_candidates_leftsize_leftposcnt
-    
+
 
 class XGBoostParty(Party):
     def __init__(

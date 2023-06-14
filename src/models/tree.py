@@ -1,10 +1,12 @@
-from .tree_node_xgboost import XGBoostNode
-from .tree_node_randomforest import RandomForestNode
-from .tree_node_core import Tree
-from .tree_loss import BCELoss, CELoss, sigmoid, softmax
-import numpy as np
-from typing import Callable, List
 import random
+from typing import Callable, List
+
+import numpy as np
+
+from .tree_loss import BCELoss, CELoss, sigmoid, softmax
+from .tree_node_core import Tree
+from .tree_node_randomforest import RandomForestNode
+from .tree_node_xgboost import XGBoostNode
 
 
 class XGBoostTree(Tree):
@@ -24,8 +26,8 @@ class XGBoostTree(Tree):
         use_only_active_party: bool = False,
         n_job: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
-        grad_encrypted = None,
-        hess_encrypted = None
+        grad_encrypted=None,
+        hess_encrypted=None,
     ):
         idxs = list(range(len(y)))
         for i in range(len(parties)):
@@ -48,7 +50,7 @@ class XGBoostTree(Tree):
             n_job,
             custom_secure_cond_func,
             grad_encrypted,
-            hess_encrypted
+            hess_encrypted,
         )
 
 
@@ -104,7 +106,7 @@ class XGBoostBase:
         active_party_id: int = -1,
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
-        use_encryption = False,
+        use_encryption=False,
         n_job: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
         save_loss: bool = True,
@@ -161,13 +163,13 @@ class XGBoostBase:
             grad, hess = self.lossfunc_obj.get_grad(
                 base_pred, y
             ), self.lossfunc_obj.get_hess(base_pred, y)
-            
+
             grad_encrypted = None
             hess_encrypted = None
             if self.use_encryption:
                 grad_encrypted = parties[self.active_party_id].encrypt_2dlist(grad)
                 hess_encrypted = parties[self.active_party_id].encrypt_2dlist(hess)
-            
+
             boosting_tree = XGBoostTree()
             boosting_tree.fit(
                 parties,
@@ -184,8 +186,8 @@ class XGBoostBase:
                 (self.completelly_secure_round > i),
                 self.n_job,
                 self.custom_secure_cond_func,
-                grad_encrypted = grad_encrypted,
-                hess_encrypted = hess_encrypted
+                grad_encrypted=grad_encrypted,
+                hess_encrypted=hess_encrypted,
             )
             pred_temp = boosting_tree.get_train_prediction()
             base_pred += self.learning_rate * np.array(pred_temp)
@@ -193,8 +195,7 @@ class XGBoostBase:
             self.estimators.append(boosting_tree)
 
             if self.save_loss:
-                self.logging_loss.append(
-                    self.lossfunc_obj.get_loss(base_pred, y))
+                self.logging_loss.append(self.lossfunc_obj.get_loss(base_pred, y))
 
     def predict_raw(self, X):
         pred_dim = 1 if self.num_classes == 2 else self.num_classes
@@ -211,8 +212,7 @@ class XGBoostBase:
 
 class XGBoostClassifier(XGBoostBase):
     def get_init_pred(self, y):
-        init_pred = np.full((len(y), self.num_classes),
-                            self.init_value, dtype=float)
+        init_pred = np.full((len(y), self.num_classes), self.init_value, dtype=float)
         return init_pred.tolist()
 
     def predict_proba(self, x):
@@ -277,8 +277,7 @@ class RandomForestClassifier:
 
     def predict_raw(self, X):
         row_count = len(X)
-        y_pred = [[0 for _ in range(self.num_classes)]
-                  for _ in range(row_count)]
+        y_pred = [[0 for _ in range(self.num_classes)] for _ in range(row_count)]
         estimators_num = len(self.estimators)
 
         for i in range(estimators_num):

@@ -68,8 +68,7 @@ class RandomForestNode(Node):
                 self.record_id = parties_[self.party_id].insert_lookup_table(
                     best_split[1], best_split[2]
                 )
-                self.make_children_nodes(
-                    best_split[0], best_split[1], best_split[2])
+                self.make_children_nodes(best_split[0], best_split[1], best_split[2])
             else:
                 self.is_leaf_flag = 1
 
@@ -220,8 +219,7 @@ class RandomForestNode(Node):
         )
         right_idxs = [idx for idx in self.idxs if idx not in left_idxs]
 
-        left_is_satisfied_secure_cond = self.custom_secure_cond_func(
-            (self, left_idxs))
+        left_is_satisfied_secure_cond = self.custom_secure_cond_func((self, left_idxs))
         right_is_satisfied_secure_cond = self.custom_secure_cond_func(
             (self, right_idxs)
         )
