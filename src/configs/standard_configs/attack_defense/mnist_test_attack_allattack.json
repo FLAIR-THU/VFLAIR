@@ -1,0 +1,93 @@
+{
+    "epochs": 30,
+    "lr": 0.01,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "1":{
+            "name": "ModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 3,
+                "lr": 2e-3
+            }
+        },
+        "2":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+
+        "3": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "4":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 0.01
+            }
+        },
+
+        "5": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        
+        "6":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "7":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 10,
+                "batch_size": 32
+            }
+        }
+    }
+}

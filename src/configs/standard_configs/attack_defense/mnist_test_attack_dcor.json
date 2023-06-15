@@ -2,7 +2,8 @@
     "epochs": 30,
     "lr": 0.01,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -23,21 +24,29 @@
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
-    "attack": {
-        "name": "BatchLabelReconstruction",
+    "defense": {
+        "name": "DistanceCorrelation",
         "parameters": {
-            "party": [0],
-            "lr": 0.01,
-            "epochs": 3000
+            "lambda": 0.0001,
+            "model_path": ""
         }
     },
-    "defense": {
-        "name": "CAE",
-        "parameters": {
-            "input_dim": 10,
-            "encode_dim": 62,
-            "lambda": 1,
-            "model_path": "../trained_CAE_models/autoencoder_10_1.0_1642396548"
+    "attack_list": {
+        "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "1":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
         }
+    
     }
+    
 }

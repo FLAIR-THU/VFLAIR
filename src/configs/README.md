@@ -1,18 +1,38 @@
 # How to write a configuration file
 
-## Function Usage & Parameters
+## Parameters in a Configuration File
 
-#### 1. Basic VFL
+#### 1. Basic VFL Parameters
 
-> Supported Datasets:  MNIST(Default) / CIFAR10 / CIFAR100 / Cora / Breast Cancer / Diabetes / Adult Income / Cretio / News20 / NUS-WIDE
+> Supported Datasets:  All default datasets
 
-|              Parameters              |       Allowed        |         Recommended         | Description                                                  |
-| :----------------------------------: | :------------------: | :-------------------------: | :----------------------------------------------------------- |
-|           Party number : k           |        2 / 4         |              2              | Number of parties in VFL. Party[k-1] is the active party.    |
-| FedBCD : Q Iteration_per_aggregation | any positive integer |              3              | Iteration_per_aggregation in FedBCD algorithm                |
-|        apply_trainable_layer         |        0 / 1         |              1              | Whether to apply one trainable layer in the top model        |
-|              model_list              |                      |                             | List of bottom models for different parties. For each model, parameters like 'input_dim'/'output_dim'/'path' need to be clarified, 'type' represent name of the model. |
-|             global_model             |                      | ClassificationModelHostHead | Aggregation model/Top model                                  |
+```json
+"epochs": 30,
+"lr": 0.01,
+"k": 2,
+"batch_size": 1024,
+"iteration_per_aggregation": 1,
+"dataset":{
+"dataset_name": "mnist",
+"num_classes": 10
+},
+"model_list":{
+"0": {
+"type": "MLP2",
+"input_dim": 392,
+"output_dim": 10,
+"path": "random_14*28_10"
+},
+"1": {
+"type": "MLP2",
+"input_dim": 392,
+"output_dim": 10,
+"path": "random_14*28_10"
+},
+"apply_trainable_layer": 1,
+"global_model": "ClassificationModelHostTrainableHead"
+}
+```
 
 - "epochs": number of iterations for each experiment
 - "lr": main task learning rate
@@ -44,7 +64,7 @@
 
 #### 2. Attack & Defense
 
->  Supported Datasets:  MNIST / CIFAR10 / CIFAR100
+Your can load your own patameters for different attacks like the following example:
 
 ##### 2.1 Attack
 
@@ -53,64 +73,63 @@
   - "lr": learning rate for reconstruction model
   - "epochs": iterations for reconstruction model training
 
-| Parameters | Recommended |                         Description                          |
-| :--------: | :---------: | :----------------------------------------------------------: |
-|     lr     |    0.05     | Learning rate in the label inference model in passive parties |
-|   epochs   |    10000    |                                                              |
-|   party    |     [0]     |        Attack is launched by passive party (party[0])        |
+```json
+"attack_list": {
+        "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        }
+      }
+```
 
 - ReplacementBackdoor([Defending batch-level label inference and replacement attacks in vertical federated learning](https://ieeexplore.ieee.org/abstract/document/9833321/))
   - "party": list of parties that cooperate with each other to launch this attack
 
-| Parameters | recommended |                  Description                   |
-| :--------: | :---------: | :--------------------------------------------: |
-|   party    |     [0]     | Attack is launched by passive party (party[0]) |
-
-- For adding new attacks
-  - For a new inference time attack, first, implement this attack in `/src/evaluates/attacks/<your_attack>.py`; second, modify function `save_state` in `/src/evaluates/MainTaskVFL.py` to save necessary VFL information; finally add configurations in your config file, make sure the attack method has the same name to that in the config file. See `/src/evaluates/attacks/BatchLabelReconstruction.py` as an example.
-  - For a new training time attack, implement another VFL flow with this attack, see `/src/evaluates/MainTaskVFLwithBackdoor.py` as an example.
+```json
+"attack_list": {
+        "0": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        }
+      }
+```
 
 ##### 2.2 Defense
-
-|         Defense         |      parameters      | recommended |            Description            |
-| :---------------------: | :------------------: | :---------: | :-------------------------------: |
-|   Laplace/Gaussian DP   |     dp_strength      |    0.001    | Control the strength on the noise |
-| Gradient Sparsification | gradient_sparse_rate |     100     |                                   |
-|           CAE           |        lambda        |      1      |                                   |
-|                         |      model_path      |      -      |  path for pretrained AutoEncoder  |
-|           MID           |        lambda        |      0      |                                   |
-|                         |          lr          |    0.01     |                                   |
-|                         |        party         |     [1]     |                                   |
 
 - LaplaceDP ([Differential privacy: A survey of results](https://www.google.com.au/books/edition/Theory_and_Applications_of_Models_of_Com/JHFqCQAAQBAJ?hl=en&gbpv=1&pg=PA1&printsec=frontcover))
   - This is a defense for active party 
   - "dp_strength": laplace noise strength 0.001
 
-- GaussianDP ([Differential privacy: A survey of results](https://www.google.com.au/books/edition/Theory_and_Applications_of_Models_of_Com/JHFqCQAAQBAJ?hl=en&gbpv=1&pg=PA1&printsec=frontcover))
-  - This is a defense for active party 
-  - "dp_strength": gaussian noise std 0.001
+```json
+"defense": {
+        "name": "GaussianDP",
+        "parameters": {
+            "dp_strength": 0.0001
+        }
+    }
+```
 
 - GradientSparsification ([Deep gradient compression: Reducing the communication bandwidth for distributed training](https://openreview.net/forum?id=SkhQHMW0W))
   - This is a defense for active party 
   - "gradient_sparse_rate": ratio of gradients that will be set to zero, this value will be normalized in to $[0.0,1.0]$.
 
-- CAE ([Defending batch-level label inference and replacement attacks in vertical federated learning](https://ieeexplore.ieee.org/abstract/document/9833321/))
-  - This is a defense for active party 
-  - "input_dim", "encode_dim": basic parameters for CAE encoder reconstruction
-  - "lambda": $\lambda$, the confusional strength
-  - "model_path": path of the trained CAE model, recomented model path is `/trained_CAE_models/<your_encoder>`
+```json
+"defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "gradient_sparse_rate": 100.0
+        }
+    }
+```
 
-- MID ([Mutual Information Regularization for Vertical Federated Learning](https://arxiv.org/abs/2301.01142))
-  - "party": list of parties that applies MID
-  - "lr": learning rate for MID model
-  - "lambda": $\lambda$, the hyper-parameter for MID, balancing between compression and information preservation
-- For adding new defense:
-  - If the defense is applied by adding new models, implement your new model in `/src/models/<your_model.py>` and then modify function `load_defense_models` in `/src/load/LoadModels.py` to add your model.
-  - Otherwise, implement your own defense function in `/src/evaluates/defenses/defense_functions.py` and use `launch_defense` function of the VFL object in the proper place through out VFL main flow. See `launch_defense` function in `/src/evaluates/MainTaskVFL.py` as an example.
-  - If the defense is difficult for implementation, implement another VFL flow with this defense, the same like implementing another VFL flow with a new attack.
+
 
 ## Standard Configuation Files
 
-For quick and convenient usage, we provide several standard configuration files for different experiment settings. Details are shown below.
-
-TODO: add standard config files
+For quick and convenient usage, we provide several standard configuration files for different experiment settings in `/src/configs/standard_configs/` . 
