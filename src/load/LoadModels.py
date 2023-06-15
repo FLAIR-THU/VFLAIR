@@ -99,6 +99,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 print('[warning] default hyper-parameter lambda selected for applying MID')
             
             mid_lr = args.defense_configs['lr'] if ('lr' in args.defense_configs) else args.main_lr
+            print(f"mid defense parties: {args.defense_configs['party']}")
             if index in args.defense_configs['party']:
                 print(f"begin to load mid model for party {index}")
                 if index == args.k-1:

@@ -51,6 +51,7 @@ class ActiveParty(Party):
             loss = self.criterion(pred, gt_one_hot_label)
         # ########## for active mid model loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+            assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
             for mid_loss in self.global_model.mid_loss_list:
                 loss = loss + mid_loss
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]

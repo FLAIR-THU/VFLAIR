@@ -5,6 +5,8 @@ import torch.nn.init as init
 import numpy as np
 
 
+LAMBDA_U = 50
+
 
 def weights_init_ones(m):
     # classname = m.__class__.__name__
@@ -151,7 +153,7 @@ def precision_recall(output, target):
 #         Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
 #         Lu = torch.mean((probs_u - targets_u) ** 2)
 
-#         return Lx, Lu, 50 * linear_rampup(epoch,all_epochs)  # lambda_u =50
+#         return Lx, Lu, 50 * linear_rampup(epoch,all_epochs)  # LAMBDA_U =50
 
 
 
@@ -169,9 +171,9 @@ class SemiLoss(object):
 
         Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
         Lu = torch.mean((probs_u - targets_u) ** 2)
-        lambda_u =50
-
-        return Lx, Lu, lambda_u * linear_rampup(epoch, all_epoch)
+        
+        LAMBDA_U =50
+        return Lx, Lu, LAMBDA_U * linear_rampup(epoch, all_epoch)
 
 
 class WeightEMA(object):

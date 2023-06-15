@@ -9,6 +9,7 @@ import copy
 import pickle 
 import matplotlib.pyplot as plt
 import itertools 
+from random import randint
 
 from evaluates.attacks.attacker import Attacker
 from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
@@ -103,6 +104,8 @@ class DirectLabelScoring(Attacker):
                     if _gradient[idx] < 0.0:
                         pred_idx = idx
                         break
+                if pred_idx == -1:
+                    pred_idx = randint(0,self.num_classes-1)
                 pred_label.append(pred_idx)
 
             one_hot_pred_label = label_to_one_hot(torch.tensor(pred_label), self.num_classes).to(self.device)

@@ -24,14 +24,12 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "DCAE",
+    "defense" : {
+        "name": "MID",
         "parameters": {
-            "bin_numbers": 12,
-            "input_dim": 10,
-            "encode_dim": 62,
-            "lambda": 0.1,
-            "model_path": "../trained_CAE_models/autoencoder_10_0.1_1686717045"
+            "party": [1],
+            "lr": 0.01,
+            "lambda": 10000.0
         }
     },
     "attack_list": {
