@@ -9,6 +9,7 @@ import copy
 import pickle 
 import matplotlib.pyplot as plt
 import itertools 
+from random import randint
 
 from random import randint
 from evaluates.attacks.attacker import Attacker

@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -24,25 +24,16 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "GradPerturb",
-        "parameters": {
-            "perturb_epsilon": 1.0
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "lr": 0.01,
-                "epochs": 10000
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         }
     }

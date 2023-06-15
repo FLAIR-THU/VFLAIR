@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -25,9 +25,13 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GradPerturb",
+        "name": "DCAE",
         "parameters": {
-            "perturb_epsilon": 1.0
+            "bin_numbers": 12,
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 0.1,
+            "model_path": "../trained_CAE_models/autoencoder_10_0.1_1686717045"
         }
     },
     "attack_list": {

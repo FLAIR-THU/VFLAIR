@@ -1,8 +1,3 @@
-import os
-import sys
-
-sys.path.append(os.pardir)
-
 import threading
 from typing import Callable, List
 
@@ -74,6 +69,8 @@ class XGBoostNode(Node):
         use_only_active_party_: bool = False,
         n_job_: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
+        gradient_encrypted: list = None,
+        hessian_encrypted: list = None,
     ):
         super().__init__()
         self.parties = parties_
@@ -91,6 +88,8 @@ class XGBoostNode(Node):
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
         self.custom_secure_cond_func = custom_secure_cond_func
+        self.gradient_encrypted = gradient_encrypted
+        self.hessian_encrypted = hessian_encrypted
 
         self.best_entropy = None
         self.left = None
@@ -170,22 +169,44 @@ class XGBoostNode(Node):
         sum_grad,
         sum_hess,
         tot_cnt,
-        temp_y_class_cnt,
     ):
         temp_left_class_cnt = [0 for _ in range(self.num_classes)]
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
         grad_dim = len(sum_grad)
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
-            search_results = self.parties[temp_party_id].greedy_search_split(
-                self.gradient, self.hessian, self.y, self.idxs
-            )
+            if (
+                temp_party_id != self.active_party_id
+                and self.gradient_encrypted is not None
+            ):
+                search_results_encrypted = self.parties[
+                    temp_party_id
+                ].greedy_search_split(
+                    self.gradient_encrypted, self.hessian_encrypted, self.idxs
+                )
+                search_results = []
+                for j in range(len(search_results_encrypted)):
+                    search_results.append([])
+                    for k in range(len(search_results_encrypted[j])):
+                        tlg = self.parties[self.active_party_id].decrypt_1dlist(
+                            search_results_encrypted[j][k][0]
+                        )
+                        tlh = self.parties[self.active_party_id].decrypt_1dlist(
+                            search_results_encrypted[j][k][1]
+                        )
+                        tls = search_results_encrypted[j][k][2]
+                        search_results[-1].append((tlg, tlh, tls))
+            else:
+                search_results = self.parties[temp_party_id].greedy_search_split(
+                    self.gradient, self.hessian, self.idxs
+                )
+
             temp_score, temp_entropy = 0, 0
             temp_left_grad, temp_left_hess, temp_right_grad, temp_right_hess = (
-                [0] * grad_dim,
-                [0] * grad_dim,
-                [0] * grad_dim,
-                [0] * grad_dim,
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
+                [0 for _ in range(grad_dim)],
             )
             temp_left_size = 0
             skip_flag = False
@@ -200,10 +221,6 @@ class XGBoostNode(Node):
                     temp_left_grad[c] = 0
                     temp_left_hess[c] = 0
 
-                for c in range(self.num_classes):
-                    temp_left_class_cnt[c] = 0
-                    temp_right_class_cnt[c] = 0
-
                 for k in range(len(search_results[j])):
                     for c in range(grad_dim):
                         temp_left_grad[c] += search_results[j][k][0][c]
@@ -211,12 +228,6 @@ class XGBoostNode(Node):
 
                     temp_left_size += search_results[j][k][2]
                     # temp_right_size = tot_cnt - temp_left_size
-
-                    for c in range(self.num_classes):
-                        temp_left_class_cnt[c] += search_results[j][k][3][c]
-                        temp_right_class_cnt[c] = (
-                            temp_y_class_cnt[c] - temp_left_class_cnt[c]
-                        )
 
                     skip_flag = False
                     for c in range(grad_dim):
@@ -254,18 +265,15 @@ class XGBoostNode(Node):
                 sum_hess[c] += self.hessian[self.idxs[i]][c]
 
         tot_cnt = self.row_count
-        temp_y_class_cnt = [0 for _ in range(self.num_classes)]
-        for r in range(self.row_count):
-            temp_y_class_cnt[int(self.y[self.idxs[r]])] += 1
 
         if self.use_only_active_party:
             self.find_split_per_party(
-                self.active_party_id, 1, sum_grad, sum_hess, tot_cnt, temp_y_class_cnt
+                self.active_party_id, 1, sum_grad, sum_hess, tot_cnt
             )
         else:
             if self.n_job == 1:
                 self.find_split_per_party(
-                    0, self.num_parties, sum_grad, sum_hess, tot_cnt, temp_y_class_cnt
+                    0, self.num_parties, sum_grad, sum_hess, tot_cnt
                 )
             else:
                 num_parties_per_thread = self.get_num_parties_per_process(
@@ -284,7 +292,6 @@ class XGBoostNode(Node):
                             sum_grad,
                             sum_hess,
                             tot_cnt,
-                            temp_y_class_cnt,
                         ),
                     )
                     threads_parties.append(temp_th)

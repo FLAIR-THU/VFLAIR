@@ -25,9 +25,12 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GradPerturb",
+        "name": "CAE",
         "parameters": {
-            "perturb_epsilon": 0.3
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 0.1,
+            "model_path": "../trained_CAE_models/autoencoder_10_0.1_1686717045"
         }
     },
     "attack_list": {

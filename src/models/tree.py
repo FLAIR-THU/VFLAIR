@@ -1,8 +1,3 @@
-import os
-import sys
-
-sys.path.append(os.pardir)
-
 import random
 from typing import Callable, List
 
@@ -18,7 +13,7 @@ class XGBoostTree(Tree):
     def fit(
         self,
         parties: List,
-        y: List[float],
+        y: List[int],
         num_classes: int,
         gradient: List[List[float]],
         hessian: List[List[float]],
@@ -31,6 +26,8 @@ class XGBoostTree(Tree):
         use_only_active_party: bool = False,
         n_job: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
+        grad_encrypted=None,
+        hess_encrypted=None,
     ):
         idxs = list(range(len(y)))
         for i in range(len(parties)):
@@ -52,11 +49,9 @@ class XGBoostTree(Tree):
             use_only_active_party,
             n_job,
             custom_secure_cond_func,
+            grad_encrypted,
+            hess_encrypted,
         )
-
-    def free_intermediate_resources(self):
-        self.dtree.y.clear()
-        self.dtree.y = []
 
 
 class RandomForestTree(Tree):
@@ -66,13 +61,16 @@ class RandomForestTree(Tree):
     def fit(
         self,
         parties: List,
-        y: List[float],
+        y: List[int],
+        y_onehot_encoded: List[List[int]],
         num_classes: int,
         depth: int,
         max_samples_ratio: float = 1.0,
         active_party_id: int = -1,
         n_job: int = 1,
         seed: int = 0,
+        custom_secure_cond_func: Callable = (lambda _: False),
+        y_onehot_encoded_encrypted=None,
     ):
         idxs = list(range(len(y)))
         if max_samples_ratio < 1.0:
@@ -87,17 +85,16 @@ class RandomForestTree(Tree):
         self.dtree = RandomForestNode(
             parties,
             y,
+            y_onehot_encoded,
             num_classes,
             idxs,
             depth,
             active_party_id,
             False,
             n_job,
+            custom_secure_cond_func,
+            y_onehot_encoded_encrypted,
         )
-
-    def free_intermediate_resources(self):
-        self.dtree.y.clear()
-        self.dtree.y = []
 
 
 class XGBoostBase:
@@ -115,6 +112,7 @@ class XGBoostBase:
         active_party_id: int = -1,
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
+        use_encryption=False,
         n_job: int = 1,
         custom_secure_cond_func: Callable = (lambda _: False),
         save_loss: bool = True,
@@ -131,6 +129,7 @@ class XGBoostBase:
         self.active_party_id = active_party_id
         self.completelly_secure_round = completelly_secure_round
         self.init_value = init_value
+        self.use_encryption = use_encryption
         self.n_job = n_job
         self.custom_secure_cond_func = custom_secure_cond_func
         self.save_loss = save_loss
@@ -170,6 +169,13 @@ class XGBoostBase:
             grad, hess = self.lossfunc_obj.get_grad(
                 base_pred, y
             ), self.lossfunc_obj.get_hess(base_pred, y)
+
+            grad_encrypted = None
+            hess_encrypted = None
+            if self.use_encryption:
+                grad_encrypted = parties[self.active_party_id].encrypt_2dlist(grad)
+                hess_encrypted = parties[self.active_party_id].encrypt_2dlist(hess)
+
             boosting_tree = XGBoostTree()
             boosting_tree.fit(
                 parties,
@@ -186,6 +192,8 @@ class XGBoostBase:
                 (self.completelly_secure_round > i),
                 self.n_job,
                 self.custom_secure_cond_func,
+                grad_encrypted=grad_encrypted,
+                hess_encrypted=hess_encrypted,
             )
             pred_temp = boosting_tree.get_train_prediction()
             base_pred += self.learning_rate * np.array(pred_temp)
@@ -206,11 +214,6 @@ class XGBoostBase:
                 for c in range(pred_dim):
                     y_pred[j][c] += self.learning_rate * y_pred_temp[j][c]
         return y_pred
-
-    def free_intermediate_resources(self):
-        estimators_num = len(self.estimators)
-        for i in range(estimators_num):
-            self.estimators[i].free_intermediate_resources()
 
 
 class XGBoostClassifier(XGBoostBase):
@@ -240,8 +243,10 @@ class RandomForestClassifier:
         max_samples_ratio=1.0,
         num_trees=5,
         active_party_id=-1,
+        use_encryption=False,
         n_job=1,
         seed=0,
+        custom_secure_cond_func=(lambda _: False),
     ):
         self.num_classes = num_classes
         self.subsample_cols = subsample_cols
@@ -249,8 +254,10 @@ class RandomForestClassifier:
         self.max_samples_ratio = max_samples_ratio
         self.num_trees = num_trees
         self.active_party_id = active_party_id
+        self.use_encryption = use_encryption
         self.n_job = n_job
         self.seed = seed
+        self.custom_secure_cond_func = custom_secure_cond_func
         self.estimators = []
 
     def load_estimators(self, estimators):
@@ -263,17 +270,30 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
+        y_onehot_encoded = [
+            [1 if y[i] == c else 0 for c in range(self.num_classes)]
+            for i in range(len(y))
+        ]
+        y_onehot_encoded_encrypted = None
+        if self.use_encryption:
+            y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
+                y_onehot_encoded
+            )
+
         for _ in range(self.num_trees):
             tree = RandomForestTree()
             tree.fit(
                 parties,
                 y,
+                y_onehot_encoded,
                 self.num_classes,
                 self.depth,
                 self.max_samples_ratio,
                 self.active_party_id,
                 self.n_job,
                 self.seed,
+                self.custom_secure_cond_func,
+                y_onehot_encoded_encrypted,
             )
             self.estimators.append(tree)
             self.seed += 1
@@ -293,8 +313,3 @@ class RandomForestClassifier:
 
     def predict_proba(self, x):
         return self.predict_raw(x)
-
-    def free_intermediate_resources(self):
-        estimators_num = len(self.estimators)
-        for i in range(estimators_num):
-            self.estimators[i].free_intermediate_resources()

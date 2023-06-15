@@ -9,6 +9,7 @@ __pycache__/
 # dataset files
 # dataset/
 data/
+src/load/share_dataset
 
 # experiment result files
 src/exp_result/

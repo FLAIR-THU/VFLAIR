@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -25,24 +25,23 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GradPerturb",
+        "name": "DistanceCorrelation",
         "parameters": {
-            "perturb_epsilon": 1.0
+            "lambda": 0.01,
+            "model_path": ""
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
+            "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
         "1":{
-            "name": "BatchLabelReconstruction",
+            "name": "DirectionbasedScoring",
             "parameters": {
-                "party": [0],
-                "lr": 0.01,
-                "epochs": 10000
+                "party": [0]
             }
         }
     }

@@ -14,7 +14,7 @@ import itertools
 from evaluates.attacks.attacker import Attacker
 from models.global_models import *
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
-from utils.pmc_functions import precision_recall, interleave_offsets, interleave, BottomModelPlus, SemiLoss, WeightEMA, AverageMeter, InferenceHead, accuracy
+from utils.pmc_functions import * #precision_recall,interleave_offsets,interleave, SemiLoss,WeightEMA,AverageMeter,InferenceHead,accuracy
 from dataset.party_dataset import ActiveDataset
 
 import torch.nn.init as init
@@ -58,11 +58,6 @@ class ModelCompletion(Attacker):
         self.dummy_active_top_non_trainable_model = None
         self.optimizer_non_trainable = None # construct later
         self.criterion = cross_entropy_for_onehot
-
-        # hyper-parameters for model completion attacks 
-        self.alpha = 0.75
-        self.T = 0.8
-        self.ema_decay = 0.999
         
         # self.file_name = 'attack_result.txt'
         # self.exp_res_dir = f'exp_result/main/{args.dataset}/attack/PMC/'
@@ -135,7 +130,7 @@ class ModelCompletion(Attacker):
                 targets_x.view(-1, 1).type(torch.long)  # compute guessed labels of unlabel samples
                 outputs_u = model(inputs_u)
                 p = torch.softmax(outputs_u, dim=1)
-                pt = p ** (1 / self.T) # T = 0.8
+                pt = p ** (1 / 0.8)
                 targets_u = pt / pt.sum(dim=1, keepdim=True)
                 targets_u = targets_u.detach()
 
@@ -143,7 +138,7 @@ class ModelCompletion(Attacker):
             all_inputs = torch.cat([inputs_x, inputs_u], dim=0)
             all_targets = torch.cat([targets_x, targets_u], dim=0)
 
-            l = np.random.beta(self.alpha, self.alpha) # alpha = 0.75
+            l = np.random.beta(0.75, 0.75) # alpha = 0.75
 
             l = max(l, 1 - l)
 
@@ -255,19 +250,18 @@ class ModelCompletion(Attacker):
             index = ik
             batch_size = self.batch_size
             num_classes = self.label_size
-            
             # get full data
-            # aux_data = self.vfl_info["aux_data"][index]
-            # aux_label = self.vfl_info["aux_label"][-1]
+            aux_data = self.vfl_info["aux_data"][index]
+            aux_label = self.vfl_info["aux_label"][-1]
             train_data = self.vfl_info["train_data"][index]
             train_label = self.vfl_info["train_label"][-1]     
             test_data = self.vfl_info["test_data"][index]
-            test_label = self.vfl_info["test_label"][-1] # onli active party have label
+            test_label = self.vfl_info["test_label"][-1] # onli active party have data
 
             n_labeled_per_class = self.n_labeled_per_class
             
             train_label = label_to_one_hot(train_label,self.num_classes)
-            # aux_label = label_to_one_hot(aux_label,self.num_classes)
+            aux_label = label_to_one_hot(aux_label,self.num_classes)
             test_label = label_to_one_hot(test_label,self.num_classes)
 
             print('all_train_data:',train_data.size())
@@ -298,11 +292,29 @@ class ModelCompletion(Attacker):
                 train_unlabeled_idxs.extend(idxs[n_labeled_per_class:])
             np.random.shuffle(train_labeled_idxs)
             np.random.shuffle(train_unlabeled_idxs)
+
             aux_data = train_data[train_labeled_idxs]
             aux_label = train_label[train_labeled_idxs]
+
             train_data = train_data[train_unlabeled_idxs]
-            train_label = train_label[train_unlabeled_idxs]    
-            # print('train_unlabeled_idxs:',len(train_unlabeled_idxs))
+            train_label = train_label[train_unlabeled_idxs]
+
+            
+            print('train_unlabeled_idxs:',len(train_unlabeled_idxs))
+            # while min(get_times) < n_label_per_class and idx<len(aux_label):
+            #     current_label = int(torch.argmax(aux_label[idx], dim=-1))
+                
+            #     if get_times[current_label]<n_label_per_class:
+            #         aux_indx.append(idx)
+            #         get_times[current_label] = get_times[current_label] +1
+            #     idx = idx +1
+            
+            # aux_data = aux_data[aux_indx]
+            # aux_label = aux_label[aux_indx]
+            
+            # print(get_times)
+            # print(torch.argmax(aux_label, dim=-1))
+            # print(aux_data.size())
             
             aux_dst = ActiveDataset(aux_data, aux_label)
             aux_loader = DataLoader(aux_dst, batch_size=batch_size,shuffle=True)
@@ -329,38 +341,45 @@ class ModelCompletion(Attacker):
                                             activation_func_type='ReLU',
                                             use_bn=True)
                 model = model
+
                 if ema:
                     for param in model.parameters():
                         param.detach_()
+
                 return model
 
-            model = create_model(copy.deepcopy(bottom_model),ema=False, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
+            model = create_model(copy.deepcopy(bottom_model),ema=False, size_bottom_out=num_classes, num_classes=num_classes)
             # fix parameters
-            ema_model = create_model(copy.deepcopy(bottom_model),ema=True, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
+            ema_model = create_model(copy.deepcopy(bottom_model),ema=True, size_bottom_out=num_classes, num_classes=num_classes)
            
             model = model.to(self.device) # dummy top model
             ema_model = ema_model.to(self.device)
+            
 
             # Optimizers & Criterion
             optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
-            ema_optimizer = WeightEMA(model, ema_model, lr=self.lr, alpha=self.ema_decay) # ema_decay = 0.999
+            ema_optimizer = WeightEMA(model, ema_model, lr=self.lr, alpha=0.999) # ema_decay = 0.999
             train_criterion = SemiLoss()
             criterion = nn.CrossEntropyLoss()
             
             # === Begin Attack ===
             print(f"MC Attack, self.device={self.device}")
+            start_time = time.time()
+            test_accs = []
 
             best_acc = 0
+            print("---Label inference on complete training dataset:")
             # Attack iterations
             for epoch in range(self.epochs): # self.epochs: cifar-5, BC_IDC-1, liver-5
                 print('\nEpoch: [%d | %d]' % (epoch + 1, self.epochs))
 
-                train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer, ema_optimizer,\
-                                                         train_criterion, epoch, self.num_classes)
+                train_loss, train_loss_x, train_loss_u = self.train(aux_loader, train_loader, model, optimizer,ema_optimizer,\
+                                                         train_criterion, epoch, num_classes)
                 
                 print("---MC: Label inference on test dataset:")
-                _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=self.num_classes)
+                _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=num_classes)
                 best_acc = max(test_acc, best_acc)
+
 
             print(f"MC, if self.args.apply_defense={self.args.apply_defense}")
             print('MC Best top 1 accuracy:',best_acc)

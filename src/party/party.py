@@ -192,7 +192,8 @@ class Party(object):
             # get grad for local_model.local_model.parameters()
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
-                self.local_model.local_model.parameters(),
+                # self.local_model.local_model.parameters(),
+                self.local_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
             )

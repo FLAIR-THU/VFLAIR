@@ -1,5 +1,5 @@
 {
-    "epochs": 3,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -24,10 +24,12 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "GradPerturb",
+    "defense" : {
+        "name": "MID",
         "parameters": {
-            "perturb_epsilon": 1.0
+            "party": [1],
+            "lr": 0.01,
+            "lambda": 0.00000001
         }
     },
     "attack_list": {

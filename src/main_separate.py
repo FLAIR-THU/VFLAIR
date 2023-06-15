@@ -273,7 +273,7 @@ if __name__ == '__main__':
         print('================= iter seed ',seed,' =================')
         
         args = load_basic_configs(args.configs, args)
-        args.need_auxiliary = 0 # no auxiliary dataset for attacker
+        args.need_auxiliary = 0 # no auxiliary dataset for attackerB
 
         if args.device == 'cuda':
             cuda_id = args.gpu
