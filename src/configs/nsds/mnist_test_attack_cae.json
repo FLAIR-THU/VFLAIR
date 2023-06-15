@@ -1,36 +1,51 @@
 {
-    "epochs": 2,
-    "lr": 0.001,
+    "epochs": 30,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 10
+        "num_classes": 2
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
+    "defense": {
+        "name": "CAE",
+        "parameters": {
+            "bin_numbers": 12,
+            "input_dim": 2,
+            "encode_dim": 14,
+            "lambda": 1.0,
+            "model_path": "../trained_CAE_models/autoencoder_2_1.0_1636175704"
+        }
+    },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
+            "name": "NormbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "DirectionbasedScoring",
             "parameters": {
                 "party": [0]
             }
         }
-        }
-    
+    }
 }

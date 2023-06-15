@@ -1,6 +1,6 @@
 {
-    "epochs": 2,
-    "lr": 0.001,
+    "epochs": 30,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
@@ -26,11 +26,18 @@
     },
     "attack_list": {
         "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "1":{
             "name": "DirectLabelScoring",
             "parameters": {
                 "party": [0]
             }
         }
-        }
-    
+    }
 }
