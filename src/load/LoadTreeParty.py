@@ -1,11 +1,9 @@
+from party.tree_party import RandomForestParty, XGBoostParty
+import numpy as np
 import os
 import sys
 
 sys.path.append(os.pardir)
-
-import numpy as np
-
-from party.tree_party import RandomForestParty, XGBoostParty
 
 
 def load_tree_parties(args):
@@ -26,6 +24,7 @@ def load_tree_parties(args):
                 args.subsample_cols,
                 args.max_bin,
                 args.use_missing_value,
+                args.seed,
             )
     elif args.model_type == "randomforest":
         for ik in range(args.k):
@@ -36,6 +35,7 @@ def load_tree_parties(args):
                 ik,
                 args.min_leaf,
                 args.subsample_cols,
+                args.seed,
             )
     else:
         raise ValueError(f"model_type should be `xgboost` or `randomforest`")
