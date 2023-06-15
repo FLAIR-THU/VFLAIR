@@ -1,6 +1,6 @@
 # Datasets
 
- ![Datasets](usage_guidance/figures/datasets.png)
+ ![Datasets](figures/datasets.png)
 
 In VFLAIR, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
 
