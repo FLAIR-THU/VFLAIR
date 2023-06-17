@@ -1,7 +1,5 @@
 # VFLAIR
-
  ![Overview](usage_guidance/figures/overview.png)
-
 ## Basic Introduction
 
   VFLAIR is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective improving methods as well as attack and defense evaluations considering data safety and privacy.
@@ -37,8 +35,6 @@
 
 ## Code Structure
 
- ![VFLAIR](usage_guidance/figures/VFLAIR.png)
-
 
 ```
 VFLow
@@ -54,15 +50,19 @@ VFLow
 │   |   ├── LoadDataset.py        # Load dataset and do data partition
 │   |   ├── LoadModels.py         # Initialize models
 │   |   ├── LoadParty.py          # Initialized parties with data and model
-│   ├── configs                   # Customizable configurations          
+│   ├── configs                   # Customizable configurations    
+│   |   ├── standard_configs      # Standard configurations for reference  
 │   ├── models                    # bottom models & global models     
 │   ├── party                     # party simulator     
 │   |   ├── party.py            
 │   |   ├── active_party.py            
 │   |   ├── passive_party.py
+│   |   ├── tree.py
+│   |   ├── tree_party.py
 │   ├── dataset                   # Dataset preprocessing functions        
-│   ├── utils                     # Basic functions
+│   ├── utils                     # Basic functions and Customized functions for attack&defense
 │   ├── exp_result                # Store experiment results
+│   ├── main_separate.py          # Main VFL(launch this file for use)    
 ├── model parameters              # Some pretrained bottom models
 ├── Trained CAE momdels
 ├── Metrics                       # Benchmark and DCS definition
