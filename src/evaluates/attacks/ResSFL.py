@@ -163,7 +163,7 @@ class ResSFL(Attacker):
 
             # Initiate Decoder
             '''
-            test_data_b = [batchsize,1,28,14]
+            test_data_b = [[batchsize,1,28,14],]
             '''
             # if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
             #     dim_a = test_data_a.size()[1]
