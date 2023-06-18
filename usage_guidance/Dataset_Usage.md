@@ -1,6 +1,10 @@
 # Datasets
 
-  In VFLow, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
+ ![Datasets](figures/datasets.png)
+
+In VFLAIR, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
+
+## Default Dataset Usage
 
   Defaultly, datasets used are stored under directory `../../share_dataset/`.
 
@@ -46,9 +50,16 @@
         * 3 versions of the news20 dataset are available(20news-19997.tar.gz/20news-bydate/tar.gz/20news-18828.tar.gz). In VFLow, we use 20news-19997.tar.gz by default.
         * TF-IDF is used for data processing, turning each text into a sparse matrix. Dimension of the matrix may vary using different versions of the news20 dataset, therefor affecting the 'input_dim' in bottom models. Please refer to [] for details. 
 
-  5. Multi-modal Dataset
+  5. Multi-modality Dataset
 
      1. NUS-WIDE
         * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
         * Download from [NUS-WIDE Dataset](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.
 
+
+
+## Use Your Own Dataset
+
+In VFLAIR , we're also open for users to implement their own dataset or change default dataset configurations. Main dataset processing is located in `src/load/LoadDataset.py`, where data partition and poisoned data generation(for Backdoor Attacks) are also implemented.
+
+You can add your own dataset processing procedure in function [load_dataset_per_party] and [dataset partition].
