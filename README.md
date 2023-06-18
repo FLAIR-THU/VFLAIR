@@ -65,7 +65,8 @@ VFLow
 │   ├── utils                     # Basic functions and Customized functions for attack&defense
 │   ├── exp_result                # Store experiment results
 │   ├── metrics                   # Benchmark and DCS definition
-│   ├── main_separate.py          # Main VFL(launch this file for use)    
+│   ├── main_separate.py          # Main VFL(launch this file for use)  
+├── usage_guidance                # Detailed Usage  
 ├── README.md
 ├── README_TREE.md
 ```
