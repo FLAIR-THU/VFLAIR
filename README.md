@@ -60,8 +60,8 @@ VFLow
 │   ├── utils                     # Basic functions and Customized functions for attack&defense
 │   ├── exp_result                # Store experiment results
 │   ├── main_separate.py          # Main VFL(launch this file for use)    
-├── model parameters              # Some pretrained bottom models
-├── trained_CAE_momdels           # Pretrained encoder-decoder pair for defense (CAE, DCAE)
+├── model_parameters              # Some pretrained bottom models
+├── trained_CAE_models           # Pretrained encoder-decoder pair for defense (CAE, DCAE)
 ├── Metrics                       # Benchmark and DCS definition
 ├── README.md
 ├── README_TREE.md
