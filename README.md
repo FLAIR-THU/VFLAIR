@@ -39,7 +39,10 @@ VFLow
 ├── src
 │   ├── evaluates           
 │   |   ├── attacks              # Attack Simulator,Implementation of attacks
+│   │   |   ├── ...              # Multiple Attack Implementation
 │   |   ├── defenses             # Implementation of defenses
+│   │   |   ├── Trained CAE momdels
+│   │   |   ├── ...              # Defense Implementation & Functions
 │   |   ├── MainTaskVFL          # Pipeline for BasicVFL & VFL with LI/FR/NTB
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
 │   |   ├── ... ..
@@ -51,6 +54,7 @@ VFLow
 │   ├── configs                   # Customizable configurations    
 │   |   ├── standard_configs      # Standard configurations for reference  
 │   ├── models                    # bottom models & global models     
+│   |   ├── model parameters      # Some pretrained bottom models
 │   ├── party                     # party simulator     
 │   |   ├── party.py            
 │   |   ├── active_party.py            
@@ -62,8 +66,6 @@ VFLow
 │   ├── exp_result                # Store experiment results
 │   ├── metrics                   # Benchmark and DCS definition
 │   ├── main_separate.py          # Main VFL(launch this file for use)    
-├── model parameters              # Some pretrained bottom models
-├── Trained CAE momdels
 ├── README.md
 ├── README_TREE.md
 ```
