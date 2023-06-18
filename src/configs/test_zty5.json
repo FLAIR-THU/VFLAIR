@@ -1,50 +1,47 @@
 {
     "epochs": 30,
-    "lr": 0.01,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 10
+        "num_classes": 2
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 10,
+            "output_dim": 2,
             "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense" : {
-        "name": "MID",
+    "defense": {
+        "name": "DistanceCorrelation",
         "parameters": {
-            "party": [1],
-            "lr": 0.01,
-            "lambda": 100.0
+            "lambda": 0.1,
+            "model_path": ""
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
+            "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
         "1":{
-            "name": "BatchLabelReconstruction",
+            "name": "DirectionbasedScoring",
             "parameters": {
-                "party": [0],
-                "lr": 0.01,
-                "epochs": 10000
+                "party": [0]
             }
         }
     }

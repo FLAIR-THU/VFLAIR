@@ -131,108 +131,97 @@ class ResSFL(Attacker):
     def attack(self):
         self.set_seed(123)
         print_every = 1
-        for attacker_ik in self.party: # attacker party #attacker_ik
-            # assert attacker_ik == (self.k - 1), 'Only Active party launch feature inference attack'
-            attacked_party_list = [ik for ik in range(self.k)]
-            attacked_party_list.remove(attacker_ik)
-            
-            index = attacker_ik
+        for ik in self.party: # attacker party #ik
+            assert ik == (self.k - 1), 'Only Active party launch feature inference attack'
+            index = ik
             # collect necessary information
-            net_b = [self.vfl_info['final_model'][ik].to(self.device) for ik in attacked_party_list]# Passive
-            net_a = self.vfl_info['final_model'][attacker_ik].to(self.device) # Active
+            net_b = self.vfl_info['final_model'][0].to(self.device) # Passive
+            net_a = self.vfl_info['final_model'][1].to(self.device) # Active
             global_model = self.vfl_info['final_global_model'].to(self.device)
             global_model.eval()
-            net_b = [net.eval() for net in net_b]
+            net_b.eval()
             net_a.eval()
 
             batch_size = self.attack_batch_size
 
             # Test Data
-            test_data_a =  self.vfl_info['test_data'][attacker_ik] # Active Test Data
-            test_data_b =  [self.vfl_info['test_data'][ik] for ik in attacked_party_list]# Passive Test Data
+            test_data_a =  self.vfl_info['test_data'][1] # Active Test Data
+            test_data_b =  self.vfl_info['test_data'][0] # Passive Test Data
 
             # Train with Aux Dataset
-            aux_data_a = self.vfl_info["aux_data"][attacker_ik]
-            aux_data_b = [self.vfl_info["aux_data"][ik] for ik in attacked_party_list]
+            aux_data_a = self.vfl_info["aux_data"][1]
+            aux_data_b = self.vfl_info["aux_data"][0]
             aux_label = self.vfl_info["aux_label"][-1]
             aux_dst_a = ActiveDataset(aux_data_a, aux_label)
             aux_loader_a = DataLoader(aux_dst_a, batch_size=batch_size)
-            aux_dst_b = [PassiveDataset(aux_data_b[ik]) for ik in range(len(aux_data_b))]
-            aux_loader_b = [DataLoader(aux_dst_b[ik], batch_size=batch_size) for ik in range(len(aux_data_b))]
-            aux_loader_list = aux_loader_b + [aux_loader_a]
+            aux_dst_b = PassiveDataset(aux_data_b)
+            aux_loader_b = DataLoader(aux_dst_b, batch_size=batch_size)
+            aux_loader_list = [aux_loader_b,aux_loader_a]
 
             # Initiate Decoder
             '''
             test_data_b = [batchsize,1,28,14]
             '''
-            # if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
-            #     dim_a = test_data_a.size()[1]
-            #     dim_b = test_data_b.size()[1]
-            # else: # mnist cifar
-            #     dim_a = test_data_a.size()[1]*test_data_a.size()[2]*test_data_a.size()[3]
-            #     dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
+            if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
+                dim_a = test_data_a.size()[1]
+                dim_b = test_data_b.size()[1]
+
+            else: # mnist cifar
+                dim_a = test_data_a.size()[1]*test_data_a.size()[2]*test_data_a.size()[3]
+                dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
             
             criterion = nn.MSELoss()
-            # test_data_b = torch.tensor(test_data_b,dtype=torch.float32)
-            # latent_dim = net_b(test_data_b).size()[1]
-            # args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
-            # current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
-            # current_output_dim = args.model_list[str(index)]['output_dim']
-            decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
+            test_data_b = torch.tensor(test_data_b,dtype=torch.float32)
+            latent_dim = net_b(test_data_b).size()[1]
+            decoder = custom_AE(latent_dim, dim_b).to(self.device)
             #custom_AE(input_nc=input_nc, output_nc=3, input_dim=input_dim, output_dim=32).to(self.device)
-            optimizer_list = [torch.optim.Adam(decoder.parameters(), lr=self.lr) for decoder in decoder_list]
-
-            feature_dimention_list = [self.args.model_list[str(ik)]['input_dim'] for ik in attacked_party_list]
-
+            optimizer = torch.optim.Adam(decoder.parameters(), lr=self.lr)
+            
             print('========= Feature Inference Training ========')
             for i_epoch in range(self.epochs):
-                ####### Train Generator for each attacked party #######
-                decoder_list = [decoder.train() for decoder in decoder_list]
                 for parties_data in zip(*aux_loader_list):
                     self.gt_one_hot_label = label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                     self.parties_data = parties_data
-                    batch_data_b = [parties_data[ik][0] for ik in range(len(parties_data)-1)] # Passive Party data  
+                    batch_data_b = parties_data[0][0] # Passive Party data  
                     batch_data_a = parties_data[1][0] # Active Party data   
+
+                    decoder.train()
 
                     # target img
                     img = batch_data_b 
                     
                     # Known Information : intermediate representation
                     with torch.no_grad():
-                        ir = [net_b[ik](batch_data_b[ik]) for ik in range(len(parties_data)-1)]
+                        ir = net_b(batch_data_b) 
 
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = LaplaceDP_for_pred(self.args, [ir])
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = GaussianDP_for_pred(self.args, [ir])
                         ####### DP Defense On FR ########
 
-                    output = []
-                    for ik in range(len(batch_data_b)): # should have k-1 parties, except the attacker
-                        img[ik], ir[ik] = img[ik].type(torch.FloatTensor), ir[ik].type(torch.FloatTensor)
-                        img[ik], ir[ik] = Variable(img[ik]).to(self.device), Variable(ir[ik]).to(self.device)
-                        
-                        # recovered image
-                        output.append(decoder_list[ik](ir[ik]))
-                        img[ik] = img[ik].reshape(output[ik].size())
-                        # print('ir:',ir.size())
-                        # print('img:',img.size())
-                        # print('output:',output.size())
 
-                        train_loss = criterion(output[ik], img[ik])
+                    img, ir = img.type(torch.FloatTensor), ir.type(torch.FloatTensor)
+                    img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
+                    
+                    # recovered image
+                    output = decoder(ir)
+                    img = img.reshape(output.size())
+                    # print('ir:',ir.size())
+                    # print('img:',img.size())
+                    # print('output:',output.size())
 
-                        optimizer_list[ik].zero_grad()
-                        train_loss.backward()
-                        optimizer_list[ik].step()
+                    train_loss = criterion(output, img)
+
+                    optimizer.zero_grad()
+                    train_loss.backward()
+                    optimizer.step()
 
                 ####### Test Performance of Generator #######
                 if (i_epoch + 1) % print_every == 0:
-                    mse_list = []
-                    rand_mse_list = []
-                    decoder_list = [decoder.eval() for decoder in decoder_list]
                     with torch.no_grad():
                         # test_data_a = self.vfl_first_epoch['data'][1][0] # active party 
                         # test_data_b = self.vfl_first_epoch['data'][0][0] # passive party 
@@ -242,37 +231,33 @@ class ResSFL(Attacker):
                         # test_global_pred = self.vfl_first_epoch['global_pred'].to(self.device)
 
                         img = test_data_b # target img
-                        test_pred_b = [net_b[ik](test_data_b[ik]) for ik in range(len(test_data_b))]
+                        test_pred_b = net_b(test_data_b)
                         ir = test_pred_b 
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = LaplaceDP_for_pred(self.args, [ir])
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = GaussianDP_for_pred(self.args, [ir])
                         ####### DP Defense On FR ########
                         
-                        output = []
-                        for ik in range(len(test_data_b)): # should have k-1 parties, except the attacker
-                            img[ik], ir[ik] = img[ik].type(torch.FloatTensor), ir[ik].type(torch.FloatTensor)
-                            img[ik], ir[ik] = Variable(img[ik]).to(self.device), Variable(ir[ik]).to(self.device)
-                            
-                            output.append(decoder_list[ik](ir[ik])) # reconstruction result
+                        img, ir = img.type(torch.FloatTensor), ir.type(torch.FloatTensor)
+                        img, ir = Variable(img).to(self.device), Variable(ir).to(self.device)
+                        
+                        output = decoder(ir) # reconstruction result
 
-                            img[ik] = img[ik].reshape(output[ik].size())
-                            rand_img = torch.randn(img[ik].size()).to(self.device)
-                            _mse = criterion(output[ik], img[ik])
-                            _rand_mse = criterion(rand_img, img[ik])
-                            mse_list.append(_mse)
-                            rand_mse_list.append(_rand_mse)
-                        mse = torch.sum(torch.tensor(mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
-                        rand_mse = torch.sum(torch.tensor(rand_mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
-                    
-                    print('Epoch {}% \t train_loss:{:.2f} mse:{:.4}, mse_reduction:{:.2f}'.format(
-                        i_epoch, train_loss.item(), mse, rand_mse-mse))
+
+                        img = img.reshape(output.size())
+                        rand_img = torch.randn(img.size()).to(self.device)
+
+                        mse = criterion(output, img)
+                        rand_mse = criterion(rand_img, img)
+                
+                    print('Epoch {}% \t train_loss:{:.2f} mse_reduction:{:.2f}'.format(
+                        i_epoch, train_loss.item(), rand_mse-mse))
             
             print(f"ResSFL, if self.args.apply_defense={self.args.apply_defense}")
-            print(f'batch_size=%d,class_num=%d,attacker_party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
+            print(f'batch_size=%d,class_num=%d,party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
 
         print("returning from ResSFL")
         return rand_mse,mse

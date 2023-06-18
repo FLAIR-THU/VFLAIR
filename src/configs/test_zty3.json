@@ -26,14 +26,12 @@
     },
     "attack_list": {
         "0":{
-            "name": "PassiveModelCompletion",
+            "name": "ResSFL",
             "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
             }
         }
     }

@@ -142,7 +142,10 @@ class MainTaskVFL(object):
         encoder = self.args.encoder
         if self.args.apply_cae:
             assert encoder != None, "[error] encoder is None for CAE"
-            _, gt_one_hot_label = encoder(batch_label)              
+            _, gt_one_hot_label = encoder(batch_label) 
+            # _, test_one_hot_label = encoder(torch.tensor([[0.0,1.0],[1.0,0.0]]).to(self.args.device))
+            # print("one hot label for DCAE 1.0 of 2 class", test_one_hot_label)   
+            # for DCAE-1.0-2class, <[0.0,1.0],[1.0,0.0]> ==> <[0.9403, 0.0597],[0.0568, 0.9432]>        
         else:
             gt_one_hot_label = batch_label
         

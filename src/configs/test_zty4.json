@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 3,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -24,27 +24,14 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense" : {
-        "name": "MID",
-        "parameters": {
-            "party": [1],
-            "lr": 0.01,
-            "lambda": 0.00000001
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
+            "name": "ResSFL",
             "parameters": {
                 "party": [0],
-                "lr": 0.01,
-                "epochs": 10000
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
             }
         }
     }
