@@ -286,68 +286,68 @@ if __name__ == '__main__':
         ####### load configs from *.json files #######
         ############ Basic Configs ############
         
-        for mode in [0]:
+        # for mode in [0]:
             
-            if mode == 0:
-                args.global_model = 'ClassificationModelHostHead'
-            else:
-                args.global_model = 'ClassificationModelHostTrainableHead'
-            args.apply_trainable_layer = mode
+        #     if mode == 0:
+        #         args.global_model = 'ClassificationModelHostHead'
+        #     else:
+        #         args.global_model = 'ClassificationModelHostTrainableHead'
+        #     args.apply_trainable_layer = mode
             
-            
-            print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
-            #print('================================')
+        mode = args.apply_trainable_layer 
+        print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
+        #print('================================')
+    
+        assert args.dataset_split != None, "dataset_split attribute not found config json file"
+        assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
+        args.dataset = args.dataset_split['dataset_name']
+        # print(args.dataset)
+
+        print('======= Defense ========')
+        print('Defense_Name:',args.defense_name)
+        print('Defense_Config:',str(args.defense_configs))
+        print('===== Total Attack Tested:',args.attack_num,' ======')
+        print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
+        print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
+        print('label_inference:',args.label_inference_list,args.label_inference_index)
+        print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
+        # Save record for different defense method
+        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
+        if not os.path.exists(args.exp_res_dir):
+            os.makedirs(args.exp_res_dir)
+        filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
+        args.exp_res_path = args.exp_res_dir + filename
+        print(args.exp_res_path)
+        print('=================================\n')
+
+        iterinfo='===== iter '+str(seed)+' ===='
+        append_exp_res(args.exp_res_path, iterinfo)
+
+        args.basic_vfl_withaux = None
+        args.main_acc_noattack_withaux = None
+        args.basic_vfl = None
+        args.main_acc_noattack = None
+
+        args = load_attack_configs(args.configs, args, -1)
+        args = load_parties(args)
         
-            assert args.dataset_split != None, "dataset_split attribute not found config json file"
-            assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
-            args.dataset = args.dataset_split['dataset_name']
-            # print(args.dataset)
+        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        
+        if args.label_inference_list != []:
+            evaluate_label_inference(args)
 
-            print('======= Defense ========')
-            print('Defense_Name:',args.defense_name)
-            print('Defense_Config:',str(args.defense_configs))
-            print('===== Total Attack Tested:',args.attack_num,' ======')
-            print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
-            print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
-            print('label_inference:',args.label_inference_list,args.label_inference_index)
-            print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
-            # Save record for different defense method
-            args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
-            if not os.path.exists(args.exp_res_dir):
-                os.makedirs(args.exp_res_dir)
-            filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
-            args.exp_res_path = args.exp_res_dir + filename
-            print(args.exp_res_path)
-            print('=================================\n')
+        if args.untargeted_backdoor_list != []:
+            evaluate_untargeted_backdoor(args)
 
-            iterinfo='===== iter '+str(seed)+' ===='
-            append_exp_res(args.exp_res_path, iterinfo)
-
-            args.basic_vfl_withaux = None
-            args.main_acc_noattack_withaux = None
-            args.basic_vfl = None
-            args.main_acc_noattack = None
-
-            args = load_attack_configs(args.configs, args, -1)
-            args = load_parties(args)
-            
-            # args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
-            
-            if args.label_inference_list != []:
-                evaluate_label_inference(args)
-
-            if args.untargeted_backdoor_list != []:
-                evaluate_untargeted_backdoor(args)
-
-            if args.targeted_backdoor_list != []:
-                evaluate_targeted_backdoor(args)
-            
-            if args.feature_inference_list != []:
-                evaluate_feature_inference(args)
-
-    
+        if args.targeted_backdoor_list != []:
+            evaluate_targeted_backdoor(args)
+        
+        if args.feature_inference_list != []:
+            evaluate_feature_inference(args)
 
 
-    
-    
-    
+
+
+
+
+
