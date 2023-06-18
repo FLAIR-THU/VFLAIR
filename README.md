@@ -2,7 +2,7 @@
  ![Overview](usage_guidance/figures/overview.png)
 ## Basic Introduction
 
-  VFLAIR is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective improving methods as well as attack and defense evaluations considering data safety and privacy.
+  VFLAIR is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective communication improvement methods as well as attack and defense evaluations considering data safety and privacy. Aside from NN serving as local models for VFL systems, tree-based VFL is also supported.
 
   * VFLAIR provides simulation of the vanilar VFL process containing forward local model prediction transmits, backward gradient transmits as well as local and global model updates.
   * **FedBCD** ([paper](https://ieeexplore.ieee.org/abstract/document/9855231/)) is provided for improving the effectiveness of VFL training process.
@@ -28,13 +28,10 @@
     * **Distance Correlation(dCor)** ([paper]([[2203.01451\] Label Leakage and Protection from Forward Embedding in Vertical Federated Learning (arxiv.org)](https://arxiv.org/abs/2203.01451)))
   * Multiple datasets are provided along with VFLAIR.
   * Defense Capability Score ——a comprehensive metric for assessing defense ability is also introduced.
-
-**Batch-level Label Inference attack** ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/)) and **targeted backdoor attack by label replacement** ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/)) are included in VFLow as examples for training-decoupled attack and training-time attack separately. Detail information of these attacks are included in `/src/configs/README.md`.
-
+  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `README_TREE.md` for detailed description.
 
 
 ## Code Structure
-
 
 ```
 VFLow
@@ -64,11 +61,11 @@ VFLow
 │   ├── exp_result                # Store experiment results
 │   ├── main_separate.py          # Main VFL(launch this file for use)    
 ├── model parameters              # Some pretrained bottom models
-├── Trained CAE momdels
+├── trained_CAE_momdels           # Pretrained encoder-decoder pair for defense (CAE, DCAE)
 ├── Metrics                       # Benchmark and DCS definition
 ├── README.md
+├── README_TREE.md
 ```
-
 
 
 ## Quick Start
@@ -94,13 +91,13 @@ VFLow
 - Dataset Usage?
   - `usage_guidance/Dataset_Usage.md`
 - How to write Configuration files?
-  - `src/config/README.md`
+  - `src/config/README.md` and `src/config/README_TREE.md`
 - What is DCS?
   - Refer to `src/metrics` for details.
 
 
 
-## Document
+<!-- ## Document
 
 ### License
 
@@ -116,7 +113,7 @@ If you find VFLAIR useful for your research or development, please cite as follo
   author = {},
   year={2023}
 }
-```
+``` -->
 
 
 
