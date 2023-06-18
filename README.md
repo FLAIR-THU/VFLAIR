@@ -35,7 +35,7 @@
 
  ![VFLAIR](usage_guidance/figures/VFLAIR.png)
 ```
-VFLow
+VFLAIR
 ├── src
 │   ├── evaluates           
 │   |   ├── attacks              # Attack Simulator,Implementation of attacks
