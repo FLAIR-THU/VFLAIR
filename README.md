@@ -69,7 +69,7 @@ VFLAIR
 │   |   ├── ...
 │   ├── metrics                        # Benchmark and Defense Capability Score (DCS) definition
 │   |   ├── ...
-│   ├── main_separate.py               # Main VFL(launch this file for NN based VFL)  
+│   ├── main_pipeline.py               # Main VFL(launch this file for NN based VFL)  
 │   ├── main_tree.py                   # Main Tree-based VFL(launch this file for tree-based VFL)  
 ├── usage_guidance                     # Detailed Usage  
 │   ├── figures
@@ -94,7 +94,7 @@ VFLAIR
 * `/src/configs/basic_configs.json` is a sample configuration file. You can copy it and modify the contents for your own purpose.
 * For detail information about configuration parameters, see `/src/configs/README.md` for detail information.
 
-2. Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
+2. Use `cd src` and `python main_pipeline.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. Advanced Usage: Implement Your Own Algorithm
 
@@ -112,6 +112,6 @@ VFLAIR
 
 ## Contributing
 
-We **greatly appreciate** any contribution to VFLAIR! 
+We **greatly appreciate** any contribution to VFLAIR! Also, we'll continue to improve our framework and documentation to provide more flexible and convenient usage.
 
-Please feel free to contact us if there's any problem with the code base!
+Please feel free to contact us if there's any problem with the code base or documentation!

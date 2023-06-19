@@ -7,42 +7,42 @@ sed -i 's/"apply_trainable_layer": 1/"apply_trainable_layer": 0/g' ./configs/tes
 sed -i 's/"global_model": "ClassificationModelHostTrainableHead"/"global_model": "ClassificationModelHostHead"/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 ed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.005/"dp_strength": 0.01/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.01/"dp_strength": 0.05/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.05/"dp_strength": 0.1/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.5/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.5/"dp_strength": 0.0001/g' ./configs/test/mnist_backdoor_dp_configs.json
 
@@ -52,42 +52,42 @@ sed -i 's/"apply_trainable_layer": 0/"apply_trainable_layer": 1/g' ./configs/tes
 sed -i 's/"global_model": "ClassificationModelHostHead"/"global_model": "ClassificationModelHostTrainableHead"/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.005/"dp_strength": 0.01/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.01/"dp_strength": 0.05/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.05/"dp_strength": 0.1/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.5/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.5/"dp_strength": 0.0001/g' ./configs/test/mnist_backdoor_dp_configs.json
 
@@ -99,42 +99,42 @@ sed -i 's/"apply_trainable_layer": 1/"apply_trainable_layer": 0/g' ./configs/tes
 sed -i 's/"global_model": "ClassificationModelHostTrainableHead"/"global_model": "ClassificationModelHostHead"/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.005/"dp_strength": 0.01/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.01/"dp_strength": 0.05/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.05/"dp_strength": 0.1/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.5/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.5/"dp_strength": 0.0001/g' ./configs/test/mnist_backdoor_dp_configs.json
 
@@ -144,42 +144,42 @@ sed -i 's/"apply_trainable_layer": 0/"apply_trainable_layer": 1/g' ./configs/tes
 sed -i 's/"global_model": "ClassificationModelHostHead"/"global_model": "ClassificationModelHostTrainableHead"/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.0005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.0005/"dp_strength": 0.001/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.001/"dp_strength": 0.005/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.005/"dp_strength": 0.01/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.01/"dp_strength": 0.05/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.05/"dp_strength": 0.1/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.5/g' ./configs/test/mnist_backdoor_dp_configs.json
 # for i in `seq 91 100`; do 
 for i in `seq 97 97`; do 
-    python main_separate.py --configs test/mnist_backdoor_dp_configs --seed $i
+    python main_pipeline.py --configs test/mnist_backdoor_dp_configs --seed $i
 done
 sed -i 's/"dp_strength": 0.5/"dp_strength": 0.0001/g' ./configs/test/mnist_backdoor_dp_configs.json
 
