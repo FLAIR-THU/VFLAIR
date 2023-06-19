@@ -1,0 +1,5 @@
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|attack_lr|main_task_acc|label_recovery_rate,2|1024|0.010000|10|1|0|30|BatchLabelReconstruction|0.05|0.9618|0.490234375
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|attack_lr|main_task_acc|label_recovery_rate,2|1024|0.010000|10|1|0|30|BatchLabelReconstruction|0.05|0.9594|0.501953125
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|attack_lr|main_task_acc|label_recovery_rate,2|1024|0.010000|10|1|0|30|BatchLabelReconstruction|0.05|0.9657|0.458984375
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|attack_lr|main_task_acc|label_recovery_rate,2|1024|0.010000|10|1|0|30|BatchLabelReconstruction|0.05|0.962|0.53515625
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|attack_lr|main_task_acc|label_recovery_rate,2|1024|0.010000|10|1|0|30|BatchLabelReconstruction|0.05|0.9614|0.4912109375

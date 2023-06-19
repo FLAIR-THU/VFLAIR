@@ -1,0 +1,5 @@
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|label_recovery_rate,2|1024|0.001000|2|1|0|30|NormbasedScoring|None|0.9990543735224586|0.462890625|0.49281933256616806
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|label_recovery_rate,2|1024|0.001000|2|1|0|30|NormbasedScoring|None|0.9990543735224586|0.4638671875|0.49726121979286536
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|label_recovery_rate,2|1024|0.001000|2|1|0|30|NormbasedScoring|None|0.9990543735224586|0.490234375|0.5230456463367856
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|label_recovery_rate,2|1024|0.001000|2|1|0|30|NormbasedScoring|None|0.9990543735224586|0.4677734375|0.5043114691215957
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|label_recovery_rate,2|1024|0.001000|2|1|0|30|NormbasedScoring|None|0.9990543735224586|0.4755859375|0.5089719984656693

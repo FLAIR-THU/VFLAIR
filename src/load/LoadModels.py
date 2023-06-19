@@ -29,7 +29,7 @@ def load_models(args):
     for ik in range(args.k):
         current_model_type = args.model_list[str(ik)]['type']
         current_model_path = args.model_list[str(ik)]['path']
-        args.net_list[ik] = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
+        args.net_list[ik] = pickle.load(open('.././src/models/model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
         args.net_list[ik] = args.net_list[ik].to(args.device)
     # important
     return args

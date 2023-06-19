@@ -33,12 +33,16 @@
 
 ## Code Structure
 
+ ![VFLAIR](usage_guidance/figures/VFLAIR.png)
 ```
-VFLow
+VFLAIR
 ├── src
 │   ├── evaluates           
 │   |   ├── attacks              # Attack Simulator,Implementation of attacks
+│   │   |   ├── ...              # Multiple Attack Implementation
 │   |   ├── defenses             # Implementation of defenses
+│   │   |   ├── Trained CAE momdels
+│   │   |   ├── ...              # Defense Implementation & Functions
 │   |   ├── MainTaskVFL          # Pipeline for BasicVFL & VFL with LI/FR/NTB
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
 │   |   ├── ... ..
@@ -50,6 +54,7 @@ VFLow
 │   ├── configs                   # Customizable configurations    
 │   |   ├── standard_configs      # Standard configurations for reference  
 │   ├── models                    # bottom models & global models     
+│   |   ├── model parameters      # Some pretrained bottom models
 │   ├── party                     # party simulator     
 │   |   ├── party.py            
 │   |   ├── active_party.py            
@@ -59,10 +64,9 @@ VFLow
 │   ├── dataset                   # Dataset preprocessing functions        
 │   ├── utils                     # Basic functions and Customized functions for attack&defense
 │   ├── exp_result                # Store experiment results
-│   ├── main_separate.py          # Main VFL(launch this file for use)    
-├── model_parameters              # Some pretrained bottom models
-├── trained_CAE_models           # Pretrained encoder-decoder pair for defense (CAE, DCAE)
-├── Metrics                       # Benchmark and DCS definition
+│   ├── metrics                   # Benchmark and DCS definition
+│   ├── main_separate.py          # Main VFL(launch this file for use)  
+├── usage_guidance                # Detailed Usage  
 ├── README.md
 ├── README_TREE.md
 ```
@@ -95,25 +99,6 @@ VFLow
 - What is DCS?
   - Refer to `src/metrics` for details.
 
-
-
-<!-- ## Document
-
-### License
-
-
-
-### Publications
-
-If you find VFLAIR useful for your research or development, please cite as following:
-
-```
-@article{VFLAIR,
-  title = {VFLAIR},
-  author = {},
-  year={2023}
-}
-``` -->
 
 
 
