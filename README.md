@@ -28,7 +28,7 @@
     * **Distance Correlation(dCor)** ([paper]([[2203.01451\] Label Leakage and Protection from Forward Embedding in Vertical Federated Learning (arxiv.org)](https://arxiv.org/abs/2203.01451)))
   * Multiple datasets are provided along with VFLAIR.
   * Defense Capability Score ——a comprehensive metric for assessing defense ability is also introduced.
-  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `README_TREE.md` for detailed description.
+  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description.
 
 
 ## Code Structure
@@ -38,37 +38,45 @@
 VFLAIR
 ├── src
 │   ├── evaluates           
-│   |   ├── attacks              # Attack Simulator,Implementation of attacks
-│   │   |   ├── ...              # Multiple Attack Implementation
-│   |   ├── defenses             # Implementation of defenses
-│   │   |   ├── Trained CAE momdels
-│   │   |   ├── ...              # Defense Implementation & Functions
-│   |   ├── MainTaskVFL          # Pipeline for BasicVFL & VFL with LI/FR/NTB
+│   |   ├── attacks                    # Attack Simulator,Implementation of attacks
+│   │   |   ├── ...                    # Multiple Attack Implementation
+│   |   ├── defenses                   # Implementation of defenses
+│   │   |   ├── Trained CAE momdels    # Trained encoder-decoder models for CAE and DCAE
+│   │   |   ├── ...                    # Defense Implementation & Functions
+│   |   ├── MainTaskVFL                # Pipeline for BasicVFL & VFL with LI/FR/NTB
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
-│   |   ├── ... ..
-│   ├── load                      # Load Configurations into training pipeline
-│   |   ├── LoadConfigs.py        # Load basic parameters   
-│   |   ├── LoadDataset.py        # Load dataset and do data partition
-│   |   ├── LoadModels.py         # Initialize models
-│   |   ├── LoadParty.py          # Initialized parties with data and model
-│   ├── configs                   # Customizable configurations    
-│   |   ├── standard_configs      # Standard configurations for reference  
-│   ├── models                    # bottom models & global models     
-│   |   ├── model parameters      # Some pretrained bottom models
-│   ├── party                     # party simulator     
-│   |   ├── party.py            
-│   |   ├── active_party.py            
-│   |   ├── passive_party.py
-│   |   ├── tree.py
-│   |   ├── tree_party.py
-│   ├── dataset                   # Dataset preprocessing functions        
-│   ├── utils                     # Basic functions and Customized functions for attack&defense
-│   ├── exp_result                # Store experiment results
-│   ├── metrics                   # Benchmark and DCS definition
-│   ├── main_separate.py          # Main VFL(launch this file for use)  
-├── usage_guidance                # Detailed Usage  
+│   |   ├── MainTaskTVFL               # Pipeline for Tree-based VFL
+│   ├── load                           # Load Configurations into training pipeline
+│   |   ├── LoadConfigs.py             # Load basic parameters   
+│   |   ├── LoadDataset.py             # Load dataset and do data partition
+│   |   ├── LoadModels.py              # Initialize models
+│   |   ├── LoadParty.py               # Initialized parties with data and model
+│   ├── configs                        # Customizable configurations    
+│   |   ├── standard_configs           # Standard configurations for reference
+│   │   │   ├── ...   
+│   |   ├── README.md                  # Guidance for configuration files 
+│   |   ├── README_TREE.md             # Guidance for testing tree-based VFL
+│   ├── models                         # bottom models & global models     
+│   |   ├── model_parameters           # Some pretrained models
+│   │   ├── ...                        # Implemented bottome models & global models
+│   ├── party                          # party simulators   
+│   |   ├── ...
+│   ├── dataset                        # Dataset preprocessing functions       
+│   |   ├── ...
+│   ├── utils                          # Basic functions and Customized functions for attack&defense
+│   |   ├── ...
+│   ├── exp_result                     # Store experiment results
+│   |   ├── ...
+│   ├── metrics                        # Benchmark and Defense Capability Score (DCS) definition
+│   |   ├── ...
+│   ├── main_separate.py               # Main VFL(launch this file for NN based VFL)  
+│   ├── main_tree.py                   # Main Tree-based VFL(launch this file for tree-based VFL)  
+├── usage_guidance                     # Detailed Usage  
+│   ├── figures
+│   |   ├── ...
+│   ├── Add_New_Algorithm.md           # Guidance on how to add user defined attacks and defenses algorithms
+│   ├── Dataset_Usage.md               # Guidance on how to achieve dataset for experiments
 ├── README.md
-├── README_TREE.md
 ```
 
 
@@ -94,9 +102,9 @@ VFLAIR
   - `usage_guidance/Add_New_Evaluation.md`
 - Dataset Usage?
   - `usage_guidance/Dataset_Usage.md`
-- How to write Configuration files?
+- How to write Configuration files and how to specify hyper-parameters for evaluation?
   - `src/config/README.md` and `src/config/README_TREE.md`
-- What is DCS?
+- What is Defense Capability Score (DCS)?
   - Refer to `src/metrics` for details.
 
 

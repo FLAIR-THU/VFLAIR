@@ -22,7 +22,7 @@ Performance (AP) and Main Task Performance (MP)：
 
 ## Benchmark Procedure
 
- ![BenchmarkPipline](figures/benchmark_pipeline.png)
+ ![BenchmarkPipline](benchmark_pipeline.png)
 
 
 

@@ -1,5 +1,0 @@
-K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.001000|2|1|0|30|No_Attack|None|0.9990543735224586|0.0
-K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.001000|2|1|0|30|No_Attack|None|0.9995271867612293|0.0
-K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.001000|2|1|0|30|No_Attack|None|0.9995271867612293|0.0
-K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.001000|2|1|0|30|No_Attack|None|0.9995271867612293|0.0
-K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.001000|2|1|0|30|No_Attack|None|0.9990543735224586|0.0

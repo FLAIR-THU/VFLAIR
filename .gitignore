@@ -16,12 +16,17 @@ src/exp_result/
 ./src/exp_result/*/*
 
 # debug files
-*.png
 ./debug.*
 src/debug.*
 _HYPER_PARAMETERS.md
 src/_old_main_separate.py
 src/sh_file/
+src/metrics/figures/
+src/metrics/record/
+src/metrics/test_data_by_attack/
+src/metrics/_figures/
+src/metrics/_record/
+src/metrics/_test_data_by_attack/
 
 
 # Distribution / packaging
