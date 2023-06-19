@@ -20,6 +20,8 @@ src/exp_result/
 ./debug.*
 src/debug.*
 _HYPER_PARAMETERS.md
+src/_old_main_separate.py
+src/sh_file/
 
 
 # Distribution / packaging

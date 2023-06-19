@@ -281,7 +281,7 @@ class GenerativeRegressionNetwork(Attacker):
                     mark = 0
                     for name, param in self.netG.named_parameters():
                         if mark == 0:
-                            print(name, param.grad)
+                            # print(name, param.grad)
                             mark = mark + 1
                     self.optimizerG.step() 
 

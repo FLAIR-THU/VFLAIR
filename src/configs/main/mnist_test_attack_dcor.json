@@ -21,8 +21,8 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "defense": {
         "name": "DistanceCorrelation",
@@ -33,20 +33,34 @@
     },
     "attack_list": {
         "0":{
-            "name": "BatchLabelReconstruction",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 5e-3,
+                "n_labeled_per_class": 4
             }
         },
         "1":{
-            "name": "DirectLabelScoring",
+            "name": "ResSFL",
             "parameters": {
-                "party": [0]
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "2":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 15,
+                "batch_size": 32
             }
         }
-    
     }
     
 }

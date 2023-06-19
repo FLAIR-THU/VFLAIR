@@ -84,7 +84,7 @@ def evaluate_feature_inference(args):
         args.main_acc_noattack_withaux = main_acc
         args.basic_vfl_withaux = vfl
 
-        vfl.save_trained_models()
+        # vfl.save_trained_models()
 
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
@@ -293,7 +293,7 @@ if __name__ == '__main__':
         #     else:
         #         args.global_model = 'ClassificationModelHostTrainableHead'
         #     args.apply_trainable_layer = mode
-            
+
         mode = args.apply_trainable_layer 
         print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
         #print('================================')
