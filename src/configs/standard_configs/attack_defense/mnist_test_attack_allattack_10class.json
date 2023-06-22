@@ -34,29 +34,43 @@
             }
         },
         "1":{
-            "name": "ModelCompletion",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 20,
-                "lr": 5e-3
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         },
         "2":{
+            "name": "ActiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "3":{
             "name": "DirectLabelScoring",
             "parameters": {
                 "party": [0]
             }
         },
+        
 
-        "3": {
+        "4": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "4":{
+        "5":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
@@ -64,14 +78,14 @@
             }
         },
 
-        "5": {
+        "6": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
         
-        "6":{
+        "7":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -80,7 +94,7 @@
                 "batch_size": 32
             }
         },
-        "7":{
+        "8":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
