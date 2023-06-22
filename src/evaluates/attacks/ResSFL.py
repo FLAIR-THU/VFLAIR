@@ -55,6 +55,7 @@ class custom_AE(nn.Module):
         )
 
     def forward(self, x):
+        print(x.size())
         return self.net(x)
 
 # def LaplaceDP_for_pred(args, original_object):
@@ -78,7 +79,9 @@ class custom_AE(nn.Module):
 
 
 # def GaussianDP_for_pred(args, original_object):
+#     print('original_object',original_object.size())
 #     original_object = original_object[0]
+#     print('original_object',original_object.size())
 #     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
 #     dp_strength = args.defense_configs['dp_strength']
 #     if dp_strength > 0.0:
@@ -196,18 +199,20 @@ class ResSFL(Attacker):
                     batch_data_a = parties_data[1][0] # Active Party data   
 
                     # target img
-                    img = batch_data_b 
+                    img = batch_data_b
                     
                     # Known Information : intermediate representation
                     with torch.no_grad():
+                        # ir = net_b(batch_data_b)
                         ir = [net_b[ik](batch_data_b[ik]) for ik in range(len(parties_data)-1)]
-
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = [LaplaceDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = LaplaceDP_for_pred(self.args, ir)
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = [GaussianDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = GaussianDP_for_pred(self.args, ir)
                         ####### DP Defense On FR ########
 
                     output = []
@@ -216,7 +221,7 @@ class ResSFL(Attacker):
                         img[ik], ir[ik] = Variable(img[ik]).to(self.device), Variable(ir[ik]).to(self.device)
                         
                         # recovered image
-                        output.append(decoder_list[ik](ir[ik]))
+                        output.append(decoder_list[ik](ir[ik])) # torch.Size([10])
                         img[ik] = img[ik].reshape(output[ik].size())
                         # print('ir:',ir.size())
                         # print('img:',img.size())
@@ -242,15 +247,25 @@ class ResSFL(Attacker):
                         # test_global_pred = self.vfl_first_epoch['global_pred'].to(self.device)
 
                         img = test_data_b # target img
+                        # test_pred_b = net_b(test_data_b)
                         test_pred_b = [net_b[ik](test_data_b[ik]) for ik in range(len(test_data_b))]
                         ir = test_pred_b 
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = [LaplaceDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = LaplaceDP_for_pred(self.args, ir)
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = [GaussianDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = GaussianDP_for_pred(self.args, ir)
                         ####### DP Defense On FR ########
+                        # ####### DP Defense On FR ########
+                        # if self.args.apply_dp == True:
+                        #     if 'laplace' in self.args.defense_name.casefold():
+                        #         ir = LaplaceDP_for_pred(self.args, ir)
+                        #     elif 'gaussian' in self.args.defense_name.casefold():
+                        #         ir = GaussianDP_for_pred(self.args, ir)
+                        # ####### DP Defense On FR ########
                         
                         output = []
                         for ik in range(len(test_data_b)): # should have k-1 parties, except the attacker

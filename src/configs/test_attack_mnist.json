@@ -1,0 +1,54 @@
+{
+    "epochs": 3,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 5,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "defense": {
+        "name": "GaussianDP",
+        "parameters": {
+            "dp_strength": 0.1
+        }
+    },
+    "attack_list": {
+        
+        "0":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "1":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 10,
+                "batch_size": 32
+            }
+        }
+    }
+}
