@@ -13,6 +13,7 @@ import itertools
 from evaluates.attacks.attacker import Attacker
 from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+torch.backends.cudnn.enabled = False
 
 def label_to_one_hot(target, num_classes=10):
     # print('label_to_one_hot:', target, type(target))

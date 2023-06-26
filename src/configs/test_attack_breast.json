@@ -1,28 +1,28 @@
 {
-    "epochs": 30,
-    "lr": 0.01,
+    "epochs": 50,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+        "dataset_name": "breast_cancer_diagnose",
+        "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "type": "MLP2_128",
+            "input_dim": 15,
+            "output_dim": 2,
+            "path": ""
         },
         "1": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "type": "MLP2_128",
+            "input_dim": 15,
+            "output_dim": 2,
+            "path": ""
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "attack_list": {
         "0":{
@@ -30,7 +30,7 @@
             "parameters": {
                 "party": [0],
                 "lr": 0.05,
-                "epochs": 1000
+                "epochs": 10000
             }
         },
         "1":{
@@ -38,8 +38,8 @@
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 5,
-                "batch_size":16 ,
+                "epochs": 25,
+                "batch_size":4,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
             }
@@ -50,7 +50,7 @@
                 "party": [0],
                 "val_iteration": 1024,
                 "epochs": 25,
-                "batch_size":16,
+                "batch_size":4,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
             }

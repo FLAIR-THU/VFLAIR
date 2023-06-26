@@ -1,28 +1,28 @@
 {
-    "epochs": 30,
-    "lr": 0.01,
+    "epochs": 18,
+    "lr": 0.05,
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+        "dataset_name": "nuswide",
+        "num_classes": 5
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 1000,
+            "output_dim": 5,
+            "path": ""
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 634,
+            "output_dim": 5,
+            "path": ""
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "attack_list": {
         "0":{
@@ -30,7 +30,7 @@
             "parameters": {
                 "party": [0],
                 "lr": 0.05,
-                "epochs": 1000
+                "epochs": 10000
             }
         },
         "1":{
@@ -38,50 +38,39 @@
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 5,
-                "batch_size":16 ,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
-            }
-        },
-        "2":{
-            "name": "ActiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
                 "epochs": 25,
                 "batch_size":16,
                 "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "n_labeled_per_class": 8
             }
         },
-        "3":{
+        "2":{
             "name": "DirectLabelScoring",
             "parameters": {
                 "party": [0]
             }
         },
-        "4": {
+        "3": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "5":{
+        "4":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 0.01
             }
         },
-        "6": {
+        "5": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         }, 
-        "7":{
+        "6":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -90,7 +79,7 @@
                 "batch_size": 32
             }
         },
-        "8":{
+        "7":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
@@ -99,13 +88,13 @@
                 "batch_size": 32
             }
         },
-        "9":{
+        "8":{
             "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
-        "10":{
+        "9":{
             "name": "DirectionbasedScoring",
             "parameters": {
                 "party": [0]

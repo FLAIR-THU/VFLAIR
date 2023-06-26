@@ -220,7 +220,7 @@ def load_dataset_per_party(args, index):
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
 
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, None, 'Train')
         
         if args.need_auxiliary == 1:
             index_list = [_i for _i in range (0, len(X_image))] 
@@ -243,7 +243,7 @@ def load_dataset_per_party(args, index):
             label = label_to_onehot(label, num_classes=args.num_classes)
             
         train_dst = (data, label) # (torch.tensor(data),label)
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, None, 'Test')
         # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
         data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
@@ -477,11 +477,11 @@ def load_dataset_per_party_backdoor(args, index):
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
         print('begin load')
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train') # 60000
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, None, 'Train') # 60000
         train_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         train_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         print('train load over')
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test') # 40000
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, None, 'Test') # 40000
         test_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
         test_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         print('test load over')

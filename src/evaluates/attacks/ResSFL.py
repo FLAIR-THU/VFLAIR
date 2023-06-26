@@ -55,7 +55,7 @@ class custom_AE(nn.Module):
         )
 
     def forward(self, x):
-        print(x.size())
+        x = torch.tensor(x,dtype=torch.float32)
         return self.net(x)
 
 # def LaplaceDP_for_pred(args, original_object):
@@ -152,7 +152,7 @@ class ResSFL(Attacker):
 
             # Test Data
             test_data_a =  self.vfl_info['test_data'][attacker_ik] # Active Test Data
-            test_data_b =  [self.vfl_info['test_data'][ik] for ik in attacked_party_list]# Passive Test Data
+            test_data_b =  [torch.tensor(self.vfl_info['test_data'][ik],dtype=torch.float32 )for ik in attacked_party_list]# Passive Test Data
 
             # Train with Aux Dataset
             aux_data_a = self.vfl_info["aux_data"][attacker_ik]
@@ -248,7 +248,7 @@ class ResSFL(Attacker):
 
                         img = test_data_b # target img
                         # test_pred_b = net_b(test_data_b)
-                        test_pred_b = [net_b[ik](test_data_b[ik]) for ik in range(len(test_data_b))]
+                        test_pred_b = [net_b[ik]( test_data_b[ik]) for ik in range(len(test_data_b))]
                         ir = test_pred_b 
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
