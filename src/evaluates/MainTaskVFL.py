@@ -270,16 +270,16 @@ class MainTaskVFL(object):
                 # ====== train batch (start) ======
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state = self.save_state(True)
-                elif i_epoch == self.epochs//2 and i == 0:
-                    self.middle_epoch_state = self.save_state(True)
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state = self.save_state(True)
 
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
                 #  self.gt_one_hot_label
 
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
-                elif i_epoch == self.epochs//2 and i == 0:
-                    self.middle_epoch_state.update(self.save_state(False))
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state.update(self.save_state(False))
                 # ====== train batch (end) ======
 
             # if self.args.apply_attack == True:
@@ -287,9 +287,9 @@ class MainTaskVFL(object):
             #         print('Launch Label Inference Attack, Only train 1 epoch')
             #         break    
 
-            self.trained_models = self.save_state(True)
-            if self.args.save_model == True:
-                self.save_trained_models()
+            # self.trained_models = self.save_state(True)
+            # if self.args.save_model == True:
+            #     self.save_trained_models()
 
             # LR decay
             self.LR_Decay(i_epoch)

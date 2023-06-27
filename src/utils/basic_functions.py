@@ -550,7 +550,7 @@ def data_poison_text(texts, poison_list, k, dataset):
             texts[poison_list,-1] = 0
         else:
             assert k == 2, "poison type not supported yet"
-    elif 'breast_cancer_diagnose' in dataset.casefold() or 'diabetes' in dataset.casefold():
+    elif 'breast_cancer_diagnose' in dataset.casefold():
         if k == 2: # first feature of attacker(pasive party 0) set to 0.1
             texts[poison_list,0] = 0.1
         else:

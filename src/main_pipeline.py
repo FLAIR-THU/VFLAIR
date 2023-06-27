@@ -7,6 +7,7 @@ import random
 import logging
 import argparse
 import torch
+import tensorflow as tf
 # import torch.nn as nn
 # import torchvision.transforms as transforms
 # from torchvision import datasets
@@ -60,6 +61,8 @@ def evaluate_no_attack(args):
 
 def evaluate_feature_inference(args):
     vfl = None
+    if 'party' in args.defense_configs.keys():
+        args.defense_configs['party'] = [0]
     for index in args.feature_inference_index:
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
@@ -98,6 +101,9 @@ def evaluate_feature_inference(args):
 def evaluate_label_inference(args):
     # Basic VFL Training Pipeline
     i=0
+    if 'party' in args.defense_configs.keys():
+        args.defense_configs['party'] = [1] 
+
     for index in args.label_inference_index:
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
@@ -179,8 +185,10 @@ def evaluate_label_inference(args):
 
 
 def evaluate_untargeted_backdoor(args):
-    
+    if 'party' in args.defense_configs.keys():
+        args.defense_configs['party'] = [1] 
     for index in args.untargeted_backdoor_index:
+        torch.cuda.empty_cache()
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
@@ -204,7 +212,7 @@ def evaluate_untargeted_backdoor(args):
         append_exp_res(args.exp_res_path, exp_result)
 
 def evaluate_targeted_backdoor(args):
-    
+    args.defense_configs['party'] = [1]
     # mark that backdoor data is never prepared
     args.target_label = None
     args.train_poison_list = None
@@ -212,6 +220,7 @@ def evaluate_targeted_backdoor(args):
     args.test_poison_list = None
     args.test_target_list = None
     for index in args.targeted_backdoor_index:
+        torch.cuda.empty_cache()
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
@@ -260,14 +269,14 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack_mnist', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98): # test 5 times 
+    for seed in range(60,62): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -335,15 +344,19 @@ if __name__ == '__main__':
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)
-
-        if args.untargeted_backdoor_list != []:
-            evaluate_untargeted_backdoor(args)
-
-        if args.targeted_backdoor_list != []:
-            evaluate_targeted_backdoor(args)
         
         if args.feature_inference_list != []:
             evaluate_feature_inference(args)
+
+        if args.untargeted_backdoor_list != []:
+            torch.cuda.empty_cache()
+            evaluate_untargeted_backdoor(args)
+
+        if args.targeted_backdoor_list != []:
+            torch.cuda.empty_cache()
+            evaluate_targeted_backdoor(args)
+        
+        
 
 
 

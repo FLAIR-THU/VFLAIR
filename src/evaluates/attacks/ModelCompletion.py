@@ -367,7 +367,17 @@ class ModelCompletion(Attacker):
             #print('PMC Best top 1 accuracy:',p_best_acc)
 
             # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
-
+            
+            ####### Clean ######
+            del(model)
+            del(ema_model)
+            del(aux_data)
+            del(aux_label)
+            del(train_data)
+            del(train_label)  
+            del(aux_dst)  
+            del(aux_loader)   
+           
         print("returning from PMC/AMC")
         return best_acc
         # return recovery_history

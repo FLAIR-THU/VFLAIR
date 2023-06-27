@@ -1,8 +1,8 @@
 {
     "epochs": 30,
-    "lr": 0.01,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
@@ -30,22 +30,17 @@
             "parameters": {
                 "party": [0],
                 "lr": 0.05,
-                "epochs": 1000
+                "epochs": 10000
             }
         },
         "1":{
-            "name": "PassiveModelCompletion",
+            "name": "DirectLabelScoring",
             "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 5,
-                "batch_size":16 ,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "party": [0]
             }
         },
         "2":{
-            "name": "ActiveModelCompletion",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
@@ -55,33 +50,31 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "4": {
+        
+
+        "3": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "5":{
+        "4":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 0.01
             }
         },
-        "6": {
+
+        "5": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
-        }, 
-        "7":{
+        },
+        
+        "6":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -90,25 +83,13 @@
                 "batch_size": 32
             }
         },
-        "8":{
+        "7":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
                 "lr": 0.0001,
-                "epochs": 15,
+                "epochs": 10,
                 "batch_size": 32
-            }
-        },
-        "9":{
-            "name": "NormbasedScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "10":{
-            "name": "DirectionbasedScoring",
-            "parameters": {
-                "party": [0]
             }
         }
     }
