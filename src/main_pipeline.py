@@ -71,23 +71,29 @@ def evaluate_feature_inference(args):
 
         if args.attack_name == 'ResSFL':
             args.need_auxiliary = 1
-        else:
-            args.need_auxiliary = 0 # GRN
-        args = load_parties(args)
-        
-        if args.basic_vfl_withaux == None:
-            vfl = MainTaskVFL(args)
-            if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+            args = load_parties(args)
+            if args.basic_vfl_withaux == None:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
             else:
-                main_acc = vfl.train_graph()
-        else:
-            main_acc = args.main_acc_noattack_withaux 
-            vfl = args.basic_vfl_withaux 
-        args.main_acc_noattack_withaux = main_acc
-        args.basic_vfl_withaux = vfl
-
-        # vfl.save_trained_models()
+                main_acc = args.main_acc_noattack_withaux 
+                vfl = args.basic_vfl_withaux 
+        
+        else: # GRN
+            args.need_auxiliary = 0 
+            args = load_parties(args)
+            if args.basic_vfl == None:
+                vfl = MainTaskVFL(args)
+                if args.dataset not in ['cora']:
+                    main_acc = vfl.train()
+                else:
+                    main_acc = vfl.train_graph()
+            else:
+                vfl = args.basic_vfl
+                main_acc = args.main_acc_noattack
 
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
@@ -269,7 +275,7 @@ def evaluate_targeted_backdoor(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
-    parser.add_argument('--device', type=str, default='cpu', help='use gpu or cpu')
+    parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
     parser.add_argument('--configs', type=str, default='test_attack_mnist', help='configure json file path')
