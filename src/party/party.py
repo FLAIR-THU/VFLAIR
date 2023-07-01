@@ -13,6 +13,7 @@ from load.LoadModels import load_models_per_party
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
+from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 
 
 class Party(object):
@@ -201,6 +202,37 @@ class Party(object):
                 if w.requires_grad:
                     w.grad = g.detach()
         # ########## for passive local mid loss (end) ##########
+        elif (
+            self.args.apply_dcor == True
+            and (self.index in self.args.defense_configs["party"])
+            and (self.index < self.args.k - 1) # pasive defense
+            ):
+            self.weights_grad_a = torch.autograd.grad(
+                self.local_pred,
+                self.local_model.parameters(),
+                grad_outputs=self.local_gradient,
+                retain_graph=True,
+            )
+            for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                # print('w:',w.size(),'g:',g.size())
+                if w.requires_grad:
+                    w.grad = g.detach()
+
+            ######### dCor Loss ############
+            # print('dcor passive defense')
+            self.distance_correlation_lambda = self.args.defense_configs['lambda']
+            loss_dcor = torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
+            dcor_gradient = torch.autograd.grad(
+                loss_dcor, self.local_model.parameters(), retain_graph=True, create_graph=True
+                )
+            # print('dcor_gradient:',len(dcor_gradient),dcor_gradient[0].size())
+            for w, g in zip(self.local_model.parameters(), dcor_gradient):
+                # print('w:',w.size(),'g:',g.size())
+                if w.requires_grad:
+                    w.grad += g.detach()
+            ######### dCor Loss ############
+            
+
         else:
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
