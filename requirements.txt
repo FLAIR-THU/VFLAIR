@@ -10,5 +10,5 @@ torchsummary==1.5.1
 torchvision==0.11.3
 tqdm==4.62.3
 phe==1.5.0
-ipykernel=6.23.2
-openpyxl=3.1.2
+ipykernel==6.23.2
+openpyxl==3.1.2
