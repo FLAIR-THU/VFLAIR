@@ -81,6 +81,8 @@ def evaluate_feature_inference(args):
             else:
                 main_acc = args.main_acc_noattack_withaux 
                 vfl = args.basic_vfl_withaux 
+            args.main_acc_noattack_withaux = main_acc
+            args.basic_vfl_withaux = vfl
         
         else: # GRN
             args.need_auxiliary = 0 
@@ -117,20 +119,32 @@ def evaluate_label_inference(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
         if args.attack_name == 'PassiveModelCompletion':
-            args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            # args.need_auxiliary = 1
+            # args = load_parties(args) # include load dataset with auxiliary data
+            # # actual train = train-aux
+            # if args.basic_vfl_withaux == None:
+            #     vfl = MainTaskVFL(args)
+            #     if args.dataset not in ['cora']:
+            #         main_acc = vfl.train()
+            #     else:
+            #         main_acc = vfl.train_graph()
+            # else:
+            #     main_acc = args.main_acc_noattack_withaux 
+            #     vfl = args.basic_vfl_withaux
+            # args.main_acc_noattack_withaux = main_acc
+            # args.basic_vfl_withaux = vfl
+            ############### v1: train and auxiliary do not intersect ###############
+
+            ############### v2: auxiliary is from train (like original code) ###############
+            args.need_auxiliary = 0
             args = load_parties(args) # include load dataset with auxiliary data
-            # actual train = train-aux
-            if args.basic_vfl_withaux == None:
-                vfl = MainTaskVFL(args)
-                if args.dataset not in ['cora']:
-                    main_acc = vfl.train()
-                else:
-                    main_acc = vfl.train_graph()
-            else:
-                main_acc = args.main_acc_noattack_withaux 
-                vfl = args.basic_vfl_withaux
-            args.main_acc_noattack_withaux = main_acc
-            args.basic_vfl_withaux = vfl
+            print("in passive model completion")
+            assert 0 == 1
+            # actual train = train
+            vfl = args.basic_vfl
+            main_acc = args.main_acc_noattack
+            ############### v2: auxiliary is from train (like original code) ###############
 
             attack_metric = vfl.evaluate_attack()
             attack_metric_name = 'label_recovery_rate'
@@ -142,7 +156,13 @@ def evaluate_label_inference(args):
             append_exp_res(args.exp_res_path, exp_result)
 
         elif args.attack_name == 'ActiveModelCompletion':
-            args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            # args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            ############### v2: auxiliary is from train (like original code) ###############
+            args.need_auxiliary = 0
+            ############### v2: auxiliary is from train (like original code) ###############
+            
             args = load_parties(args) # include load dataset with auxiliary data
             # actual train = train-aux
             vfl = MainTaskVFL(args)

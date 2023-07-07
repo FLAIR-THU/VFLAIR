@@ -83,7 +83,7 @@ class ModelCompletion(Attacker):
         total = dummy_label.shape[0]
         return success / total
 
-    def train(self,labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_optimizer, criterion, epoch, num_classes):
+    def train(self, labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_optimizer, criterion, epoch, num_classes):
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
