@@ -51,6 +51,7 @@ class ActiveParty(Party):
             loss = self.criterion(pred, gt_one_hot_label)
         # ########## for active mid model loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+            # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
             assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
             for mid_loss in self.global_model.mid_loss_list:
                 loss = loss + mid_loss

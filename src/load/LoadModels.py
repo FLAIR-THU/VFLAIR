@@ -40,6 +40,7 @@ def load_basic_models(args,index):
     current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
     current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
+    # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
     if 'resnet' in current_model_type:
@@ -53,6 +54,11 @@ def load_basic_models(args,index):
     local_model = local_model.to(args.device)
     local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
     # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr)
+    # update optimizer
+    if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
+        print('AMC: use Malicious optimizer for party', index)
+        # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
+        local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.0, weight_decay=5e-4)
     
     global_model = None
     global_model_optimizer = None
@@ -70,15 +76,6 @@ def load_basic_models(args,index):
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=args.main_lr)
             # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr)
-    
-    
-    if (args.attack_name.lower()=='activemodelcompletion')  and index in args.attack_configs['party']:
-        print('AMC: use Malicious optimizer for party', index)
-        # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
-        local_model_optimizer = MaliciousSGD(
-                    list(local_model.parameters()),
-                    lr=args.main_lr, momentum=0.0,
-                    weight_decay=5e-4)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
@@ -89,8 +86,10 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     args.encoder = None
     # some defense need model, add here
     if args.apply_defense == True:
+        current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
+        std_shift_hyperparameter = 0.05 if ('nuswide' == args.dataset.lower()) else 0.5 
+        print(f"in load defense model, current_bottleneck_scale={current_bottleneck_scale}")
         if 'MID' in args.defense_name.upper():
-            
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [args.k-1]
                 print('[warning] default active party selected for applying MID')
@@ -105,7 +104,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 if index == args.k-1:
                     print(f"load global mid model for party {index}")
                     # add args.k-1 MID model at active party with global_model
-                    mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1) for _ in range(args.k-1)]
+                    mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model,mid_model_list)
                     global_model = global_model.to(args.device)
@@ -127,13 +126,12 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print(f"load local mid model for party {index}")
                     # add MID model at passive party with local_model
                     print('lambda for passive party local mid model:',args.defense_configs['lambda'])
-                    mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],1)
+                    mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)
 
                     # update optimizer
-
                     if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
                         print('AMC: use Malicious optimizer for party', index)
                         # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     

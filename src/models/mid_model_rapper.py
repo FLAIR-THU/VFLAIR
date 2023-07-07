@@ -6,11 +6,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class MID_model(nn.Module):
-    def __init__(self, input_dim, output_dim, mid_lambda, bottleneck_scale=1):
+    def __init__(self, input_dim, output_dim, mid_lambda, bottleneck_scale=1, std_shift=0.5):
         super(MID_model, self).__init__()
         self.bottleneck_scale = bottleneck_scale
         self.input_dim = input_dim
         self.mid_lambda = mid_lambda
+        self.std_shift = std_shift
         self.enlarge_layer = nn.Sequential(
             nn.Flatten(),
             nn.Linear(input_dim, input_dim*2*bottleneck_scale, bias=True),
@@ -31,7 +32,8 @@ class MID_model(nn.Module):
         # # x.size() = (batch_size, class_num)
         x_double = self.enlarge_layer(x)
         mu, std = x_double[:,:self.input_dim*self.bottleneck_scale], x_double[:,self.input_dim*self.bottleneck_scale:]
-        std = F.softplus(std-0.5) # ? F.softplus(std-5)
+        # print(f"mu, std={mu},{std}")
+        std = F.softplus(std-self.std_shift) # ? F.softplus(std-0.5) F.softplus(std-5)
         z = mu + std * epsilon
         z = z.to(x.device)
         z = self.decoder_layer(z)
@@ -74,4 +76,5 @@ class Active_global_MID_model(nn.Module):
         # active party does not have mid_model
         z_list.append(x[-1])
         z = self.global_model(z_list)
+        # print(f"active party mid global model, before_mid={x}, after_mid={z_list}, final_global_aggregation={z}")
         return z

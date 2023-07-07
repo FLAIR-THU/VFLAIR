@@ -262,7 +262,6 @@ class MainTaskVFL(object):
                 # ###### Noisy Label Attack ######
                 self.parties_data = parties_data
 
-              
                 i += 1
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()

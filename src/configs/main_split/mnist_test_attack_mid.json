@@ -27,24 +27,13 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [0,1],
-            "lr": 0.001,
+            "party": [0],
+            "lr": 0.01,
             "lambda": 0.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "PassiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":16,
-                "lr": 5e-3,
-                "n_labeled_per_class": 4
-            }
-        },
-        "1":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -53,7 +42,7 @@
                 "batch_size": 32
             }
         },
-        "2":{
+        "1":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],

@@ -193,7 +193,7 @@ class ResSFL(Attacker):
                     self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
                     self.parties_data = parties_data
                     batch_data_b = [parties_data[ik][0] for ik in range(len(parties_data)-1)] # Passive Party data  
-                    batch_data_a = parties_data[1][0] # Active Party data   
+                    batch_data_a = parties_data[-1][0] # Active Party data   
 
                     # target img
                     img = batch_data_b 

@@ -28,8 +28,8 @@
         "name": "MID",
         "parameters": {
             "party": [1],
-            "lr": 0.01,
-            "lambda": 0.0001
+            "lr": 0.001,
+            "lambda": 0.000001
         }
     },
     "attack_list": {

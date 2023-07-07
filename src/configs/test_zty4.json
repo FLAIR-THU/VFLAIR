@@ -1,37 +1,42 @@
 {
-    "epochs": 3,
-    "lr": 0.01,
+    "epochs": 50,
+    "lr": 0.003,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+        "dataset_name": "nuswide",
+        "num_classes": 5
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 1000,
+            "output_dim": 5
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 634,
+            "output_dim": 5
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [1],
+            "lr": 0.001,
+            "lambda": 0.000001
+        }
+    },
     "attack_list": {
         "0":{
-            "name": "ResSFL",
+            "name": "BatchLabelReconstruction",
             "parameters": {
                 "party": [0],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
+                "lr": 0.05,
+                "epochs": 10000
             }
         }
     }

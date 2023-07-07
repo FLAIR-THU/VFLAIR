@@ -28,23 +28,15 @@
         "name": "MID",
         "parameters": {
             "party": [1],
-            "lr": 0.01,
+            "lr": 0.001,
             "lambda": 0.000001
         }
     },
     "attack_list": {
-        "0":{
-            "name": "DirectLabelScoring",
+        "0": {
+            "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.01,
-                "epochs": 10000
             }
         }
     }
