@@ -1,0 +1,44 @@
+{
+<<<<<<< HEAD:src/configs/nsds/mnist_test_attack_nodefense.json
+    "epochs": 10,
+    "lr": 0.003,
+=======
+    "epochs": 30,
+    "lr": 0.001,
+>>>>>>> origin/main:src/configs/standard_configs/attack_defense/mnist_test_attack_allattack_2class.json
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "nuswide",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 1000,
+            "output_dim": 2
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 634,
+            "output_dim": 2
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "NormbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "DirectionbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}

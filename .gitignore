@@ -11,16 +11,13 @@ __pycache__/
 data/
 src/load/share_dataset
 
+# # experiment config files
+# src/configs/main*/
+# src/configs/nsds*/
+
 # experiment result files
 src/exp_result/
 ./src/exp_result/*/*
-src/metrics/_test_data_by_attack/
-src/metrics/_record/
-src/metrics/_figures/
-src/metrics/test_data_by_attack/
-src/metrics/record/
-src/metrics/figures/
-
 
 # debug files
 ./debug.*

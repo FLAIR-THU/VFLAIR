@@ -4,7 +4,7 @@
 #SBATCH --time 3-1:00:00                    # 子任务 1 天 1 小时就能跑完
 #SBATCH --qos high
 
-python main_separate.py --configs mnist_test_attack_mid1
+python main_pipeline.py --configs mnist_test_attack_mid1
 
 
 

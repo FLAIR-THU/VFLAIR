@@ -269,15 +269,15 @@ class MainTaskVFLwithBackdoor(object):
 
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state = self.save_state(True)
-                elif i_epoch == self.epochs//2 and i == 0:
-                    self.middle_epoch_state = self.save_state(True)
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state = self.save_state(True)
 
                 self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
             
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
-                elif i_epoch == self.epochs//2 and i == 0:
-                    self.middle_epoch_state.update(self.save_state(False))
+                # elif i_epoch == self.epochs//2 and i == 0:
+                #     self.middle_epoch_state.update(self.save_state(False))
 
                 # if i == 0 and i_epoch == 0:
                 #     # self.launch_attack(self.pred_gradients_list_clone, self.pred_list_clone, "gradients_label")

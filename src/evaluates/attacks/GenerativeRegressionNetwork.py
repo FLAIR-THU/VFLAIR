@@ -319,6 +319,14 @@ class GenerativeRegressionNetwork(Attacker):
             #         print(name, param)
             #         mark = mark + 1
             
+            ####### Clean ######
+            del(self.netG)
+            del(train_dst_a)
+            del(train_loader_a)
+            del(train_dst_b)
+            del(train_loader_b)
+            del(train_loader_list)
+
             print(f"GRN, if self.args.apply_defense={self.args.apply_defense}")
             print(f'batch_size=%d,class_num=%d,party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
 

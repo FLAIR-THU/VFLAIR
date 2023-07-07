@@ -1,0 +1,63 @@
+{
+<<<<<<< HEAD:src/configs/nsds/mnist_test_attack_ldp.json
+    "epochs": 10,
+    "lr": 0.003,
+=======
+    "epochs": 18,
+    "lr": 0.05,
+>>>>>>> origin/main:src/configs/test_attack_nuswide_nsds.json
+    "k": 2,
+    "batch_size": 2048,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "nuswide",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 1000,
+<<<<<<< HEAD:src/configs/nsds/mnist_test_attack_ldp.json
+            "output_dim": 2
+=======
+            "output_dim": 2,
+            "path": ""
+>>>>>>> origin/main:src/configs/test_attack_nuswide_nsds.json
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 634,
+<<<<<<< HEAD:src/configs/nsds/mnist_test_attack_ldp.json
+            "output_dim": 2
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "dp_strength": 0.0001
+        }
+=======
+            "output_dim": 2,
+            "path": ""
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+>>>>>>> origin/main:src/configs/test_attack_nuswide_nsds.json
+    },
+    "attack_list": {
+        "0":{
+            "name": "NormbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "DirectionbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}

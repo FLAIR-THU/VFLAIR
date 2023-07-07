@@ -55,6 +55,7 @@ class custom_AE(nn.Module):
         )
 
     def forward(self, x):
+        x = torch.tensor(x,dtype=torch.float32)
         return self.net(x)
 
 # def LaplaceDP_for_pred(args, original_object):
@@ -78,7 +79,9 @@ class custom_AE(nn.Module):
 
 
 # def GaussianDP_for_pred(args, original_object):
+#     print('original_object',original_object.size())
 #     original_object = original_object[0]
+#     print('original_object',original_object.size())
 #     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
 #     dp_strength = args.defense_configs['dp_strength']
 #     if dp_strength > 0.0:
@@ -149,7 +152,7 @@ class ResSFL(Attacker):
 
             # Test Data
             test_data_a =  self.vfl_info['test_data'][attacker_ik] # Active Test Data
-            test_data_b =  [self.vfl_info['test_data'][ik] for ik in attacked_party_list]# Passive Test Data
+            test_data_b =  [torch.tensor(self.vfl_info['test_data'][ik],dtype=torch.float32) for ik in attacked_party_list]# Passive Test Data
 
             # Train with Aux Dataset
             aux_data_a = self.vfl_info["aux_data"][attacker_ik]
@@ -173,12 +176,12 @@ class ResSFL(Attacker):
             #     dim_b = test_data_b.size()[1]*test_data_b.size()[2]*test_data_b.size()[3]
             
             criterion = nn.MSELoss()
-            # test_data_b = torch.tensor(test_data_b,dtype=torch.float32)
-            # latent_dim = net_b(test_data_b).size()[1]
-            # args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
-            # current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
-            # current_output_dim = args.model_list[str(index)]['output_dim']
-            decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
+
+            if self.args.dataset == 'cifar10':
+                decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], 3*self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
+            else: # mnist
+                decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
+
             #custom_AE(input_nc=input_nc, output_nc=3, input_dim=input_dim, output_dim=32).to(self.device)
             optimizer_list = [torch.optim.Adam(decoder.parameters(), lr=self.lr) for decoder in decoder_list]
 
@@ -196,18 +199,22 @@ class ResSFL(Attacker):
                     batch_data_a = parties_data[-1][0] # Active Party data   
 
                     # target img
-                    img = batch_data_b 
+                    img = batch_data_b
                     
                     # Known Information : intermediate representation
                     with torch.no_grad():
-                        ir = [net_b[ik](batch_data_b[ik]) for ik in range(len(parties_data)-1)]
+                        # ir = net_b(batch_data_b)
+                        # print('batch_data_b[ik]:',batch_data_b[0].size())
 
+                        ir = [net_b[ik](batch_data_b[ik]) for ik in range(len(parties_data)-1)]
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = [LaplaceDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = LaplaceDP_for_pred(self.args, ir)
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = [GaussianDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = GaussianDP_for_pred(self.args, ir)
                         ####### DP Defense On FR ########
 
                     output = []
@@ -216,11 +223,12 @@ class ResSFL(Attacker):
                         img[ik], ir[ik] = Variable(img[ik]).to(self.device), Variable(ir[ik]).to(self.device)
                         
                         # recovered image
-                        output.append(decoder_list[ik](ir[ik]))
+                        output.append(decoder_list[ik](ir[ik])) # torch.Size([10])
+                        # print('ir:',ir[ik].size()) # [32,  10]
+                        # print('img:',img[ik].size()) # [32,  3,16,32]
+                        # print('output:',output[ik].size()) # [32,512]
+
                         img[ik] = img[ik].reshape(output[ik].size())
-                        # print('ir:',ir.size())
-                        # print('img:',img.size())
-                        # print('output:',output.size())
 
                         train_loss = criterion(output[ik], img[ik])
 
@@ -242,16 +250,26 @@ class ResSFL(Attacker):
                         # test_global_pred = self.vfl_first_epoch['global_pred'].to(self.device)
 
                         img = test_data_b # target img
+                        # test_pred_b = net_b(test_data_b)
+
+                        
+
+                        if self.args.dataset == 'cifar10':
+                            test_data_b[ik] = test_data_b[ik].reshape([len(test_data_b[ik]),3,16,32])
+                        # print(test_data_b[ik].size()) #[10000,1536]
+                        
                         test_pred_b = [net_b[ik](test_data_b[ik]) for ik in range(len(test_data_b))]
                         ir = test_pred_b 
                         ####### DP Defense On FR ########
                         if self.args.apply_dp == True:
                             if 'laplace' in self.args.defense_name.casefold():
-                                ir = LaplaceDP_for_pred(self.args, ir)
+                                ir = [LaplaceDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = LaplaceDP_for_pred(self.args, ir)
                             elif 'gaussian' in self.args.defense_name.casefold():
-                                ir = GaussianDP_for_pred(self.args, ir)
+                                ir = [GaussianDP_for_pred(self.args, [ir[ik]]) for ik in range(len(ir))]
+                                # ir = GaussianDP_for_pred(self.args, ir)
                         ####### DP Defense On FR ########
-                        
+                       
                         output = []
                         for ik in range(len(test_data_b)): # should have k-1 parties, except the attacker
                             img[ik], ir[ik] = img[ik].type(torch.FloatTensor), ir[ik].type(torch.FloatTensor)
@@ -271,6 +289,15 @@ class ResSFL(Attacker):
                     print('Epoch {}% \t train_loss:{:.2f} mse:{:.4}, mse_reduction:{:.2f}'.format(
                         i_epoch, train_loss.item(), mse, rand_mse-mse))
             
+            ####### Clean ######
+            for decoder_ in decoder_list:
+                del(decoder_)
+            del(aux_dst_a)
+            del(aux_loader_a)
+            del(aux_dst_b)
+            del(aux_loader_b)
+            del(aux_loader_list)
+
             print(f"ResSFL, if self.args.apply_defense={self.args.apply_defense}")
             print(f'batch_size=%d,class_num=%d,attacker_party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
 
