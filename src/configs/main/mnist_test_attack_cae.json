@@ -28,8 +28,8 @@
             "bin_numbers": 12,
             "input_dim": 5,
             "encode_dim": 32,
-            "lambda": 0.05,
-            "model_path": "../trained_CAE_models/autoencoder_5_0.05_1630981788"
+            "lambda": 0.1,
+            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_0.1_1630895642"
         }
     },
     "attack_list": {
