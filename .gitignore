@@ -24,6 +24,7 @@ src/exp_result/
 src/debug.*
 _HYPER_PARAMETERS.md
 src/_old_main_separate.py
+src/__old_main_separate.py
 src/sh_file/
 src/metrics/figures/
 src/metrics/record/
