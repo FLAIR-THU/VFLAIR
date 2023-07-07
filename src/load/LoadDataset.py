@@ -32,6 +32,7 @@ from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
 DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
+DATA_PATH ='../../../share_dataset/'
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
@@ -71,9 +72,9 @@ def dataset_partition(args, index, dst, half_dim):
     elif args.dataset in ['nuswide']:
         if args.k == 2:
             if index == 0:
-                return (dst[0][1],None) # passive party with text
+                return (dst[0][0],None) # passive party with text
             else:
-                return (dst[0][0], dst[1]) # active party with image
+                return (dst[0][1], dst[1]) # active party with image
         else:
             assert (args.k == 2), "total number of parties not supported for data partitioning"
             return None
@@ -214,13 +215,14 @@ def load_dataset_per_party(args, index):
         # test_dst = SimpleDataset(data, label)
         test_dst = (data, label)
     elif args.dataset == 'nuswide':
-        half_dim = [634, 1000]
+        half_dim = [1000, 634]
         if args.num_classes == 5:
             selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
 
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 600, 'Train')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60, 'Train')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train')
         
         if args.need_auxiliary == 1:
             index_list = [_i for _i in range (0, len(X_image))] 
@@ -229,23 +231,24 @@ def load_dataset_per_party(args, index):
             label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
             label = label_to_onehot(label, num_classes=args.num_classes)
 
-            X_aux = [torch.tensor(X_image[aux_list], dtype=torch.float32), torch.tensor(X_text[aux_list], dtype=torch.float32)]
+            X_aux = [torch.tensor(X_text[aux_list], dtype=torch.float32), torch.tensor(X_image[aux_list], dtype=torch.float32)]
             y_aux = label[aux_list] #torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
             aux_dst = (X_aux,y_aux)
 
-            data = [torch.tensor(X_image[train_list], dtype=torch.float32), torch.tensor(X_text[train_list], dtype=torch.float32)]
+            data = [torch.tensor(X_text[train_list], dtype=torch.float32), torch.tensor(X_image[train_list], dtype=torch.float32)]
             label =label[train_list]
-            # print('aux:',X_aux[0].shape,X_aux[1].shape,y_aux.shape)
+            print('nuswide dataset [aux]:',X_aux[0].shape, X_aux[1].shape, y_aux.shape)
             # print('train:',data[0].shape,data[1].shape,label.shape)
         else:
-            data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+            data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
             label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
             label = label_to_onehot(label, num_classes=args.num_classes)
             
         train_dst = (data, label) # (torch.tensor(data),label)
-        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
-        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 400, 'Test')
-        data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        print("nuswide dataset [train]:", data[0].shape, data[1].shape, label.shape)
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40, 'Test')
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test')
+        data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         label = label_to_onehot(label, num_classes=args.num_classes)
         test_dst = (data, label)
@@ -471,26 +474,38 @@ def load_dataset_per_party_backdoor(args, index):
   
     elif args.dataset == 'nuswide':
         print('load backdoor data for nuswide')
-        half_dim = [634, 1000] # 634:image  1000:text
+        half_dim = [1000, 634] # 634:image  1000:text
         if args.num_classes == 5:
             selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
         print('begin load')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 6000, 'Train') # 600, too small with result in no backdoor sample
         X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train') # 60000
-        train_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        train_data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
         train_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         print('train load over')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 4000, 'Test') # 400, too small with result in no backdoor sample
         X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test') # 40000
-        test_data = [torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]
+        test_data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
         test_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
         print('test load over')
         # poison image datasets
         if args.target_label == None:
-            args.target_label = random.randint(0, args.num_classes-1)
-            args.train_poison_list = random.sample(range(len(train_data[0])), int(0.01 * len(train_data[0])))
-            args.test_poison_list = random.sample(range(len(test_data[0])), int(0.01 * len(test_data[0])))
+            # np.array(X_text).astype('float32')
+            # args.target_label = random.randint(0, args.num_classes-1)
+            args.target_label = 2 if args.num_classes == 5 else random.randint(0, args.num_classes-1)
+            # print(train_data[0].shape, test_data[0].shape)
+            # print("non zero train_data text", torch.nonzero(train_data[0][:,-1]))
+            # print("non zero train_data text shape", torch.nonzero(train_data[0][:,-1]).shape)
+            train_poison_list = torch.squeeze(torch.nonzero(train_data[0][:,-1]),dim=-1).cpu().numpy()
+            test_poison_list = torch.squeeze(torch.nonzero(test_data[0][:,-1]),dim=-1).cpu().numpy()
+            # print(train_poison_list[:10],test_poison_list[:10], len(train_poison_list), len(test_poison_list))
+            args.train_poison_list = list(train_poison_list)
+            args.test_poison_list = list(test_poison_list)
+            # print(args.train_poison_list[:10],args.test_poison_list[:10], len(args.train_poison_list), len(args.test_poison_list))
         else:
+            # print(args.train_poison_list, type(args.train_poison_list))
             assert args.train_poison_list != None , "[[inner error]]"
             assert args.train_target_list != None, "[[inner error]]"
             assert args.test_poison_list != None, "[[inner error]]"

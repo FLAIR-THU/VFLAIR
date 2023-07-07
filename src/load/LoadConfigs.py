@@ -62,7 +62,7 @@ def load_basic_configs(config_file_name, args):
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    if 'path' in config_model_dict[str(ik)]:
+                    if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                     else:
                         model_type_name = config_model_dict[str(ik)]['type']

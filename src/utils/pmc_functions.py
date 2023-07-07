@@ -47,7 +47,9 @@ class BottomModelPlus(nn.Module):
 
 
     def forward(self, x):
+        # print(x.shape)
         x = self.bottom_model(x)
+        # print(x.shape)
 
         if self.num_layer >= 2:
             if self.use_bn:

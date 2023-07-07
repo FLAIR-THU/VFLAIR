@@ -494,15 +494,15 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
     if dataset == 'nuswide':
         # X_image = data[0]
         # X_test = data[1]
-        # data = torch.tensor([torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]）
+        # data = torch.tensor([torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]）
         # mixed_data_image, poison_list = data_poison(data[0], poison_list, k, dataset)
         # poison_data_image = copy.deepcopy(mixed_data_image[poison_list])
-        mixed_data_text, poison_list = data_poison_text(data[1], poison_list, k, dataset)
+        mixed_data_text, poison_list = data_poison_text(data[0], poison_list, k, dataset)
         poison_data_text = copy.deepcopy(mixed_data_text[poison_list])
 
-        poison_data_image = torch.tensor(data[0][poison_list])
+        poison_data_image = torch.tensor(data[1][poison_list])
         poison_data_text = torch.tensor(poison_data_text)
-        poison_data =[poison_data_image,poison_data_text]
+        poison_data =[poison_data_text, poison_data_image]
         #torch.tensor([data[0][poison_list],poison_data_text].cpu().numpy())
         poison_label = copy.deepcopy(label[poison_list])
         # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")

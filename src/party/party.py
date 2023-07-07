@@ -73,6 +73,7 @@ class Party(object):
             self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
         # ####### Noisy Sample #########
         else:
+            # print(f"party.index={self.index}, self.local_model={self.local_model}, self.local_batch_data={self.local_batch_data}, data.shape={self.local_batch_data.shape}")
             self.local_pred = self.local_model(self.local_batch_data)
         self.local_pred_clone = self.local_pred.detach().clone()
         return self.local_pred, self.local_pred_clone
@@ -108,8 +109,8 @@ class Party(object):
             ) = load_dataset_per_party(args, index)
 
     def prepare_data_loader(self, batch_size):
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)
-        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # ,shuffle=True
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , shuffle=True
+        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True
         if self.args.need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
