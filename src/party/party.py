@@ -222,7 +222,7 @@ class Party(object):
             ######### dCor Loss ############
             # print('dcor passive defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
-            loss_dcor = torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
+            loss_dcor = self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
             dcor_gradient = torch.autograd.grad(
                 loss_dcor, self.local_model.parameters(), retain_graph=True, create_graph=True
                 )

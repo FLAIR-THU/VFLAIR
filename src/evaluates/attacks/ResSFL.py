@@ -297,6 +297,8 @@ class ResSFL(Attacker):
             del(aux_dst_b)
             del(aux_loader_b)
             del(aux_loader_list)
+            del(test_data_b)
+            del(test_data_a)
 
             print(f"ResSFL, if self.args.apply_defense={self.args.apply_defense}")
             print(f'batch_size=%d,class_num=%d,attacker_party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))

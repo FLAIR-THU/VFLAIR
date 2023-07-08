@@ -61,8 +61,6 @@ def evaluate_no_attack(args):
 
 def evaluate_feature_inference(args):
     vfl = None
-    if 'party' in args.defense_configs.keys():
-        args.defense_configs['party'] = [0]
     for index in args.feature_inference_index:
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
@@ -107,8 +105,6 @@ def evaluate_feature_inference(args):
 def evaluate_label_inference(args):
     # Basic VFL Training Pipeline
     i=0
-    if 'party' in args.defense_configs.keys():
-        args.defense_configs['party'] = [1] 
 
     for index in args.label_inference_index:
         set_seed(args.current_seed)
@@ -191,8 +187,6 @@ def evaluate_label_inference(args):
 
 
 def evaluate_untargeted_backdoor(args):
-    if 'party' in args.defense_configs.keys():
-        args.defense_configs['party'] = [1] 
     for index in args.untargeted_backdoor_index:
         torch.cuda.empty_cache()
         set_seed(args.current_seed)
@@ -202,14 +196,13 @@ def evaluate_untargeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-
         vfl = MainTaskVFL(args)
         if args.dataset not in ['cora']:
-            main_acc = vfl.train()
+            main_acc, noise_main_acc = vfl.train()
         else:
-            main_acc = vfl.train_graph()
+            main_acc,noise_main_acc = vfl.train_graph()
 
-        attack_metric = args.main_acc_noattack - main_acc
+        attack_metric = main_acc - noise_main_acc#args.main_acc_noattack - noise_main_acc
         attack_metric_name = 'acc_loss'
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
@@ -278,11 +271,11 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack_mnist', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test_attack_mnist_', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(60,62): # test 5 times 
+    for seed in range(20,22): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
