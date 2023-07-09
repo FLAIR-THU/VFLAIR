@@ -139,8 +139,6 @@ def evaluate_label_inference(args):
             ############### v2: auxiliary is from train (like original code) ###############
             args.need_auxiliary = 0
             args = load_parties(args) # include load dataset with auxiliary data
-            print("in passive model completion")
-            assert 0 == 1
             # actual train = train
             vfl = args.basic_vfl
             main_acc = args.main_acc_noattack
@@ -303,7 +301,8 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(60,62): # test 5 times 
+    for seed in range(97,102): # test 5 times 
+    # for seed in range(60,61): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')

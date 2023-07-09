@@ -101,7 +101,7 @@ class Party(object):
                 (self.test_data, self.test_label),
                 (self.aux_data, self.aux_label)
             ) = load_dataset_per_party(args, index)
-            print(f"in party load data, aux_data have length:{self.aux_data.shape}, train_data have length={self.train_data.shape}")
+            # print(f"in party load data, aux_data have length:{self.aux_data.shape}, train_data have length={self.train_data.shape}")
         else:
             (
                 args,

@@ -2,70 +2,102 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class InferenceHead(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True):
-        super().__init__()
-        dict_activation_func_type = {'ReLU': F.relu, 'Sigmoid': F.sigmoid, 'None': None}
-        self.activation_func = dict_activation_func_type[activation_func_type]
-        self.num_layer = num_layer
-        self.use_bn = use_bn
+# class InferenceHead(nn.Module):
+#     def __init__(self, input_size, hidden_size, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True):
+#         super().__init__()
+#         dict_activation_func_type = {'ReLU': F.relu, 'Sigmoid': F.sigmoid, 'None': None}
+#         self.activation_func = dict_activation_func_type[activation_func_type]
+#         self.num_layer = num_layer
+#         self.use_bn = use_bn
 
-        self.fc_1 = nn.Linear(input_size, hidden_size, bias=True)
-        self.bn_1 = nn.BatchNorm1d(input_size)
-        self.fc_1.apply(weights_init_ones)
+#         self.fc_1 = nn.Linear(input_size, hidden_size, bias=True)
+#         self.bn_1 = nn.BatchNorm1d(input_size)
+#         self.fc_1.apply(weights_init_ones)
 
-        self.fc_2 = nn.Linear(hidden_size, hidden_size, bias=True)
-        self.bn_2 = nn.BatchNorm1d(input_size)
-        self.fc_2.apply(weights_init_ones)
+#         self.fc_2 = nn.Linear(hidden_size, hidden_size, bias=True)
+#         self.bn_2 = nn.BatchNorm1d(input_size)
+#         self.fc_2.apply(weights_init_ones)
 
-        self.fc_3 = nn.Linear(hidden_size, hidden_size, bias=True)
-        self.bn_3 = nn.BatchNorm1d(input_size)
-        self.fc_3.apply(weights_init_ones)
+#         self.fc_3 = nn.Linear(hidden_size, hidden_size, bias=True)
+#         self.bn_3 = nn.BatchNorm1d(input_size)
+#         self.fc_3.apply(weights_init_ones)
 
-        self.fc_4 = nn.Linear(hidden_size, hidden_size, bias=True)
-        self.bn_4 = nn.BatchNorm1d(input_size)
-        self.fc_4.apply(weights_init_ones)
+#         self.fc_4 = nn.Linear(hidden_size, hidden_size, bias=True)
+#         self.bn_4 = nn.BatchNorm1d(input_size)
+#         self.fc_4.apply(weights_init_ones)
 
-        self.fc_final = nn.Linear(hidden_size, num_classes, bias=True)
-        self.bn_final = nn.BatchNorm1d(input_size)
-        self.fc_final.apply(weights_init_ones)
+#         self.fc_final = nn.Linear(hidden_size, num_classes, bias=True)
+#         self.bn_final = nn.BatchNorm1d(input_size)
+#         self.fc_final.apply(weights_init_ones)
 
-    def forward(self, x):
-        if self.num_layer >= 2:
-            if self.use_bn:
-                x = self.bn_1(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_1(x)
+#     def forward(self, x):
+#         if self.num_layer >= 2:
+#             if self.use_bn:
+#                 x = self.bn_1(x)
+#             if self.activation_func:
+#                 x = self.activation_func(x)
+#             x = self.fc_1(x)
 
-        if self.num_layer >= 3:
-            if self.use_bn:
-                x = self.bn_2(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_2(x)
+#         if self.num_layer >= 3:
+#             if self.use_bn:
+#                 x = self.bn_2(x)
+#             if self.activation_func:
+#                 x = self.activation_func(x)
+#             x = self.fc_2(x)
 
-        if self.num_layer >= 4:
-            if self.use_bn:
-                x = self.bn_3(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_3(x)
+#         if self.num_layer >= 4:
+#             if self.use_bn:
+#                 x = self.bn_3(x)
+#             if self.activation_func:
+#                 x = self.activation_func(x)
+#             x = self.fc_3(x)
 
-        if self.num_layer >= 5:
-            if self.use_bn:
-                x = self.bn_4(x)
-            if self.activation_func:
-                x = self.activation_func(x)
-            x = self.fc_4(x)
+#         if self.num_layer >= 5:
+#             if self.use_bn:
+#                 x = self.bn_4(x)
+#             if self.activation_func:
+#                 x = self.activation_func(x)
+#             x = self.fc_4(x)
 
-        if self.use_bn:
-            x = self.bn_final(x)
-        if self.activation_func:
-            x = self.activation_func(x)
-        x = self.fc_final(x)
+#         if self.use_bn:
+#             x = self.bn_final(x)
+#         if self.activation_func:
+#             x = self.activation_func(x)
+#         x = self.fc_final(x)
 
-        return x
+#         return x
+
+import torch.nn.init as init
+def weights_init(m):
+    # classname = m.__class__.__name__
+    # print(classname)
+    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+        init.kaiming_normal_(m.weight)
+
+class TopModelForCifar10(nn.Module):
+    def __init__(self, hidden_dim=20, num_classes=10):
+        super(TopModelForCifar10, self).__init__()
+        self.fc1top = nn.Linear(20, 20)
+        self.fc2top = nn.Linear(20, 10)
+        self.fc3top = nn.Linear(10, 10)
+        self.fc4top = nn.Linear(10, 10)
+        self.bn0top = nn.BatchNorm1d(20)
+        self.bn1top = nn.BatchNorm1d(20)
+        self.bn2top = nn.BatchNorm1d(10)
+        self.bn3top = nn.BatchNorm1d(10)
+
+        self.apply(weights_init)
+
+    def forward(self, input_list):
+        input_tensor_top_model_a, input_tensor_top_model_b = input_list[0], input_list[1]
+        output_bottom_models = torch.cat((input_tensor_top_model_a, input_tensor_top_model_b), dim=1)
+        x = output_bottom_models
+        x = self.fc1top(F.relu(self.bn0top(x)))
+        x = self.fc2top(F.relu(self.bn1top(x)))
+        x = self.fc3top(F.relu(self.bn2top(x)))
+        x = self.fc4top(F.relu(self.bn3top(x)))
+        return F.log_softmax(x, dim=1)
+
 
 class ActivePartyWithoutTrainableLayer(nn.Module):
     def __init__(self):
