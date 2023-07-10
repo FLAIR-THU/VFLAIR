@@ -8,7 +8,7 @@ import pickle
 from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
-from utils.optimizers import MaliciousSGD
+from utils.optimizers import MaliciousSGD, MaliciousAdam
 
 def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
     model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
@@ -61,7 +61,8 @@ def load_basic_models(args,index):
     if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
         print('AMC: use Malicious optimizer for party', index)
         # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
-        local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+        # local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+        local_model_optimizer = MaliciousAdam(list(local_model.parameters()), lr=args.main_lr)
     
     global_model = None
     global_model_optimizer = None
@@ -139,10 +140,11 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
                         print('AMC: use Malicious optimizer for party', index)
                         # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
-                        local_model_optimizer = MaliciousSGD(
-                                    list(local_model.parameters()),
-                                    lr=args.main_lr, momentum=0.0,
-                                    weight_decay=5e-4)
+                        # local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.0, weight_decay=5e-4)
+                        # local_model_optimizer = MaliciousAdam(list(local_model.parameters()),lr=args.main_lr)
+                        local_model_optimizer = MaliciousAdam(
+                            [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
+                            {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
                         # assert 1>2
                     else:
                         local_model_optimizer = torch.optim.Adam(

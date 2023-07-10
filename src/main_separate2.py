@@ -105,32 +105,48 @@ def evaluate_label_inference(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
         if args.attack_name == 'PassiveModelCompletion':
-            args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            # args.need_auxiliary = 1
+            # args = load_parties(args) # include load dataset with auxiliary data
+            # # actual train = train-aux
+            # if args.basic_vfl_withaux == None:
+            #     vfl = MainTaskVFL(args)
+            #     if args.dataset not in ['cora']:
+            #         main_acc = vfl.train()
+            #     else:
+            #         main_acc = vfl.train_graph()
+            # else:
+            #     main_acc = args.main_acc_noattack_withaux 
+            #     vfl = args.basic_vfl_withaux
+            # args.main_acc_noattack_withaux = main_acc
+            # args.basic_vfl_withaux = vfl
+            ############### v1: train and auxiliary do not intersect ###############
+
+            ############### v2: auxiliary is from train (like original code) ###############
+            args.need_auxiliary = 0
             args = load_parties(args) # include load dataset with auxiliary data
-            # actual train = train-aux
-            if args.basic_vfl_withaux == None:
-                vfl = MainTaskVFL(args)
-                if args.dataset not in ['cora']:
-                    main_acc = vfl.train()
-                else:
-                    main_acc = vfl.train_graph()
-            else:
-                main_acc = args.main_acc_noattack_withaux 
-                vfl = args.basic_vfl_withaux
-            args.main_acc_noattack_withaux = main_acc
-            args.basic_vfl_withaux = vfl
+            # actual train = train
+            vfl = args.basic_vfl
+            main_acc = args.main_acc_noattack
+            ############### v2: auxiliary is from train (like original code) ###############
 
             attack_metric = vfl.evaluate_attack()
             attack_metric_name = 'label_recovery_rate'
 
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
 
         elif args.attack_name == 'ActiveModelCompletion':
-            args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            # args.need_auxiliary = 1
+            ############### v1: train and auxiliary do not intersect ###############
+            ############### v2: auxiliary is from train (like original code) ###############
+            args.need_auxiliary = 0
+            ############### v2: auxiliary is from train (like original code) ###############
+            
             args = load_parties(args) # include load dataset with auxiliary data
             # actual train = train-aux
             vfl = MainTaskVFL(args)
@@ -142,7 +158,7 @@ def evaluate_label_inference(args):
             attack_metric = vfl.evaluate_attack()
             attack_metric_name = 'label_recovery_rate'
             # Save record for different defense method
-            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|PassiveModelCompletion|{args.attack_param}|{main_acc}|{attack_metric}" %\
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
                 (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
             print(exp_result)
             append_exp_res(args.exp_res_path, exp_result)
