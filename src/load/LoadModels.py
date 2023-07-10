@@ -109,7 +109,11 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 if index == args.k-1:
                     print(f"load global mid model for party {index}")
                     # add args.k-1 MID model at active party with global_model
-                    mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                    if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
+                        print(f"small MID model for nuswide")
+                        mid_model_list = [MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                    else:
+                        mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model,mid_model_list)
                     global_model = global_model.to(args.device)
@@ -131,7 +135,11 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print(f"load local mid model for party {index}")
                     # add MID model at passive party with local_model
                     print('lambda for passive party local mid model:',args.defense_configs['lambda'])
-                    mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                    if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
+                        print(f"small MID model for nuswide")
+                        mid_model = MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                    else:
+                        mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)
