@@ -101,9 +101,9 @@ class MainTaskVFLwithBackdoor(object):
             # defense applied on pred
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                if (self.k-1 in self.args.attacker_id) and (ik != self.k-1): # attaker won't defend its own attack
-                    pred_clone = self.launch_defense(pred_clone, "pred") 
-
+                if (self.args.attack_type == 'feature_inference') and (ik != self.k-1): # attaker won't defend its own attack
+                    print('dp on pred')
+                    pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")[0]) 
                 
             pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
 

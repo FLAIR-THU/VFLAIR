@@ -60,8 +60,10 @@ def evaluate_no_attack(args):
     return vfl, main_acc_noattack
 
 def evaluate_feature_inference(args):
-    vfl = None
     for index in args.feature_inference_index:
+        torch.cuda.empty_cache()
+        vfl = None
+
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
@@ -70,28 +72,29 @@ def evaluate_feature_inference(args):
         if args.attack_name == 'ResSFL':
             args.need_auxiliary = 1
             args = load_parties(args)
-            if args.basic_vfl_withaux == None:
-                vfl = MainTaskVFL(args)
-                if args.dataset not in ['cora']:
-                    main_acc = vfl.train()
-                else:
-                    main_acc = vfl.train_graph()
+            # if args.basic_vfl_withaux == None:
+            #     vfl = MainTaskVFL(args)
+            #     if args.dataset not in ['cora']:
+            #         main_acc = vfl.train()
+            #     else:
+            #         main_acc = vfl.train_graph()
+            # else:
+            #     main_acc = args.main_acc_noattack_withaux 
+            #     vfl = args.basic_vfl_withaux 
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
             else:
-                main_acc = args.main_acc_noattack_withaux 
-                vfl = args.basic_vfl_withaux 
+                main_acc = vfl.train_graph()
         
         else: # GRN
             args.need_auxiliary = 0 
             args = load_parties(args)
-            if args.basic_vfl == None:
-                vfl = MainTaskVFL(args)
-                if args.dataset not in ['cora']:
-                    main_acc = vfl.train()
-                else:
-                    main_acc = vfl.train_graph()
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
             else:
-                vfl = args.basic_vfl
-                main_acc = args.main_acc_noattack
+                main_acc = vfl.train_graph()
 
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
@@ -275,7 +278,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(20,22): # test 5 times 
+    for seed in range(60,61): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -339,7 +342,7 @@ if __name__ == '__main__':
         args = load_attack_configs(args.configs, args, -1)
         args = load_parties(args)
         
-        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        # args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)

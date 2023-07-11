@@ -53,7 +53,6 @@ def load_basic_models(args,index):
         local_model = globals()[current_model_type](current_input_dim,current_output_dim)
     local_model = local_model.to(args.device)
     local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
-    # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr)
     # update optimizer
     if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
         print('AMC: use Malicious optimizer for party', index)
