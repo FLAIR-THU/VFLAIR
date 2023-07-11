@@ -23,6 +23,6 @@ def apply_defense(args, _type,*params):
             return globals()['DiscreteSGD'](args, gradient_list)
     elif _type == "pred":
         if args.defense_name in ['LaplaceDP', 'GaussianDP']:
-            defense_name = args.defense_name
+            defense_name = args.defense_name+'_for_pred'
             gradient_list = params
             return globals()[defense_name](args, gradient_list)

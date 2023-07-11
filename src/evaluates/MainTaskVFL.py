@@ -90,7 +90,7 @@ class MainTaskVFL(object):
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
                 if (self.args.attack_type == 'feature_inference') and (ik != self.k-1): # attaker won't defend its own attack
-                    print('dp on pred')
+                    # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")[0]) 
                 # else:
                 #     print(self.args.attack_type)
