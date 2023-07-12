@@ -58,7 +58,7 @@ class ActiveParty(Party):
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
         # ########## for active mid model loss (end) ##########
         elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
-            print('dcor active defense')
+            # print('dcor active defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
             for ik in range(self.args.k-1):

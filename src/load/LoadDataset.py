@@ -220,6 +220,16 @@ def load_dataset_per_party(args, index):
             selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
         elif args.num_classes == 2:
             selected_labels = ['clouds','person'] # class_num = 2
+            # sky 34969 light 21022
+            # nature 34894 sunset 20757
+            # water 31921 sea 17722
+            # blue 31496 white 16938
+            # clouds 26906 people 16077
+            # bravo 26624 night 16057
+            # landscape 23024 beach 15677
+            # green 22625 architecture 15264
+            # red 21983 art 14395
+            # explore 21037 travel 13999
 
         # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60, 'Train')
         X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train')

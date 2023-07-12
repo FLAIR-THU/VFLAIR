@@ -28,8 +28,8 @@
             "bin_numbers": 12,
             "input_dim": 5,
             "encode_dim": 32,
-            "lambda": 1.0,
-            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_1.0_1630879452"
+            "lambda": 0.1,
+            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_0.1_1630895642"
         }
     },
     "attack_list": {
@@ -58,27 +58,38 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3": {
+        "3":{
+            "name": "ActiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "4": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "4":{
+        "5":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 2
             }
         },
-        "5": {
+        "6": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
-        "6":{
+        "7":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -87,7 +98,7 @@
                 "batch_size": 32
             }
         },
-        "7":{
+        "8":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
