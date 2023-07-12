@@ -218,11 +218,11 @@ def LaplaceDP_for_pred(args, original_object):
                                         threshold + 1e-6).clamp(min=1.0)
             # add laplace noise
             dist_a = torch.distributions.laplace.Laplace(location, scale)
-            original_object = (torch.div(original_object, norm_factor_a) + \
+            new_object = (torch.div(original_object, norm_factor_a) + \
                                     dist_a.sample(original_object.shape).to(args.device))
-        return [original_object]
+        return new_object
     else:
-        return [original_object]
+        return original_object
 
 
 def GaussianDP(args, original_object):
@@ -265,9 +265,9 @@ def GaussianDP_for_pred(args, original_object):
             new_object = (torch.div(original_object, norm_factor_a) + \
                                     torch.normal(location, scale, original_object.shape).to(args.device))
             # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
-        return [new_object]
+        return new_object
     else:
-        return [original_object]
+        return original_object
 
 
 def GradientSparsification(args, original_object):
