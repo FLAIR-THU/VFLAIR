@@ -192,8 +192,8 @@ class BatchLabelReconstruction(Attacker):
                             break
                     
                     rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
-                    if iters%100==0:
-                        print('Iters',iters,' rec_rate:',rec_rate)
+                    # if iters%100==0:
+                    #     print('Iters',iters,' rec_rate:',rec_rate)
                     recovery_rate_history[i].append(rec_rate)
                     end_time = time.time()
                 

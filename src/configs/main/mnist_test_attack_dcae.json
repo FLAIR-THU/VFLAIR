@@ -34,20 +34,6 @@
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
-            }
-        },
-        "2":{
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -58,42 +44,15 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3": {
-            "name": "MissingFeature",
+        "1":{
+            "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "missing_rate": 0.25
-            }
-        },
-        "4":{
-            "name": "NoisySample",
-            "parameters": {
-                "party": [0],
-                "noise_lambda": 2
-            }
-        },
-        "5": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "6":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        },
-        "7":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 15,
-                "batch_size": 32
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         }
     }

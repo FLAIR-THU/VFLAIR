@@ -23,20 +23,20 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "DCAE",
         "parameters": {
-            "party": [1],
-            "lr": 0.003,
-            "lambda": 0.000001
+            "bin_numbers": 12,
+            "input_dim": 5,
+            "encode_dim": 32,
+            "lambda": 0.0,
+            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_0.0_1631059899"
         }
     },
     "attack_list": {
-        "0":{
-            "name": "BatchLabelReconstruction",
+        "0": {
+            "name": "ReplacementBackdoor",
             "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
+                "party": [0]
             }
         }
     }

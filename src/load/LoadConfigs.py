@@ -120,6 +120,8 @@ def load_basic_configs(config_file_name, args):
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
+            print(f"in load configs, defense_configs is type {type(args.defense_configs)}")
+            print(f"in load configs, defense_configs is type {type(dict(args.defense_configs))}")
             if 'mid' in args.defense_name.casefold():
                 args.apply_mid = True
             elif 'cae' in args.defense_name.casefold():
@@ -134,7 +136,7 @@ def load_basic_configs(config_file_name, args):
             assert 'name' in config_dict['defense'], "missing defense name"
     else:
         args.defense_name = 'None'
-        args.defense_configs = 'None'
+        args.defense_configs = None
         print('===== No Defense ======')
     # get Info: args.defense_param  args.defense_param_name
     if args.apply_defense == True:
