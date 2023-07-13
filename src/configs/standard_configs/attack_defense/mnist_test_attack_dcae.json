@@ -27,15 +27,12 @@
     "defense": {
         "name": "DCAE",
         "parameters": {
+            "party": [1],
             "bin_numbers": 12,
             "input_dim": 10,
             "encode_dim": 62,
             "lambda": 1.0,
-<<<<<<< HEAD
-            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_10_1.0_1642396548"
-=======
             "model_path": "../src/evaluates/defenses/trained_CAE_models//autoencoder_10_1.0_1642396548"
->>>>>>> origin/main
         }
     },
     "attack_list": {

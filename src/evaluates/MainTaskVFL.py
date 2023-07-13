@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 import numpy as np
+import random
 import time
 import copy
 
@@ -21,7 +22,7 @@ from utils.constants import *
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
-from utils.noisy_sample_functions import noisy_sample, all_noisy_sample
+from utils.noisy_sample_functions import noisy_sample
 from evaluates.attacks.attack_api import AttackerLoader
 
 
@@ -89,7 +90,7 @@ class MainTaskVFL(object):
             # defense applied on pred
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                if (self.args.attack_type == 'feature_inference') and (ik != self.k-1): # attaker won't defend its own attack
+                if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
                     # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
                 # else:
@@ -107,10 +108,10 @@ class MainTaskVFL(object):
         
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
-            if (self.k-1) not in self.args.attacker_id:
+            if (self.k-1) in self.args.defense_configs['party']:
                 gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
-            if (self.k-1) not in self.args.attacker_id:
+            if (self.k-1) in self.args.defense_configs['party']:
                 gradient = self.launch_defense(gradient, "gradients")  
             
         # active party update local gradient
@@ -308,6 +309,8 @@ class MainTaskVFL(object):
                 
                 suc_cnt = 0
                 sample_cnt = 0
+                noise_suc_cnt = 0
+                noise_sample_cnt = 0
                 with torch.no_grad():
                     data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
                     for parties_data in zip(*data_loader_list):
@@ -315,24 +318,50 @@ class MainTaskVFL(object):
 
                         gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                         gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-
+        
                         pred_list = []
+                        noise_pred_list = [] # for ntb attack
                         for ik in range(self.k):
-                            # ####### missing feature attack ######
-                            if (self.args.apply_mf == True) and (ik in attacker_id) and (np.random.random() < missing_rate):
-                                #print('attacker:',ik)
-                                pred_list.append(torch.zeros_like(self.parties[ik].local_model(parties_data[ik][0])))
-                            # ####### missing feature attack ######
-                            # ####### Noisy Sample #########
-                            elif self.args.apply_ns == True and (ik in self.args.attack_configs['party']) and (np.random.random(1) < 0.1):
-                                scale = self.args.attack_configs['noise_lambda']
-                                pred_list.append( self.parties[ik].local_model( all_noisy_sample(parties_data[ik][0],scale) ) )
+                            _local_pred = self.parties[ik].local_model(parties_data[ik][0])
+                            
+                            ####### missing feature attack ######
+                            if (self.args.apply_mf == True):
+                                assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
+                                assert 'party' in self.args.attack_configs, 'need parameter: party'
+                                missing_rate = self.args.attack_configs['missing_rate']
+                                missing_list = []
+                                missing_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*missing_rate)))
+                                
+                                if (ik in self.args.attack_configs['party']) :
+                                    _local_pred[missing_list] = torch.zeros(_local_pred[0].size()).to(self.args.device)
+                                
+                                pred_list.append(_local_pred)
+                                noise_pred_list.append(_local_pred[missing_list])
+                            ####### missing feature attack ######
+                            ####### Noisy Sample #########
+                            elif self.args.apply_ns == True :
+                                assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
+                                assert 'party' in self.args.attack_configs, 'need parameter: party'
+                                noise_rate = 0.1
+                                noisy_list = []
+                                noisy_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*noise_rate)))
+
+                                if (ik in self.args.attack_configs['party']):
+                                    scale = self.args.attack_configs['noise_lambda']
+                                    noised_sample = noisy_sample(parties_data[ik][0][noisy_list],scale)
+                                    parties_data[ik][0][noisy_list] = noised_sample
+
+                                    pred_list.append( self.parties[ik].local_model(parties_data[ik][0]))
+                                    noise_pred_list.append( self.parties[ik].local_model( noised_sample ) )
+                                else:
+                                    pred_list.append( self.parties[ik].local_model(parties_data[ik][0] ) )
+                                    noise_pred_list.append( self.parties[ik].local_model((parties_data[ik][0][noisy_list]) ) )
                             # ####### Noisy Sample #########
                             else:
-                                pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-                        
-                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
+                                pred_list.append(_local_pred)
 
+                        # Normal Evaluation
+                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
                             dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
@@ -343,6 +372,38 @@ class MainTaskVFL(object):
                         actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
                         sample_cnt += predict_label.shape[0]
                         suc_cnt += torch.sum(predict_label == actual_label).item()
+
+                        # Evaluation on noised data in NTB
+                        if self.args.apply_mf == True : 
+                            noise_gt_val_one_hot_label = gt_val_one_hot_label[missing_list]
+
+                            noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
+                            noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
+                            if self.args.apply_cae == True:
+                                noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                                noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
+                            else:
+                                noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
+
+                            noise_actual_label = torch.argmax(noise_gt_val_one_hot_label, dim=-1)
+                            noise_sample_cnt += noise_predict_label.shape[0]
+                            noise_suc_cnt += torch.sum(noise_predict_label == noise_actual_label).item()
+                        elif self.args.apply_ns == True:
+                            noise_gt_val_one_hot_label = gt_val_one_hot_label[noisy_list]
+
+                            noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
+                            noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
+                            if self.args.apply_cae == True:
+                                noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                                noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
+                            else:
+                                noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
+
+                            noise_actual_label = torch.argmax(noise_gt_val_one_hot_label, dim=-1)
+                            noise_sample_cnt += noise_predict_label.shape[0]
+                            noise_suc_cnt += torch.sum(noise_predict_label == noise_actual_label).item()
+
+                    self.noise_test_acc = noise_suc_cnt / float(noise_sample_cnt) if noise_sample_cnt>0 else None
                     self.test_acc = suc_cnt / float(sample_cnt)
                     postfix['train_loss'] = self.loss
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
@@ -353,81 +414,6 @@ class MainTaskVFL(object):
                     
                     self.final_epoch = i_epoch
         
-        del(data_loader_list)
-        
-        ######## Noised Sample Acc (For Untargeted Backdoor) ########
-        if self.args.apply_ns == True: # Acc on noised data
-            suc_cnt = 0
-            sample_cnt = 0
-            with torch.no_grad():
-                data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
-                for parties_data in zip(*data_loader_list):
-                    # print("test", parties_data[0][0].size(),parties_data[self.k-1][0].size(),parties_data[self.k-1][1].size())
-
-                    gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
-                    gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-
-                    pred_list = []
-                    if (np.random.random(1) < 0.1) or (sample_cnt==0):
-                        for ik in range(self.k):
-                            # ####### Noisy Sample #########
-                            if (ik in self.args.attack_configs['party']):
-                                scale = self.args.attack_configs['noise_lambda']
-                                pred_list.append( self.parties[ik].local_model( all_noisy_sample(parties_data[ik][0],scale) ) )
-                            # ####### Noisy Sample #########
-                            else:
-                                pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-                        
-                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
-
-                        enc_predict_prob = F.softmax(test_logit, dim=-1)
-                        if self.args.apply_cae == True:
-                            dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
-                            predict_label = torch.argmax(dec_predict_prob, dim=-1)
-                        else:
-                            predict_label = torch.argmax(enc_predict_prob, dim=-1)
-
-                        actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
-                        sample_cnt += predict_label.shape[0]
-                        suc_cnt += torch.sum(predict_label == actual_label).item()
-                self.noise_test_acc = suc_cnt / float(sample_cnt)
-        elif self.args.apply_mf == True: # Acc on missing featured data
-            suc_cnt = 0
-            sample_cnt = 0
-            with torch.no_grad():
-                data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
-                for parties_data in zip(*data_loader_list):
-                    # print("test", parties_data[0][0].size(),parties_data[self.k-1][0].size(),parties_data[self.k-1][1].size())
-
-                    gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
-                    gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-
-                    pred_list = []
-                    if (np.random.random() < missing_rate) or (sample_cnt == 0):
-                        for ik in range(self.k):
-                            # ####### missing feature attack ######
-                            if (self.args.apply_mf == True) and (ik in attacker_id):
-                                pred_list.append(torch.zeros_like(self.parties[ik].local_model(parties_data[ik][0])))
-                            # ####### missing feature attack ######
-                            else:
-                                pred_list.append(self.parties[ik].local_model(parties_data[ik][0]))
-                        
-                        test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
-
-                        enc_predict_prob = F.softmax(test_logit, dim=-1)
-                        if self.args.apply_cae == True:
-                            dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
-                            predict_label = torch.argmax(dec_predict_prob, dim=-1)
-                        else:
-                            predict_label = torch.argmax(enc_predict_prob, dim=-1)
-
-                        actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
-                        sample_cnt += predict_label.shape[0]
-                        suc_cnt += torch.sum(predict_label == actual_label).item()
-                self.noise_test_acc = suc_cnt / float(sample_cnt)
-        ######## Noised Sample Acc (For Untargeted Backdoor) ########
-
-
         self.final_state = self.save_state(True) 
         self.final_state.update(self.save_state(False)) 
         self.final_state.update(self.save_party_data()) 

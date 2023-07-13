@@ -1,11 +1,6 @@
 {
-<<<<<<< HEAD:src/configs/nsds/mnist_test_attack_nodefense.json
-    "epochs": 10,
-    "lr": 0.003,
-=======
     "epochs": 30,
     "lr": 0.001,
->>>>>>> origin/main:src/configs/standard_configs/attack_defense/mnist_test_attack_allattack_2class.json
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,

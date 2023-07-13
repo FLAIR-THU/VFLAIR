@@ -1,24 +1,25 @@
 {
-    "epochs": 1,
-    "lr": 0.001,
+    "epochs": 30,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
+    "BCD_type": "p",
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 2
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2,
+            "output_dim": 10,
             "path": "random_14*28_10"
         },
         "apply_trainable_layer": 1,
@@ -27,17 +28,23 @@
     "defense": {
         "name": "GaussianDP",
         "parameters": {
-            "dp_strength": 0.0001
+            "party": [1],
+            "dp_strength": 0.1
         }
     },
     "attack_list": {
-        "0":{
-            "name": "GenerativeRegressionNetwork",
+        "0": {
+            "name": "MissingFeature",
             "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 1,
-                "batch_size": 32
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "1":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 2
             }
         }
     }

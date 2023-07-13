@@ -27,6 +27,7 @@
     "defense": {
         "name": "GradPerturb",
         "parameters": {
+            "party": [1],
             "perturb_epsilon": 0.01,
             "model_path": ""
         }

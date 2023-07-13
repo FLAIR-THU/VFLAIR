@@ -98,13 +98,13 @@ class MainTaskVFLwithBackdoor(object):
                 # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
             # ######### for backdoor end #########
 
-            # defense applied on pred
+           # defense applied on pred
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                if (self.args.attack_type == 'feature_inference') and (ik != self.k-1): # attaker won't defend its own attack
+                if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
                     # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                
+
             pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
 
             if ik < (self.k-1): # Passive party sends pred for aggregation
@@ -113,24 +113,23 @@ class MainTaskVFLwithBackdoor(object):
                 assert ik == (self.k-1) # Active party update local pred
                 self.parties[ik].update_local_pred(pred_clone)
     
+    def LR_Decay(self,i_epoch):
+        for ik in range(self.k):
+            self.parties[ik].LR_decay(i_epoch)
+        self.parties[self.k-1].global_LR_decay(i_epoch)
+
     def gradient_transmit(self):  # partyk(active) as gradient giver
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
 
-        # # defense applied on gradients
-        # print(len(gradient))
-        # if self.args.apply_defense == True and self.args.apply_dcor ==False and self.args.apply_mid == False and self.args.apply_cae == False:
-        #     gradient = self.launch_defense(gradient, "gradients")        
-        # if self.args.apply_dcae == True:
-        #     gradient = self.launch_defense(gradient, "gradients")  
-        # print(gradient)
-        # assert 1>2
+
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
-            if (self.k-1) not in self.args.attacker_id:
+            if (self.k-1) in self.args.defense_configs['party']:
+                print('ok')
                 gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
-            if (self.k-1) not in self.args.attacker_id:
-                gradient = self.launch_defense(gradient, "gradients")  
+            if (self.k-1) in self.args.defense_configs['party']:
+                gradient = self.launch_defense(gradient, "gradients") 
             
         # ######### for backdoor start #########
         for ik in range(self.k-1): # Only Passive Parties do
@@ -215,12 +214,6 @@ class MainTaskVFLwithBackdoor(object):
         return loss.item(), train_acc
 
     def train(self):
-        # self.exp_res_dir = self.exp_res_dir + f'Backdoor/{self.k}/'
-        # if not os.path.exists(self.exp_res_dir):
-        #     os.makedirs(self.exp_res_dir)
-        # filename = self.exp_res_path.split("/")[-1]
-        # self.exp_res_path = self.exp_res_dir + filename
-        # print(f"self.exp_res_path={self.exp_res_path}")
 
         print_every = 1
 
@@ -284,6 +277,10 @@ class MainTaskVFLwithBackdoor(object):
                 #     self.first_epoch_state = self.save_state()
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state()
+
+            # LR decay
+            self.LR_Decay(i_epoch)
+
 
             # validation
             if (i + 1) % print_every == 0:
@@ -355,16 +352,7 @@ class MainTaskVFLwithBackdoor(object):
                     backdoor_acc_history.append(self.backdoor_acc)
 
                     self.final_epoch = i_epoch
-                    # Early Stop Assessment
-                    # if self.loss < last_loss:       
-                    #     early_stop_count = 0
-                    # else:
-                    #     early_stop_count +=1
-                    # last_loss = self.loss
-                    
-                    # if early_stop_count >= self.early_stop_threshold:
-                    #     self.final_epoch = i_epoch
-                    #     break
+   
 
         backdoor_acc = sum(backdoor_acc_history)/len(backdoor_acc_history)
         test_acc = sum(test_acc_histoty)/len(test_acc_histoty)
@@ -384,9 +372,6 @@ class MainTaskVFLwithBackdoor(object):
                  str(self.args.attack_name), self.args.defense_name, defense_param)
         else:
             exp_result = f"bs|num_class|Q|top_trainable|final_epochs|lr|recovery_rate,%d|%d|%d|%d|%d|%lf %lf %lf (AttackConfig: %s)" % (self.batch_size, self.num_classes, self.args.Q, self.args.apply_trainable_layer, self.epochs, self.lr, sum(test_acc_histoty)/len(test_acc_histoty), sum(backdoor_acc_history)/len(backdoor_acc_history), str(self.args.attack_configs))
-
-        #append_exp_res(self.exp_res_path, exp_result)
-        print(exp_result)
         
         return test_acc,backdoor_acc
 
