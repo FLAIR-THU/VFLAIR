@@ -92,7 +92,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     # some defense need model, add here
     if args.apply_defense == True:
         current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
-        std_shift_hyperparameter = 3 if ('nuswide' == args.dataset.lower() and args.num_classes == 5) else 0.5 
+        std_shift_hyperparameter = args.defense_configs['std_shift_hyperparameter'] if 'std_shift_hyperparameter' in args.defense_configs else 3
+        #= 3 if ('nuswide' == args.dataset.lower() and args.num_classes == 5) else 0.5 
+        # 0.5，5，0.05，1，3......
         print(f"in load defense model, current_bottleneck_scale={current_bottleneck_scale}")
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
@@ -101,13 +103,17 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
             if not 'lambda' in args.defense_configs:
                 args.defense_configs['lambda'] = 0.001
                 print('[warning] default hyper-parameter lambda selected for applying MID')
+            if not ('lr' in args.defense_configs):
+                mid_lr = args.main_lr  
+                print('[warning] default hyper-parameter mid_lr selected for applying MID')
+            else :
+                mid_lr = args.defense_configs['lr'] 
             
-            mid_lr = args.defense_configs['lr'] if ('lr' in args.defense_configs) else args.main_lr
             print(f"mid defense parties: {args.defense_configs['party']}")
             if index in args.defense_configs['party']:
                 print(f"begin to load mid model for party {index}")
                 if index == args.k-1:
-                    print(f"load global mid model for party {index}")
+                    print(f"load global mid model for party {index},std_shift_hyperparameter={std_shift_hyperparameter}")
                     # add args.k-1 MID model at active party with global_model
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
@@ -123,6 +129,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         for mid_model in global_model.mid_model_list:
                             parameters += list(mid_model.parameters())
                         global_model_optimizer = torch.optim.Adam(parameters, lr=mid_lr)
+                        print(f"mid_lr = {mid_lr}")
                     else:
                         parameters = []
                         for mid_model in global_model.mid_model_list:
@@ -130,6 +137,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         global_model_optimizer = torch.optim.Adam(
                             [{'params': global_model.global_model.parameters(), 'lr': args.main_lr},              
                             {'params': parameters, 'lr': mid_lr}])
+                        print(f"mid_lr = {mid_lr}")
                         
                 else:
                     print(f"load local mid model for party {index}")

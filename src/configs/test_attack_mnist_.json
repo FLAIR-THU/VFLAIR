@@ -22,29 +22,23 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GaussianDP",
+        "name": "MID",
         "parameters": {
             "party": [1],
-            "dp_strength": 0.1
+            "lr": 0.001,
+            "std_shift_hyperparameter": 3,
+            "lambda": 1.0
         }
     },
     "attack_list": {
-        "0": {
-            "name": "MissingFeature",
+        "0":{
+            "name": "DirectLabelScoring",
             "parameters": {
-                "party": [0],
-                "missing_rate": 0.25
-            }
-        },
-        "1":{
-            "name": "NoisySample",
-            "parameters": {
-                "party": [0],
-                "noise_lambda": 2
+                "party": [0]
             }
         }
     }

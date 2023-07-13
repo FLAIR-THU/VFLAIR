@@ -124,17 +124,22 @@ class ActiveParty(Party):
                 # trainable layer parameters
                 if self.args.apply_trainable_layer == True:
                     parameters += list(self.global_model.global_model.parameters())
-                    weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                    for w, g in zip(parameters, weights_grad_a):
-                        if w.requires_grad:
-                            w.grad = g.detach()
+                
+                # load grads into parameters
+                weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
+                for w, g in zip(parameters, weights_grad_a):
+                    if w.requires_grad:
+                        w.grad = g.detach()
+                        
             else:
                 # trainable layer parameters
                 if self.args.apply_trainable_layer == True:
+                    # load grads into parameters
                     weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                     for w, g in zip(self.global_model.parameters(), weights_grad_a):
                         if w.requires_grad:
                             w.grad = g.detach()
+                # non-trainabel layer: no need to update
             self.global_model_optimizer.step()
 
     def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
