@@ -22,16 +22,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "CAE",
-        "parameters": {
-            "bin_numbers": 12,
-            "input_dim": 5,
-            "encode_dim": 32,
-            "lambda": 1.0,
-            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_1.0_1630879452"
-        }
-    },
     "attack_list": {
         "0":{
             "name": "DirectLabelScoring",
@@ -73,6 +63,24 @@
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
+            }
+        },
+        "5":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "6":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 15,
+                "batch_size": 32
             }
         }
     }

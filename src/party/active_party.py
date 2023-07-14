@@ -109,14 +109,12 @@ class ActiveParty(Party):
             _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
             _gradients_clone = _gradients[0].detach().clone()
             
-            if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
-                return # no need to update
+            # if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
+            #     return # no need to update
 
             # update global model
             self.global_model_optimizer.zero_grad()
-
-            parameters = []
-            
+            parameters = []          
             if (self.args.apply_mid == True) and (1 in self.args.defense_configs['party']): 
                 # mid parameters
                 for mid_model in self.global_model.mid_model_list:

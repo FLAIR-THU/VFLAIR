@@ -92,9 +92,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     # some defense need model, add here
     if args.apply_defense == True:
         current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
-        std_shift_hyperparameter = args.defense_configs['std_shift_hyperparameter'] if 'std_shift_hyperparameter' in args.defense_configs else 3
-        #= 3 if ('nuswide' == args.dataset.lower() and args.num_classes == 5) else 0.5 
-        # 0.5，5，0.05，1，3......
+        std_shift_hyperparameter = 20 if ('nuswide' == args.dataset.lower() and args.num_classes == 5) else 0.5 
         print(f"in load defense model, current_bottleneck_scale={current_bottleneck_scale}")
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
