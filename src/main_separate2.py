@@ -284,8 +284,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # for seed in range(97,102): # test 5 times 
-    for seed in [102,103]: # test 5 times 
-    # for seed in [97,99,100,101,102,103]: # test 5 times 
+    # for seed in [102,103]: # test 5 times 
+    for seed in [97,99,100,101,102]: # test 5 times 
     # for seed in range(0,30): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
