@@ -117,6 +117,7 @@ def load_basic_configs(config_file_name, args):
     args.apply_dcor = False # distance corrilation
     if 'defense' in config_dict:
         if 'name' in config_dict['defense']:
+            assert 'party' in config_dict['defense'], 'defense party not specified'
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
