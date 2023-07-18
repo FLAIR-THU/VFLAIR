@@ -25,29 +25,16 @@
     "defense": {
         "name": "DCAE",
         "parameters": {
+            "party": [1],
             "bin_numbers": 12,
             "input_dim": 5,
             "encode_dim": 32,
-            "lambda": 0.5,
+            "lambda": 1.0,
             "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_5_1.0_1630879452"
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
-            }
-        },
-        "2":{
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -58,7 +45,7 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3":{
+        "1":{
             "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -67,12 +54,6 @@
                 "batch_size":16,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
-            }
-        },
-        "4": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
             }
         }
     }

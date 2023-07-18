@@ -25,6 +25,7 @@
     "defense": {
         "name": "CAE",
         "parameters": {
+            "party": [1],
             "bin_numbers": 12,
             "input_dim": 5,
             "encode_dim": 32,
@@ -70,9 +71,41 @@
             }
         },
         "4": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "5":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 2
+            }
+        },
+        "6": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
+            }
+        },
+        "7":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
+            }
+        },
+        "8":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 15,
+                "batch_size": 32
             }
         }
     }

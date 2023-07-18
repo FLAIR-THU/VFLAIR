@@ -25,25 +25,12 @@
     "defense": {
         "name": "GradientSparsification",
         "parameters": {
+            "party": [1],
             "gradient_sparse_rate": 100.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
-            }
-        },
-        "2":{
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -54,7 +41,7 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3":{
+        "1":{
             "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -63,12 +50,6 @@
                 "batch_size":16,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
-            }
-        },
-        "4": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
             }
         }
     }

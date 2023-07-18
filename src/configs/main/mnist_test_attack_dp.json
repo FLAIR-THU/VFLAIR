@@ -25,25 +25,12 @@
     "defense": {
         "name": "GaussianDP",
         "parameters": {
+            "party": [1],
             "dp_strength": 0.0001
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
-            "name": "BatchLabelReconstruction",
-            "parameters": {
-                "party": [0],
-                "lr": 0.05,
-                "epochs": 10000
-            }
-        },
-        "2":{
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -54,7 +41,7 @@
                 "n_labeled_per_class": 4
             }
         },
-        "3":{
+        "1":{
             "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
@@ -63,30 +50,6 @@
                 "batch_size":16,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
-            }
-        },
-        "4": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "5":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        },
-        "6":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 15,
-                "batch_size": 32
             }
         }
     }

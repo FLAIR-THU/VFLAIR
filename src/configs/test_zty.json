@@ -25,7 +25,6 @@
     "defense": {
         "name": "CAE",
         "parameters": {
-            "party": [1],
             "bin_numbers": 12,
             "input_dim": 5,
             "encode_dim": 32,
