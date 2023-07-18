@@ -91,11 +91,9 @@ class MainTaskVFL(object):
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
                 if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                    # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
                 # else:
                 #     print(self.args.attack_type)
-
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
