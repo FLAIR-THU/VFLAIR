@@ -25,6 +25,7 @@
     "defense": {
         "name": "LaplaceDP",
         "parameters": {
+            "party": [1],
             "dp_strength": 0.0001
         }
     },
@@ -69,24 +70,6 @@
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
-            }
-        },
-        "5":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        },
-        "6":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 15,
-                "batch_size": 32
             }
         }
     }

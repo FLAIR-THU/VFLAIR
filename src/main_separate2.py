@@ -7,6 +7,7 @@ import random
 import logging
 import argparse
 import torch
+import tensorflow as tf
 # import torch.nn as nn
 # import torchvision.transforms as transforms
 # from torchvision import datasets
@@ -59,8 +60,10 @@ def evaluate_no_attack(args):
     return vfl, main_acc_noattack
 
 def evaluate_feature_inference(args):
-    vfl = None
     for index in args.feature_inference_index:
+        torch.cuda.empty_cache()
+        vfl = None
+
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
@@ -68,23 +71,34 @@ def evaluate_feature_inference(args):
 
         if args.attack_name == 'ResSFL':
             args.need_auxiliary = 1
-        else:
-            args.need_auxiliary = 0 # GRN
-        args = load_parties(args)
-        
-        if args.basic_vfl_withaux == None:
+            args = load_parties(args)
+            # if args.basic_vfl_withaux == None:
+            #     vfl = MainTaskVFL(args)
+            #     if args.dataset not in ['cora']:
+            #         main_acc = vfl.train()
+            #     else:
+            #         main_acc = vfl.train_graph()
+            # else:
+            #     main_acc = args.main_acc_noattack_withaux 
+            #     vfl = args.basic_vfl_withaux 
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
                 main_acc = vfl.train()
             else:
                 main_acc = vfl.train_graph()
-        else:
-            main_acc = args.main_acc_noattack_withaux 
-            vfl = args.basic_vfl_withaux 
-        args.main_acc_noattack_withaux = main_acc
-        args.basic_vfl_withaux = vfl
-
-        # vfl.save_trained_models()
+                main_acc = args.main_acc_noattack_withaux 
+                vfl = args.basic_vfl_withaux 
+            args.main_acc_noattack_withaux = main_acc
+            args.basic_vfl_withaux = vfl
+        
+        else: # GRN
+            args.need_auxiliary = 0 
+            args = load_parties(args)
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
 
         rand_mse,mse = vfl.evaluate_attack()
         attack_metric_name = 'mse_reduction'
@@ -98,6 +112,7 @@ def evaluate_feature_inference(args):
 def evaluate_label_inference(args):
     # Basic VFL Training Pipeline
     i=0
+
     for index in args.label_inference_index:
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
@@ -195,8 +210,8 @@ def evaluate_label_inference(args):
 
 
 def evaluate_untargeted_backdoor(args):
-    
     for index in args.untargeted_backdoor_index:
+        torch.cuda.empty_cache()
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
@@ -204,14 +219,13 @@ def evaluate_untargeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-
         vfl = MainTaskVFL(args)
         if args.dataset not in ['cora']:
-            main_acc = vfl.train()
+            main_acc, noise_main_acc = vfl.train()
         else:
-            main_acc = vfl.train_graph()
+            main_acc,noise_main_acc = vfl.train_graph()
 
-        attack_metric = args.main_acc_noattack - main_acc
+        attack_metric = main_acc - noise_main_acc#args.main_acc_noattack - noise_main_acc
         attack_metric_name = 'acc_loss'
         # Save record for different defense method
         exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
@@ -220,7 +234,8 @@ def evaluate_untargeted_backdoor(args):
         append_exp_res(args.exp_res_path, exp_result)
 
 def evaluate_targeted_backdoor(args):
-    
+    if args.defense_configs != None and 'party' in args.defense_configs.keys():
+        args.defense_configs['party'] = [1] 
     # mark that backdoor data is never prepared
     args.target_label = None
     args.train_poison_list = None
@@ -228,6 +243,7 @@ def evaluate_targeted_backdoor(args):
     args.test_poison_list = None
     args.test_target_list = None
     for index in args.targeted_backdoor_index:
+        torch.cuda.empty_cache()
         set_seed(args.current_seed)
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
@@ -279,14 +295,13 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack_mnist', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test_attack_mnist_', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
     # for seed in range(97,102): # test 5 times 
-    # for seed in [102,103]: # test 5 times 
-    for seed in [97,99,100,101,102]: # test 5 times 
-    # for seed in range(0,30): # test 5 times 
+    # for seed in range(101,102): # test 5 times 
+    for seed in range(6,15): # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -354,19 +369,14 @@ if __name__ == '__main__':
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)
-
-        if args.untargeted_backdoor_list != []:
-            evaluate_untargeted_backdoor(args)
-
-        if args.targeted_backdoor_list != []:
-            evaluate_targeted_backdoor(args)
         
         if args.feature_inference_list != []:
             evaluate_feature_inference(args)
 
+        if args.untargeted_backdoor_list != []:
+            torch.cuda.empty_cache()
+            evaluate_untargeted_backdoor(args)
 
-
-
-
-
-
+        if args.targeted_backdoor_list != []:
+            torch.cuda.empty_cache()
+            evaluate_targeted_backdoor(args)

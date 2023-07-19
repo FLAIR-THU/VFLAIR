@@ -25,6 +25,7 @@
     "defense": {
         "name": "GaussianDP",
         "parameters": {
+            "party": [1],
             "dp_strength": 0.0001
         }
     },

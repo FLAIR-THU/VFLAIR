@@ -6,44 +6,39 @@
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "nuswide",
-        "num_classes": 2
+        "num_classes": 5
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 1000,
-            "output_dim": 2
+            "output_dim": 5
         },
         "1": {
             "type": "MLP2",
             "input_dim": 634,
-            "output_dim": 2
+            "output_dim": 5
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "DCAE",
-        "parameters": {
-            "party": [1],
-            "bin_numbers": 12,
-            "input_dim": 2,
-            "encode_dim": 14,
-            "lambda": 1.0,
-            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_2_1.0_1636175704"
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "NormbasedScoring",
+            "name": "ResSFL",
             "parameters": {
-                "party": [0]
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
             }
         },
         "1":{
-            "name": "DirectionbasedScoring",
+            "name": "GenerativeRegressionNetwork",
             "parameters": {
-                "party": [0]
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 15,
+                "batch_size": 32
             }
         }
     }
