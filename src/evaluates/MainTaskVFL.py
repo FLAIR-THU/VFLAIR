@@ -91,11 +91,9 @@ class MainTaskVFL(object):
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
                 if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                    # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
                 # else:
                 #     print(self.args.attack_type)
-
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
@@ -341,8 +339,10 @@ class MainTaskVFL(object):
                             ####### Noisy Sample #########
                             elif self.args.apply_ns == True :
                                 assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
+                                assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
                                 assert 'party' in self.args.attack_configs, 'need parameter: party'
-                                noise_rate = 0.1
+                                noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
+                                
                                 noisy_list = []
                                 noisy_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*noise_rate)))
 

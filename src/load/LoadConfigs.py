@@ -116,10 +116,12 @@ def load_basic_configs(config_file_name, args):
     args.gradients_res_a = [None for _ in range(args.k)] # for gradient sparsification
     args.apply_dcor = False # distance corrilation
     if 'defense' in config_dict:
+        print(config_dict['defense'].keys())
         if 'name' in config_dict['defense']:
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
+            assert 'party' in config_dict['defense']['parameters'], 'defense party not specified'
             print(f"in load configs, defense_configs is type {type(args.defense_configs)}")
             print(f"in load configs, defense_configs is type {type(dict(args.defense_configs))}")
             if 'mid' in args.defense_name.casefold():

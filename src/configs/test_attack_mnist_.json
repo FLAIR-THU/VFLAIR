@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 2,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -26,20 +26,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
-            "party": [1],
-            "lr": 0.001,
-            "std_shift_hyperparameter": 3,
-            "lambda": 1.0
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
+            "dp_strength": 0.001,
+            "party": [0]
         }
     }
 }

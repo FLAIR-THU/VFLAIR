@@ -74,8 +74,9 @@ class Party(object):
         # ####### Noisy Sample #########
         if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
             assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
+            assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
             assert 'party' in self.args.attack_configs, 'need parameter: party'
-            noise_rate = 0.1
+            noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
             noisy_list = []
             noisy_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*noise_rate)))
             scale = self.args.attack_configs['noise_lambda']
