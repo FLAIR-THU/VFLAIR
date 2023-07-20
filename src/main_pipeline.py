@@ -299,7 +299,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,98): # test 5 times 
+    for seed in range(97,102): # test 5 times 
     # for seed in range(101,102): # test 5 times 
     # for seed in range(60,61): # test 5 times 
         args.current_seed = seed
