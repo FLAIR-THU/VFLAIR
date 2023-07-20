@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
-from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor
+from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
 from load.LoadModels import load_models_per_party
 
 from utils.noisy_label_functions import add_noise
@@ -72,21 +72,21 @@ class Party(object):
         self.local_pred = self.local_model(self.local_batch_data)
         
         # ####### Noisy Sample #########
-        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
-            assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
-            assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
-            assert 'party' in self.args.attack_configs, 'need parameter: party'
-            noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
-            noisy_list = []
-            noisy_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*noise_rate)))
-            scale = self.args.attack_configs['noise_lambda']
+        # if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
+        #     assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
+        #     assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
+        #     assert 'party' in self.args.attack_configs, 'need parameter: party'
+        #     noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
+        #     noisy_list = []
+        #     noisy_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*noise_rate)))
+        #     scale = self.args.attack_configs['noise_lambda']
 
-            self.local_batch_data[noisy_list] = noisy_sample(self.local_batch_data[noisy_list],scale)
-            self.local_pred = self.local_model(self.local_batch_data)
+        #     self.local_batch_data[noisy_list] = noisy_sample(self.local_batch_data[noisy_list],scale)
+        #     self.local_pred = self.local_model(self.local_batch_data)
         # ####### Noisy Sample #########
 
         # ####### Missing Feature #######
-        elif (self.args.apply_mf == True):
+        if (self.args.apply_mf == True):
             self.local_pred = self.local_model(self.local_batch_data)
             assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
             assert 'party' in self.args.attack_configs, 'need parameter: party'
@@ -118,6 +118,16 @@ class Party(object):
                 self.train_target_list,
                 self.test_target_list,
             ) = load_dataset_per_party_backdoor(args, index)
+        if args.apply_ns == True:
+            print("in party prepare_data, will prepare noisy data for NoisySampleBackdoor")
+            (
+                args,
+                self.half_dim,
+                (self.train_data, self.train_label),
+                (self.test_data, self.test_label),
+                (self.train_poison_data, self.train_poison_label),
+                (self.test_poison_data, self.test_poison_label),
+            ) = load_dataset_per_party_noisysample(args, index)
         elif args.need_auxiliary == 1:
             (
                 args,

@@ -25,11 +25,14 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "dp_strength": 0.001,
-            "party": [0]
+    "attack_list": {
+        "0":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 2,
+                "noise_rate": 0.01
+            }
         }
     }
 }

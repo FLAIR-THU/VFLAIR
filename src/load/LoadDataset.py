@@ -17,6 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
+from utils.noisy_sample_functions import noisy_sample
 
 tp = transforms.ToTensor()
 transform = transforms.Compose(
@@ -464,6 +465,7 @@ def load_dataset_per_party_backdoor(args, index):
             train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
             test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
             test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        
         # poison image datasets
         if args.target_label == None:
             args.target_label = random.randint(0, args.num_classes-1)
@@ -475,8 +477,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_poison_list != None, "[[inner error]]"
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
         if args.train_target_list == None:
             assert args.test_target_list == None
             args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), args.num_classes)
@@ -522,8 +524,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
         if args.train_target_list == None:
             assert args.test_target_list == None
             # print('args.num_classes:',args.num_classes)
@@ -586,10 +588,12 @@ def load_dataset_per_party_backdoor(args, index):
             y = df.iloc[:, -1].values
             train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, shuffle=False)
  
+
         train_data = torch.tensor(train_data).type(torch.float32)  
         test_data = torch.tensor(test_data).type(torch.float32)  
         train_label = torch.tensor(train_label)
         test_label = torch.tensor(test_label)
+        
         # poison text datasets
         if args.target_label == None:
             args.target_label = random.randint(0, args.num_classes-1)
@@ -602,8 +606,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 
         # transform label to onehot
         train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
@@ -618,7 +622,7 @@ def load_dataset_per_party_backdoor(args, index):
   
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
-    
+ 
     if not args.dataset == 'nuswide':
         train_dst = (train_data.to(args.device),train_label.to(args.device))
         test_dst = (test_data.to(args.device),test_label.to(args.device))
@@ -636,4 +640,189 @@ def load_dataset_per_party_backdoor(args, index):
     test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
     # important
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst, args.train_target_list, args.test_target_list
+
+
+
+def load_dataset_per_party_noisysample(args, index):
+    print('load_dataset_per_party_noisysample')
+    args.num_classes = args.num_classes
+    args.classes = [None] * args.num_classes
+
+    half_dim = -1
+    args.idx_train = None
+    args.idx_test = None
+    if args.dataset in ['mnist', 'cifar100', 'cifar20', 'cifar10']:
+        # load image datasets
+        if args.dataset == "cifar100":
+            half_dim = 16
+            train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        elif args.dataset == "cifar20":
+            assert args.num_classes == 20
+            half_dim = 16
+            train_dst = datasets.CIFAR100(DATA_PATH, download=True, train=True, transform=transform_fn)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR100(DATA_PATH, download=True, train=False, transform=transform_fn)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        elif args.dataset == "cifar10":
+            half_dim = 16
+            train_dst = datasets.CIFAR10(DATA_PATH, download=True, train=True, transform=transform_fn)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.CIFAR10(DATA_PATH, download=True, train=False, transform=transform_fn)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        else:
+            assert args.dataset == "mnist"
+            half_dim = 14
+            train_dst = datasets.MNIST("~/.torch", download=True, train=True, transform=transform_fn)
+            train_data, train_label = fetch_data_and_label(train_dst, args.num_classes)
+            test_dst = datasets.MNIST("~/.torch", download=True, train=False, transform=transform_fn)
+            test_data, test_label = fetch_data_and_label(test_dst, args.num_classes)
+        
+        # poison image datasets
+        assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
+        assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
+        assert 'party' in args.attack_configs, 'need parameter: party'
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
+        scale = args.attack_configs['noise_lambda']
+       
+        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+       
+    elif args.dataset == 'nuswide':
+        print('load backdoor data for nuswide')
+        half_dim = [1000, 634] # 634:image  1000:text
+        if args.num_classes == 5:
+            selected_labels = ['buildings', 'grass', 'animal', 'water', 'person'] # class_num = 5
+        elif args.num_classes == 2:
+            selected_labels = ['clouds','person'] # class_num = 2
+        print('begin load')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 6000, 'Train') # 600, too small with result in no backdoor sample
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 60000, 'Train') # 60000
+        train_data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
+        train_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        print('train load over')
+        # X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 4000, 'Test') # 400, too small with result in no backdoor sample
+        X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test') # 40000
+        test_data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
+        test_label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
+        print('test load over')
+        
+        # poison image datasets
+        assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
+        assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
+        assert 'party' in args.attack_configs, 'need parameter: party'
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
+        scale = args.attack_configs['noise_lambda']
+       
+        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+    
+
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        
+        # transform label to onehot
+        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+
+    elif args.dataset in TABULAR_DATA:
+        if args.dataset == 'breast_cancer_diagnose':
+            half_dim = 15
+            df = pd.read_csv(DATA_PATH+"BreastCancer/wdbc.data",header = 0)
+            X = df.iloc[:, 2:].values
+            y = df.iloc[:, 1].values
+            y = np.where(y=='B',0,1)
+            y = np.squeeze(y)
+            train_data, test_data, train_label, test_label= train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
+        elif args.dataset == 'diabetes':
+            half_dim = 4
+            df = pd.read_csv(DATA_PATH+"Diabetes/diabetes.csv",header = 0)
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, random_state=args.current_seed)
+        elif args.dataset == 'adult_income':
+            df = pd.read_csv(DATA_PATH+"Income/adult.csv",header = 0)
+            df = df.drop_duplicates()
+            # 'age', 'workclass', 'fnlwgt', 'education', 'educational-num',
+            # 'marital-status', 'occupation', 'relationship', 'race', 'gender',
+            # 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+            # 'income'
+            # category_columns_index = [1,3,5,6,7,8,9,13]
+            # num_category_of_each_column = [9,16,7,15,6,5,2,42]
+            category_columns = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'gender','native-country']
+            for _column in category_columns:
+                # Get one hot encoding of columns B
+                one_hot = pd.get_dummies(df[_column], prefix=_column)
+                # Drop column B as it is now encoded
+                df = df.drop(_column,axis = 1)
+                # Join the encoded df
+                df = df.join(one_hot)
+            y = df['income'].values
+            y = np.where(y=='<=50K',0,1)
+            df = df.drop('income',axis=1)
+            X = df.values
+            half_dim = 6+9 #=15 acc=0.83
+            # half_dim = 6+9+16+7+15 #=53 acc=0.77
+            # half_dim = int(X.shape[1]//2) acc=0.77
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.30, random_state=args.current_seed)
+        elif args.dataset == 'criteo':
+            df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
+            print("criteo dataset loaded")
+            half_dim = (df.shape[1]-1)//2
+            X = df.iloc[:, :-1].values
+            y = df.iloc[:, -1].values
+            train_data, test_data, train_label, test_label = train_test_split(X, y, test_size=0.20, shuffle=False)
+ 
+
+        train_data = torch.tensor(train_data).type(torch.float32)  
+        test_data = torch.tensor(test_data).type(torch.float32)  
+        train_label = torch.tensor(train_label)
+        test_label = torch.tensor(test_label)
+        
+        # poison text datasets
+        assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
+        assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
+        assert 'party' in args.attack_configs, 'need parameter: party'
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
+        scale = args.attack_configs['noise_lambda']
+       
+        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+    
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+
+        # transform label to onehot
+        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+
+    else:
+        assert args.dataset == 'mnist', "dataset not supported yet"
+ 
+    if not args.dataset == 'nuswide':
+        train_dst = (train_data.to(args.device),train_label.to(args.device))
+        test_dst = (test_data.to(args.device),test_label.to(args.device))
+        train_poison_dst = (train_poison_data.to(args.device),train_poison_label.to(args.device))
+        test_poison_dst = (test_poison_data.to(args.device),test_poison_label.to(args.device))
+    else:
+        train_dst = ([train_data[0].to(args.device),train_data[1].to(args.device)],train_label.to(args.device))
+        test_dst = ([test_data[0].to(args.device),test_data[1].to(args.device)],test_label.to(args.device))
+        train_poison_dst = ([train_poison_data[0].to(args.device),train_poison_data[1].to(args.device)],train_poison_label.to(args.device))
+        test_poison_dst = ([test_poison_data[0].to(args.device),test_poison_data[1].to(args.device)],test_poison_label.to(args.device))
+
+    train_dst = dataset_partition(args,index,train_dst,half_dim)
+    test_dst = dataset_partition(args,index,test_dst,half_dim)
+    train_poison_dst = dataset_partition(args,index,train_poison_dst,half_dim)
+    test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
+    # important
+    return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst
     

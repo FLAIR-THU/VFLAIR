@@ -19,6 +19,7 @@ from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
+from evaluates.MainTaskVFLwithNoisySample import *
 from utils.basic_functions import append_exp_res
 import warnings
 warnings.filterwarnings("ignore")
@@ -219,7 +220,10 @@ def evaluate_untargeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        vfl = MainTaskVFL(args)
+        if args.apply_ns:
+            vfl = MainTaskVFLwithNoisySample(args)
+        else:
+            vfl = MainTaskVFL(args)
         if args.dataset not in ['cora']:
             main_acc, noise_main_acc = vfl.train()
         else:
