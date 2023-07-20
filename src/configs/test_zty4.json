@@ -25,17 +25,9 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
+            "party": [0],
             "lr": 0.003,
-            "lambda": 1e-6
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "DirectLabelScoring",
-            "parameters": {
-                "party": [0]
-            }
+            "lambda": 0.0
         }
     }
 }

@@ -206,6 +206,9 @@ class Party(object):
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
+        # for w in self.local_model.parameters():
+        #     if w.requires_grad:
+        #         print("zero grad results in", w.grad) # None for all
         
         # ########## for passive local mid loss (start) ##########
         # if passive party in defense party, do
@@ -217,7 +220,11 @@ class Party(object):
             # get grad for local_model.mid_model.parameters()
             self.local_model.mid_loss.backward(retain_graph=True)
             self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
-            # get grad for local_model.local_model.parameters()
+            # for w in self.local_model.parameters():
+            #     if w.requires_grad:
+            #         print("mid_loss grad results in", w.grad)
+            # # get grad for local_model.local_model.parameters()
+            # get grad for local_model.parameters()
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 # self.local_model.local_model.parameters(),
@@ -225,9 +232,16 @@ class Party(object):
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
             )
-            for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+            # for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+            for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
-                    w.grad = g.detach()
+                    if w.grad != None:
+                        w.grad += g.detach()
+                    else:
+                        w.grad = g.detach()
+            # for w in self.local_model.parameters():
+            #     if w.requires_grad:
+            #         print("total grad results in", w.grad)
         # ########## for passive local mid loss (end) ##########
         elif (
             self.args.apply_dcor == True
