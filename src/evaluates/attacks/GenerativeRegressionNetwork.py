@@ -253,11 +253,11 @@ class GenerativeRegressionNetwork(Attacker):
                     ####### DP Defense On FR ########
                     if self.args.apply_dp == True:
                         if 'laplace' in self.args.defense_name.casefold():
-                            pred_b = LaplaceDP_for_pred(self.args, [pred_b])[0]
-                            dummy_pred_b = LaplaceDP_for_pred(self.args, [dummy_pred_b])[0]
+                            pred_b = LaplaceDP_for_pred(self.args, [pred_b])
+                            dummy_pred_b = LaplaceDP_for_pred(self.args, [dummy_pred_b])
                         elif 'gaussian' in self.args.defense_name.casefold():
-                            pred_b = GaussianDP_for_pred(self.args, [pred_b])[0]
-                            dummy_pred_b = GaussianDP_for_pred(self.args, [dummy_pred_b])[0]
+                            pred_b = GaussianDP_for_pred(self.args, [pred_b])
+                            dummy_pred_b = GaussianDP_for_pred(self.args, [dummy_pred_b])
                     ####### DP Defense On FR ########
 
                     # aggregate logits of clients
