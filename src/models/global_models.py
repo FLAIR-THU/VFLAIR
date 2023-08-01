@@ -125,6 +125,22 @@ class ClassificationModelHostTrainableHead(nn.Module):
         return self.classifier_head(out)
 
 
+class ClassificationModelHostTrainableHead2(nn.Module):
+
+    def __init__(self, hidden_dim, num_classes):
+        super().__init__()
+        self.fc1_top = nn.Linear(hidden_dim, hidden_dim//2)
+        self.fc2_top = nn.Linear(hidden_dim//2, num_classes)
+
+    def forward(self, z_list):
+        out = torch.cat(z_list, dim=1)
+        x = self.fc1_top(out)
+        x = F.relu(x)
+        x = self.fc2_top(x)
+        x = F.relu(x)
+        return x
+
+
 class ClassificationModelHostTrainableHead3(nn.Module):
 
     def __init__(self, hidden_dim, num_classes):

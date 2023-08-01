@@ -30,6 +30,9 @@ class Party(object):
         self.train_label = None
         self.test_label = None
         self.aux_label = None
+        self.train_attribute = None
+        self.test_attribute = None
+        self.aux_attribute = None
         self.train_dst = None
         self.test_dst = None
         self.aux_dst = None
@@ -132,18 +135,32 @@ class Party(object):
             (
                 args,
                 self.half_dim,
-                (self.train_data, self.train_label),
-                (self.test_data, self.test_label),
-                (self.aux_data, self.aux_label)
+                train_dst,
+                test_dst,
+                aux_dst
             ) = load_dataset_per_party(args, index)
+            if len(train_dst) == 2:
+                self.train_data, self.train_label = train_dst
+                self.test_data, self.test_label = test_dst
+                self.aux_data, self.aux_label = aux_dst
+            elif len(train_dst) == 3:
+                self.train_data, self.train_label, self.train_attribute = train_dst
+                self.test_data, self.test_label, self.test_attribute = test_dst
+                self.aux_data, self.aux_label, self.aux_attribute = aux_dst
             # print(f"in party load data, aux_data have length:{self.aux_data.shape}, train_data have length={self.train_data.shape}")
         else:
             (
                 args,
                 self.half_dim,
-                (self.train_data, self.train_label),
-                (self.test_data, self.test_label),
+                train_dst,
+                test_dst,
             ) = load_dataset_per_party(args, index)
+            if len(train_dst) == 2:
+                self.train_data, self.train_label = train_dst
+                self.test_data, self.test_label = test_dst
+            elif len(train_dst) == 3:
+                self.train_data, self.train_label, self.train_attribute = train_dst
+                self.test_data, self.test_label, self.test_attribute = test_dst
 
     def prepare_data_loader(self, batch_size):
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , shuffle=True

@@ -211,10 +211,17 @@ def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_
 def get_timestamp():
     return int(datetime.utcnow().timestamp())
 
-def label_to_onehot(target, num_classes=100):
-    target = torch.unsqueeze(target, 1)
-    onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
-    onehot_target.scatter_(1, target, 1)
+def label_to_one_hot(target, num_classes=10):
+    # print('label_to_one_hot:', target, type(target))
+    try:
+        _ = target.size()[1]
+        # print("use target itself", target.size())
+        onehot_target = target.type(torch.float32)
+    except:
+        target = torch.unsqueeze(target, 1)
+        # print("use unsqueezed target", target.size())
+        onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
+        onehot_target.scatter_(1, target, 1)
     return onehot_target
 
 def cross_entropy_for_onehot(pred, target):
@@ -241,10 +248,10 @@ def get_class_i(dataset, label_set):
             gt_data.append(np.array(img))
             # gt_data = torch.cat((gt_data, (img if torch.is_tensor(img) else tp(img))))
             gt_labels.append(label_new)
-            #gt_labels.append(label_to_onehot(torch.Tensor([label_new]).long(),num_classes=num_cls))
+            #gt_labels.append(label_to_one_hot(torch.Tensor([label_new]).long(),num_classes=num_cls))
     # gt_data = torch.tensor([item.numpy() for item in gt_data])
     gt_data = torch.tensor(np.array(gt_data))
-    gt_labels =label_to_onehot(torch.Tensor(gt_labels).long(),num_classes=num_cls)
+    gt_labels =label_to_one_hot(torch.Tensor(gt_labels).long(),num_classes=num_cls)
     # print(gt_data.size(),type(gt_data))
     return gt_data,gt_labels
 

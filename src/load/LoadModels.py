@@ -44,7 +44,7 @@ def load_basic_models(args,index):
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
-    if 'resnet' in current_model_type.lower():
+    if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower():
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
         local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)

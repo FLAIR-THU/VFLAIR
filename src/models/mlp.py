@@ -96,6 +96,29 @@ class MLP2_128(nn.Module):
         x = self.layer2(x)
         return x
 
+# for Attribute Inference attack
+class MLP2_scalable(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim=128):
+        super(MLP2_scalable, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim, bias=False),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(hidden_dim),
+            nn.Dropout(0.5),
+        )
+
+        self.layer2 = nn.Sequential(
+            nn.Linear(hidden_dim, output_dim, bias=False),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(output_dim),
+            nn.Dropout(0.5),
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        return x
+
 # for adult income dataset
 class MLP4(nn.Module):
     def __init__(self, input_dim, output_dim):

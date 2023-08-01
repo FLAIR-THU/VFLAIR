@@ -1,6 +1,7 @@
 import sys, os
 sys.path.append(os.pardir)
 
+from evaluates.attacks.AttributeInference import AttributeInference
 from evaluates.attacks.BatchLabelReconstruction import BatchLabelReconstruction
 from evaluates.attacks.DataReconstruct import DataReconstruction
 from evaluates.attacks.DirectionbasedScoring import DirectionbasedScoring

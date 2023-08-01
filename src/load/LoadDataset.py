@@ -28,48 +28,80 @@ transform_fn = transforms.Compose([
     transforms.ToTensor()
 ])
 
-from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data,label_to_onehot
+from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data,label_to_one_hot
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
-DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
+# DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
+IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
 
 
 def dataset_partition(args, index, dst, half_dim):
-    if args.dataset in ['mnist', 'cifar10', 'cifar100', 'cifar20']:
-        if args.k == 2:
-            if index == 0:
-                return (dst[0][:, :, :half_dim, :], None)
-                # return (dst[0][:, :, half_dim:, :], None)
-            elif index == 1:
-                return (dst[0][:, :, half_dim:, :], dst[1])
-                # return (dst[0][:, :, :half_dim, :], dst[1])
-            else:
-                assert index <= 1, "invalide party index"
-                return None
-        elif args.k == 4:
-            if index == 3:
-                return (dst[0][:, :, half_dim:, half_dim:], dst[1])
-            else:
-                # passive party does not have label
+    if args.dataset in IMAGE_DATA:
+        if len(dst) == 2: # IMAGE_DATA without attribute
+            if args.k == 2:
                 if index == 0:
-                    return (dst[0][:, :, :half_dim, :half_dim], None)
+                    return (dst[0][:, :, :half_dim, :], None)
+                    # return (dst[0][:, :, half_dim:, :], None)
                 elif index == 1:
-                    return (dst[0][:, :, :half_dim, half_dim:], None)
-                elif index == 2:
-                    return (dst[0][:, :, half_dim:, :half_dim], None)
+                    return (dst[0][:, :, half_dim:, :], dst[1])
+                    # return (dst[0][:, :, :half_dim, :], dst[1])
                 else:
-                    assert index <= 3, "invalide party index"
+                    assert index <= 1, "invalide party index"
                     return None
-        elif args.k == 1: # Centralized Training
-            return (dst[0], dst[1])
-        else:
-            assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
-            return None
+            elif args.k == 4:
+                if index == 3:
+                    return (dst[0][:, :, half_dim:, half_dim:], dst[1])
+                else:
+                    # passive party does not have label
+                    if index == 0:
+                        return (dst[0][:, :, :half_dim, :half_dim], None)
+                    elif index == 1:
+                        return (dst[0][:, :, :half_dim, half_dim:], None)
+                    elif index == 2:
+                        return (dst[0][:, :, half_dim:, :half_dim], None)
+                    else:
+                        assert index <= 3, "invalide party index"
+                        return None
+            elif args.k == 1: # Centralized Training
+                return (dst[0], dst[1])
+            else:
+                assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+                return None
+        elif len(dst) == 3: # IMAGE_DATA with attribute
+            if args.k == 2:
+                if index == 0:
+                    return (dst[0][:, :, :half_dim, :], None, None)
+                    # return (dst[0][:, :, half_dim:, :], None, None)
+                elif index == 1:
+                    return (dst[0][:, :, half_dim:, :], dst[1], dst[2])
+                    # return (dst[0][:, :, :half_dim, :], dst[1], dst[2])
+                else:
+                    assert index <= 1, "invalide party index"
+                    return None
+            elif args.k == 4:
+                if index == 3:
+                    return (dst[0][:, :, half_dim:, half_dim:], dst[1], dst[2])
+                else:
+                    # passive party does not have label
+                    if index == 0:
+                        return (dst[0][:, :, :half_dim, :half_dim], None, None)
+                    elif index == 1:
+                        return (dst[0][:, :, :half_dim, half_dim:], None, None)
+                    elif index == 2:
+                        return (dst[0][:, :, half_dim:, :half_dim], None, None)
+                    else:
+                        assert index <= 3, "invalide party index"
+                        return None
+            elif args.k == 1: # Centralized Training
+                return (dst[0], dst[1], dst[2])
+            else:
+                assert (args.k == 2 or args.k == 4), "total number of parties not supported for data partitioning"
+                return None
     elif args.dataset in ['nuswide']:
         if args.k == 2:
             if index == 0:
@@ -215,6 +247,53 @@ def load_dataset_per_party(args, index):
         data, label = fetch_data_and_label(test_dst, args.num_classes)
         # test_dst = SimpleDataset(data, label)
         test_dst = (data, label)
+    elif args.dataset == 'utkface': # with attribute
+        # 0.8 for train (all for train, but with 50% also for aux) and 0.2 for test
+        half_dim = 25
+        # args.need_auxiliary = 1
+        with np.load(DATA_PATH + 'UTKFace/utk_resize.npz') as f:
+            data = f['imgs']
+            # 'gender'=2, 'age'=11(after binning), 'race'=5
+            label = f['gender' + 's']
+            attribute = f['race' + 's']
+            def binning_ages(a):
+                buckets = [5, 10, 18, 25, 30, 35, 45, 55, 65, 75]
+                for i, b in enumerate(buckets):
+                    if a <= b:
+                        return i
+                return len(buckets)
+            MEANS = [152.13768243, 116.5061518, 99.7395918]
+            STDS = [65.71289385, 58.56545956, 57.4306078]
+            def channel_normalize(x):
+                x = np.asarray(x, dtype=np.float32)
+                x[:, :, :, 0] = (x[:, :, :, 0] - MEANS[0]) / STDS[0]
+                x[:, :, :, 1] = (x[:, :, :, 1] - MEANS[1]) / STDS[1]
+                x[:, :, :, 2] = (x[:, :, :, 2] - MEANS[2]) / STDS[2]
+                return x
+            # attribute = [binning_ages(age) for age in attribute]
+            data = channel_normalize(data)
+            label = np.asarray(label, dtype=np.int32)
+            attribute = np.asarray(attribute, dtype=np.int32)
+            X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
+            if args.need_auxiliary == 1:
+                _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
+                X_aux = torch.tensor(X_aux, dtype=torch.float32)
+                y_aux = torch.tensor(y_aux, dtype=torch.long)
+                a_aux = torch.tensor(a_aux, dtype=torch.float32)
+                print(f"[debug] in load dataset for utkface, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
+                aux_dst = (X_aux, y_aux, a_aux)
+                # print('aux_dst:',X_aux.size(),y_aux.size())
+            X_train = torch.tensor(X_train, dtype=torch.float32)
+            X_test = torch.tensor(X_test, dtype=torch.float32)
+            print(f"[debug] in load dataset for utkface, X_train.shape={X_train.shape}, y_aux.shape={y_train.shape}, a_aux.shape={a_train.shape}")
+            print(f"[debug] in load dataset for utkface, X_test.shape={X_test.shape}, y_aux.shape={y_test.shape}, a_aux.shape={a_test.shape}")
+            y_train = torch.tensor(y_train, dtype=torch.long)
+            y_test = torch.tensor(y_test, dtype=torch.long)
+            a_train = torch.tensor(a_train, dtype=torch.long)
+            a_test = torch.tensor(a_test, dtype=torch.long)
+            train_dst = (X_train, y_train, a_train)
+            test_dst = (X_test, y_test, a_test)
+            # return X_train, y_train, a_train, X_test, y_test, a_test
     elif args.dataset == 'nuswide':
         half_dim = [1000, 634]
         if args.num_classes == 5:
@@ -240,7 +319,7 @@ def load_dataset_per_party(args, index):
             aux_list = random.sample(index_list,int(0.1*len(X_image)) )
             train_list = list(set(index_list)- set(aux_list))
             label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
-            label = label_to_onehot(label, num_classes=args.num_classes)
+            label = label_to_one_hot(label, num_classes=args.num_classes)
 
             X_aux = [torch.tensor(X_text[aux_list], dtype=torch.float32), torch.tensor(X_image[aux_list], dtype=torch.float32)]
             y_aux = label[aux_list] #torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
@@ -253,7 +332,7 @@ def load_dataset_per_party(args, index):
         else:
             data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
             label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
-            label = label_to_onehot(label, num_classes=args.num_classes)
+            label = label_to_one_hot(label, num_classes=args.num_classes)
             
         train_dst = (data, label) # (torch.tensor(data),label)
         print("nuswide dataset [train]:", data[0].shape, data[1].shape, label.shape)
@@ -261,7 +340,7 @@ def load_dataset_per_party(args, index):
         X_image, X_text, Y = get_labeled_data(DATA_PATH+'NUS_WIDE', selected_labels, 40000, 'Test')
         data = [torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]
         label = torch.squeeze(torch.tensor(np.argmax(np.array(Y), axis=1), dtype=torch.long))
-        label = label_to_onehot(label, num_classes=args.num_classes)
+        label = label_to_one_hot(label, num_classes=args.num_classes)
         test_dst = (data, label)
         print("nuswide dataset [test]:", data[0].shape, data[1].shape, label.shape)
     elif args.dataset in GRAPH_DATA:
@@ -402,27 +481,49 @@ def load_dataset_per_party(args, index):
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
     
-    
-    if not args.dataset in GRAPH_DATA:
-        if not args.dataset == 'nuswide':
-            train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
-            test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+    if len(train_dst) == 2:
+        if not args.dataset in GRAPH_DATA:
+            if not args.dataset == 'nuswide':
+                train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
+                test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+                if args.need_auxiliary == 1:
+                    aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
+            else:
+                train_dst = ([train_dst[0][0].to(args.device),train_dst[0][1].to(args.device)],train_dst[1].to(args.device))
+                test_dst = ([test_dst[0][0].to(args.device),test_dst[0][1].to(args.device)],test_dst[1].to(args.device))
+                if args.need_auxiliary == 1:
+                    aux_dst = ([aux_dst[0][0].to(args.device),aux_dst[0][1].to(args.device)],aux_dst[1].to(args.device))
+            train_dst = dataset_partition(args,index,train_dst,half_dim)
+            test_dst = dataset_partition(args,index,test_dst,half_dim)
             if args.need_auxiliary == 1:
-                aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
+                aux_dst = dataset_partition(args,index,aux_dst,half_dim)
         else:
-            train_dst = ([train_dst[0][0].to(args.device),train_dst[0][1].to(args.device)],train_dst[1].to(args.device))
-            test_dst = ([test_dst[0][0].to(args.device),test_dst[0][1].to(args.device)],test_dst[1].to(args.device))
+            train_dst, args = dataset_partition(args,index,train_dst,half_dim)
+            test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
+    elif len(train_dst) == 3:
+        if not args.dataset in GRAPH_DATA:
+            if not args.dataset == 'nuswide':
+                train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device),train_dst[2].to(args.device))
+                test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device),test_dst[2].to(args.device))
+                if args.need_auxiliary == 1:
+                    aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device),aux_dst[2].to(args.device))
+            else:
+                train_dst = ([train_dst[0][0].to(args.device),train_dst[0][1].to(args.device)],train_dst[1].to(args.device),train_dst[2].to(args.device))
+                test_dst = ([test_dst[0][0].to(args.device),test_dst[0][1].to(args.device)],test_dst[1].to(args.device),test_dst[2].to(args.device))
+                if args.need_auxiliary == 1:
+                    aux_dst = ([aux_dst[0][0].to(args.device),aux_dst[0][1].to(args.device)],aux_dst[1].to(args.device),aux_dst[2].to(args.device))
+            train_dst = dataset_partition(args,index,train_dst,half_dim)
+            test_dst = dataset_partition(args,index,test_dst,half_dim)
             if args.need_auxiliary == 1:
-                aux_dst = ([aux_dst[0][0].to(args.device),aux_dst[0][1].to(args.device)],aux_dst[1].to(args.device))
-        train_dst = dataset_partition(args,index,train_dst,half_dim)
-        test_dst = dataset_partition(args,index,test_dst,half_dim)
-        if args.need_auxiliary == 1:
-            aux_dst = dataset_partition(args,index,aux_dst,half_dim)
-    else:
-        train_dst, args = dataset_partition(args,index,train_dst,half_dim)
-        test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1])
+                aux_dst = dataset_partition(args,index,aux_dst,half_dim)
+        else:
+            train_dst, args = dataset_partition(args,index,train_dst,half_dim)
+            test_dst = ([deepcopy(train_dst[0][0]),deepcopy(train_dst[0][1]),test_dst[0][2]],test_dst[1],test_dst[2])
     # important
     if args.need_auxiliary == 1:
+        # print(f"[debug] aux_dst={aux_dst[0].shape},{aux_dst[1].shape if aux_dst[1] != None else aux_dst[1]}")
+        # if len(aux_dst) == 3:
+        #     print(f"[debug] aux_dst[2]={aux_dst[2].shape if aux_dst[2] != None else aux_dst[2]}")
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
@@ -535,10 +636,10 @@ def load_dataset_per_party_backdoor(args, index):
             args.train_target_list = random.sample(list(np.where(train_label==args.target_label)[0]), args.num_classes)
             args.test_target_list = random.sample(list(np.where(test_label==args.target_label)[0]), args.num_classes)
         # transform label to onehot
-        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
-        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
-        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
-        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+        train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_one_hot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_one_hot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_one_hot(torch.tensor(test_poison_label), num_classes=args.num_classes)
 
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
@@ -610,10 +711,10 @@ def load_dataset_per_party_backdoor(args, index):
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 
         # transform label to onehot
-        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
-        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
-        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
-        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+        train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_one_hot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_one_hot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_one_hot(torch.tensor(test_poison_label), num_classes=args.num_classes)
 
         if args.train_target_list == None:
             assert args.test_target_list == None
@@ -727,10 +828,10 @@ def load_dataset_per_party_noisysample(args, index):
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
         
         # transform label to onehot
-        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
-        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
-        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
-        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+        train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_one_hot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_one_hot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_one_hot(torch.tensor(test_poison_label), num_classes=args.num_classes)
 
     elif args.dataset in TABULAR_DATA:
         if args.dataset == 'breast_cancer_diagnose':
@@ -800,10 +901,10 @@ def load_dataset_per_party_noisysample(args, index):
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 
         # transform label to onehot
-        train_label = label_to_onehot(torch.tensor(train_label), num_classes=args.num_classes)
-        test_label = label_to_onehot(torch.tensor(test_label), num_classes=args.num_classes)
-        train_poison_label = label_to_onehot(torch.tensor(train_poison_label), num_classes=args.num_classes)
-        test_poison_label = label_to_onehot(torch.tensor(test_poison_label), num_classes=args.num_classes)
+        train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
+        test_label = label_to_one_hot(torch.tensor(test_label), num_classes=args.num_classes)
+        train_poison_label = label_to_one_hot(torch.tensor(train_poison_label), num_classes=args.num_classes)
+        test_poison_label = label_to_one_hot(torch.tensor(test_poison_label), num_classes=args.num_classes)
 
     else:
         assert args.dataset == 'mnist', "dataset not supported yet"
