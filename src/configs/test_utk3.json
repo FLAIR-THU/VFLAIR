@@ -6,7 +6,7 @@
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "utkface",
-        "num_classes": 2
+        "num_classes": 5
     },
     "model_list":{
         "0": {
@@ -27,8 +27,8 @@
             "name": "AttributeInference",
             "parameters": {
                 "party": [1],
-                "lr": 0.001,
-                "epochs": 30,
+                "lr": 0.01,
+                "epochs": 3,
                 "batch_size": 128
             }
         }

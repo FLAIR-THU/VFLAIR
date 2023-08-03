@@ -36,7 +36,7 @@ import itertools
 
 from evaluates.attacks.attacker import Attacker
 from models.global_models import *
-from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, label_to_one_hot
+from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, label_to_one_hot, roc_auc_score, multiclass_auc
 from utils.pmc_functions import precision_recall, interleave_offsets, interleave, BottomModelPlus, SemiLoss, WeightEMA, AverageMeter, InferenceHead, accuracy
 from dataset.party_dataset import ActiveDataset
 
@@ -91,7 +91,7 @@ class AttributeInference(Attacker):
         model_list = []
         optimizer_list = []
         for party_index in [victim_party_index, attacker_index]:
-            args, local_model, local_optimizer, global_model, global_optimizer = load_basic_models(self.args, party_index)
+            _, local_model, local_optimizer, _, _ = load_basic_models(self.args, party_index)
             local_optimizer.lr = self.lr # force the learning rate to be the one for attack
             model_list.append(local_model)
             optimizer_list.append(local_optimizer)
@@ -99,7 +99,7 @@ class AttributeInference(Attacker):
             #     model_list.append(global_model)
             #     optimizer_list.append(global_optimizer)
         global_model = globals()[self.args.global_model](self.z_dim, self.num_attributes)
-        global_model = global_model.to(args.device)
+        global_model = global_model.to(self.args.device)
         global_optimizer = torch.optim.Adam(list(global_model.parameters()), lr=self.lr)
         model_list.append(global_model)
         optimizer_list.append(global_optimizer)
@@ -118,6 +118,7 @@ class AttributeInference(Attacker):
             train_epoch_total_loss = 0.
             for parties_data in zip(*train_data_loader_list):
                 gt_one_hot_label = parties_data[-1][1]
+                # print("in training auxiliary model", gt_one_hot_label)
                 pred_list = []
                 pred_list_clone = []
                 for ik in range(num_included_parties):
@@ -125,26 +126,34 @@ class AttributeInference(Attacker):
                     pred_list.append(_local_pred)
                     pred_list_clone.append(_local_pred.detach().clone())
                     pred_list_clone[ik] = torch.autograd.Variable(pred_list_clone[ik], requires_grad=True).to(self.device)
+                # # ################## debug ##################
+                # pred_list[0] = torch.zeros(pred_list[0].shape).to(self.args.device)
+                # # ################## debug ##################
                 pred = model_list[-1](pred_list)
                 loss = self.criterion(pred, gt_one_hot_label)
 
+                for i_optimizer in range(len(optimizer_list)):
+                    optimizer_list[i_optimizer].zero_grad()
                 # update local model
                 pred_gradients_list = []
                 pred_gradients_list_clone = []
                 for ik in range(num_included_parties):
+                    # # ################## debug ##################
+                    # if ik == 0:
+                    #     pred_gradients_list.append(torch.zeros((1,)).to(self.args.device))
+                    #     pred_gradients_list_clone.append(torch.zeros((1,)).to(self.args.device))
+                    #     continue
+                    # # ################## debug ##################
                     pred_gradients_list.append(torch.autograd.grad(loss, pred_list[ik], retain_graph=True, create_graph=True))
                     pred_gradients_list_clone.append(pred_gradients_list[ik][0].detach().clone())
-                    optimizer_list[ik].zero_grad()
                     weights_grad_a = torch.autograd.grad(pred_list[ik], model_list[ik].parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
                     for w, g in zip(model_list[ik].parameters(), weights_grad_a):
                         if w.requires_grad:
                             w.grad = g.detach()        
                     optimizer_list[ik].step()
-
                 # update global model
                 _gradients = torch.autograd.grad(loss, pred, retain_graph=True)
                 _gradients_clone = _gradients[0].detach().clone()
-                optimizer_list[-1].zero_grad()
                 weights_grad_a = torch.autograd.grad(pred, model_list[-1].parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                 for w, g in zip(model_list[-1].parameters(), weights_grad_a):
                     if w.requires_grad:
@@ -165,6 +174,8 @@ class AttributeInference(Attacker):
                 model.eval()
             epoch_suc_cnt = 0
             epoch_total_sample_cnt = 0
+            test_preds = []
+            test_targets = []
             for parties_data in zip(*test_data_loader_list):
                 gt_one_hot_label = parties_data[-1][1]
                 pred_list = []
@@ -173,13 +184,20 @@ class AttributeInference(Attacker):
                     pred_list.append(_local_pred)
                 pred = model_list[-1](pred_list)
 
+                test_preds.append(list(pred.detach().cpu().numpy()))
+                test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
+
                 predict_prob = F.softmax(pred, dim=-1)
                 suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(gt_one_hot_label, dim=-1)).item()
                 train_acc = suc_cnt / predict_prob.shape[0]
                 epoch_suc_cnt += suc_cnt
                 epoch_total_sample_cnt += predict_prob.shape[0]
             test_acc = epoch_suc_cnt / epoch_total_sample_cnt
-            print(f"Auxiliary Model Training, Epoch {i_epoch+1}/{self.epochs}, attribute inference on aux_data only, train_loss={train_epoch_total_loss}, train_acc={train_acc}, test_acc={test_acc}")
+            test_preds = np.vstack(test_preds)
+            test_targets = np.vstack(test_targets)
+            test_auc = np.mean(multiclass_auc(test_targets, test_preds))
+            # print(f"Auxiliary Model Training, Epoch {i_epoch+1}/{self.epochs}, attribute inference on aux_data only, train_loss={train_epoch_total_loss}, train_acc={train_acc}, test_acc={test_acc}")
+            print(f"Auxiliary Model Training, Epoch {i_epoch+1}/{self.epochs}, attribute inference on aux_data only, train_loss={train_epoch_total_loss}, train_acc={train_acc}, test_acc={test_acc}. test_auc={test_auc}")
         
         return model_list
 
@@ -196,6 +214,7 @@ class AttributeInference(Attacker):
         num_included_parties = 2 # [vinctim_party, attacker]
 
         ############################## v1: train model_T and model_attack simutaneously ##############################
+        best_acc = 0.0
         for i_epoch in range(self.epochs):
             print('\nMapping and Attack Model Training Epoch: [%d | %d]' % (i_epoch + 1, self.epochs))
             train_acc = 0.0
@@ -265,6 +284,8 @@ class AttributeInference(Attacker):
             # testing within the epoch
             epoch_suc_cnt = 0
             epoch_total_sample_cnt = 0
+            test_attribute_pred_list = []
+            test_one_hot_attribute_list = []
             model_T.eval()
             model_attack.eval()
             for parties_data in zip(*test_data_loader_list):
@@ -295,6 +316,8 @@ class AttributeInference(Attacker):
                 # print(f"[debug] aux_z has shape: {aux_z.shape}")
 
                 attribute_pred = model_attack(model_T(z))
+                test_attribute_pred_list.append(list(attribute_pred.detach().cpu().numpy()))
+                test_one_hot_attribute_list.append(list(gt_one_hot_label.detach().cpu().numpy()))
 
                 predict_prob = F.softmax(attribute_pred, dim=-1)
                 suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(gt_one_hot_label, dim=-1)).item()
@@ -302,8 +325,14 @@ class AttributeInference(Attacker):
                 epoch_suc_cnt += suc_cnt
                 epoch_total_sample_cnt += predict_prob.shape[0]
             test_acc = epoch_suc_cnt / epoch_total_sample_cnt
-            # best_acc = max(test_acc, best_acc)   
-            print(f"Mapping and Attack Model Training Epoch {i_epoch+1}/{self.epochs}, attribute inference with attack model, train_l2_loss={train_epoch_l2_loss}, train_ce_loss={train_epoch_ce_loss}, train_acc={train_acc}, test_acc={test_acc}")
+            
+            test_attribute_pred_list = np.vstack(test_attribute_pred_list)
+            test_one_hot_attribute_list = np.vstack(test_one_hot_attribute_list)
+            test_auc = np.mean(multiclass_auc(test_one_hot_attribute_list, test_attribute_pred_list))
+            best_acc = max(test_acc, best_acc)   
+            # print(f"Mapping and Attack Model Training Epoch {i_epoch+1}/{self.epochs}, attribute inference with attack model, train_l2_loss={train_epoch_l2_loss}, train_ce_loss={train_epoch_ce_loss}, train_acc={train_acc}, test_acc={test_acc}")
+            print(f"Mapping and Attack Model Training Epoch {i_epoch+1}/{self.epochs}, attribute inference with attack model, train_l2_loss={train_epoch_l2_loss}, train_ce_loss={train_epoch_ce_loss}, train_acc={train_acc}, test_acc={test_acc}, test_auc={test_auc}")
+            print(f"best_acc={best_acc}")
         ############################## v1: train model_T and model_attack simutaneously ##############################
 
         # ############################## v2: train model_T and model_attack separately ##############################
@@ -422,10 +451,11 @@ class AttributeInference(Attacker):
         #     print(f"attribute inference with attack model, train_acc={train_acc}, test_acc={test_acc}")
         # ############################## v2: train model_T and model_attack separately ##############################
 
-        return train_acc, test_acc
+        # return train_acc, test_acc
+        return train_acc, best_acc
 
     def attack(self):
-        # self.set_seed(123)
+        self.set_seed(self.args.current_seed)
         for ik in self.party: # attacker party #ik
             index = ik
             victim_party_list = [ik for ik in range(self.k)]

@@ -14,7 +14,7 @@ import time
 import copy
 
 # from models.vision import resnet18, MLP2
-from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
 # from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
@@ -309,6 +309,8 @@ class MainTaskVFL(object):
                 sample_cnt = 0
                 noise_suc_cnt = 0
                 noise_sample_cnt = 0
+                test_preds = []
+                test_targets = []
                 with torch.no_grad():
                     data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
                     for parties_data in zip(*data_loader_list):
@@ -365,13 +367,16 @@ class MainTaskVFL(object):
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
                             dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                            test_preds.append(list(dec_predict_prob.detach().cpu().numpy()))
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
+                            test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
                             predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
                         actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
                         sample_cnt += predict_label.shape[0]
                         suc_cnt += torch.sum(predict_label == actual_label).item()
+                        test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
 
                         # Evaluation on noised data in NTB
                         if self.args.apply_mf == True : 
@@ -405,12 +410,16 @@ class MainTaskVFL(object):
 
                     self.noise_test_acc = noise_suc_cnt / float(noise_sample_cnt) if noise_sample_cnt>0 else None
                     self.test_acc = suc_cnt / float(sample_cnt)
+                    test_preds = np.vstack(test_preds)
+                    test_targets = np.vstack(test_targets)
+                    self.test_auc = np.mean(multiclass_auc(test_targets, test_preds))
                     postfix['train_loss'] = self.loss
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
                     postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+                    postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
                     # tqdm_train.set_postfix(postfix)
-                    print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
-                        i_epoch, self.loss, self.train_acc, self.test_acc))
+                    print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_acc:{:.2f}'.format(
+                        i_epoch, self.loss, self.train_acc, self.test_acc, self.test_auc))
                     
                     self.final_epoch = i_epoch
         

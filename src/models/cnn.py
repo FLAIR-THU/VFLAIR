@@ -31,6 +31,7 @@ class LeNet_LeCun(nn.Module):
         self.output_dim = output_dim
         super(LeNet_LeCun, self).__init__()
         act = nn.ReLU
+        self.drop_rate = 0.2
         # [debug] in LeNet_LeCun, input.shape=torch.Size([128, 3, 50, 25])
         # [debug] in LeNet_LeCun, conv1.out.shape=torch.Size([128, 16, 24, 11])
         # [debug] in LeNet_LeCun, conv2.out.shape=torch.Size([128, 32, 11, 4])
@@ -44,7 +45,7 @@ class LeNet_LeCun(nn.Module):
             nn.BatchNorm2d(16),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             # [batch_size, 16, 24, 12]
-            nn.Dropout(0.2),
+            nn.Dropout(self.drop_rate),
         )
         self.body2 = nn.Sequential(        
             nn.Conv2d(16, 32, kernel_size=3, padding=0, stride=1, bias=False),
@@ -53,7 +54,7 @@ class LeNet_LeCun(nn.Module):
             nn.BatchNorm2d(32),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             # [batch_size, 32, 11, 5]
-            nn.Dropout(0.2),
+            nn.Dropout(self.drop_rate),
         )
         self.body3 = nn.Sequential(      
             nn.Conv2d(32, 64, kernel_size=3, padding=(1,1), stride=1, bias=False),
@@ -62,17 +63,17 @@ class LeNet_LeCun(nn.Module):
             nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
             # [batch_size, 64, 5, 2]
-            nn.Dropout(0.2),
+            nn.Dropout(self.drop_rate),
         )
         self.fc = nn.Sequential(
             nn.Linear(64*5*2, 128, bias=False),
             act(),
             nn.BatchNorm1d(128),
-            nn.Dropout(0.2),
+            nn.Dropout(self.drop_rate),
             nn.Linear(128, self.output_dim, bias=False),
             act(),
             nn.BatchNorm1d(self.output_dim),
-            nn.Dropout(0.2),
+            nn.Dropout(self.drop_rate),
         )
 
     def forward(self, x):

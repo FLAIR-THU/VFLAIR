@@ -15,11 +15,22 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import torchvision.transforms as transforms
 from datetime import datetime
-import numpy as np
 import logging
 import copy
+from sklearn.metrics import roc_auc_score
 from utils.noisy_sample_functions import noisy_sample
 tp = transforms.ToTensor()
+
+
+def multiclass_auc(targets, scores):
+    aucs = []
+    for i in range(scores.shape[1]):
+        if len(np.unique(targets[:, i])) == 1:
+            continue
+        auc = roc_auc_score(targets[:, i], scores[:, i])
+        aucs.append(auc)
+    return aucs
+
 
 # For Distance Corrrelation Defense
 def pairwise_dist(A, B):

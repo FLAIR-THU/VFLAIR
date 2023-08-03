@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,precision_score,roc_curve,auc,average_precision_score,log_loss
 from copy import deepcopy, copy
+from collections import Counter
 
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -256,37 +257,50 @@ def load_dataset_per_party(args, index):
             # 'gender'=2, 'age'=11(after binning), 'race'=5
             label = f['gender' + 's']
             attribute = f['race' + 's']
-            def binning_ages(a):
-                buckets = [5, 10, 18, 25, 30, 35, 45, 55, 65, 75]
-                for i, b in enumerate(buckets):
-                    if a <= b:
-                        return i
-                return len(buckets)
-            MEANS = [152.13768243, 116.5061518, 99.7395918]
-            STDS = [65.71289385, 58.56545956, 57.4306078]
+            # attribute = f['age' + 's']
+            # def binning_ages(a):
+            #     buckets = [5, 10, 18, 25, 30, 35, 45, 55, 65, 75]
+            #     for i, b in enumerate(buckets):
+            #         if a <= b:
+            #             return i
+            #     return len(buckets)
+            # attribute = [binning_ages(age) for age in attribute]
+            # print(np.mean(data[:, :, :, 0]), np.mean(data[:, :, :, 1]), np.mean(data[:, :, :, 2]))
+            # print(np.std(data[:, :, :, 0]), np.std(data[:, :, :, 1]), np.std(data[:, :, :, 2]))
+            # MEANS = [152.13768243, 116.5061518, 99.7395918]
+            # STDS = [65.71289385, 58.56545956, 57.4306078]
+            MEANS = [137.10815842537994, 121.46186260277386, 112.96171130304792]
+            STDS = [76.95932152349954, 74.33070450734535, 75.40728437766884]
             def channel_normalize(x):
                 x = np.asarray(x, dtype=np.float32)
                 x[:, :, :, 0] = (x[:, :, :, 0] - MEANS[0]) / STDS[0]
                 x[:, :, :, 1] = (x[:, :, :, 1] - MEANS[1]) / STDS[1]
                 x[:, :, :, 2] = (x[:, :, :, 2] - MEANS[2]) / STDS[2]
                 return x
-            # attribute = [binning_ages(age) for age in attribute]
             data = channel_normalize(data)
             label = np.asarray(label, dtype=np.int32)
             attribute = np.asarray(attribute, dtype=np.int32)
             X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
             if args.need_auxiliary == 1:
                 _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
+                # ########### counting the majority of the class ###########
+                prop_counter = Counter(a_aux)
+                mc = prop_counter.most_common()
+                n = float(len(a_aux))
+                stats = [tup[1] / n * 100 for tup in mc]
+                print("Majority prop {}={:.4f}%".format(mc[0][0], stats[0]))
+                print("Majority top 5={:.4f}%".format(sum(stats[:5])))
+                # ########### counting the majority of the class ###########
                 X_aux = torch.tensor(X_aux, dtype=torch.float32)
                 y_aux = torch.tensor(y_aux, dtype=torch.long)
-                a_aux = torch.tensor(a_aux, dtype=torch.float32)
+                a_aux = torch.tensor(a_aux, dtype=torch.long)
                 print(f"[debug] in load dataset for utkface, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
                 aux_dst = (X_aux, y_aux, a_aux)
                 # print('aux_dst:',X_aux.size(),y_aux.size())
             X_train = torch.tensor(X_train, dtype=torch.float32)
             X_test = torch.tensor(X_test, dtype=torch.float32)
-            print(f"[debug] in load dataset for utkface, X_train.shape={X_train.shape}, y_aux.shape={y_train.shape}, a_aux.shape={a_train.shape}")
-            print(f"[debug] in load dataset for utkface, X_test.shape={X_test.shape}, y_aux.shape={y_test.shape}, a_aux.shape={a_test.shape}")
+            print(f"[debug] in load dataset for utkface, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
+            print(f"[debug] in load dataset for utkface, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
             y_train = torch.tensor(y_train, dtype=torch.long)
             y_test = torch.tensor(y_test, dtype=torch.long)
             a_train = torch.tensor(a_train, dtype=torch.long)
