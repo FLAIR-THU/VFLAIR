@@ -335,7 +335,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # for seed in range(97,102): # test 5 times 
-    for seed in range(12345,12346): # test 5 times 
+    # for seed in range(12345,12345+5): # test 5 times 
+    for seed in [12345,97,98,99,101]: # test 5 times 
     # for seed in range(101,102): # test 5 times 
     # for seed in range(60,61): # test 5 times 
         args.current_seed = seed

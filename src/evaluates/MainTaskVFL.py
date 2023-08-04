@@ -295,8 +295,9 @@ class MainTaskVFL(object):
             # LR decay
             self.LR_Decay(i_epoch)
             # LR record
-            LR_passive_list.append(self.parties[0].give_current_lr())
-            LR_active_list.append(self.parties[1].give_current_lr())
+            if self.args.k == 2:
+                LR_passive_list.append(self.parties[0].give_current_lr())
+                LR_active_list.append(self.parties[1].give_current_lr())
 
             # validation
             if (i + 1) % print_every == 0:

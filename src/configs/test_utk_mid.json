@@ -22,6 +22,14 @@
         "apply_trainable_layer": 1,
         "global_model": "ClassificationModelHostTrainableHead"
     },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [0],
+            "lr": 0.001,
+            "lambda": 0.0
+        }
+    },
     "attack_list": {
         "0":{
             "name": "AttributeInference",

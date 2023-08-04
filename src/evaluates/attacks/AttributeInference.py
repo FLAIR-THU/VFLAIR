@@ -452,7 +452,7 @@ class AttributeInference(Attacker):
         # ############################## v2: train model_T and model_attack separately ##############################
 
         # return train_acc, test_acc
-        return train_acc, best_acc
+        return train_acc, best_acc, test_auc
 
     def attack(self):
         self.set_seed(self.args.current_seed)
@@ -515,7 +515,7 @@ class AttributeInference(Attacker):
             model_T = MLP2_scalable(self.z_dim, self.z_dim, hidden_dim=min(128,int(self.z_dim*2))).to(self.device)
             model_attack = MLP2_scalable(self.z_dim, self.num_attributes, hidden_dim=min(128,int(self.z_dim*2))).to(self.device)
             original_model_list = [bottom_victim_model, bottom_local_model, global_model]
-            attribute_train_acc, attribute_test_acc = self.train_mapper_attacker(train_data_loader_list, test_data_loader_list, original_model_list, aux_model_list, model_T, model_attack)
+            attribute_train_acc, attribute_test_acc, attribute_test_auc = self.train_mapper_attacker(train_data_loader_list, test_data_loader_list, original_model_list, aux_model_list, model_T, model_attack)
             
             ####### Clean ######
             for model in aux_model_list:
@@ -529,6 +529,6 @@ class AttributeInference(Attacker):
             del(test_local_data)
             del(test_attribute)
            
-        print("returning from Attribute Attack")
+        print(f"returning from Attribute Attack, test_auc={attribute_test_auc}")
         return attribute_test_acc
         # return recovery_history

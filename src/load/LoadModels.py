@@ -44,7 +44,7 @@ def load_basic_models(args,index):
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
-    if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower():
+    if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower() or 'cnn' in current_model_type.lower():
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
         local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)
@@ -116,9 +116,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     # add args.k-1 MID model at active party with global_model
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model_list = [MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                        mid_model_list = [MID_model_small(args.model_list[str(_ik)]['output_dim'],args.model_list[str(_ik)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k-1)]
                     else:
-                        mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                        mid_model_list = [MID_model(args.model_list[str(_ik)]['output_dim'],args.model_list[str(_ik)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k-1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model,mid_model_list)
                     global_model = global_model.to(args.device)
@@ -144,9 +144,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print('lambda for passive party local mid model:',args.defense_configs['lambda'])
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model = MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'],args.model_list[str(index)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     else:
-                        mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model(args.model_list[str(index)]['output_dim'],args.model_list[str(index)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)

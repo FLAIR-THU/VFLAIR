@@ -105,7 +105,7 @@ def load_basic_configs(config_file_name, args):
         args.apply_dcae = False
         args.apply_dp = False
         args.Q=1
-        return args
+        # return args
 
     # if defense appears
     args.apply_defense = False

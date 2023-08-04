@@ -42,6 +42,8 @@ TEXT_DATA = ['news20']
 
 
 def dataset_partition(args, index, dst, half_dim):
+    if args.k == 1:
+        return dst
     if args.dataset in IMAGE_DATA:
         if len(dst) == 2: # IMAGE_DATA without attribute
             if args.k == 2:
@@ -273,9 +275,10 @@ def load_dataset_per_party(args, index):
             STDS = [76.95932152349954, 74.33070450734535, 75.40728437766884]
             def channel_normalize(x):
                 x = np.asarray(x, dtype=np.float32)
-                x[:, :, :, 0] = (x[:, :, :, 0] - MEANS[0]) / STDS[0]
-                x[:, :, :, 1] = (x[:, :, :, 1] - MEANS[1]) / STDS[1]
-                x[:, :, :, 2] = (x[:, :, :, 2] - MEANS[2]) / STDS[2]
+                x = x / 255.0
+                # x[:, :, :, 0] = (x[:, :, :, 0] - MEANS[0]) / STDS[0]
+                # x[:, :, :, 1] = (x[:, :, :, 1] - MEANS[1]) / STDS[1]
+                # x[:, :, :, 2] = (x[:, :, :, 2] - MEANS[2]) / STDS[2]
                 return x
             data = channel_normalize(data)
             label = np.asarray(label, dtype=np.int32)

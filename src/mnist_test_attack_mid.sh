@@ -142,35 +142,70 @@
 
 
 
+# echo 'MID agg main begin' #SBATCH --qos high
+
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 0.0/"lambda": 1e-8/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 1e-8/"lambda": 1e-6/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 1e-6/"lambda": 0.0001/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 0.0001/"lambda": 0.01/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/main_passive/mnist_test_attack_mid.json
+# echo '0.1'
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 1.0/"lambda": 100/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 100/"lambda": 10000/g' ./configs/main_passive/mnist_test_attack_mid.json
+# python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+
+# sed -i 's/"lambda": 10000/"lambda": 0.0/g' ./configs/main_passive/mnist_test_attack_mid.json
+
+# echo 'MIDall end'
+
+
+
 echo 'MID agg main begin' #SBATCH --qos high
 
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 0.0/"lambda": 1e-8/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 0.0/"lambda": 1e-8/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 1e-8/"lambda": 1e-6/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 1e-8/"lambda": 1e-6/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 1e-6/"lambda": 0.0001/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 1e-6/"lambda": 0.0001/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 0.0001/"lambda": 0.01/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 0.0001/"lambda": 0.01/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/main_passive/mnist_test_attack_mid.json
+sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/test_utk_mid.json
 echo '0.1'
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 1.0/"lambda": 100/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 1.0/"lambda": 100/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 100/"lambda": 10000/g' ./configs/main_passive/mnist_test_attack_mid.json
-python main_separate2.py --configs main_passive/mnist_test_attack_mid --gpu 6
+sed -i 's/"lambda": 100/"lambda": 10000/g' ./configs/test_utk_mid.json
+python main_pipeline.py --configs test_utk_mid --gpu 6
 
-sed -i 's/"lambda": 10000/"lambda": 0.0/g' ./configs/main_passive/mnist_test_attack_mid.json
+sed -i 's/"lambda": 10000/"lambda": 0.0/g' ./configs/test_utk_mid.json
 
 echo 'MIDall end'
