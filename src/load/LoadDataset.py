@@ -35,7 +35,7 @@ from utils.graph_functions import load_data1, split_graph
 
 # DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
-IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface']
+IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
@@ -253,7 +253,6 @@ def load_dataset_per_party(args, index):
     elif args.dataset == 'utkface': # with attribute
         # 0.8 for train (all for train, but with 50% also for aux) and 0.2 for test
         half_dim = 25
-        # args.need_auxiliary = 1
         with np.load(DATA_PATH + 'UTKFace/utk_resize.npz') as f:
             data = f['imgs']
             # 'gender'=2, 'age'=11(after binning), 'race'=5
@@ -284,6 +283,9 @@ def load_dataset_per_party(args, index):
             label = np.asarray(label, dtype=np.int32)
             attribute = np.asarray(attribute, dtype=np.int32)
             X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
+            # [debug] in load dataset for utkface, X_aux.shape=torch.Size([9482, 50, 50, 3]), y_aux.shape=torch.Size([9482]), a_aux.shape=torch.Size([9482])
+            # [debug] in load dataset for utkface, X_train.shape=torch.Size([18964, 50, 50, 3]), y_train.shape=(18964,), a_train.shape=(18964,)
+            # [debug] in load dataset for utkface, X_test.shape=torch.Size([4741, 50, 50, 3]), y_test.shape=(4741,), a_test.shape=(4741,)
             if args.need_auxiliary == 1:
                 _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
                 # ########### counting the majority of the class ###########
@@ -297,13 +299,13 @@ def load_dataset_per_party(args, index):
                 X_aux = torch.tensor(X_aux, dtype=torch.float32)
                 y_aux = torch.tensor(y_aux, dtype=torch.long)
                 a_aux = torch.tensor(a_aux, dtype=torch.long)
-                print(f"[debug] in load dataset for utkface, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
+                # print(f"[debug] in load dataset for utkface, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
                 aux_dst = (X_aux, y_aux, a_aux)
                 # print('aux_dst:',X_aux.size(),y_aux.size())
             X_train = torch.tensor(X_train, dtype=torch.float32)
             X_test = torch.tensor(X_test, dtype=torch.float32)
-            print(f"[debug] in load dataset for utkface, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
-            print(f"[debug] in load dataset for utkface, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
+            # print(f"[debug] in load dataset for utkface, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
+            # print(f"[debug] in load dataset for utkface, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
             y_train = torch.tensor(y_train, dtype=torch.long)
             y_test = torch.tensor(y_test, dtype=torch.long)
             a_train = torch.tensor(a_train, dtype=torch.long)
@@ -311,6 +313,45 @@ def load_dataset_per_party(args, index):
             train_dst = (X_train, y_train, a_train)
             test_dst = (X_test, y_test, a_test)
             # return X_train, y_train, a_train, X_test, y_test, a_test
+    elif args.dataset == 'places365':
+        half_dim = 64
+        with np.load(DATA_PATH + 'Places365/place128.npz') as f:
+            data, label, attribute = f['arr_0'], f['arr_1'], f['arr_2']
+            unique_p = np.unique(attribute)
+            p_to_id = dict(zip(unique_p, range(len(unique_p))))
+            attribute = np.asarray([p_to_id[a] for a in attribute], dtype=np.int32)
+            label = label.astype(np.int32)
+            data = data / 255.0
+            X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
+            # [debug] in load dataset for places365, X_aux.shape=torch.Size([29200, 128, 128, 3]), y_aux.shape=torch.Size([29200]), a_aux.shape=torch.Size([29200])
+            # [debug] in load dataset for places365, X_train.shape=torch.Size([58400, 128, 128, 3]), y_train.shape=(58400,), a_train.shape=(58400,)
+            # [debug] in load dataset for places365, X_test.shape=torch.Size([14600, 128, 128, 3]), y_test.shape=(14600,), a_test.shape=(14600,)
+            if args.need_auxiliary == 1:
+                _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
+                # ########### counting the majority of the class ###########
+                prop_counter = Counter(a_aux)
+                mc = prop_counter.most_common()
+                n = float(len(a_aux))
+                stats = [tup[1] / n * 100 for tup in mc]
+                print("Majority prop {}={:.4f}%".format(mc[0][0], stats[0]))
+                print("Majority top 5={:.4f}%".format(sum(stats[:5])))
+                # ########### counting the majority of the class ###########
+                X_aux = torch.tensor(X_aux, dtype=torch.float32)
+                y_aux = torch.tensor(y_aux, dtype=torch.long)
+                a_aux = torch.tensor(a_aux, dtype=torch.long)
+                print(f"[debug] in load dataset for places365, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
+                aux_dst = (X_aux, y_aux, a_aux)
+                # print('aux_dst:',X_aux.size(),y_aux.size())
+            X_train = torch.tensor(X_train, dtype=torch.float32)
+            X_test = torch.tensor(X_test, dtype=torch.float32)
+            print(f"[debug] in load dataset for places365, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
+            print(f"[debug] in load dataset for places365, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
+            y_train = torch.tensor(y_train, dtype=torch.long)
+            y_test = torch.tensor(y_test, dtype=torch.long)
+            a_train = torch.tensor(a_train, dtype=torch.long)
+            a_test = torch.tensor(a_test, dtype=torch.long)
+            train_dst = (X_train, y_train, a_train)
+            test_dst = (X_test, y_test, a_test)
     elif args.dataset == 'nuswide':
         half_dim = [1000, 634]
         if args.num_classes == 5:
