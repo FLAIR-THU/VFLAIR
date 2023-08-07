@@ -5,7 +5,7 @@
     "batch_size": 128,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "utkface",
+        "dataset_name": "facescrub",
         "num_classes": 2
     },
     "model_list":{
@@ -23,10 +23,11 @@
         "global_model": "ClassificationModelHostTrainableHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
             "lr": 0.001,
+            "model": "Adversarial_MLP3",
             "lambda": 0.0
         }
     },

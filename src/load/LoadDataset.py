@@ -35,7 +35,7 @@ from utils.graph_functions import load_data1, split_graph
 
 # DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
-IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'places365']
+IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
@@ -78,7 +78,7 @@ def dataset_partition(args, index, dst, half_dim):
         elif len(dst) == 3: # IMAGE_DATA with attribute
             if args.k == 2:
                 if index == 0:
-                    return (dst[0][:, :, :half_dim, :], None, None)
+                    return (dst[0][:, :, :half_dim, :], None, dst[2])
                     # return (dst[0][:, :, half_dim:, :], None, None)
                 elif index == 1:
                     return (dst[0][:, :, half_dim:, :], dst[1], dst[2])
@@ -92,11 +92,11 @@ def dataset_partition(args, index, dst, half_dim):
                 else:
                     # passive party does not have label
                     if index == 0:
-                        return (dst[0][:, :, :half_dim, :half_dim], None, None)
+                        return (dst[0][:, :, :half_dim, :half_dim], None, dst[2])
                     elif index == 1:
-                        return (dst[0][:, :, :half_dim, half_dim:], None, None)
+                        return (dst[0][:, :, :half_dim, half_dim:], None, dst[2])
                     elif index == 2:
-                        return (dst[0][:, :, half_dim:, :half_dim], None, None)
+                        return (dst[0][:, :, half_dim:, :half_dim], None, dst[2])
                     else:
                         assert index <= 3, "invalide party index"
                         return None
@@ -286,6 +286,7 @@ def load_dataset_per_party(args, index):
             # [debug] in load dataset for utkface, X_aux.shape=torch.Size([9482, 50, 50, 3]), y_aux.shape=torch.Size([9482]), a_aux.shape=torch.Size([9482])
             # [debug] in load dataset for utkface, X_train.shape=torch.Size([18964, 50, 50, 3]), y_train.shape=(18964,), a_train.shape=(18964,)
             # [debug] in load dataset for utkface, X_test.shape=torch.Size([4741, 50, 50, 3]), y_test.shape=(4741,), a_test.shape=(4741,)
+            # [debug] in load dataset, number of attributes for UTKFace: 5
             if args.need_auxiliary == 1:
                 _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
                 # ########### counting the majority of the class ###########
@@ -312,20 +313,54 @@ def load_dataset_per_party(args, index):
             a_test = torch.tensor(a_test, dtype=torch.long)
             train_dst = (X_train, y_train, a_train)
             test_dst = (X_test, y_test, a_test)
-            # return X_train, y_train, a_train, X_test, y_test, a_test
-    elif args.dataset == 'places365':
-        half_dim = 64
-        with np.load(DATA_PATH + 'Places365/place128.npz') as f:
-            data, label, attribute = f['arr_0'], f['arr_1'], f['arr_2']
-            unique_p = np.unique(attribute)
-            p_to_id = dict(zip(unique_p, range(len(unique_p))))
-            attribute = np.asarray([p_to_id[a] for a in attribute], dtype=np.int32)
-            label = label.astype(np.int32)
-            data = data / 255.0
+            args.num_attributes = len(np.unique(a_train.numpy()))
+            # print(f"[debug] in load dataset, number of attributes for UTKFace: {args.num_attributes}")
+    elif args.dataset == 'facescrub':
+        half_dim = 25
+        def load_gender():
+            i = 0
+            name_gender = dict()
+            for f in [DATA_PATH + 'FaceScrub/facescrub_actors.txt', DATA_PATH + 'FaceScrub/facescrub_actresses.txt']:
+                with open(f) as fd:
+                    fd.readline()
+                    names = []
+                    for line in fd.readlines():
+                        components = line.split('\t')
+                        assert (len(components) == 6)
+                        name = components[0]  # .decode('utf8')
+                        names.append(name)
+                    name_gender.update(dict(zip(names, np.ones(len(names)) * i)))
+                i += 1
+            return name_gender
+        with np.load(DATA_PATH + 'FaceScrub/Data/facescrub.npz') as f:
+            data, attribute, names = [f['arr_%d' % i] for i in range(len(f.files))]
+
+            name_gender = load_gender()
+            label = [name_gender[names[i]] for i in attribute]
+            label = np.asarray(label, dtype=np.int32)
+            attribute = np.asarray(attribute, dtype=np.int32)
+            if len(np.unique(attribute)) > 300: # only use the most common 500 person
+                id_cnt = Counter(attribute)
+                attribute_selected = [tup[0] for tup in id_cnt.most_common(300)]
+                indices = []
+                new_attribute = []
+                all_indices = np.arange(len(attribute))
+                for i, face_id in enumerate(attribute_selected):
+                    face_indices = all_indices[attribute == face_id]
+                    new_attribute.append(np.ones_like(face_indices) * i)
+                    indices.append(face_indices)
+                indices = np.concatenate(indices)
+                data = data[indices]
+                label = label[indices]
+                attribute = np.concatenate(new_attribute)
+                attribute = np.asarray(attribute, dtype=np.int32)
+            # print(Counter(attribute).most_common()
             X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
-            # [debug] in load dataset for places365, X_aux.shape=torch.Size([29200, 128, 128, 3]), y_aux.shape=torch.Size([29200]), a_aux.shape=torch.Size([29200])
-            # [debug] in load dataset for places365, X_train.shape=torch.Size([58400, 128, 128, 3]), y_train.shape=(58400,), a_train.shape=(58400,)
-            # [debug] in load dataset for places365, X_test.shape=torch.Size([14600, 128, 128, 3]), y_test.shape=(14600,), a_test.shape=(14600,)
+            # Majority prop 0=0.5407%
+            # [debug] in load dataset for FaceScrub, X_aux.shape=torch.Size([9062, 50, 50, 3]), y_aux.shape=torch.Size([9062]), a_aux.shape=torch.Size([9062])
+            # [debug] in load dataset for FaceScrub, X_train.shape=torch.Size([18124, 50, 50, 3]), y_train.shape=(18124,), a_train.shape=(18124,)
+            # [debug] in load dataset for FaceScrub, X_test.shape=torch.Size([4532, 50, 50, 3]), y_test.shape=(4532,), a_test.shape=(4532,)
+            # [debug] in load dataset, number of attributes for FaceScrub: 300
             if args.need_auxiliary == 1:
                 _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
                 # ########### counting the majority of the class ###########
@@ -339,19 +374,64 @@ def load_dataset_per_party(args, index):
                 X_aux = torch.tensor(X_aux, dtype=torch.float32)
                 y_aux = torch.tensor(y_aux, dtype=torch.long)
                 a_aux = torch.tensor(a_aux, dtype=torch.long)
-                print(f"[debug] in load dataset for places365, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
+                print(f"[debug] in load dataset for FaceScrub, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
                 aux_dst = (X_aux, y_aux, a_aux)
                 # print('aux_dst:',X_aux.size(),y_aux.size())
             X_train = torch.tensor(X_train, dtype=torch.float32)
             X_test = torch.tensor(X_test, dtype=torch.float32)
-            print(f"[debug] in load dataset for places365, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
-            print(f"[debug] in load dataset for places365, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
+            print(f"[debug] in load dataset for FaceScrub, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
+            print(f"[debug] in load dataset for FaceScrub, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
             y_train = torch.tensor(y_train, dtype=torch.long)
             y_test = torch.tensor(y_test, dtype=torch.long)
             a_train = torch.tensor(a_train, dtype=torch.long)
             a_test = torch.tensor(a_test, dtype=torch.long)
             train_dst = (X_train, y_train, a_train)
             test_dst = (X_test, y_test, a_test)
+            args.num_attributes = len(np.unique(a_train.numpy()))
+            print(f"[debug] in load dataset, number of attributes for FaceScrub: {args.num_attributes}")
+
+    elif args.dataset == 'places365':
+        half_dim = 64
+        with np.load(DATA_PATH + 'Places365/place128.npz') as f:
+            data, label, attribute = f['arr_0'], f['arr_1'], f['arr_2']
+            unique_p = np.unique(attribute)
+            p_to_id = dict(zip(unique_p, range(len(unique_p))))
+            attribute = np.asarray([p_to_id[a] for a in attribute], dtype=np.int32)
+            label = label.astype(np.int32)
+            data = data / 255.0
+            X_train, X_test, y_train, y_test, a_train, a_test = train_test_split(data, label, attribute, train_size=0.8, stratify=attribute, random_state=args.current_seed)
+            # [debug] in load dataset for places365, X_aux.shape=torch.Size([29200, 128, 128, 3]), y_aux.shape=torch.Size([29200]), a_aux.shape=torch.Size([29200])
+            # [debug] in load dataset for places365, X_train.shape=torch.Size([58400, 128, 128, 3]), y_train.shape=(58400,), a_train.shape=(58400,)
+            # [debug] in load dataset for places365, X_test.shape=torch.Size([14600, 128, 128, 3]), y_test.shape=(14600,), a_test.shape=(14600,)
+            # [debug] in load dataset, number of attributes for Places365: 365
+            if args.need_auxiliary == 1:
+                _, X_aux, _, y_aux, _, a_aux = train_test_split(X_train, y_train, a_train, test_size=0.5, stratify=a_train, random_state=args.current_seed)
+                # ########### counting the majority of the class ###########
+                prop_counter = Counter(a_aux)
+                mc = prop_counter.most_common()
+                n = float(len(a_aux))
+                stats = [tup[1] / n * 100 for tup in mc]
+                print("Majority prop {}={:.4f}%".format(mc[0][0], stats[0]))
+                print("Majority top 5={:.4f}%".format(sum(stats[:5])))
+                # ########### counting the majority of the class ###########
+                X_aux = torch.tensor(X_aux, dtype=torch.float32)
+                y_aux = torch.tensor(y_aux, dtype=torch.long)
+                a_aux = torch.tensor(a_aux, dtype=torch.long)
+                # print(f"[debug] in load dataset for places365, X_aux.shape={X_aux.shape}, y_aux.shape={y_aux.shape}, a_aux.shape={a_aux.shape}")
+                aux_dst = (X_aux, y_aux, a_aux)
+                # print('aux_dst:',X_aux.size(),y_aux.size())
+            X_train = torch.tensor(X_train, dtype=torch.float32)
+            X_test = torch.tensor(X_test, dtype=torch.float32)
+            # print(f"[debug] in load dataset for places365, X_train.shape={X_train.shape}, y_train.shape={y_train.shape}, a_train.shape={a_train.shape}")
+            # print(f"[debug] in load dataset for places365, X_test.shape={X_test.shape}, y_test.shape={y_test.shape}, a_test.shape={a_test.shape}")
+            y_train = torch.tensor(y_train, dtype=torch.long)
+            y_test = torch.tensor(y_test, dtype=torch.long)
+            a_train = torch.tensor(a_train, dtype=torch.long)
+            a_test = torch.tensor(a_test, dtype=torch.long)
+            train_dst = (X_train, y_train, a_train)
+            test_dst = (X_test, y_test, a_test)
+            args.num_attributes = len(np.unique(a_train.numpy()))
+            # print(f"[debug] in load dataset, number of attributes for Places365: {args.num_attributes}")
     elif args.dataset == 'nuswide':
         half_dim = [1000, 634]
         if args.num_classes == 5:

@@ -94,7 +94,6 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
         current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
         # std_shift_hyperparameter = 5 if (('nuswide' == args.dataset.lower() and args.num_classes==5) or 'cifar' in args.dataset.lower()) else 0.5 
         std_shift_hyperparameter = 5 if ('nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5 
-        print(f"in load defense model, current_bottleneck_scale={current_bottleneck_scale}")
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [args.k-1]
@@ -166,7 +165,35 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                             [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                             {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
 
-        
+        if 'adversarial' in args.defense_name.lower(): # for adversarial training
+            # add adversarial model for local model
+            if not 'party' in args.defense_configs:
+                args.defense_configs['party'] = [0]
+                print('[warning] default passive party selected for applying adversarial training')
+            if not ('lr' in args.defense_configs):
+                adversarial_lr = args.main_lr  
+                print('[warning] default hyper-parameter mid_lr selected for applying MID')
+            else :
+                adversarial_lr = args.defense_configs['lr']
+            if not ('model' in args.defense_configs):
+                model_name = 'Adversarial_MLP2'
+            else:
+                model_name = args.defense_configs['model']
+            print(model_name)
+            if index in args.defense_configs['party']:
+                # assert args.parties[index].train_attribute != None, "[Error] no attribute for adversarial"
+                # add adversarial model to the the defense party=index
+                adversarial_input_dim = args.model_list[str(index)]['output_dim']
+                adversarial_output_dim = args.num_attributes
+                # print(f"[debug] in load defense model, adversarial_input_dim={adversarial_input_dim}, adversarial_output_dim={adversarial_output_dim}")
+                adversarial_model = globals()[model_name](adversarial_input_dim, adversarial_output_dim)
+                local_model = Local_Adversarial_combined_model(local_model,adversarial_model)
+                local_model = local_model.to(args.device)
+                # update optimizer
+                local_model_optimizer = torch.optim.Adam(
+                            [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
+                            {'params': local_model.adversarial_model.parameters(), 'lr': adversarial_lr}])
+            
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
             # print("CAE in defense_name,", args.defense_name)
             if index == args.k-1:

@@ -113,6 +113,7 @@ def load_basic_configs(config_file_name, args):
     args.apply_mid = False # mid defense
     args.apply_cae = False # cae defense
     args.apply_dcae = False # dcae defense
+    args.apply_adversarial = False # adversarial
     args.bin_size = [None for _ in range(args.k)] # for discrete bins
     args.gradients_res_a = [None for _ in range(args.k)] # for gradient sparsification
     args.apply_dcor = False # distance corrilation
@@ -122,7 +123,7 @@ def load_basic_configs(config_file_name, args):
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
-            assert 'party' in config_dict['defense']['parameters'], 'defense party not specified'
+            assert 'party' in config_dict['defense']['parameters'], '[Error] Defense party not specified'
             print(f"in load configs, defense_configs is type {type(args.defense_configs)}")
             print(f"in load configs, defense_configs is type {type(dict(args.defense_configs))}")
             if 'mid' in args.defense_name.casefold():
@@ -131,6 +132,8 @@ def load_basic_configs(config_file_name, args):
                 args.apply_cae = True
                 if 'dcae' in args.defense_name.casefold():
                     args.apply_dcae = True
+            elif 'adversarial' in args.defense_name.casefold():
+                args.apply_adversarial = True
             elif 'distancecorrelation' in args.defense_name.casefold():
                 args.apply_dcor = True
             elif ('gaussian' in args.defense_name.casefold()) or ('laplace' in args.defense_name.casefold()):
@@ -143,7 +146,7 @@ def load_basic_configs(config_file_name, args):
         print('===== No Defense ======')
     # get Info: args.defense_param  args.defense_param_name
     if args.apply_defense == True:
-        if args.defense_name == "CAE" or args.defense_name=="DCAE" or args.defense_name=="MID" or args.defense_name=="DistanceCorrelation":
+        if args.defense_name in ["CAE", "DCAE", "MID", "DistanceCorrelation", "AdversarialTraining"]:
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":

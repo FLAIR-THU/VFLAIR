@@ -426,7 +426,7 @@ class AlexNet(nn.Module):
         out = out.view(out.size(0), -1)
         print(f"[debug] in CNN_3, out.view(-1).shape={out.shape}")
 
-        return self.classifier(x)
+        return self.classifier(out)
 
 
 if __name__ == '__main__':

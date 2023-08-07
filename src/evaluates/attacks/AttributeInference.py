@@ -126,9 +126,9 @@ class AttributeInference(Attacker):
                     pred_list.append(_local_pred)
                     pred_list_clone.append(_local_pred.detach().clone())
                     pred_list_clone[ik] = torch.autograd.Variable(pred_list_clone[ik], requires_grad=True).to(self.device)
-                # # ################## debug ##################
-                # pred_list[0] = torch.zeros(pred_list[0].shape).to(self.args.device)
-                # # ################## debug ##################
+                # ################## debug ##################
+                pred_list[0] = torch.zeros(pred_list[0].shape).to(self.args.device)
+                # ################## debug ##################
                 pred = model_list[-1](pred_list)
                 loss = self.criterion(pred, gt_one_hot_label)
 
@@ -138,12 +138,12 @@ class AttributeInference(Attacker):
                 pred_gradients_list = []
                 pred_gradients_list_clone = []
                 for ik in range(num_included_parties):
-                    # # ################## debug ##################
-                    # if ik == 0:
-                    #     pred_gradients_list.append(torch.zeros((1,)).to(self.args.device))
-                    #     pred_gradients_list_clone.append(torch.zeros((1,)).to(self.args.device))
-                    #     continue
-                    # # ################## debug ##################
+                    # ################## debug ##################
+                    if ik == 0:
+                        pred_gradients_list.append(torch.zeros((1,)).to(self.args.device))
+                        pred_gradients_list_clone.append(torch.zeros((1,)).to(self.args.device))
+                        continue
+                    # ################## debug ##################
                     pred_gradients_list.append(torch.autograd.grad(loss, pred_list[ik], retain_graph=True, create_graph=True))
                     pred_gradients_list_clone.append(pred_gradients_list[ik][0].detach().clone())
                     weights_grad_a = torch.autograd.grad(pred_list[ik], model_list[ik].parameters(), grad_outputs=pred_gradients_list_clone[ik], retain_graph=True)
@@ -238,6 +238,9 @@ class AttributeInference(Attacker):
                     pred_list.append(_local_pred)
                     pred_list_clone.append(_local_pred.detach().clone())
                     pred_list_clone[ik] = torch.autograd.Variable(pred_list_clone[ik], requires_grad=True).to(self.device)
+                # ################## debug ##################
+                pred_list[0] = torch.zeros(pred_list[0].shape).to(self.args.device)
+                # ################## debug ##################
                 # pred = original_model_list[-1](pred_list)
                 z = torch.cat(pred_list, dim=1)
                 # print(f"[debug] z has shape: {z.shape}")
@@ -250,6 +253,9 @@ class AttributeInference(Attacker):
                     aux_pred_list.append(_local_pred)
                     aux_pred_list_clone.append(_local_pred.detach().clone())
                     aux_pred_list_clone[ik] = torch.autograd.Variable(aux_pred_list_clone[ik], requires_grad=True).to(self.device)
+                # ################## debug ##################
+                aux_pred_list[0] = torch.zeros(aux_pred_list[0].shape).to(self.args.device)
+                # ################## debug ##################
                 # aux_pred = aux_model_list[-1](aux_pred_list)
                 aux_z = torch.cat(aux_pred_list, dim=1)
                 # print(f"[debug] aux_z has shape: {aux_z.shape}")
@@ -264,7 +270,10 @@ class AttributeInference(Attacker):
 
                 # update model_attack with T(z) and attribute(label here)
                 optimizer_attack.zero_grad()
-                attribute_pred = model_attack(model_T(z))
+                # attribute_pred = model_attack(model_T(z))
+                # ################## debug ##################
+                attribute_pred = model_attack(z)
+                # ################## debug ##################
                 # print(f"[debug] attribute_pred has shape {attribute_pred.shape}")
                 loss = self.criterion(attribute_pred, gt_one_hot_label)
                 loss.backward(retain_graph=True)
@@ -299,6 +308,9 @@ class AttributeInference(Attacker):
                     pred_list.append(_local_pred)
                     pred_list_clone.append(_local_pred.detach().clone())
                     pred_list_clone[ik] = torch.autograd.Variable(pred_list_clone[ik], requires_grad=True).to(self.device)
+                # ################## debug ##################
+                aux_pred_list[0] = torch.zeros(aux_pred_list[0].shape).to(self.args.device)
+                # ################## debug ##################
                 # pred = original_model_list[-1](pred_list)
                 z = torch.cat(pred_list, dim=1)
                 # print(f"[debug] z has shape: {z.shape}")
@@ -315,7 +327,10 @@ class AttributeInference(Attacker):
                 # aux_z = torch.cat(aux_pred_list, dim=1)
                 # print(f"[debug] aux_z has shape: {aux_z.shape}")
 
-                attribute_pred = model_attack(model_T(z))
+                # attribute_pred = model_attack(model_T(z))
+                # ################## debug ##################
+                attribute_pred = model_attack(z)
+                # ################## debug ##################
                 test_attribute_pred_list.append(list(attribute_pred.detach().cpu().numpy()))
                 test_one_hot_attribute_list.append(list(gt_one_hot_label.detach().cpu().numpy()))
 

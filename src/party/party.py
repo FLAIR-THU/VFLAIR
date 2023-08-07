@@ -39,6 +39,8 @@ class Party(object):
         self.train_loader = None
         self.test_loader = None
         self.aux_loader = None
+        self.attribute_loader = None
+        self.attribute_iter = None
         self.local_batch_data = None
         # backdoor poison data and label and target images list
         self.train_poison_data = None
@@ -167,6 +169,9 @@ class Party(object):
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True
         if self.args.need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
+        if self.train_attribute != None:
+            self.attribute_loader = DataLoader(self.train_attribute, batch_size=batch_size)
+            self.attribute_iter = iter(self.attribute_loader)
 
     def prepare_model(self, args, index):
         # prepare model and optimizer
@@ -178,7 +183,6 @@ class Party(object):
             self.global_model_optimizer,
         ) = load_models_per_party(args, index)
 
-
     # def prepare_attacker(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.attacker = AttackerLoader(args, index, self.local_model)
@@ -186,6 +190,7 @@ class Party(object):
     # def prepare_defender(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.defender = DefenderLoader(args, index)
+    
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
@@ -193,12 +198,10 @@ class Party(object):
         eta_0 = self.args.main_lr
         eta_t = eta_0/(np.sqrt(i_epoch+1))
         for param_group in self.local_model_optimizer.param_groups:
-            param_group['lr'] = eta_t
-        
+            param_group['lr'] = eta_t 
             
     def obtain_local_data(self, data):
         self.local_batch_data = data
-
 
     def local_forward():
         # args.local_model()
@@ -286,7 +289,7 @@ class Party(object):
                 if w.requires_grad:
                     w.grad = g.detach()
 
-            ######### dCor Loss ############
+            ########## dCor Loss ##########
             # print('dcor passive defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             loss_dcor = self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
@@ -298,9 +301,34 @@ class Party(object):
                 # print('w:',w.size(),'g:',g.size())
                 if w.requires_grad:
                     w.grad += g.detach()
-            ######### dCor Loss ############
-            
-
+            ########## dCor Loss ##########
+        elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+            # ########## adversarial training loss (start) ##########
+            try:
+                target_attribute = self.attribute_iter.__next__()
+            except StopIteration:
+                self.attribute_iter = iter(self.attribute_loader)
+                target_attribute = self.attribute_iter.__next__()
+            assert target_attribute.shape[0] == self.local_model.adversarial_output.shape[0], f"[Error] Data not aligned, target has shape: {target_attribute.shape}, pred has shape {self.local_model.adversarial_output.shape}"
+            attribute_loss_fn = torch.nn.CrossEntropyLoss()
+            attribute_loss = self.args.defense_configs["lambda"] * attribute_loss_fn(self.local_model.adversarial_output, target_attribute)
+            attribute_loss.backward(retain_graph=True)
+            self.local_model.adversarial_output = None
+            self.weights_grad_a = torch.autograd.grad(
+                self.local_pred,
+                self.local_model.local_model.parameters(),
+                # self.local_model.parameters(),
+                grad_outputs=self.local_gradient,
+                retain_graph=True,
+            )
+            for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+            # for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                if w.requires_grad:
+                    if w.grad != None:
+                        w.grad += g.detach()
+                    else:
+                        w.grad = g.detach()
+            # ########## adversarial training loss (end) ##########
         else:
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
