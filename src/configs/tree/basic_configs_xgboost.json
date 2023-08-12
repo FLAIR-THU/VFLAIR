@@ -2,12 +2,13 @@
     "model_type": "xgboost",
     "number_of_trees": 5,
     "k": 2,
-    "depth": 3,
+    "depth": 6,
     "min_leaf": 1,
     "subsample_cols": 0.8,
     "max_bin": 4,
     "use_missing_value": false,
-    "use_encryption": true,
-    "key_length": 128
+    "use_encryption": false,
+    "key_length": 128,
+    "advanced_params":{"learning_rate":0.03, "lam":1.0, "gamma":0.0, "eps":1.0}
 }
 

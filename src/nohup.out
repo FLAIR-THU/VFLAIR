@@ -1,1 +1,182 @@
 Nursery - RandomForest
+type of model: randomforest, encryption:True
+ training time: 52.05767345428467 [s]
+ train acc: 0.8971553610503282, test acc: 0.8875379939209727
+type of model: randomforest, encryption:True
+ training time: 57.262574195861816 [s]
+ train acc: 0.8986525394448923, test acc: 0.8982931961655366
+type of model: randomforest, encryption:True
+ training time: 62.16514754295349 [s]
+ train acc: 0.8763100310952435, test acc: 0.8632218844984803
+type of model: randomforest, encryption:True
+ training time: 60.62866497039795 [s]
+ train acc: 0.9029137394909593, test acc: 0.8933832125321487
+type of model: randomforest, encryption:True
+ training time: 54.01554894447327 [s]
+ train acc: 0.8937003339859495, test acc: 0.9015665185877951
+Nursery - XGBoost
+type of model: xgboost, encryption:True
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 123, in <module>
+    tvfl.train()
+  File "/home/hideaki/hideaki/VFLAIR/src/evaluates/MainTaskTVFL.py", line 62, in train
+    self.clf.fit(self.parties, self.y)
+  File "/home/hideaki/hideaki/VFLAIR/src/models/tree.py", line 180, in fit
+    boosting_tree.fit(
+  File "/home/hideaki/hideaki/VFLAIR/src/models/tree.py", line 36, in fit
+    self.dtree = XGBoostNode(
+  File "/home/hideaki/hideaki/VFLAIR/src/models/tree_node_xgboost.py", line 120, in __init__
+    best_split = self.find_split()
+  File "/home/hideaki/hideaki/VFLAIR/src/models/tree_node_xgboost.py", line 275, in find_split
+    self.find_split_per_party(
+  File "/home/hideaki/hideaki/VFLAIR/src/models/tree_node_xgboost.py", line 191, in find_split_per_party
+    tlg = self.parties[self.active_party_id].decrypt_1dlist(
+  File "/home/hideaki/hideaki/VFLAIR/src/party/tree_core_party.py", line 54, in decrypt_1dlist
+    results.append(self.sk.decrypt(e))
+  File "/home/hideaki/.local/lib/python3.10/site-packages/phe/paillier.py", line 290, in decrypt
+    encoded = self.decrypt_encoded(encrypted_number)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/phe/paillier.py", line 314, in decrypt_encoded
+    raise TypeError('Expected encrypted_number to be an EncryptedNumber'
+TypeError: Expected encrypted_number to be an EncryptedNumber not: <class 'int'>
+type of model: xgboost, encryption:True
+ training time: 107.14438652992249 [s]
+ train acc: 0.9057929287112749, test acc: 0.9050736497545008
+type of model: xgboost, encryption:True
+ training time: 112.06802177429199 [s]
+ train acc: 0.8947368421052632, test acc: 0.8835632452653729
+type of model: xgboost, encryption:True
+ training time: 110.93917942047119 [s]
+ train acc: 0.9018772313716458, test acc: 0.8905775075987842
+type of model: xgboost, encryption:True
+ training time: 101.1997344493866 [s]
+ train acc: 0.8890936312334446, test acc: 0.8961889174655132
+Credit - RandomForest
+type of model: randomforest, encryption:True
+ training time: 119.7858099937439 [s]
+ train acc: 0.8291044776119403, test acc: 0.8172727272727273
+type of model: randomforest, encryption:True
+ training time: 120.32968997955322 [s]
+ train acc: 0.8274626865671642, test acc: 0.8152525252525252
+type of model: randomforest, encryption:True
+ training time: 123.35789513587952 [s]
+ train acc: 0.8317412935323383, test acc: 0.8190909090909091
+type of model: randomforest, encryption:True
+ training time: 118.8213279247284 [s]
+ train acc: 0.8288557213930349, test acc: 0.8102020202020203
+type of model: randomforest, encryption:True
+ training time: 119.4214985370636 [s]
+ train acc: 0.8252238805970149, test acc: 0.8164646464646464
+Credit - XGBoost
+type of model: xgboost, encryption:True
+ training time: 241.0911955833435 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+type of model: xgboost, encryption:True
+ training time: 241.0863482952118 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+type of model: xgboost, encryption:True
+ training time: 241.27799010276794 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+type of model: xgboost, encryption:True
+ training time: 251.99681901931763 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+type of model: xgboost, encryption:True
+ training time: 237.0938093662262 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+Credit - XGBoost
+type of model: xgboost, encryption:False
+ training time: 210.52541542053223 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+Terminated
+Terminated
+Terminated
+Terminated
+Credit - XGBoost
+type of model: xgboost, encryption:False
+ training time: 206.93804454803467 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+type of model: xgboost, encryption:False
+ training time: 211.09032821655273 [s]
+ train acc: 0.22119402985074627, test acc: 0.22121212121212122
+Terminated
+Terminated
+Terminated
+Credit - XGBoost
+type of model: xgboost, encryption:False
+ training time: 209.084046125412 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (y_pred_train[:, 1] >= threshold).astype(int)
+TypeError: list indices must be integers or slices, not tuple
+Terminated
+Terminated
+Terminated
+Terminated
+Credit - XGBoost
+type of model: xgboost, encryption:False
+ training time: 209.03064703941345 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (np.arrau(y_pred_train)[:, 1] >= threshold).astype(int)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/numpy/__init__.py", line 322, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'arrau'. Did you mean: 'array'?
+type of model: xgboost, encryption:False
+ training time: 208.78306484222412 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (np.arrau(y_pred_train)[:, 1] >= threshold).astype(int)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/numpy/__init__.py", line 322, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'arrau'. Did you mean: 'array'?
+type of model: xgboost, encryption:False
+ training time: 210.95164704322815 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (np.arrau(y_pred_train)[:, 1] >= threshold).astype(int)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/numpy/__init__.py", line 322, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'arrau'. Did you mean: 'array'?
+type of model: xgboost, encryption:False
+ training time: 219.56063985824585 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (np.arrau(y_pred_train)[:, 1] >= threshold).astype(int)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/numpy/__init__.py", line 322, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'arrau'. Did you mean: 'array'?
+type of model: xgboost, encryption:False
+ training time: 207.5948350429535 [s]
+Traceback (most recent call last):
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 148, in <module>
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
+  File "/home/hideaki/hideaki/VFLAIR/src/main_tree.py", line 28, in evaluate_performance
+    y_pred_binary = (np.arrau(y_pred_train)[:, 1] >= threshold).astype(int)
+  File "/home/hideaki/.local/lib/python3.10/site-packages/numpy/__init__.py", line 322, in __getattr__
+    raise AttributeError("module {!r} has no attribute "
+AttributeError: module 'numpy' has no attribute 'arrau'. Did you mean: 'array'?
+Credit - XGBoost
+type of model: xgboost, encryption:False
+ training time: 213.10543847084045 [s]
+ train acc: 0.8285572139303483, test acc: 0.8171717171717172
+type of model: xgboost, encryption:False
+ training time: 207.78730416297913 [s]
+ train acc: 0.8269651741293532, test acc: 0.8146464646464646
+type of model: xgboost, encryption:False
+ training time: 211.3176600933075 [s]
+ train acc: 0.8283084577114428, test acc: 0.8184848484848485
+type of model: xgboost, encryption:False
+ training time: 219.89484786987305 [s]
+ train acc: 0.82681592039801, test acc: 0.8112121212121212
+type of model: xgboost, encryption:False
+ training time: 206.5484700202942 [s]
+ train acc: 0.8258706467661692, test acc: 0.8190909090909091

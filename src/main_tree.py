@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pandas as pd
 from sklearn.datasets import load_breast_cancer
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -16,16 +16,29 @@ from load.LoadTreeConfigs import load_tree_configs
 import argparse
 
 
-def evaluate_performance(tvfl, X_train, y_train, X_test, y_test):
+def evaluate_performance(tvfl, X_train, y_train, X_test, y_test, grid=False):
     y_pred_train = tvfl.clf.predict_proba(X_train)
     y_pred_test = tvfl.clf.predict_proba(X_test)
-    if np.array(y_pred_train).shape[1] == 2:
-        train_auc = roc_auc_score(y_train, np.array(y_pred_train)[:, 1])
-        test_auc = roc_auc_score(y_test, np.array(y_pred_test)[:, 1])
+    if grid:
+        thresholds = np.arange(0, 1.01, 0.01)
+        best_threshold = 0
+        best_accuracy = 0
+    
+        for threshold in thresholds:
+            y_pred_binary = (np.array(y_pred_train)[:, 1] >= threshold).astype(int)
+            accuracy = accuracy_score(y_train, y_pred_binary)
+        
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_threshold = threshold
+
+        train_acc = best_accuracy
+        test_acc = accuracy_score(y_test, (np.array(y_pred_test)[:, 1] >= best_threshold).astype(int))
     else:
-        train_auc = roc_auc_score(y_train, np.array(y_pred_train), multi_class="ovo")
-        test_auc = roc_auc_score(y_test, np.array(y_pred_test), multi_class="ovo")        
-    print(f" train auc: {train_auc}, test auc: {test_auc}")
+        train_acc = accuracy_score(y_train, np.argmax(y_pred_train, axis=1))
+        test_acc = accuracy_score(y_test, np.argmax(y_pred_test, axis=1))
+
+    print(f" train acc: {train_acc}, test acc: {test_acc}")
 
 
 if __name__ == "__main__":
@@ -38,6 +51,10 @@ if __name__ == "__main__":
         default="basic_configs_tree",
         help="configure json file path",
     )
+    parser.add_argument(
+        "--grid",
+        action="store_true",
+            )
     args = parser.parse_args()
     args = load_tree_configs(args.configs, args)
 
@@ -128,5 +145,5 @@ if __name__ == "__main__":
     end = time.time()
 
     print(f" training time: {end - start} [s]")
-    evaluate_performance(tvfl, X_train, y_train, X_test, y_test)
+    evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
 
