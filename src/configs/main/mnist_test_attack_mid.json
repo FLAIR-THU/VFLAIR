@@ -68,7 +68,6 @@
             }
         },
         "4": {
-<<<<<<< HEAD
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
@@ -83,8 +82,6 @@
             }
         },
         "6": {
-=======
->>>>>>> 278c231d33c7dbbf6c74e74ac4512506b7d314e8
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
