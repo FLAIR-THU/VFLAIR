@@ -29,6 +29,7 @@ class MID_model(nn.Module):
         epsilon = torch.empty((x.size()[0],x.size()[1]*self.bottleneck_scale))
         torch.nn.init.normal(epsilon, mean=0, std=1) # epsilon is initialized
         epsilon = epsilon.to(x.device)
+        # print(f"[debug] in mid model, x.shape={x.shape}")
         # # x.size() = (batch_size, class_num)
         x_double = self.enlarge_layer(x)
         mu, std = x_double[:,:self.input_dim*self.bottleneck_scale], x_double[:,self.input_dim*self.bottleneck_scale:]

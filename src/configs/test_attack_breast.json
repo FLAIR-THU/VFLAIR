@@ -1,16 +1,10 @@
 {
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
     "epochs": 10,
     "lr": 0.003,
-=======
-    "epochs": 50,
-    "lr": 0.05,
->>>>>>> origin/main:src/configs/test_attack_breast.json
     "k": 2,
     "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "dataset":{
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "dataset_name": "nuswide",
         "num_classes": 5
     },
@@ -24,23 +18,6 @@
             "type": "MLP2",
             "input_dim": 634,
             "output_dim": 5
-=======
-        "dataset_name": "breast_cancer_diagnose",
-        "num_classes": 2
-    },
-    "model_list":{
-        "0": {
-            "type": "MLP2_128",
-            "input_dim": 15,
-            "output_dim": 2,
-            "path": ""
-        },
-        "1": {
-            "type": "MLP2_128",
-            "input_dim": 15,
-            "output_dim": 2,
-            "path": ""
->>>>>>> origin/main:src/configs/test_attack_breast.json
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -72,44 +49,19 @@
                 "epochs": 10000
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "4":{
-=======
-        "1":{
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
                 "epochs": 20,
                 "batch_size":16,
-=======
-                "epochs": 25,
-                "batch_size":4,
->>>>>>> origin/main:src/configs/test_attack_breast.json
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "5":{
             "name": "ActiveModelCompletion",
-=======
-        "2":{
-            "name": "ActiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":4,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
-            }
-        },
-        "3":{
-            "name": "DirectLabelScoring",
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
@@ -119,44 +71,27 @@
                 "n_labeled_per_class": 4
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "6": {
-=======
-        "4": {
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "7":{
-=======
-        "5":{
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 2
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "8": {
-=======
-        "6": {
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         },
         "9":{
-=======
-        }, 
-        "7":{
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -165,11 +100,7 @@
                 "batch_size": 32
             }
         },
-<<<<<<< HEAD:src/configs/main/mnist_test_attack_allattack.json
         "10":{
-=======
-        "8":{
->>>>>>> origin/main:src/configs/test_attack_breast.json
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
@@ -178,13 +109,13 @@
                 "batch_size": 32
             }
         },
-        "9":{
+        "11":{
             "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
-        "10":{
+        "12":{
             "name": "DirectionbasedScoring",
             "parameters": {
                 "party": [0]

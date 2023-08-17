@@ -3,6 +3,7 @@ sys.path.append(os.pardir)
 
 import torch
 import torch.nn.functional as F
+import torch.nn.init as init
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 import time
@@ -14,25 +15,10 @@ import itertools
 
 from evaluates.attacks.attacker import Attacker
 from models.global_models import *
-from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, label_to_one_hot
 from utils.pmc_functions import precision_recall, interleave_offsets, interleave, BottomModelPlus, SemiLoss, WeightEMA, AverageMeter, InferenceHead, accuracy
 from dataset.party_dataset import ActiveDataset
 
-import torch.nn.init as init
-
-
-def label_to_one_hot(target, num_classes=10):
-    # print('label_to_one_hot:', target, type(target))
-    try:
-        _ = target.size()[1]
-        # print("use target itself", target.size())
-        onehot_target = target.type(torch.float32)
-    except:
-        target = torch.unsqueeze(target, 1)
-        # print("use unsqueezed target", target.size())
-        onehot_target = torch.zeros(target.size(0), num_classes)
-        onehot_target.scatter_(1, target, 1)
-    return onehot_target
 
 class ModelCompletion(Attacker):
     def __init__(self, top_vfl, args):

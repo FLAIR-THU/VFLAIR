@@ -26,7 +26,11 @@
         "name": "GradPerturb",
         "parameters": {
             "party": [1],
+<<<<<<< HEAD
             "perturb_epsilon": 0.3,
+=======
+            "perturb_epsilon": 0.01,
+>>>>>>> 278c231d33c7dbbf6c74e74ac4512506b7d314e8
             "model_path": ""
         }
     },

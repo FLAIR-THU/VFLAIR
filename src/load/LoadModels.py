@@ -44,14 +44,14 @@ def load_basic_models(args,index):
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
-    if 'resnet' in current_model_type.lower():
+    if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower() or 'cnn' in current_model_type.lower() or 'alexnet' in current_model_type.lower():
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
         local_model = globals()[current_model_type](nfeat=current_input_dim,nhid=current_hidden_dim,nclass=current_output_dim, device=args.device, dropout=0.0, lr=args.main_lr)
     elif 'lstm' in current_model_type.lower(): 
         local_model = globals()[current_model_type](current_vocab_size, current_output_dim)
     else:
-        local_model = globals()[current_model_type](current_input_dim,current_output_dim)
+        local_model = globals()[current_model_type](current_input_dim, current_output_dim)
     local_model = local_model.to(args.device)
     local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
     # print(f"use SGD for local optimizer for PMC checking")
@@ -92,8 +92,8 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     # some defense need model, add here
     if args.apply_defense == True:
         current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
-        std_shift_hyperparameter = 5 if ('nuswide' == args.dataset.lower() or 'cifar' in inargs.dataset.lower()) else 0.5 
-        print(f"in load defense model, current_bottleneck_scale={current_bottleneck_scale}")
+        # std_shift_hyperparameter = 5 if (('nuswide' == args.dataset.lower() and args.num_classes==5) or 'cifar' in args.dataset.lower()) else 0.5 
+        std_shift_hyperparameter = 5 if ('nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5 
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [args.k-1]
@@ -115,9 +115,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     # add args.k-1 MID model at active party with global_model
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model_list = [MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                        mid_model_list = [MID_model_small(args.model_list[str(_ik)]['output_dim'],args.model_list[str(_ik)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k-1)]
                     else:
-                        mid_model_list = [MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ in range(args.k-1)]
+                        mid_model_list = [MID_model(args.model_list[str(_ik)]['output_dim'],args.model_list[str(_ik)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k-1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model,mid_model_list)
                     global_model = global_model.to(args.device)
@@ -143,9 +143,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print('lambda for passive party local mid model:',args.defense_configs['lambda'])
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model = MID_model_small(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'],args.model_list[str(index)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     else:
-                        mid_model = MID_model(args.num_classes,args.num_classes,args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model(args.model_list[str(index)]['output_dim'],args.model_list[str(index)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model,mid_model)
                     local_model = local_model.to(args.device)
@@ -165,7 +165,35 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                             [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                             {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
 
-        
+        if 'adversarial' in args.defense_name.lower(): # for adversarial training
+            # add adversarial model for local model
+            if not 'party' in args.defense_configs:
+                args.defense_configs['party'] = [0]
+                print('[warning] default passive party selected for applying adversarial training')
+            if not ('lr' in args.defense_configs):
+                adversarial_lr = args.main_lr  
+                print('[warning] default hyper-parameter mid_lr selected for applying MID')
+            else :
+                adversarial_lr = args.defense_configs['lr']
+            if not ('model' in args.defense_configs):
+                model_name = 'Adversarial_MLP2'
+            else:
+                model_name = args.defense_configs['model']
+            print(model_name)
+            if index in args.defense_configs['party']:
+                # assert args.parties[index].train_attribute != None, "[Error] no attribute for adversarial"
+                # add adversarial model to the the defense party=index
+                adversarial_input_dim = args.model_list[str(index)]['output_dim']
+                adversarial_output_dim = args.num_attributes
+                # print(f"[debug] in load defense model, adversarial_input_dim={adversarial_input_dim}, adversarial_output_dim={adversarial_output_dim}")
+                adversarial_model = globals()[model_name](adversarial_input_dim, adversarial_output_dim)
+                local_model = Local_Adversarial_combined_model(local_model,adversarial_model)
+                local_model = local_model.to(args.device)
+                # update optimizer
+                local_model_optimizer = torch.optim.Adam(
+                            [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
+                            {'params': local_model.adversarial_model.parameters(), 'lr': adversarial_lr}])
+            
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
             # print("CAE in defense_name,", args.defense_name)
             if index == args.k-1:

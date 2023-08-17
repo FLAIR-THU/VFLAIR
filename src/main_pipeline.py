@@ -19,6 +19,7 @@ from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties
 from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFLwithBackdoor import *
+from evaluates.MainTaskVFLwithNoisySample import *
 from utils.basic_functions import append_exp_res
 import warnings
 warnings.filterwarnings("ignore")
@@ -27,6 +28,7 @@ TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB'] # main_acc  backdoor_acc
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
 LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
 'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
+ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
 
 def set_seed(seed=0):
@@ -209,6 +211,36 @@ def evaluate_label_inference(args):
                 append_exp_res(args.exp_res_path, exp_result)
 
 
+def evaluate_attribute_inference(args):
+    for index in args.attribute_inference_index:
+        set_seed(args.current_seed)
+        args = load_attack_configs(args.configs, args, index)
+        # args = load_parties(args)
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+        if args.attack_name == 'AttributeInference':
+            args.need_auxiliary = 1
+            args = load_parties(args) # include load dataset with auxiliary data
+            # actual train = train
+
+            vfl = MainTaskVFL(args)
+            if args.dataset not in ['cora']:
+                main_acc = vfl.train()
+            else:
+                main_acc = vfl.train_graph()
+            # vfl = args.basic_vfl
+            # main_acc = args.main_acc_noattack
+
+            attack_metric = vfl.evaluate_attack()
+            attack_metric_name = 'attribute_inference_rate'
+
+            # Save record for different defense method
+            exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+                (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+            print(exp_result)
+            append_exp_res(args.exp_res_path, exp_result)
+
+
 def evaluate_untargeted_backdoor(args):
     for index in args.untargeted_backdoor_index:
         torch.cuda.empty_cache()
@@ -219,7 +251,10 @@ def evaluate_untargeted_backdoor(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        vfl = MainTaskVFL(args)
+        if args.apply_ns:
+            vfl = MainTaskVFLwithNoisySample(args)
+        else:
+            vfl = MainTaskVFL(args)
         if args.dataset not in ['cora']:
             main_acc, noise_main_acc = vfl.train()
         else:
@@ -299,7 +334,9 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    for seed in range(97,102): # test 5 times 
+    # for seed in range(97,102): # test 5 times 
+    # for seed in range(12345,12345+5): # test 5 times 
+    for seed in [12345,97,98,99,101]: # test 5 times 
     # for seed in range(101,102): # test 5 times 
     # for seed in range(60,61): # test 5 times 
         args.current_seed = seed
@@ -344,6 +381,7 @@ if __name__ == '__main__':
         print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
         print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
         print('label_inference:',args.label_inference_list,args.label_inference_index)
+        print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
         print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
         # Save record for different defense method
         args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
@@ -363,12 +401,14 @@ if __name__ == '__main__':
         args.main_acc_noattack = None
 
         args = load_attack_configs(args.configs, args, -1)
-        args = load_parties(args)
-        
-        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        # args = load_parties(args)
+        # args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)
+
+        if args.attribute_inference_list != []:
+            evaluate_attribute_inference(args)
         
         if args.feature_inference_list != []:
             evaluate_feature_inference(args)

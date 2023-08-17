@@ -60,12 +60,26 @@
             }
         },
         "4": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "5":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 2
+            }
+        },
+        "6": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
-        "5":{
+        "7":{
             "name": "ResSFL",
             "parameters": {
                 "party": [1],
@@ -74,7 +88,7 @@
                 "batch_size": 32
             }
         },
-        "6":{
+        "8":{
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],

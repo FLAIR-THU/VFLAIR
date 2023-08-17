@@ -51,6 +51,15 @@
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
             }
+<<<<<<< HEAD
+=======
+        },
+        "4": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+>>>>>>> 278c231d33c7dbbf6c74e74ac4512506b7d314e8
         }
     }
 }

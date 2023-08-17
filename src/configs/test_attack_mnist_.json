@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 2,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -25,20 +25,13 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [1],
-            "lr": 0.001,
-            "std_shift_hyperparameter": 3,
-            "lambda": 1.0
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
+            "name": "NoisySample",
             "parameters": {
-                "party": [0]
+                "party": [0],
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }
