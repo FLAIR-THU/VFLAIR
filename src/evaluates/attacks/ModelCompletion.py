@@ -319,9 +319,6 @@ class ModelCompletion(Attacker):
 
             model = create_model(copy.deepcopy(bottom_model), device=self.device, ema=False, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
             ema_model = create_model(copy.deepcopy(bottom_model), device=self.device, ema=True, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
-           
-            # model = model.to(self.device) # dummy top model
-            # ema_model = ema_model.to(self.device)
 
             cudnn.benchmark = True
 
@@ -348,7 +345,8 @@ class ModelCompletion(Attacker):
                 
                 print("---MC: Label inference on test dataset:")
                 _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=self.num_classes)
-                best_acc = max(test_acc, best_acc)
+                if epoch > (self.epochs//4):
+                    best_acc = max(test_acc, best_acc)
 
             print(f"MC, if self.args.apply_defense={self.args.apply_defense}")
             print('MC Best top 1 accuracy:',best_acc)

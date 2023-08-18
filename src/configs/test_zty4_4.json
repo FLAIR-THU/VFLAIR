@@ -22,6 +22,14 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [1],
+            "lr": 0.001,
+            "lambda": 1e-6
+        }
+    },
     "attack_list": {
         "0":{
             "name": "PassiveModelCompletion",
@@ -43,6 +51,40 @@
                 "batch_size":16,
                 "lr": 2e-3,
                 "n_labeled_per_class": 4
+            }
+        },
+        "2":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "3":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "4": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "5":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 0.01
+            }
+        },
+        "6": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
             }
         }
     }

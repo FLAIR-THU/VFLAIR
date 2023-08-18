@@ -336,7 +336,7 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in range(12345,12345+5): # test 5 times 
-    for seed in [12345,97,98,99,101]: # test 5 times 
+    for seed in [97,98,99,100,101,0,1,2,3,4,5]: # test 5 times 
     # for seed in range(101,102): # test 5 times 
     # for seed in range(60,61): # test 5 times 
         args.current_seed = seed
