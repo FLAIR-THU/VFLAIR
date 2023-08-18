@@ -401,8 +401,8 @@ if __name__ == '__main__':
         args.main_acc_noattack = None
 
         args = load_attack_configs(args.configs, args, -1)
-        # args = load_parties(args)
-        # args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        args = load_parties(args)
+        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)

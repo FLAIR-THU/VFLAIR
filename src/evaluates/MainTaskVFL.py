@@ -419,7 +419,7 @@ class MainTaskVFL(object):
                     postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
                     postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
                     # tqdm_train.set_postfix(postfix)
-                    print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_acc:{:.2f}'.format(
+                    print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_auc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc, self.test_auc))
                     
                     self.final_epoch = i_epoch

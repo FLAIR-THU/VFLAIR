@@ -27,7 +27,7 @@
         "parameters": {
             "party": [1],
             "lr": 0.003,
-            "lambda": 0.1
+            "lambda": 0.0
         }
     }
 }
