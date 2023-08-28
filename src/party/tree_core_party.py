@@ -54,7 +54,8 @@ class Party:
             try:
                 results.append(self.sk.decrypt(e))
             except Exception as e:
-                print(type(e), e.args, e.message, str(e))
+                results.append(0)
+                print(type(e), str(e))
                 continue
         return results
 
