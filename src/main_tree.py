@@ -23,17 +23,19 @@ def evaluate_performance(tvfl, X_train, y_train, X_test, y_test, grid=False):
         thresholds = np.arange(0, 1.01, 0.01)
         best_threshold = 0
         best_accuracy = 0
-    
+
         for threshold in thresholds:
             y_pred_binary = (np.array(y_pred_train)[:, 1] >= threshold).astype(int)
             accuracy = accuracy_score(y_train, y_pred_binary)
-        
+
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 best_threshold = threshold
 
         train_acc = best_accuracy
-        test_acc = accuracy_score(y_test, (np.array(y_pred_test)[:, 1] >= best_threshold).astype(int))
+        test_acc = accuracy_score(
+            y_test, (np.array(y_pred_test)[:, 1] >= best_threshold).astype(int)
+        )
     else:
         train_acc = accuracy_score(y_train, np.argmax(y_pred_train, axis=1))
         test_acc = accuracy_score(y_test, np.argmax(y_pred_test, axis=1))
@@ -54,24 +56,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--grid",
         action="store_true",
-            )
+    )
     args = parser.parse_args()
     args = load_tree_configs(args.configs, args)
 
     random.seed(args.seed)
 
-    """
-    data = load_breast_cancer()
-    X = data.data
-    y = data.target
-
-    )
-    """
-
-
     if args.dataset == "credit":
-        df = pd.read_csv(os.path.join(
-            "tabledata", "UCI_Credit_Card.csv"))
+        df = pd.read_csv(os.path.join("tabledata", "UCI_Credit_Card.csv"))
 
         X = df[
             [
@@ -105,17 +97,17 @@ if __name__ == "__main__":
             range(int(X.shape[1] / 2)),
             range(int(X.shape[1] / 2), X.shape[1]),
         ]
-        
+
     elif args.dataset == "nursery":
-        df = pd.read_csv(
-            os.path.join("tabledata", "nursery.data"), header=None
-        )
+        df = pd.read_csv(os.path.join("tabledata", "nursery.data"), header=None)
         df[8] = LabelEncoder().fit_transform(df[8].values)
         X_d = df.drop(8, axis=1)
         X_a = pd.get_dummies(
-            X_d[X_d.columns[:int(len(X_d.columns) / 2)]], drop_first=True, dtype=int)
+            X_d[X_d.columns[: int(len(X_d.columns) / 2)]], drop_first=True, dtype=int
+        )
         X_p = pd.get_dummies(
-            X_d[X_d.columns[int(len(X_d.columns) / 2):]], drop_first=True, dtype=int)
+            X_d[X_d.columns[int(len(X_d.columns) / 2) :]], drop_first=True, dtype=int
+        )
         featureid_lists = [
             list(range(X_a.shape[1])),
             list(range(X_a.shape[1], X_a.shape[1] + X_p.shape[1])),
@@ -123,8 +115,14 @@ if __name__ == "__main__":
         X = pd.concat([X_a, X_p], axis=1).values
         y = df[8].values
 
+    else:
+        data = load_breast_cancer()
+        X = data.data
+        y = data.target
+
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=args.seed, stratify=y)
+        X, y, test_size=0.33, random_state=args.seed, stratify=y
+    )
 
     datasets = [
         X_train[:, featureid_lists[0]],
@@ -134,8 +132,7 @@ if __name__ == "__main__":
     args.y = y_train
     args.featureid_lists = featureid_lists
 
-    print(
-        f"type of model: {args.model_type}, encryption:{args.use_encryption}")
+    print(f"type of model: {args.model_type}, encryption:{args.use_encryption}")
     args = load_tree_parties(args)
 
     tvfl = MainTaskTVFL(args)
@@ -146,4 +143,3 @@ if __name__ == "__main__":
 
     print(f" training time: {end - start} [s]")
     evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
-
