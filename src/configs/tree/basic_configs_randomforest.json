@@ -9,6 +9,6 @@
     "use_missing_value": false,
     "use_encryption": false,
     "key_length": 128,
-    "advanced_params":{}
+    "advanced_params":{"n_job":1}
 }
 
