@@ -22,6 +22,7 @@ def load_tree_configs(config_file_name, args):
         config_dict["subsample_cols"] if ("subsample_cols" in config_dict) else 0.8
     )
     args.max_bin = config_dict["max_bin"] if ("max_bin" in config_dict) else 4
+    args.advanced_params = config_dict["advanced_params"] if ("advanced_params" in config_dict) else {}
     args.key_length = (
         config_dict["key_length"] if ("key_length" in config_dict) else 128
     )
