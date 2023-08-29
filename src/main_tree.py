@@ -119,6 +119,10 @@ if __name__ == "__main__":
         data = load_breast_cancer()
         X = data.data
         y = data.target
+        featureid_lists = [
+            range(int(X.shape[1] / 2)),
+            range(int(X.shape[1] / 2), X.shape[1]),
+        ]
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.33, random_state=args.seed, stratify=y
