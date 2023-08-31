@@ -253,8 +253,11 @@ class GenerativeRegressionNetwork(Attacker):
                     ####### DP Defense On FR ########
                     if self.args.apply_dp == True:
                         if 'laplace' in self.args.defense_name.casefold():
+                            # print("before",pred_b.shape,pred_b)
                             pred_b = LaplaceDP_for_pred(self.args, [pred_b])
                             dummy_pred_b = LaplaceDP_for_pred(self.args, [dummy_pred_b])
+                            # print("after",pred_b.shape,pred_b)
+                            # assert 1>2
                         elif 'gaussian' in self.args.defense_name.casefold():
                             pred_b = GaussianDP_for_pred(self.args, [pred_b])
                             dummy_pred_b = GaussianDP_for_pred(self.args, [dummy_pred_b])
@@ -270,19 +273,17 @@ class GenerativeRegressionNetwork(Attacker):
                     unknown_var_loss = 0.0
                     for i in range(generated_data_b.size(0)):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
-                    # print(unknown_var_loss, ((pred.detach() - ground_truth_pred.detach())**2).sum())
-                    # print((pred.detach() - ground_truth_pred.detach())[-5:])
                     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
                     + self.unknownVarLambda * unknown_var_loss * 0.25)
                     train_mse = criterion(generated_data_b, batch_data_b)
                     loss.backward()
 
-                    # # check if gradient is not None
-                    mark = 0
-                    for name, param in self.netG.named_parameters():
-                        if mark == 0:
-                            # print(name, param.grad)
-                            mark = mark + 1
+                    # # # check if gradient is not None
+                    # mark = 0
+                    # for name, param in self.netG.named_parameters():
+                    #     if mark == 0:
+                    #         # print(name, param.grad)
+                    #         mark = mark + 1
                     self.optimizerG.step() 
 
 
@@ -299,9 +300,6 @@ class GenerativeRegressionNetwork(Attacker):
                         else:
                             generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))
                         
-                        # mse, psnr = self.MSE_PSNR(test_data_b, generated_data_b)
-                        # rand_mse,rand_pnsr = self.MSE_PSNR(test_data_b, noise_data_b)
-                        # mse_reduction = rand_mse-mse
 
                         origin_data = test_data_b.reshape(generated_data_b.size()).to(self.device)
                         noise_data = noise_data_b.reshape(generated_data_b.size()).to(self.device)
@@ -314,6 +312,7 @@ class GenerativeRegressionNetwork(Attacker):
                         i_epoch, loss.item(), train_mse, mse))
             
             # mark = 0
+            # print('Final Model')
             # for name, param in self.netG.named_parameters():
             #     if mark == 0:
             #         print(name, param)

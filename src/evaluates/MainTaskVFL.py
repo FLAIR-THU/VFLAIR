@@ -28,7 +28,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
 
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'breast_cancer_diagnose':0.88,'adult_income':0.84}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL(object):
@@ -72,6 +72,8 @@ class MainTaskVFL(object):
         self.loss = None
         self.train_acc = None
         self.flag = 1
+        self.stopping_iter = 0
+
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
@@ -91,9 +93,10 @@ class MainTaskVFL(object):
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
                 if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
+                    # print('before:',pred_detach.shape,pred_detach)
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                # else:
-                #     print(self.args.attack_type)
+                    # print('after:',pred_detach.shape,pred_detach)
+                    # assert 1>2
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
@@ -244,6 +247,9 @@ class MainTaskVFL(object):
         early_stop_count = 0
         LR_passive_list = []
         LR_active_list = []
+
+        communication = 0
+        flag = 0
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
@@ -275,7 +281,11 @@ class MainTaskVFL(object):
                 #     self.middle_epoch_state = self.save_state(True)
 
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
-                #  self.gt_one_hot_label
+
+                communication = communication + 1
+                if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+                        self.stopping_iter = communication
+                        flag = 1
 
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
@@ -431,7 +441,8 @@ class MainTaskVFL(object):
         if self.args.apply_mf==True:
             return self.test_acc,self.noise_test_acc
 
-        return self.test_acc
+        return self.test_acc,self.stopping_iter
+
 
 
 

@@ -205,13 +205,17 @@ def LaplaceDP(args, original_object):
 
 
 def LaplaceDP_for_pred(args, original_object):
+    # print('Laplace DP for pred')
+
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
-    
+
+    # print('dp_strength:',dp_strength)
+
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = 0.2
         with torch.no_grad():
             scale = dp_strength
             norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
@@ -226,12 +230,14 @@ def LaplaceDP_for_pred(args, original_object):
 
 
 def GaussianDP(args, original_object):
+
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
+
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = 0.2#0.2  # 1e9
         new_object = []
         with torch.no_grad():
             scale = dp_strength
@@ -251,9 +257,13 @@ def GaussianDP(args, original_object):
 
 
 def GaussianDP_for_pred(args, original_object):
+    # print('Gaussian DP for pred')
+
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
+    # print('dp_strength:',dp_strength)
+
     if dp_strength > 0.0:
         location = 0.0
         threshold = 0.2  # 1e9
