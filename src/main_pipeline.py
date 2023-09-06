@@ -239,6 +239,8 @@ def evaluate_untargeted_backdoor(args):
     for index in args.untargeted_backdoor_index:
         torch.cuda.empty_cache()
         set_seed(args.current_seed)
+        args.train_poison_list = None
+        args.test_poison_list = None
         args = load_attack_configs(args.configs, args, index)
         args = load_parties(args)
         

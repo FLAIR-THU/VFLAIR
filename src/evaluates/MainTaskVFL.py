@@ -93,10 +93,9 @@ class MainTaskVFL(object):
             if self.args.apply_defense == True and self.args.apply_dp == True :
                 # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
                 if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                    # print('before:',pred_detach.shape,pred_detach)
-                    pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                    # print('after:',pred_detach.shape,pred_detach)
-                    # assert 1>2
+                    pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
+                # else:
+                #     print(self.args.attack_type)
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
@@ -232,15 +231,6 @@ class MainTaskVFL(object):
         for ik in range(self.k):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
 
-        # ####### missing feature attack ######
-        # load attack features
-        if self.args.apply_mf == True:
-            assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
-            assert 'party' in self.args.attack_configs, 'need parameter: party'
-            attacker_id = self.args.attack_configs['party']
-            missing_rate = self.args.attack_configs['missing_rate']
-        # ####### missing feature attack ######
-
         test_acc = 0.0
         # Early Stop
         last_loss = 1000000
@@ -332,6 +322,7 @@ class MainTaskVFL(object):
         
                         pred_list = []
                         noise_pred_list = [] # for ntb attack
+                        missing_list_total = []
                         for ik in range(self.k):
                             _local_pred = self.parties[ik].local_model(parties_data[ik][0])
                             
@@ -340,11 +331,12 @@ class MainTaskVFL(object):
                                 assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
                                 assert 'party' in self.args.attack_configs, 'need parameter: party'
                                 missing_rate = self.args.attack_configs['missing_rate']
-                                missing_list = []
-                                missing_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*missing_rate)))
                                 
-                                if (ik in self.args.attack_configs['party']) :
+                                if (ik in self.args.attack_configs['party']):
+                                    missing_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*missing_rate)))
+                                    missing_list_total = missing_list_total + missing_list
                                     _local_pred[missing_list] = torch.zeros(_local_pred[0].size()).to(self.args.device)
+                                    # print("[debug] in main VFL:", _local_pred[missing_list])
                                 
                                 pred_list.append(_local_pred)
                                 noise_pred_list.append(_local_pred[missing_list])
@@ -390,20 +382,24 @@ class MainTaskVFL(object):
                         test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
 
                         # Evaluation on noised data in NTB
-                        if self.args.apply_mf == True : 
-                            noise_gt_val_one_hot_label = gt_val_one_hot_label[missing_list]
+                        if self.args.apply_mf == True: 
+                            missing_list = list(set(missing_list_total))
+                            noise_sample_cnt += len(missing_list)
+                            noise_suc_cnt += torch.sum(predict_label[missing_list] == actual_label[missing_list]).item()
+                            # print(f"this epoch, noise sample count is {len(missing_list)}, correct noise sample count is {torch.sum(predict_label[missing_list] == actual_label[missing_list]).item()}")
+                            # noise_gt_val_one_hot_label = gt_val_one_hot_label[missing_list]
 
-                            noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
-                            noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
-                            if self.args.apply_cae == True:
-                                noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
-                                noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
-                            else:
-                                noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
+                            # noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
+                            # noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
+                            # if self.args.apply_cae == True:
+                            #     noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                            #     noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
+                            # else:
+                            #     noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
 
-                            noise_actual_label = torch.argmax(noise_gt_val_one_hot_label, dim=-1)
-                            noise_sample_cnt += noise_predict_label.shape[0]
-                            noise_suc_cnt += torch.sum(noise_predict_label == noise_actual_label).item()
+                            # noise_actual_label = torch.argmax(noise_gt_val_one_hot_label, dim=-1)
+                            # noise_sample_cnt += noise_predict_label.shape[0]
+                            # noise_suc_cnt += torch.sum(noise_predict_label == noise_actual_label).item()
                         # elif self.args.apply_ns == True:
                         #     noise_gt_val_one_hot_label = gt_val_one_hot_label[noisy_list]
 
@@ -428,9 +424,13 @@ class MainTaskVFL(object):
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
                     postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
                     postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+                    if self.noise_test_acc != None:
+                        postfix['noisy_sample_acc'] = '{:2f}%'.format(self.noise_test_acc * 100)
                     # tqdm_train.set_postfix(postfix)
                     print('Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_auc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc, self.test_auc))
+                    if self.noise_test_acc != None:
+                        print('noisy_sample_acc:{:.2f}'.format(self.noise_test_acc))
                     
                     self.final_epoch = i_epoch
         
@@ -439,7 +439,7 @@ class MainTaskVFL(object):
         self.final_state.update(self.save_party_data()) 
         
         if self.args.apply_mf==True:
-            return self.test_acc,self.noise_test_acc
+            return self.test_acc, self.noise_test_acc
 
         return self.test_acc,self.stopping_iter
 
@@ -530,7 +530,7 @@ class MainTaskVFL(object):
                 self.final_epoch = i_epoch
                 
         ######## Noised Sample Acc (For Untargeted Backdoor) ########
-        if args.apply_mf == True:
+        if self.args.apply_mf == True:
             suc_cnt = 0
             sample_cnt = 0
             with torch.no_grad():

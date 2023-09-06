@@ -1,0 +1,1429 @@
+================= iter seed  97  =================
+===== No Defense ======
+running on cuda4
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: None
+Defense_Config: None
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['MissingFeature'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/None_None,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+======= Test Attack 0 :  MissingFeature  =======
+attack configs: {'party': [0], 'missing_rate': 0.25}
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 0% 	 train_loss:0.21 train_acc:0.94 test_acc:0.91 test_auc:1.00
+noisy_sample_acc:0.82
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 1% 	 train_loss:0.13 train_acc:0.96 test_acc:0.92 test_auc:1.00
+noisy_sample_acc:0.82
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 2% 	 train_loss:0.15 train_acc:0.95 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 3% 	 train_loss:0.12 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 4% 	 train_loss:0.12 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 5% 	 train_loss:0.12 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 6% 	 train_loss:0.10 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 7% 	 train_loss:0.07 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 8% 	 train_loss:0.09 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 9% 	 train_loss:0.06 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 10% 	 train_loss:0.08 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 11% 	 train_loss:0.08 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 12% 	 train_loss:0.09 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 13% 	 train_loss:0.05 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 14% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 15% 	 train_loss:0.08 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 16% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 17% 	 train_loss:0.10 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 18% 	 train_loss:0.07 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 19% 	 train_loss:0.06 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 20% 	 train_loss:0.07 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 21% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 22% 	 train_loss:0.07 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 23% 	 train_loss:0.06 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 24% 	 train_loss:0.06 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 25% 	 train_loss:0.07 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 26% 	 train_loss:0.05 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 27% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 28% 	 train_loss:0.04 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 29% 	 train_loss:0.05 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|missing_rate|main_task_acc|acc_loss,2|1024|0.050000|10|1|0|30|MissingFeature|0.25|0.9488|0.06640000000000001
+================= iter seed  98  =================
+===== No Defense ======
+running on cuda4
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: None
+Defense_Config: None
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['MissingFeature'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/None_None,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+======= Test Attack 0 :  MissingFeature  =======
+attack configs: {'party': [0], 'missing_rate': 0.25}
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 0% 	 train_loss:0.23 train_acc:0.92 test_acc:0.92 test_auc:1.00
+noisy_sample_acc:0.83
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 1% 	 train_loss:0.20 train_acc:0.93 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.84
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 2% 	 train_loss:0.17 train_acc:0.95 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.84
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 3% 	 train_loss:0.15 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 4% 	 train_loss:0.18 train_acc:0.95 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 5% 	 train_loss:0.16 train_acc:0.95 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 6% 	 train_loss:0.13 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 7% 	 train_loss:0.13 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 8% 	 train_loss:0.11 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 9% 	 train_loss:0.13 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 10% 	 train_loss:0.11 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 11% 	 train_loss:0.11 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 12% 	 train_loss:0.11 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 13% 	 train_loss:0.12 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 14% 	 train_loss:0.10 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 15% 	 train_loss:0.11 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 16% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 17% 	 train_loss:0.07 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 18% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 19% 	 train_loss:0.10 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 20% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 21% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 22% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 23% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 24% 	 train_loss:0.08 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 25% 	 train_loss:0.07 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 26% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 27% 	 train_loss:0.11 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 28% 	 train_loss:0.08 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 29% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|missing_rate|main_task_acc|acc_loss,2|1024|0.050000|10|1|0|30|MissingFeature|0.25|0.9477|0.0685
+================= iter seed  99  =================
+===== No Defense ======
+running on cuda4
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: None
+Defense_Config: None
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['MissingFeature'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/None_None,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+======= Test Attack 0 :  MissingFeature  =======
+attack configs: {'party': [0], 'missing_rate': 0.25}
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 0% 	 train_loss:0.25 train_acc:0.93 test_acc:0.91 test_auc:0.99
+noisy_sample_acc:0.81
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 1% 	 train_loss:0.17 train_acc:0.95 test_acc:0.92 test_auc:1.00
+noisy_sample_acc:0.82
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 2% 	 train_loss:0.18 train_acc:0.94 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 3% 	 train_loss:0.16 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 4% 	 train_loss:0.11 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 5% 	 train_loss:0.14 train_acc:0.95 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 6% 	 train_loss:0.09 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 7% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 8% 	 train_loss:0.11 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 9% 	 train_loss:0.10 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 10% 	 train_loss:0.07 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 11% 	 train_loss:0.11 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 12% 	 train_loss:0.07 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 13% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 14% 	 train_loss:0.08 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 15% 	 train_loss:0.07 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 16% 	 train_loss:0.08 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 17% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 18% 	 train_loss:0.10 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 19% 	 train_loss:0.07 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 20% 	 train_loss:0.08 train_acc:0.98 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 21% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 22% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 23% 	 train_loss:0.06 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 24% 	 train_loss:0.09 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 25% 	 train_loss:0.08 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 26% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 27% 	 train_loss:0.07 train_acc:0.98 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.88
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 28% 	 train_loss:0.09 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 29% 	 train_loss:0.08 train_acc:0.97 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|missing_rate|main_task_acc|acc_loss,2|1024|0.050000|10|1|0|30|MissingFeature|0.25|0.9469|0.07529999999999992
+================= iter seed  100  =================
+===== No Defense ======
+running on cuda4
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: None
+Defense_Config: None
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['MissingFeature'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/None_None,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+load_dataset_per_party  args.need_auxiliary =  0
+current_model_type=MLP2
+Load Defense models
+======= Test Attack 0 :  MissingFeature  =======
+attack configs: {'party': [0], 'missing_rate': 0.25}
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 0% 	 train_loss:0.24 train_acc:0.94 test_acc:0.91 test_auc:1.00
+noisy_sample_acc:0.81
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 1% 	 train_loss:0.21 train_acc:0.93 test_acc:0.92 test_auc:1.00
+noisy_sample_acc:0.84
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 2% 	 train_loss:0.19 train_acc:0.95 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.84
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 3% 	 train_loss:0.17 train_acc:0.96 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 4% 	 train_loss:0.18 train_acc:0.95 test_acc:0.93 test_auc:1.00
+noisy_sample_acc:0.85
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 5% 	 train_loss:0.14 train_acc:0.95 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 6% 	 train_loss:0.12 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 7% 	 train_loss:0.12 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 8% 	 train_loss:0.12 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 9% 	 train_loss:0.11 train_acc:0.96 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.86
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 10% 	 train_loss:0.11 train_acc:0.97 test_acc:0.94 test_auc:1.00
+noisy_sample_acc:0.87
+validate and test
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 256, while total sample count is: 1024 with missing rate 0.25
+[debug] missing_list has lenght: 196, while total sample count is: 784 with missing rate 0.25
+Epoch 11% 	 train_loss:0.12 train_acc:0.96 test_acc:0.95 test_auc:1.00
+noisy_sample_acc:0.87

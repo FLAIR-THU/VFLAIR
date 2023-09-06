@@ -1,0 +1,92 @@
+{
+    "epochs": 10,
+    "lr": 0.003,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "nuswide",
+        "num_classes": 5
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 1000,
+            "output_dim": 5
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 634,
+            "output_dim": 5
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [1],
+            "lr": 0.001,
+            "lambda": 1e-6
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "PassiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "1":{
+            "name": "ActiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "2":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "3":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "4": {
+            "name": "MissingFeature",
+            "parameters": {
+                "party": [0],
+                "missing_rate": 0.25
+            }
+        },
+        "5":{
+            "name": "NoisySample",
+            "parameters": {
+                "party": [0],
+                "noise_lambda": 2.0,
+                "noise_rate": 0.01
+            }
+        },
+        "6": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}
