@@ -4,6 +4,7 @@
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
+    "BCD_type": "p",
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -24,23 +25,14 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "party": [0],
-            "dp_strength": 0.1
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "GenerativeRegressionNetwork",
+            "name": "NoisySample",
             "parameters": {
-                "party": [1],
-                "lr": 0.0001,
-                "epochs": 5,
-                "batch_size": 1024
+                "party": [0],
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }
-    
 }
