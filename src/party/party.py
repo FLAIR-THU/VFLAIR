@@ -92,20 +92,16 @@ class Party(object):
 
         # ####### Missing Feature #######
         if (self.args.apply_mf == True):
-            self.local_pred = self.local_model(self.local_batch_data)
             assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
             assert 'party' in self.args.attack_configs, 'need parameter: party'
-            attacker_id = self.args.attack_configs['party']
             missing_rate = self.args.attack_configs['missing_rate']
             
-            if (self.index in attacker_id):
-                missing_list = []
+            if (self.index in self.args.attack_configs['party']):
                 missing_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*missing_rate)))
-                # print("missing list:", missing_list)
+                # print(f"[debug] in party: party{self.index}, missing list:", missing_list, len(missing_list))
                 self.local_pred[missing_list] = torch.zeros(self.local_pred[missing_list].size()).to(self.args.device)
         # ####### Missing Feature #######
-        else:
-            self.local_pred = self.local_model(self.local_batch_data)
+
         self.local_pred_clone = self.local_pred.detach().clone()
         return self.local_pred, self.local_pred_clone
 

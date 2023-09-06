@@ -518,8 +518,8 @@ def data_poison(args,images, poison_list, k, dataset):
         assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
         assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
         assert 'party' in args.attack_configs, 'need parameter: party'
-        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
-        scale = args.attack_configs['noise_lambda']
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.01
+        scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
         images[poison_list] = noisy_sample(images[poison_list],scale)
     else:
         if 'cifar' in dataset.casefold():

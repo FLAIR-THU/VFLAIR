@@ -27,7 +27,7 @@
         "parameters": {
             "party": [1],
             "lr": 0.001,
-            "lambda": 1.0
+            "lambda": 0.01
         }
     },
     "attack_list": {

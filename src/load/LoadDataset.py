@@ -179,7 +179,6 @@ def dataset_partition(args, index, dst, half_dim):
 
 def load_dataset_per_party(args, index):
     print('load_dataset_per_party  args.need_auxiliary = ',args.need_auxiliary)
-    args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
 
     half_dim = -1
@@ -670,7 +669,6 @@ def prepare_poison_target_list(args):
     args.target_label = random.randint(0, args.num_classes-1)
 
 def load_dataset_per_party_backdoor(args, index):
-    args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
 
     half_dim = -1
@@ -884,7 +882,6 @@ def load_dataset_per_party_backdoor(args, index):
 
 def load_dataset_per_party_noisysample(args, index):
     print('load_dataset_per_party_noisysample')
-    args.num_classes = args.num_classes
     args.classes = [None] * args.num_classes
 
     half_dim = -1
@@ -923,12 +920,18 @@ def load_dataset_per_party_noisysample(args, index):
         assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
         assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
         assert 'party' in args.attack_configs, 'need parameter: party'
-        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
-        scale = args.attack_configs['noise_lambda']
-       
-        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
-        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.01
+        scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
+        if not index in args.attack_configs['party']:
+            scale = 0.0
         
+        if args.train_poison_list == None:
+            assert args.test_poison_list == None , "[[inner error]]"
+            args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        else:
+            assert args.test_poison_list != None , "[[inner error]]"
+
         train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
        
@@ -955,16 +958,21 @@ def load_dataset_per_party_noisysample(args, index):
         assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
         assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
         assert 'party' in args.attack_configs, 'need parameter: party'
-        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
-        scale = args.attack_configs['noise_lambda']
-       
-        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
-        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.01
+        scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
+        if not index in args.attack_configs['party']:
+            scale = 0.0
     
+        if args.train_poison_list == None:
+            assert args.test_poison_list == None , "[[inner error]]"
+            args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        else:
+            assert args.test_poison_list != None , "[[inner error]]"
 
         train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
-        
+
         # transform label to onehot
         train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
         test_label = label_to_one_hot(torch.tensor(test_label), num_classes=args.num_classes)
@@ -1025,16 +1033,22 @@ def load_dataset_per_party_noisysample(args, index):
         train_label = torch.tensor(train_label)
         test_label = torch.tensor(test_label)
         
-        # poison text datasets
+        # poison image datasets
         assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
         assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
         assert 'party' in args.attack_configs, 'need parameter: party'
         noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
         scale = args.attack_configs['noise_lambda']
-       
-        args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
-        args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        if not index in args.attack_configs['party']:
+            scale = 0.0
     
+        if args.train_poison_list == None:
+            assert args.test_poison_list == None , "[[inner error]]"
+            args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
+            args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+        else:
+            assert args.test_poison_list != None , "[[inner error]]"
+
         train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 

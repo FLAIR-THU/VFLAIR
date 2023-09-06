@@ -301,7 +301,7 @@ def discrete(args, ik, original_tensor, W):
     _sigma = torch.std(original_tensor).item()  #np.std(original_object)   
 
     if args.bin_size[ik] == None:
-        args.bin_size[ik] = (3*_sigma)/(W//2)
+        args.bin_size[ik] = (2*_sigma)/(W//2)
     # A = np.linespace(_mu-(W//2)*args.bin_size[ik], _mu+(W//2)*args.bin_size[ik], num=W , endpoint=True, retstep=False, dtype=None)
     # # A = np.linspace(_mu-2*_sigma, _mu+2*_sigma, num=W , endpoint=True, retstep=False, dtype=None)
     # new_tensor = torch.empty(original_tensor.shape[0],original_tensor.shape[1])
@@ -322,9 +322,13 @@ def discrete(args, ik, original_tensor, W):
     
     interval = args.bin_size[ik]
     # print("befere descrete", original_tensor, _mu)
-    tensor_ratio_interval = torch.div(original_tensor-_mu, interval)
+
+    # tensor_ratio_interval = torch.div(original_tensor-_mu, interval)
+    # tensor_ratio_interval_rounded = torch.round(tensor_ratio_interval)
+    # tensor_multistep = tensor_ratio_interval_rounded * interval + _mu
+    tensor_ratio_interval = torch.div(original_tensor, interval)
     tensor_ratio_interval_rounded = torch.round(tensor_ratio_interval)
-    tensor_multistep = tensor_ratio_interval_rounded * interval + _mu
+    tensor_multistep = tensor_ratio_interval_rounded * interval
     # print("after discrete", tensor_multistep)
     return tensor_multistep
 

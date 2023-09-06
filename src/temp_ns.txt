@@ -1,0 +1,1045 @@
+================= iter seed  97  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:111.01 train_acc:0.75 test_acc:0.80 backdoor_acc:0.09
+validate and test
+Epoch 1% 	 train_loss:173.37 train_acc:0.75 test_acc:0.83 backdoor_acc:0.07
+validate and test
+Epoch 2% 	 train_loss:211.19 train_acc:0.88 test_acc:0.85 backdoor_acc:0.07
+validate and test
+Epoch 3% 	 train_loss:204.86 train_acc:1.00 test_acc:0.85 backdoor_acc:0.07
+validate and test
+Epoch 4% 	 train_loss:189.16 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 5% 	 train_loss:208.93 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 6% 	 train_loss:204.28 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 7% 	 train_loss:214.95 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 8% 	 train_loss:212.48 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 9% 	 train_loss:219.77 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 10% 	 train_loss:215.47 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 11% 	 train_loss:221.27 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 12% 	 train_loss:219.72 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 13% 	 train_loss:220.45 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 14% 	 train_loss:221.40 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 15% 	 train_loss:225.74 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 16% 	 train_loss:220.52 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 17% 	 train_loss:219.80 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 18% 	 train_loss:222.35 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 19% 	 train_loss:226.66 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 20% 	 train_loss:230.64 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 21% 	 train_loss:229.54 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 22% 	 train_loss:231.98 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 23% 	 train_loss:240.06 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 24% 	 train_loss:246.25 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 25% 	 train_loss:254.13 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 26% 	 train_loss:257.56 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 27% 	 train_loss:258.19 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 28% 	 train_loss:257.76 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 29% 	 train_loss:257.41 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8657266666666666|0.79506
+================= iter seed  98  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:118.06 train_acc:0.75 test_acc:0.80 backdoor_acc:0.07
+validate and test
+Epoch 1% 	 train_loss:325.59 train_acc:0.75 test_acc:0.84 backdoor_acc:0.06
+validate and test
+Epoch 2% 	 train_loss:358.96 train_acc:1.00 test_acc:0.85 backdoor_acc:0.06
+validate and test
+Epoch 3% 	 train_loss:358.92 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 4% 	 train_loss:358.89 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 5% 	 train_loss:358.88 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 6% 	 train_loss:358.87 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 7% 	 train_loss:358.87 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 8% 	 train_loss:358.86 train_acc:1.00 test_acc:0.86 backdoor_acc:0.06
+validate and test
+Epoch 9% 	 train_loss:358.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.06
+validate and test
+Epoch 10% 	 train_loss:358.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.06
+validate and test
+Epoch 11% 	 train_loss:358.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.06
+validate and test
+Epoch 12% 	 train_loss:358.84 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 13% 	 train_loss:358.83 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 14% 	 train_loss:358.84 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 15% 	 train_loss:358.83 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:358.83 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:358.83 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 18% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 19% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 20% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 21% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 23% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 24% 	 train_loss:358.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 25% 	 train_loss:358.81 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 26% 	 train_loss:358.81 train_acc:1.00 test_acc:0.88 backdoor_acc:0.09
+validate and test
+Epoch 27% 	 train_loss:358.81 train_acc:1.00 test_acc:0.88 backdoor_acc:0.10
+validate and test
+Epoch 28% 	 train_loss:358.81 train_acc:1.00 test_acc:0.88 backdoor_acc:0.10
+validate and test
+Epoch 29% 	 train_loss:358.81 train_acc:1.00 test_acc:0.88 backdoor_acc:0.10
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8667866666666665|0.7924533333333331
+================= iter seed  99  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:143.73 train_acc:0.75 test_acc:0.80 backdoor_acc:0.12
+validate and test
+Epoch 1% 	 train_loss:277.78 train_acc:0.88 test_acc:0.84 backdoor_acc:0.11
+validate and test
+Epoch 2% 	 train_loss:271.74 train_acc:1.00 test_acc:0.85 backdoor_acc:0.11
+validate and test
+Epoch 3% 	 train_loss:255.39 train_acc:1.00 test_acc:0.85 backdoor_acc:0.11
+validate and test
+Epoch 4% 	 train_loss:276.52 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 5% 	 train_loss:259.20 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 6% 	 train_loss:259.33 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 7% 	 train_loss:261.17 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 8% 	 train_loss:259.51 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 9% 	 train_loss:258.37 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 10% 	 train_loss:262.43 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 11% 	 train_loss:259.57 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 12% 	 train_loss:258.88 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 13% 	 train_loss:257.49 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 14% 	 train_loss:236.05 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 15% 	 train_loss:229.98 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 16% 	 train_loss:256.95 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 17% 	 train_loss:214.58 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 18% 	 train_loss:189.25 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 19% 	 train_loss:173.71 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 20% 	 train_loss:203.18 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 21% 	 train_loss:221.45 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 22% 	 train_loss:187.57 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 23% 	 train_loss:187.29 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 24% 	 train_loss:149.22 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 25% 	 train_loss:131.23 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 26% 	 train_loss:125.05 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 27% 	 train_loss:121.40 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 28% 	 train_loss:135.70 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 29% 	 train_loss:160.08 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8684166666666667|0.7484166666666667
+================= iter seed  100  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:129.58 train_acc:0.75 test_acc:0.82 backdoor_acc:0.10
+validate and test
+Epoch 1% 	 train_loss:173.22 train_acc:0.75 test_acc:0.84 backdoor_acc:0.11
+validate and test
+Epoch 2% 	 train_loss:160.09 train_acc:0.88 test_acc:0.85 backdoor_acc:0.09
+validate and test
+Epoch 3% 	 train_loss:176.58 train_acc:1.00 test_acc:0.86 backdoor_acc:0.10
+validate and test
+Epoch 4% 	 train_loss:225.44 train_acc:1.00 test_acc:0.86 backdoor_acc:0.09
+validate and test
+Epoch 5% 	 train_loss:212.27 train_acc:1.00 test_acc:0.86 backdoor_acc:0.08
+validate and test
+Epoch 6% 	 train_loss:212.41 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 7% 	 train_loss:209.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 8% 	 train_loss:194.43 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 9% 	 train_loss:221.64 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 10% 	 train_loss:234.25 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 11% 	 train_loss:215.67 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 12% 	 train_loss:199.88 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 13% 	 train_loss:195.04 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 14% 	 train_loss:206.74 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 15% 	 train_loss:208.04 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:206.09 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:196.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 18% 	 train_loss:195.87 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 19% 	 train_loss:203.11 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 20% 	 train_loss:206.73 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 21% 	 train_loss:215.95 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:211.82 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 23% 	 train_loss:212.32 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 24% 	 train_loss:222.96 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 25% 	 train_loss:228.29 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 26% 	 train_loss:247.85 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 27% 	 train_loss:244.91 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 28% 	 train_loss:250.14 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 29% 	 train_loss:239.84 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8718|0.7888
+================= iter seed  101  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:177.53 train_acc:0.75 test_acc:0.80 backdoor_acc:0.10
+validate and test
+Epoch 1% 	 train_loss:202.46 train_acc:0.75 test_acc:0.84 backdoor_acc:0.10
+validate and test
+Epoch 2% 	 train_loss:231.78 train_acc:1.00 test_acc:0.85 backdoor_acc:0.12
+validate and test
+Epoch 3% 	 train_loss:244.42 train_acc:1.00 test_acc:0.85 backdoor_acc:0.11
+validate and test
+Epoch 4% 	 train_loss:293.66 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 5% 	 train_loss:259.04 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 6% 	 train_loss:286.04 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 7% 	 train_loss:224.63 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 8% 	 train_loss:206.29 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 9% 	 train_loss:220.11 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 10% 	 train_loss:200.24 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 11% 	 train_loss:174.55 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 12% 	 train_loss:194.64 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 13% 	 train_loss:209.79 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 14% 	 train_loss:206.16 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 15% 	 train_loss:183.95 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 16% 	 train_loss:164.74 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 17% 	 train_loss:174.95 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 18% 	 train_loss:174.15 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 19% 	 train_loss:190.30 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 20% 	 train_loss:194.75 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 21% 	 train_loss:220.88 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 22% 	 train_loss:222.69 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 23% 	 train_loss:202.57 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 24% 	 train_loss:195.48 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 25% 	 train_loss:179.31 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 26% 	 train_loss:197.98 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 27% 	 train_loss:217.72 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 28% 	 train_loss:232.08 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+validate and test
+Epoch 29% 	 train_loss:262.98 train_acc:1.00 test_acc:0.88 backdoor_acc:0.11
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8700699999999998|0.7604033333333331
+================= iter seed  0  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:182.20 train_acc:0.75 test_acc:0.80 backdoor_acc:0.14
+validate and test
+Epoch 1% 	 train_loss:314.53 train_acc:0.75 test_acc:0.83 backdoor_acc:0.13
+validate and test
+Epoch 2% 	 train_loss:328.28 train_acc:1.00 test_acc:0.85 backdoor_acc:0.13
+validate and test
+Epoch 3% 	 train_loss:335.31 train_acc:1.00 test_acc:0.85 backdoor_acc:0.12
+validate and test
+Epoch 4% 	 train_loss:318.82 train_acc:1.00 test_acc:0.86 backdoor_acc:0.12
+validate and test
+Epoch 5% 	 train_loss:331.16 train_acc:1.00 test_acc:0.86 backdoor_acc:0.12
+validate and test
+Epoch 6% 	 train_loss:325.73 train_acc:1.00 test_acc:0.86 backdoor_acc:0.13
+validate and test
+Epoch 7% 	 train_loss:262.31 train_acc:1.00 test_acc:0.86 backdoor_acc:0.13
+validate and test
+Epoch 8% 	 train_loss:258.38 train_acc:1.00 test_acc:0.86 backdoor_acc:0.14
+validate and test
+Epoch 9% 	 train_loss:290.11 train_acc:1.00 test_acc:0.87 backdoor_acc:0.15
+validate and test
+Epoch 10% 	 train_loss:297.44 train_acc:1.00 test_acc:0.87 backdoor_acc:0.15
+validate and test
+Epoch 11% 	 train_loss:290.46 train_acc:1.00 test_acc:0.87 backdoor_acc:0.15
+validate and test
+Epoch 12% 	 train_loss:302.02 train_acc:1.00 test_acc:0.87 backdoor_acc:0.15
+validate and test
+Epoch 13% 	 train_loss:314.22 train_acc:1.00 test_acc:0.87 backdoor_acc:0.14
+validate and test
+Epoch 14% 	 train_loss:314.33 train_acc:1.00 test_acc:0.87 backdoor_acc:0.14
+validate and test
+Epoch 15% 	 train_loss:305.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.14
+validate and test
+Epoch 16% 	 train_loss:307.38 train_acc:1.00 test_acc:0.87 backdoor_acc:0.13
+validate and test
+Epoch 17% 	 train_loss:305.37 train_acc:1.00 test_acc:0.87 backdoor_acc:0.13
+validate and test
+Epoch 18% 	 train_loss:301.87 train_acc:1.00 test_acc:0.87 backdoor_acc:0.14
+validate and test
+Epoch 19% 	 train_loss:239.00 train_acc:1.00 test_acc:0.87 backdoor_acc:0.13
+validate and test
+Epoch 20% 	 train_loss:222.11 train_acc:1.00 test_acc:0.87 backdoor_acc:0.13
+validate and test
+Epoch 21% 	 train_loss:222.08 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 22% 	 train_loss:231.67 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 23% 	 train_loss:224.35 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 24% 	 train_loss:252.78 train_acc:1.00 test_acc:0.88 backdoor_acc:0.13
+validate and test
+Epoch 25% 	 train_loss:270.09 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 26% 	 train_loss:279.17 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 27% 	 train_loss:272.77 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 28% 	 train_loss:258.58 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+validate and test
+Epoch 29% 	 train_loss:250.93 train_acc:1.00 test_acc:0.88 backdoor_acc:0.14
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8655433333333332|0.7292099999999999
+================= iter seed  1  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:59.71 train_acc:0.75 test_acc:0.80 backdoor_acc:0.08
+validate and test
+Epoch 1% 	 train_loss:199.69 train_acc:0.88 test_acc:0.84 backdoor_acc:0.08
+validate and test
+Epoch 2% 	 train_loss:191.55 train_acc:0.88 test_acc:0.85 backdoor_acc:0.08
+validate and test
+Epoch 3% 	 train_loss:185.20 train_acc:1.00 test_acc:0.86 backdoor_acc:0.08
+validate and test
+Epoch 4% 	 train_loss:183.43 train_acc:1.00 test_acc:0.86 backdoor_acc:0.08
+validate and test
+Epoch 5% 	 train_loss:181.84 train_acc:1.00 test_acc:0.86 backdoor_acc:0.08
+validate and test
+Epoch 6% 	 train_loss:183.35 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 7% 	 train_loss:146.97 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 8% 	 train_loss:145.57 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 9% 	 train_loss:144.91 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 10% 	 train_loss:172.93 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 11% 	 train_loss:157.41 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 12% 	 train_loss:148.82 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 13% 	 train_loss:146.50 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 14% 	 train_loss:153.76 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 15% 	 train_loss:159.43 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:157.07 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:153.50 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 18% 	 train_loss:158.00 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 19% 	 train_loss:148.87 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 20% 	 train_loss:149.08 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 21% 	 train_loss:147.69 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:148.20 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 23% 	 train_loss:172.84 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 24% 	 train_loss:197.77 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 25% 	 train_loss:193.67 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 26% 	 train_loss:182.88 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 27% 	 train_loss:180.24 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 28% 	 train_loss:180.23 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 29% 	 train_loss:180.23 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8696033333333332|0.7912699999999998
+================= iter seed  2  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:177.91 train_acc:0.75 test_acc:0.80 backdoor_acc:0.10
+validate and test
+Epoch 1% 	 train_loss:260.79 train_acc:0.75 test_acc:0.83 backdoor_acc:0.08
+validate and test
+Epoch 2% 	 train_loss:150.43 train_acc:1.00 test_acc:0.85 backdoor_acc:0.09
+validate and test
+Epoch 3% 	 train_loss:209.80 train_acc:1.00 test_acc:0.85 backdoor_acc:0.09
+validate and test
+Epoch 4% 	 train_loss:195.40 train_acc:1.00 test_acc:0.86 backdoor_acc:0.09
+validate and test
+Epoch 5% 	 train_loss:230.26 train_acc:1.00 test_acc:0.86 backdoor_acc:0.09
+validate and test
+Epoch 6% 	 train_loss:262.80 train_acc:1.00 test_acc:0.87 backdoor_acc:0.09
+validate and test
+Epoch 7% 	 train_loss:236.81 train_acc:1.00 test_acc:0.87 backdoor_acc:0.09
+validate and test
+Epoch 8% 	 train_loss:188.64 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 9% 	 train_loss:164.40 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 10% 	 train_loss:153.49 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 11% 	 train_loss:126.11 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 12% 	 train_loss:105.41 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 13% 	 train_loss:158.36 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 14% 	 train_loss:174.58 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 15% 	 train_loss:164.71 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:199.97 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:265.98 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 18% 	 train_loss:224.25 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 19% 	 train_loss:265.87 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 20% 	 train_loss:253.58 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 21% 	 train_loss:221.91 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:266.32 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 23% 	 train_loss:258.03 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 24% 	 train_loss:229.06 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 25% 	 train_loss:236.60 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 26% 	 train_loss:230.79 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 27% 	 train_loss:251.86 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 28% 	 train_loss:274.40 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 29% 	 train_loss:245.78 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8687733333333333|0.7861066666666666
+================= iter seed  3  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:163.79 train_acc:0.75 test_acc:0.82 backdoor_acc:0.09
+validate and test
+Epoch 1% 	 train_loss:261.20 train_acc:0.75 test_acc:0.84 backdoor_acc:0.10
+validate and test
+Epoch 2% 	 train_loss:180.14 train_acc:1.00 test_acc:0.86 backdoor_acc:0.13
+validate and test
+Epoch 3% 	 train_loss:180.42 train_acc:1.00 test_acc:0.86 backdoor_acc:0.14
+validate and test
+Epoch 4% 	 train_loss:166.96 train_acc:1.00 test_acc:0.87 backdoor_acc:0.14
+validate and test
+Epoch 5% 	 train_loss:155.12 train_acc:1.00 test_acc:0.87 backdoor_acc:0.13
+validate and test
+Epoch 6% 	 train_loss:218.45 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 7% 	 train_loss:147.49 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 8% 	 train_loss:112.00 train_acc:1.00 test_acc:0.87 backdoor_acc:0.10
+validate and test
+Epoch 9% 	 train_loss:142.56 train_acc:1.00 test_acc:0.87 backdoor_acc:0.10
+validate and test
+Epoch 10% 	 train_loss:144.71 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 11% 	 train_loss:182.66 train_acc:1.00 test_acc:0.87 backdoor_acc:0.10
+validate and test
+Epoch 12% 	 train_loss:174.03 train_acc:1.00 test_acc:0.87 backdoor_acc:0.10
+validate and test
+Epoch 13% 	 train_loss:209.25 train_acc:1.00 test_acc:0.87 backdoor_acc:0.10
+validate and test
+Epoch 14% 	 train_loss:213.89 train_acc:1.00 test_acc:0.88 backdoor_acc:0.10
+validate and test
+Epoch 15% 	 train_loss:192.08 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:198.29 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:186.73 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 18% 	 train_loss:189.26 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 19% 	 train_loss:180.90 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 20% 	 train_loss:166.53 train_acc:1.00 test_acc:0.88 backdoor_acc:0.07
+validate and test
+Epoch 21% 	 train_loss:164.09 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:161.01 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 23% 	 train_loss:186.06 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 24% 	 train_loss:198.07 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 25% 	 train_loss:224.70 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 26% 	 train_loss:221.44 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 27% 	 train_loss:227.37 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 28% 	 train_loss:210.48 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+validate and test
+Epoch 29% 	 train_loss:203.69 train_acc:1.00 test_acc:0.88 backdoor_acc:0.08
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8706033333333334|0.7766033333333333
+================= iter seed  4  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:72.08 train_acc:0.75 test_acc:0.80 backdoor_acc:0.11
+validate and test
+Epoch 1% 	 train_loss:190.09 train_acc:0.88 test_acc:0.84 backdoor_acc:0.11
+validate and test
+Epoch 2% 	 train_loss:138.68 train_acc:1.00 test_acc:0.85 backdoor_acc:0.11
+validate and test
+Epoch 3% 	 train_loss:174.96 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 4% 	 train_loss:204.30 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 5% 	 train_loss:214.08 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 6% 	 train_loss:187.57 train_acc:1.00 test_acc:0.86 backdoor_acc:0.11
+validate and test
+Epoch 7% 	 train_loss:178.79 train_acc:1.00 test_acc:0.87 backdoor_acc:0.11
+validate and test
+Epoch 8% 	 train_loss:196.39 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 9% 	 train_loss:218.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 10% 	 train_loss:251.70 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 11% 	 train_loss:251.74 train_acc:1.00 test_acc:0.87 backdoor_acc:0.12
+validate and test
+Epoch 12% 	 train_loss:249.05 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 13% 	 train_loss:264.44 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 14% 	 train_loss:258.50 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 15% 	 train_loss:267.04 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 16% 	 train_loss:268.20 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 17% 	 train_loss:272.56 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 18% 	 train_loss:269.51 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 19% 	 train_loss:257.02 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 20% 	 train_loss:263.28 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 21% 	 train_loss:264.38 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 22% 	 train_loss:250.74 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 23% 	 train_loss:243.85 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 24% 	 train_loss:241.39 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 25% 	 train_loss:234.15 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 26% 	 train_loss:235.20 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 27% 	 train_loss:219.53 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+validate and test
+Epoch 28% 	 train_loss:210.73 train_acc:1.00 test_acc:0.89 backdoor_acc:0.12
+validate and test
+Epoch 29% 	 train_loss:210.41 train_acc:1.00 test_acc:0.88 backdoor_acc:0.12
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8720000000000001|0.7546666666666667
+================= iter seed  5  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda2
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Active
+Defense_Config: {'party': [1], 'lr': 0.001, 'lambda': 100.0}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: ['NoisySample'] [0]
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/MID_Active_100.0,model=MLP2.txt
+=================================
+
+No Attack==============================
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+in party prepare_data, will prepare noisy data for NoisySampleBackdoor
+load_dataset_per_party_noisysample
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [1]
+begin to load mid model for party 1
+load global mid model for party 1,std_shift_hyperparameter=0.5
+mid_lr = 0.001
+======= Test Attack 0 :  NoisySample  =======
+attack configs: {'party': [0], 'noise_lambda': 2, 'noise_rate': 0.01}
+validate and test
+Epoch 0% 	 train_loss:162.24 train_acc:0.75 test_acc:0.81 backdoor_acc:0.07
+validate and test
+Epoch 1% 	 train_loss:250.59 train_acc:0.75 test_acc:0.83 backdoor_acc:0.07
+validate and test
+Epoch 2% 	 train_loss:184.93 train_acc:1.00 test_acc:0.85 backdoor_acc:0.07
+validate and test
+Epoch 3% 	 train_loss:264.91 train_acc:1.00 test_acc:0.85 backdoor_acc:0.07
+validate and test
+Epoch 4% 	 train_loss:165.83 train_acc:1.00 test_acc:0.85 backdoor_acc:0.07
+validate and test
+Epoch 5% 	 train_loss:198.93 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 6% 	 train_loss:190.95 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 7% 	 train_loss:156.14 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 8% 	 train_loss:191.12 train_acc:1.00 test_acc:0.86 backdoor_acc:0.07
+validate and test
+Epoch 9% 	 train_loss:196.77 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 10% 	 train_loss:226.45 train_acc:1.00 test_acc:0.87 backdoor_acc:0.07
+validate and test
+Epoch 11% 	 train_loss:224.51 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 12% 	 train_loss:229.90 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 13% 	 train_loss:230.81 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 14% 	 train_loss:231.45 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 15% 	 train_loss:240.37 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 16% 	 train_loss:245.68 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 17% 	 train_loss:244.24 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 18% 	 train_loss:245.85 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 19% 	 train_loss:248.98 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 20% 	 train_loss:248.59 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 21% 	 train_loss:219.17 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 22% 	 train_loss:211.07 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 23% 	 train_loss:206.92 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 24% 	 train_loss:207.52 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 25% 	 train_loss:213.00 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 26% 	 train_loss:213.17 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 27% 	 train_loss:212.62 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 28% 	 train_loss:213.97 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+validate and test
+Epoch 29% 	 train_loss:214.33 train_acc:1.00 test_acc:0.87 backdoor_acc:0.08
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|noise_lambda|main_task_acc|acc_loss,2|1024|0.010000|10|1|0|30|NoisySample|2|0.8636300000000001|0.7872966666666668

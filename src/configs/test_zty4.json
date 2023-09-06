@@ -78,7 +78,8 @@
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
-                "noise_lambda": 0.01
+                "noise_lambda": 2.0,
+                "noise_rate": 0.01
             }
         },
         "6": {

@@ -1,26 +1,40 @@
 {
     "epochs": 100,
-    "lr": 0.003,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
+    "BCD_type": "p",
     "dataset":{
-        "dataset_name": "nuswide",
-        "num_classes": 5
+        "dataset_name": "mnist",
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 1000,
-            "output_dim": 5
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 634,
-            "output_dim": 5
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "DCAE",
+        "parameters": {
+            "party": [1],
+            "bin_numbers": 12,
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 1.0,
+            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_10_1.0_1642396548"
+        }
     },
     "attack_list": {
         "0":{
