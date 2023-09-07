@@ -345,7 +345,7 @@ class ModelCompletion(Attacker):
                 
                 print("---MC: Label inference on test dataset:")
                 _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=self.num_classes)
-                if epoch > (self.epochs//4):
+                if epoch > (2*self.epochs//3):
                     best_acc = max(test_acc, best_acc)
 
             print(f"MC, if self.args.apply_defense={self.args.apply_defense}")

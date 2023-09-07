@@ -1,5 +1,5 @@
 {
-    "epochs": 100,
+    "epochs": 30,
     "lr": 0.003,
     "k": 2,
     "batch_size": 1024,
@@ -21,6 +21,13 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "GaussianDP",
+        "parameters": {
+            "party": [0],
+            "dp_strength": 0.0001
+        }
     },
     "attack_list": {
         "0":{

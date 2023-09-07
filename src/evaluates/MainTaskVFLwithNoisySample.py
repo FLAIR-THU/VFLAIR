@@ -336,10 +336,9 @@ class MainTaskVFLwithNoisySample(object):
                         predict_label = torch.argmax(dec_predict_prob, dim=-1)
                     else:
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                    gt_val_one_hot_label = torch.argmax(gt_val_one_hot_label, dim=-1) 
 
                     # print(predict_label[:10], actual_label[:10])
-                    self.backdoor_acc = torch.sum(predict_label == gt_val_one_hot_label).item() / gt_val_one_hot_label.size()[0]
+                    self.backdoor_acc = torch.sum(predict_label == actual_label).item() / actual_label.size()[0]
                     # # ######### for backdoor acc end #########
                         
                     postfix['train_loss'] = self.loss

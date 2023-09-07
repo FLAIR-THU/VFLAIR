@@ -929,10 +929,11 @@ def load_dataset_per_party_noisysample(args, index):
             assert args.test_poison_list == None , "[[inner error]]"
             args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
             args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+            print(len(train_dst),len(test_dst), len(args.train_poison_list), len(args.test_poison_list))
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'test', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
        
     elif args.dataset == 'nuswide':
@@ -970,7 +971,7 @@ def load_dataset_per_party_noisysample(args, index):
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'test', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 
         # transform label to onehot
@@ -1049,7 +1050,7 @@ def load_dataset_per_party_noisysample(args, index):
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'test', args.k, args.dataset)
         test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
 
         # transform label to onehot
