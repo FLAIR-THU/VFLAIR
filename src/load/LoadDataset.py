@@ -966,8 +966,8 @@ def load_dataset_per_party_noisysample(args, index):
     
         if args.train_poison_list == None:
             assert args.test_poison_list == None , "[[inner error]]"
-            args.train_poison_list = random.sample(range(len(train_dst)), int(noise_rate * len(train_dst)))
-            args.test_poison_list = random.sample(range(len(test_dst)), int(noise_rate * len(test_dst)))
+            args.train_poison_list = random.sample(range(len(train_data[0])), int(noise_rate * len(train_data[0])))
+            args.test_poison_list = random.sample(range(len(test_data[0])), int(noise_rate * len(test_data[0])))
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 

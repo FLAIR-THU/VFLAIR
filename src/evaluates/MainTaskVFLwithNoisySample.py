@@ -23,7 +23,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 from utils.noisy_sample_functions import noisy_sample
 
 tf.compat.v1.enable_eager_execution() 
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.90, 'cifar100': 0.60}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.90, 'cifar100': 0.60, 'nuswide':0.88}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFLwithNoisySample(object):
@@ -126,7 +126,7 @@ class MainTaskVFLwithNoisySample(object):
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
             if (self.k-1) in self.args.defense_configs['party']:
-                print('ok')
+                # print('ok')
                 gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
             if (self.k-1) in self.args.defense_configs['party']:
