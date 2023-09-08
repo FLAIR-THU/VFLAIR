@@ -66,9 +66,9 @@ def tf_distance_cov_cor(input1, input2, debug=False):
     A = a - torch.mean(a,axis=1) - torch.unsqueeze(torch.mean(a,axis=0),axis=1) + torch.mean(a)
     B = b - torch.mean(b,axis=1) - torch.unsqueeze(torch.mean(b,axis=0),axis=1) + torch.mean(b)
 
-    dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2))
+    dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2) + 1e-16)
     dVarXX = torch.sqrt(torch.sum(A * A) / (n ** 2))
-    dVarYY = torch.sqrt(torch.sum(B * B) / (n ** 2))
+    dVarYY = torch.sqrt(torch.sum(B * B) / (n ** 2) + 1e-16)
 
     dCorXY = dCovXY / torch.sqrt(dVarXX * dVarYY)
     if debug:
