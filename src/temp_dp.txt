@@ -1,0 +1,18 @@
+================= iter seed  97  =================
+===== No Defense ======
+running on cuda3
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: None
+Defense_Config: None
+===== Total Attack Tested: 2  ======
+targeted_backdoor: [] []
+untargeted_backdoor: [] []
+label_inference: ['PassiveModelCompletion', 'ActiveModelCompletion'] [0, 1]
+attribute_inference: [] []
+feature_inference: [] []
+exp_result/mnist/Q1/0/None_None,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0

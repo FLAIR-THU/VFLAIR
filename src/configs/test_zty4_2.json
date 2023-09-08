@@ -1,55 +1,44 @@
 {
     "epochs": 30,
-    "lr": 0.003,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
+    "BCD_type": "p",
     "dataset":{
-        "dataset_name": "nuswide",
-        "num_classes": 5
+        "dataset_name": "mnist",
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 1000,
-            "output_dim": 5
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 634,
-            "output_dim": 5
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "GaussianDP",
-        "parameters": {
-            "party": [0],
-            "dp_strength": 0.0001
-        }
-    },
     "attack_list": {
         "0":{
-            "name": "PassiveModelCompletion",
+            "name": "NoisySample",
             "parameters": {
                 "party": [0],
-                "val_iteration": 1024,
-                "epochs": 20,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         },
         "1":{
-            "name": "ActiveModelCompletion",
+            "name": "MissingFeature",
             "parameters": {
                 "party": [0],
-                "val_iteration": 1024,
-                "epochs": 20,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "missing_rate": 0.25
             }
         }
     }

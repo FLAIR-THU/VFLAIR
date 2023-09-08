@@ -1,5 +1,5 @@
 {
-    "epochs": 30,
+    "epochs": 100,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -26,19 +26,33 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "GradientSparsification",
         "parameters": {
             "party": [1],
-            "lr": 0.001,
-            "lambda": 0.0
+            "gradient_sparse_rate": 100.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "MissingFeature",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "missing_rate": 0.25
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "1":{
+            "name": "ActiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         }
     }
