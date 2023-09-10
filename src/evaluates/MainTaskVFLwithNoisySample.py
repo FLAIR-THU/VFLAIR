@@ -92,12 +92,12 @@ class MainTaskVFLwithNoisySample(object):
         for ik in range(self.k):
             pred, pred_clone = self.parties[ik].give_pred()
 
-            # ######### for backdoor start #########
-            if ik != self.k-1: # Only Passive Parties do
-                self.parties[ik].local_pred_clone[-1] = self.parties[ik].local_pred_clone[-2]
-                pred_clone[-1] = pred_clone[-2]
-                # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
-            # ######### for backdoor end #########
+            # # ######### for backdoor start #########
+            # if ik != self.k-1: # Only Passive Parties do
+            #     self.parties[ik].local_pred_clone[-1] = self.parties[ik].local_pred_clone[-2]
+            #     pred_clone[-1] = pred_clone[-2]
+            #     # in replace of : self.pred_list_clone[ik][-1] = self.pred_list_clone[ik][-2]
+            # # ######### for backdoor end #########
 
            # defense applied on pred
             if self.args.apply_defense == True and self.args.apply_dp == True :
@@ -132,10 +132,10 @@ class MainTaskVFLwithNoisySample(object):
             if (self.k-1) in self.args.defense_configs['party']:
                 gradient = self.launch_defense(gradient, "gradients") 
             
-        # ######### for backdoor start #########
-        for ik in range(self.k-1): # Only Passive Parties do
-            gradient[ik][-2] = gradient[ik][-1]
-        # ######### for backdoor end #########
+        # # ######### for backdoor start #########
+        # for ik in range(self.k-1): # Only Passive Parties do
+        #     gradient[ik][-2] = gradient[ik][-1]
+        # # ######### for backdoor end #########
 
         # active party update local gradient
         self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
@@ -338,7 +338,7 @@ class MainTaskVFLwithNoisySample(object):
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
                     # print(predict_label[:10], actual_label[:10])
-                    self.backdoor_acc = torch.sum(predict_label == actual_label).item() / actual_label.size()[0]
+                    self.backdoor_acc = torch.sum(predict_label == torch.argmax(gt_val_one_hot_label, dim=-1)).item() / actual_label.size()[0]
                     # # ######### for backdoor acc end #########
                         
                     postfix['train_loss'] = self.loss

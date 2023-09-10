@@ -30,15 +30,16 @@
         "parameters": {
             "party": [1],
             "lr": 0.001,
-            "lambda": 0.0
+            "lambda": 10000
         }
     },
     "attack_list": {
         "0":{
-            "name": "MissingFeature",
+            "name": "NoisySample",
             "parameters": {
                 "party": [0],
-                "missing_rate": 0.25
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }
