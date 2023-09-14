@@ -1,10 +1,9 @@
 {
-    "epochs": 2,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
-    "BCD_type": "p",
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -25,14 +24,12 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "attack_list": {
-        "0":{
-            "name": "NoisySample",
-            "parameters": {
-                "party": [0],
-                "noise_lambda": 2,
-                "noise_rate": 0.01
-            }
+    "defense": {
+        "name": "GaussianDP",
+        "parameters": {
+            "party": [0],
+            "dp_strength": 0.0001
         }
     }
+    
 }
