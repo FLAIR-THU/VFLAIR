@@ -215,7 +215,7 @@ def LaplaceDP_for_pred(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2
+        threshold = 45
         with torch.no_grad():
             scale = dp_strength
             norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
@@ -266,7 +266,7 @@ def GaussianDP_for_pred(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = 45  # 1e9
         with torch.no_grad():
             scale = dp_strength
             
