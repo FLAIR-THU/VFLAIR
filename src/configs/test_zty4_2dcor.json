@@ -35,18 +35,25 @@
     },
     "attack_list": {
         "0":{
-            "name": "NoisySample",
+            "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "noise_lambda": 2,
-                "noise_rate": 0.01
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         },
         "1":{
-            "name": "MissingFeature",
+            "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
-                "missing_rate": 0.25
+                "val_iteration": 1024,
+                "epochs": 20,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
             }
         }
     }

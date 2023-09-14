@@ -25,14 +25,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [1],
-            "lr": 0.001,
-            "lambda": 10000
-        }
-    },
     "attack_list": {
         "0":{
             "name": "NoisySample",

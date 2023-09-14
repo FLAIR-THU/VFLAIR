@@ -1,6 +1,6 @@
 {
     "epochs": 100,
-    "lr": 0.005,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
@@ -26,11 +26,13 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "CAE",
         "parameters": {
             "party": [1],
-            "lr": 0.001,
-            "lambda": 1000
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 1.0,
+            "model_path": "./evaluates/defenses/trained_CAE_models/autoencoder_10_1.0_1642396548"
         }
     },
     "attack_list": {
