@@ -1,26 +1,23 @@
 {
-    "epochs": 100,
-    "lr": 0.005,
+    "epochs": 10,
+    "lr": 0.003,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
-    "BCD_type": "p",
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+        "dataset_name": "nuswide",
+        "num_classes": 5
     },
     "model_list":{
         "0": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 1000,
+            "output_dim": 5
         },
         "1": {
             "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
+            "input_dim": 634,
+            "output_dim": 5
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -28,32 +25,19 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
+            "party": [0],
             "lr": 0.001,
-            "lambda": 10000
+            "lambda": 1000
         }
     },
     "attack_list": {
         "0":{
-            "name": "PassiveModelCompletion",
+            "name": "GenerativeRegressionNetwork",
             "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 20,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
-            }
-        },
-        "1":{
-            "name": "ActiveModelCompletion",
-            "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 20,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 60,
+                "batch_size": 64
             }
         }
     }

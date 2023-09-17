@@ -31,6 +31,6 @@ def noisy_sample(origin_sample,scale):
     # print('noisy_sample:',len(noisy_sample),noisy_sample[0].size())
     # print(origin_sample.dtype, noisy_sample.dtype)
 
-    print(noisy_sample[0])
-    print(origin_sample[0])
+    # print(noisy_sample[0])
+    # print(origin_sample[0])
     return (noisy_sample).to(origin_sample.device)

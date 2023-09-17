@@ -1,5 +1,5 @@
 {
-    "epochs": 100,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -28,25 +28,19 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
+            "party": [0],
             "lr": 0.001,
-            "lambda": 0.0
+            "lambda": 0.1
         }
     },
     "attack_list": {
         "0":{
-            "name": "NoisySample",
+            "name": "GenerativeRegressionNetwork",
             "parameters": {
-                "party": [0],
-                "noise_lambda": 2,
-                "noise_rate": 0.01
-            }
-        },
-        "1":{
-            "name": "MissingFeature",
-            "parameters": {
-                "party": [0],
-                "missing_rate": 0.25
+                "party": [1],
+                "lr": 0.005,
+                "epochs": 60,
+                "batch_size": 1024
             }
         }
     }

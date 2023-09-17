@@ -326,7 +326,7 @@ class MainTaskVFLwithNoisySample(object):
                     gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
                     pred_list = []
                     for ik in range(self.k):
-                        print(f"poison data at party#{ik}: {self.parties[ik].test_poison_data[0]}")
+                        # print(f"poison data at party#{ik}: {self.parties[ik].test_poison_data[0]}")
                         pred_list.append(self.parties[ik].local_model(self.parties[ik].test_poison_data))
                     test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label)
                     
@@ -337,8 +337,8 @@ class MainTaskVFLwithNoisySample(object):
                     else:
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
 
-                    print(actual_label.shape, predict_label.shape, gt_val_one_hot_label.shape)
-                    print(actual_label[:10], predict_label[:10])
+                    # print(actual_label.shape, predict_label.shape, gt_val_one_hot_label.shape)
+                    # print(actual_label[:10], predict_label[:10])
                     self.backdoor_acc = torch.sum(predict_label == torch.argmax(gt_val_one_hot_label, dim=-1)).item() / actual_label.size()[0]
                     # # ######### for backdoor acc end #########
                         
