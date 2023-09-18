@@ -175,6 +175,51 @@ class DPLaplacianNoiseApplyer():
         tensor = tensor + noisy_mask
         return tensor
 
+
+def LaplaceDP_for_pred_grn(args, original_object):
+    # hold gradient
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+
+    # print('dp_strength:',dp_strength)
+
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = 45
+        
+        scale = dp_strength
+        norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                    threshold + 1e-6).clamp(min=1.0)
+        # add laplace noise
+        dist_a = torch.distributions.laplace.Laplace(location, scale)
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                dist_a.sample(original_object.shape).to(args.device))
+        return new_object
+    else:
+        return original_object
+
+
+def GaussianDP_for_pred_grn(args, original_object):
+    # hold gradient
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    # print('dp_strength:',dp_strength)
+
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = 45  # 1e9
+        scale = dp_strength
+        
+        norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                threshold + 1e-6).clamp(min=1.0)
+
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                torch.normal(location, scale, original_object.shape).to(args.device))
+        # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+        return new_object
+    else:
+        return original_object
+
 def LaplaceDP(args, original_object):
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
