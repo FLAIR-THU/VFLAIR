@@ -34,12 +34,11 @@
     },
     "attack_list": {
         "0":{
-            "name": "GenerativeRegressionNetwork",
+            "name": "NoisySample",
             "parameters": {
-                "party": [1],
-                "lr": 0.005,
-                "epochs": 60,
-                "batch_size": 1024
+                "party": [0],
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }

@@ -458,7 +458,7 @@ def get_images():
                 print("thumbnail", arr.shape)
 
 
-def generate_poison_data(args, data, label, poison_list, _type, k, dataset):
+def generate_poison_data(args, data, label, poison_list, _type, k, dataset, party_index):
     '''
     generate poisoned image data
     '''
@@ -468,7 +468,7 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset):
         # data = torch.tensor([torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]）
         # mixed_data_image, poison_list = data_poison(data[0], poison_list, k, dataset)
         # poison_data_image = copy.deepcopy(mixed_data_image[poison_list])
-        mixed_data_text, poison_list = data_poison_text(args, data[0], poison_list, k, dataset)
+        mixed_data_text, poison_list = data_poison_text(args, data[0], poison_list, k, dataset, party_index)
         poison_data_text = copy.deepcopy(mixed_data_text[poison_list])
 
         poison_data_image = torch.tensor(data[1][poison_list])
@@ -484,7 +484,7 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset):
         return data, label, poison_data, poison_label
     
     elif dataset in ['breast_cancer_diagnose','diabetes','adult_income','criteo']:
-        mixed_data_text, poison_list = data_poison_text(args, data, poison_list, k, dataset)
+        mixed_data_text, poison_list = data_poison_text(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data_text[poison_list])
         poison_data = torch.tensor(poison_data)
         poison_label = copy.deepcopy(label[poison_list])
@@ -495,7 +495,7 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset):
         return data, label, poison_data, poison_label
     
     else:
-        mixed_data, poison_list = data_poison(args, data, poison_list, k, dataset)
+        mixed_data, poison_list = data_poison(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data[poison_list])
         poison_label = copy.deepcopy(label[poison_list])
         # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
@@ -512,7 +512,7 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset):
 
 
 
-def data_poison(args,images, poison_list, k, dataset):
+def data_poison(args, images, poison_list, k, dataset, party_index):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
     if args.apply_ns:
         assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
@@ -520,7 +520,12 @@ def data_poison(args,images, poison_list, k, dataset):
         assert 'party' in args.attack_configs, 'need parameter: party'
         noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.01
         scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
-        images[poison_list] = noisy_sample(images[poison_list],scale)
+        # print(f"[debug] in basic_function.py, args.attack_configs['party']={args.attack_configs['party']}")
+        # print(f"[debug] in basic_function.py, party_index={party_index}, {type(party_index)}, k in  args.attack_configs['party']={party_index in args.attack_configs['party']}")
+        if party_index in args.attack_configs['party']: # if not attacker party, return unchanged image
+            # print(f'[debug] in basic_function.py, party {party_index} poison')
+            # print(f'[debug] in basic_function.py, images[0]={images[0]}')
+            images[poison_list] = noisy_sample(images[poison_list],scale)
     else:
         if 'cifar' in dataset.casefold():
             if k == 2: # 1 party poison, passive party-0 poison
@@ -565,7 +570,7 @@ def data_poison(args,images, poison_list, k, dataset):
             assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return images, poison_list
 
-def data_poison_text(args,texts, poison_list, k, dataset):
+def data_poison_text(args,texts, poison_list, k, dataset, party_index):
     '''
     text or tabular data
     trigger: set the last element as target_text_value(1)
@@ -576,20 +581,19 @@ def data_poison_text(args,texts, poison_list, k, dataset):
         assert 'party' in args.attack_configs, 'need parameter: party'
         noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
         scale = args.attack_configs['noise_lambda']
-
-        if 'nuswide' in dataset.casefold():
-            if k == 2: # 1 party poison, passive party-0 poison
-                texts[poison_list] = noisy_sample(texts[poison_list],scale)
+        if party_index in args.attack_configs['party']: # only if k is in the attacker party pool, poison the test data
+            if 'nuswide' in dataset.casefold():
+                if k == 2: # 1 party poison, passive party-0 poison
+                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                else:
+                    assert k == 2, "poison type not supported yet"
+            elif 'breast_cancer_diagnose' in dataset.casefold():
+                if k == 2: # first feature of attacker(pasive party 0) set to 0.1
+                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                else:
+                    assert k == 2, "poison type not supported yet"
             else:
-                assert k == 2, "poison type not supported yet"
-        elif 'breast_cancer_diagnose' in dataset.casefold():
-            if k == 2: # first feature of attacker(pasive party 0) set to 0.1
-                texts[poison_list] = noisy_sample(texts[poison_list],scale)
-            else:
-                assert k == 2, "poison type not supported yet"
-    
-        else:
-            assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+                assert 'mnist' in dataset.casefold(), "dataset not supported yet"
         return texts, poison_list
     else:
         if 'nuswide' in dataset.casefold():
@@ -607,7 +611,7 @@ def data_poison_text(args,texts, poison_list, k, dataset):
             assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return texts, poison_list
 
-def generate_poison_data_text(args,data, label, poison_list, _type, k, dataset):
+def generate_poison_data_text(args,data, label, poison_list, _type, k, dataset, party_index):
     '''
     generate poisoned text data
     '''

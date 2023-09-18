@@ -1,5 +1,5 @@
 {
-    "epochs": 100,
+    "epochs": 30,
     "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
@@ -26,11 +26,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "DistanceCorrelation",
+        "name": "LaplaceDP",
         "parameters": {
-            "lambda": 0.0001,
-            "party": [1],
-            "model_path": ""
+            "party": [0],
+            "dp_strength": 0.0001
         }
     },
     "attack_list": {

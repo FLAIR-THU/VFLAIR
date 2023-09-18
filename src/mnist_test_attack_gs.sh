@@ -2,32 +2,33 @@
 # # 100.0 #SBATCH --qos high
 # # python main_pipeline.py --configs test_zty4_2gs
 
-# # 99.5
-# sed -i 's/"gradient_sparse_rate": 100.0/"gradient_sparse_rate": 99.5/g' ./configs/test_zty4_2gs.json
-# python main_pipeline.py --configs test_zty4_2gs --gpu 6
+echo 'GS agg nsb Begin'
+# 99.5
+sed -i 's/"gradient_sparse_rate": 100.0/"gradient_sparse_rate": 99.5/g' ./configs/test_zty4_2gs.json
+python main_pipeline.py --configs test_zty4_2gs --gpu 6
 
-# # 99
-# sed -i 's/"gradient_sparse_rate": 99.5/"gradient_sparse_rate": 99.0/g' ./configs/test_zty4_2gs.json
-# python main_pipeline.py --configs test_zty4_2gs --gpu 6
+# 99
+sed -i 's/"gradient_sparse_rate": 99.5/"gradient_sparse_rate": 99.0/g' ./configs/test_zty4_2gs.json
+python main_pipeline.py --configs test_zty4_2gs --gpu 6
 
-# sed -i 's/"gradient_sparse_rate": 99.0/"gradient_sparse_rate": 98.0/g' ./configs/test_zty4_2gs.json
+sed -i 's/"gradient_sparse_rate": 99.0/"gradient_sparse_rate": 98.0/g' ./configs/test_zty4_2gs.json
 
-# # 97
-# sed -i 's/"gradient_sparse_rate": 98.0/"gradient_sparse_rate": 97.0/g' ./configs/test_zty4_2gs.json
-# python main_pipeline.py --configs test_zty4_2gs --gpu 6
+# 97
+sed -i 's/"gradient_sparse_rate": 98.0/"gradient_sparse_rate": 97.0/g' ./configs/test_zty4_2gs.json
+python main_pipeline.py --configs test_zty4_2gs --gpu 6
 
-# sed -i 's/"gradient_sparse_rate": 97.0/"gradient_sparse_rate": 96.0/g' ./configs/test_zty4_2gs.json
+sed -i 's/"gradient_sparse_rate": 97.0/"gradient_sparse_rate": 96.0/g' ./configs/test_zty4_2gs.json
 
-# # 95
-# sed -i 's/"gradient_sparse_rate": 96.0/"gradient_sparse_rate": 95.0/g' ./configs/test_zty4_2gs.json
-# python main_pipeline.py --configs test_zty4_2gs --gpu 6
+# 95
+sed -i 's/"gradient_sparse_rate": 96.0/"gradient_sparse_rate": 95.0/g' ./configs/test_zty4_2gs.json
+python main_pipeline.py --configs test_zty4_2gs --gpu 6
 
-# sed -i 's/"gradient_sparse_rate": 95.0/"gradient_sparse_rate": 100.0/g' ./configs/test_zty4_2gs.json
-# echo 'GS End'
+sed -i 's/"gradient_sparse_rate": 95.0/"gradient_sparse_rate": 100.0/g' ./configs/test_zty4_2gs.json
+echo 'GS End'
 
 
-# Begin with LaplaceDP 0.0001 
-echo 'LDP agg nsds Begin'
+# Begin with GaussianDP 0.0001 
+echo 'GDP agg nsb Begin'
 # DP 0.0001
 python main_pipeline.py --configs test_zty4_2dp --gpu 6
 
@@ -45,3 +46,4 @@ python main_pipeline.py --configs test_zty4_2dp --gpu 6
 
 
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.0001/g' ./configs/test_zty4_2dp.json
+echo 'GDP end'

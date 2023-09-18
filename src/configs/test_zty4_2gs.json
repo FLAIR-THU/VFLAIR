@@ -29,7 +29,7 @@
         "name": "GradientSparsification",
         "parameters": {
             "party": [1],
-            "gradient_sparse_rate": 100.0
+            "gradient_sparse_rate": 99.5
         }
     },
     "attack_list": {
@@ -39,13 +39,6 @@
                 "party": [0],
                 "noise_lambda": 2,
                 "noise_rate": 0.01
-            }
-        },
-        "1":{
-            "name": "MissingFeature",
-            "parameters": {
-                "party": [0],
-                "missing_rate": 0.25
             }
         }
     }

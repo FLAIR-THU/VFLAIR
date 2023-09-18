@@ -714,8 +714,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_poison_list != None, "[[inner error]]"
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
         if args.train_target_list == None:
             assert args.test_target_list == None
             args.train_target_list = random.sample(list(np.where(torch.argmax(train_label,axis=1)==args.target_label)[0]), args.num_classes)
@@ -761,8 +761,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
         if args.train_target_list == None:
             assert args.test_target_list == None
             # print('args.num_classes:',args.num_classes)
@@ -843,8 +843,8 @@ def load_dataset_per_party_backdoor(args, index):
             assert args.test_target_list != None, "[[inner error]]"
         print(f"party#{index} target label={args.target_label}")
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
 
         # transform label to onehot
         train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
@@ -933,8 +933,8 @@ def load_dataset_per_party_noisysample(args, index):
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
        
     elif args.dataset == 'nuswide':
         print('load backdoor data for nuswide')
@@ -971,8 +971,8 @@ def load_dataset_per_party_noisysample(args, index):
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
 
         # transform label to onehot
         train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)
@@ -1050,8 +1050,8 @@ def load_dataset_per_party_noisysample(args, index):
         else:
             assert args.test_poison_list != None , "[[inner error]]"
 
-        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset)
-        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset)
+        train_data, train_label, train_poison_data, train_poison_label = generate_poison_data(args, train_data, train_label, args.train_poison_list, 'train', args.k, args.dataset, index)
+        test_data, test_label, test_poison_data, test_poison_label = generate_poison_data(args, test_data, test_label, args.test_poison_list, 'test', args.k, args.dataset, index)
 
         # transform label to onehot
         train_label = label_to_one_hot(torch.tensor(train_label), num_classes=args.num_classes)

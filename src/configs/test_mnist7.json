@@ -25,14 +25,21 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [1],
+            "lr": 0.001,
+            "lambda": 1.0
+        }
+    },
     "attack_list": {
         "0":{
-            "name": "GenerativeRegressionNetwork",
+            "name": "NoisySample",
             "parameters": {
-                "party": [1],
-                "lr": 0.005,
-                "epochs": 60,
-                "batch_size": 64
+                "party": [0],
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }

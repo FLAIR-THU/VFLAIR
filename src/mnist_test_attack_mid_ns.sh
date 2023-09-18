@@ -249,7 +249,7 @@
 
 echo 'MID agg main begin' #SBATCH --qos high
 
-python main_pipeline.py --configs test_mnist6 --gpu 5
+# python main_pipeline.py --configs test_mnist6 --gpu 5
 
 sed -i 's/"lambda": 0.0/"lambda": 1e-8/g' ./configs/test_mnist6.json
 python main_pipeline.py --configs test_mnist6 --gpu 5
@@ -268,7 +268,7 @@ echo '0.1'
 python main_pipeline.py --configs test_mnist6 --gpu 5
 
 sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/test_mnist6.json
-python main_pipeline.py --configs test_mnist6 --gpu 5
+# python main_pipeline.py --configs test_mnist6 --gpu 5
 
 sed -i 's/"lambda": 1.0/"lambda": 100/g' ./configs/test_mnist6.json
 python main_pipeline.py --configs test_mnist6 --gpu 5

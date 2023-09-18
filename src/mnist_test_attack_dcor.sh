@@ -8,24 +8,45 @@ echo 'dCor main Begin '
 # Begin with 0.0001 #SBATCH --qos high
 # dCor 0.0001
 echo '0.0001'
-python main_pipeline.py --configs test_zty4_2dcor
+python main_pipeline.py --configs test_zty4_2dcor --gpu 1
 
 # dCor 0.001
 sed -i 's/"lambda": 0.0001/"lambda": 0.001/g' ./configs/test_zty4_2dcor.json
-# python main_pipeline.py --configs test_zty4_2dcor
+# python main_pipeline.py --configs test_zty4_2dcor --gpu 1
 
 # dCor 0.01
 sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/test_zty4_2dcor.json
-python main_pipeline.py --configs test_zty4_2dcor
+python main_pipeline.py --configs test_zty4_2dcor --gpu 1
 
 # dCor 0.1
 sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/test_zty4_2dcor.json
-python main_pipeline.py --configs test_zty4_2dcor
+python main_pipeline.py --configs test_zty4_2dcor --gpu 1
 
 # dCor 0.3
 sed -i 's/"lambda": 0.1/"lambda": 0.3/g' ./configs/test_zty4_2dcor.json
-python main_pipeline.py --configs test_zty4_2dcor
+python main_pipeline.py --configs test_zty4_2dcor --gpu 1
 
 sed -i 's/"lambda": 0.3/"lambda": 0.0001/g' ./configs/test_zty4_2dcor.json
 
 echo 'dCor End'
+
+# Begin with LaplaceDP 0.0001 
+echo 'LDP agg nsb Begin'
+# DP 0.0001
+python main_pipeline.py --configs test_zty4_2dp --gpu 1
+
+# DP 0.001
+sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.001/g' ./configs/test_zty4_2dp.json
+python main_pipeline.py --configs test_zty4_2dp --gpu 1
+
+# DP 0.01
+sed -i 's/"dp_strength": 0.001/"dp_strength": 0.01/g' ./configs/test_zty4_2dp.json
+python main_pipeline.py --configs test_zty4_2dp --gpu 1
+
+# DP 0.1
+sed -i 's/"dp_strength": 0.01/"dp_strength": 0.1/g' ./configs/test_zty4_2dp.json
+python main_pipeline.py --configs test_zty4_2dp --gpu 1
+
+
+sed -i 's/"dp_strength": 0.1/"dp_strength": 0.0001/g' ./configs/test_zty4_2dp.json
+echo 'LDP end'
