@@ -30,16 +30,14 @@
         "parameters": {
             "party": [1],
             "lr": 0.001,
-            "lambda": 1e-8
+            "lambda": 0.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "NoisySample",
+            "name": "ReplacementBackdoor",
             "parameters": {
-                "party": [0],
-                "noise_lambda": 2,
-                "noise_rate": 0.01
+                "party": [0]
             }
         }
     }

@@ -90,7 +90,7 @@ class MainTaskVFLwithNoisySample(object):
     
     def pred_transmit(self): 
         for ik in range(self.k):
-            pred, pred_clone = self.parties[ik].give_pred()
+            pred, pred_detach = self.parties[ik].give_pred()
 
             # # ######### for backdoor start #########
             # if ik != self.k-1: # Only Passive Parties do
@@ -106,7 +106,7 @@ class MainTaskVFLwithNoisySample(object):
                     # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
 
-            pred_clone = torch.autograd.Variable(pred_clone, requires_grad=True).to(self.args.device)
+            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik < (self.k-1): # Passive party sends pred for aggregation
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 

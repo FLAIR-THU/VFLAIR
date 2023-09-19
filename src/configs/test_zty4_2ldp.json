@@ -28,7 +28,7 @@
     "defense": {
         "name": "LaplaceDP",
         "parameters": {
-            "party": [0],
+            "party": [1],
             "dp_strength": 0.0001
         }
     },
