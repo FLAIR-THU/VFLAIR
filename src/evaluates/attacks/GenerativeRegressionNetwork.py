@@ -17,47 +17,10 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from dataset.party_dataset import PassiveDataset
 from dataset.party_dataset import ActiveDataset
 
-##### add DP noise with torch.no_grad()
-from evaluates.defenses.defense_functions import LaplaceDP_for_pred,GaussianDP_for_pred
-
 ##### add DP noise without torch.no_grad()
-# def LaplaceDP_for_pred(args, original_object):
-#     original_object = original_object[0]
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-    
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-#         scale = dp_strength
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                     threshold + 1e-6).clamp(min=1.0)
-#         # add laplace noise
-#         dist_a = torch.distributions.laplace.Laplace(location, scale)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 dist_a.sample(original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
+from evaluates.defenses.defense_functions import LaplaceDP_for_pred_grn,GaussianDP_for_pred_grn
 
 
-# def GaussianDP_for_pred(args, original_object):
-#     original_object = original_object[0]
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-
-#         scale = dp_strength
-        
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                 threshold + 1e-6).clamp(min=1.0)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 torch.normal(location, scale, original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
 
 def cal_ssim(im1,im2):
     assert len(im1.shape) == 2 and len(im2.shape) == 2
@@ -162,19 +125,9 @@ class GenerativeRegressionNetwork(Attacker):
         mse = torch.mean((batch_real_image-batch_dummy_image)**2)
         psnr = 20 * torch.log10(1/torch.sqrt(mse))
         return mse.cpu().numpy(), psnr.cpu().numpy()
-        '''
-        mse = tensor([
-                    0.0000, 0.0100, 0.0200, 0.0300, 0.0400, 0.0500, 0.0600, 0.0700, 0.0800,
-                    0.0900, 0.1000, 0.1000, 0.1100, 0.1200, 0.1300, 0.1400, 0.1500, 0.1600,
-                    0.1700, 0.1800, 0.1900, 0.2000])
-        psnr = tensor([    
-                    inf, 20.0000, 16.9897, 15.2288, 13.9794, 13.0103, 12.2185, 11.5490, 10.9691, 
-                    10.4576, 10.0000, 10.0000,  9.5861,  9.2082,  8.8606,  8.5387, 8.2391,  7.9588,
-                    7.6955,  7.4473,  7.2125,  6.9897])
-        '''
 
     def attack(self):
-        # self.set_seed(123)
+        self.set_seed(123)
         print_every = 1
         for ik in self.party: # attacker party #ik
             assert ik == 1, 'Only Active party launch feature inference attack'
@@ -203,9 +156,6 @@ class GenerativeRegressionNetwork(Attacker):
             train_data_a = self.vfl_info["train_data"][1]
             train_data_b = self.vfl_info["train_data"][0]
             train_label = self.vfl_info["train_data"][-1]
-            # train_data_a = self.vfl_info["test_data"][1]
-            # train_data_b = self.vfl_info["test_data"][0]
-            # train_label = self.vfl_info["test_data"][-1]
             train_dst_a = ActiveDataset(train_data_a, train_label)
             train_loader_a = DataLoader(train_dst_a, batch_size=batch_size)
             train_dst_b = PassiveDataset(train_data_b)
@@ -249,7 +199,7 @@ class GenerativeRegressionNetwork(Attacker):
 
                     # generate "fake inputs"
                     noise_data_b = torch.randn(batch_data_b.size()).to(self.device) # attack from passive side, data_b is at active side need to be generated from noise at passive side
-                    print('batch_data_a:',batch_data_a.size(),'batch_data_b:',batch_data_b.size())
+                    # print('batch_data_b:',batch_data_b.size())
                     # print('torch.cat:',batch_data_a.size(),noise_data_b.size())
                     # print('cat:',torch.cat((batch_data_a,noise_data_b),dim=1).size())
                     if self.args.dataset in ['nuswide','breast_cancer_diagnose','diabetes','adult_income','criteo']:
@@ -257,32 +207,24 @@ class GenerativeRegressionNetwork(Attacker):
                     else:
                         generated_data_b = self.netG(torch.cat((batch_data_a,noise_data_b),dim=2))
                     generated_data_b = generated_data_b.reshape(batch_data_b.size())
-                    print("generated_data_b", generated_data_b)
-                    print("batch_data_b", batch_data_b)
                     
                     # compute logits of generated/real data
                     pred_a = net_a(batch_data_a)
                     pred_b = net_b(batch_data_b)
                     dummy_pred_b = net_b(generated_data_b)
 
-                    print(f'before pred_b={pred_b}')
-                    print(f'before dummy_pred_b={dummy_pred_b}')
-                    # print(f"[debug] loss {torch.autograd.grad(((F.softmax(dummy_pred_b,dim=-1) - F.softmax(pred_b,dim=-1))**2).sum(),generated_data_b, retain_graph=True)}")
                     ####### DP Defense On FR ########
                     if self.args.apply_dp == True:
                         if 'laplace' in self.args.defense_name.casefold():
+                            pred_b = LaplaceDP_for_pred_grn(self.args, pred_b)
+                            dummy_pred_b = LaplaceDP_for_pred_grn(self.args, dummy_pred_b)
+                        elif 'gaussian' in self.args.defense_name.casefold():
                             # print("before",pred_b.shape,pred_b)
-                            pred_b = LaplaceDP_for_pred(self.args, [pred_b])
-                            dummy_pred_b = LaplaceDP_for_pred(self.args, [dummy_pred_b])
+                            pred_b = GaussianDP_for_pred_grn(self.args, pred_b)
+                            dummy_pred_b = GaussianDP_for_pred_grn(self.args, dummy_pred_b)
                             # print("after",pred_b.shape,pred_b)
                             # assert 1>2
-                        elif 'gaussian' in self.args.defense_name.casefold():
-                            pred_b = GaussianDP_for_pred(self.args, [pred_b])
-                            dummy_pred_b = GaussianDP_for_pred(self.args, [dummy_pred_b])
                     ####### DP Defense On FR ########
-                    print(f'after pred_b={pred_b}')
-                    print(f'after dummy_pred_b={dummy_pred_b}')
-                    # print(f"[debug] loss {torch.autograd.grad(((F.softmax(dummy_pred_b,dim=-1) - F.softmax(pred_b,dim=-1))**2).sum(),generated_data_b, retain_graph=True)}")
 
                     # aggregate logits of clients
                     real_pred = global_model([pred_a, pred_b])
@@ -292,35 +234,23 @@ class GenerativeRegressionNetwork(Attacker):
                     # print('dummy_pred:',dummy_pred.requires_grad)
 
                     unknown_var_loss = 0.0
-                    
-                    # # print(f"[debug] generated_data_b.shape={generated_data_b.shape}")
-                    # flatten_generated_data_b = generated_data_b.view(generated_data_b.size(0),-1)
-                    # # print(f"[debug] flatten_generated_data_b.shape={flatten_generated_data_b.shape}")
-                    # for i in range(flatten_generated_data_b.size(1)):
-                    #     unknown_var_loss = unknown_var_loss + (flatten_generated_data_b[:,i].var())     # var() unknown
-                    # # print(f"[debug] see the gradient of var_loss on gen_data_b = {torch.autograd.grad(unknown_var_loss, generated_data_b, retain_graph=True)}")
-                    # loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
-                    #         + self.unknownVarLambda * unknown_var_loss)
-                    #         # + self.unknownVarLambda * unknown_var_loss * 0.0)
-                    
                     for i in range(generated_data_b.size(0)):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
-                    print(f"[debug] unknown_var_loss={unknown_var_loss}")
-                    # print(f"[debug] see the gradient of var_loss on gen_data_b = {torch.autograd.grad(unknown_var_loss, generated_data_b, retain_graph=True)}")
                     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
-                            + self.unknownVarLambda * unknown_var_loss * 0.0)
-                    print(f"[debug] loss {torch.autograd.grad(((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum(),self.netG.parameters(), retain_graph=True)}")
-                    
+                    + self.unknownVarLambda * unknown_var_loss * 0.25)
                     train_mse = criterion(generated_data_b, batch_data_b)
                     loss.backward()
 
-                    # # # check if gradient is not None
+                    # # check if gradient is not None
                     # mark = 0
                     # for name, param in self.netG.named_parameters():
                     #     if mark == 0:
-                    #         # print(name, param.grad)
+                    #         print('Check grad:',name, param.grad)
                     #         mark = mark + 1
+
                     self.optimizerG.step() 
+
+                    
 
 
                 ####### Test Performance of Generator #######
