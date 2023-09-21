@@ -294,6 +294,7 @@ def GaussianDP(args, original_object):
 
 def GaussianDP_for_pred(args, original_object):
     # print('Gaussian DP for pred')
+    original_object = original_object[0]
 
     # original_object = original_object[0].requires_grad_()
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
