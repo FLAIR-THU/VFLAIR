@@ -26,10 +26,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "LaplaceDP",
+        "name": "GaussianDP",
         "parameters": {
             "party": [0],
-            "dp_strength": 0.0001
+            "dp_strength": 0.001
         }
     },
     "attack_list": {

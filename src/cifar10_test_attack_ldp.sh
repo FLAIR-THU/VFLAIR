@@ -7,19 +7,19 @@
 # Begin with LaplaceDP 0.0001 
 echo 'LDP agg nsb Begin'
 # DP 0.0001
-python main_pipeline.py --configs test_cifar10_5 --gpu 0
+python main_pipeline.py --configs test_cifar10_5 --gpu 5
 
 # DP 0.001
 sed -i 's/"dp_strength": 0.0001/"dp_strength": 0.001/g' ./configs/test_cifar10_5.json
-python main_pipeline.py --configs test_cifar10_5 --gpu 0
+python main_pipeline.py --configs test_cifar10_5 --gpu 5
 
 # DP 0.01
 sed -i 's/"dp_strength": 0.001/"dp_strength": 0.01/g' ./configs/test_cifar10_5.json
-python main_pipeline.py --configs test_cifar10_5 --gpu 0
+python main_pipeline.py --configs test_cifar10_5 --gpu 5
 
 # DP 0.1
 sed -i 's/"dp_strength": 0.01/"dp_strength": 0.1/g' ./configs/test_cifar10_5.json
-python main_pipeline.py --configs test_cifar10_5 --gpu 0
+python main_pipeline.py --configs test_cifar10_5 --gpu 5
 
 
 sed -i 's/"dp_strength": 0.1/"dp_strength": 0.0001/g' ./configs/test_cifar10_5.json

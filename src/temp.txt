@@ -1,0 +1,59 @@
+================= iter seed  97  =================
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+running on cuda6
+============ apply_trainable_layer= 0 ============
+======= Defense ========
+Defense_Name: MID_Passive
+Defense_Config: {'party': [0], 'lr': 0.001, 'lambda': 1e-08}
+===== Total Attack Tested: 1  ======
+targeted_backdoor: [] []
+untargeted_backdoor: [] []
+label_inference: [] []
+attribute_inference: [] []
+feature_inference: ['GenerativeRegressionNetwork'] [0]
+exp_result/nuswide/Q1/0/MID_Passive_1e-08,model=MLP2.txt
+=================================
+
+No Attack==============================
+load_dataset_per_party  args.need_auxiliary =  0
+nuswide dataset [train]: torch.Size([60000, 1000]) torch.Size([60000, 634]) torch.Size([60000, 5])
+nuswide dataset [test]: torch.Size([40000, 1000]) torch.Size([40000, 634]) torch.Size([40000, 5])
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [0]
+begin to load mid model for party 0
+load local mid model for party 0
+lambda for passive party local mid model: 1e-08
+small MID model for nuswide
+load_dataset_per_party  args.need_auxiliary =  0
+nuswide dataset [train]: torch.Size([60000, 1000]) torch.Size([60000, 634]) torch.Size([60000, 5])
+nuswide dataset [test]: torch.Size([40000, 1000]) torch.Size([40000, 634]) torch.Size([40000, 5])
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [0]
+validate and test
+Epoch 0% 	 train_loss:0.94 train_acc:0.61 test_acc:0.67 test_auc:0.90
+K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|None|main_task_acc|acc_loss,2|1024|0.003000|5|1|0|1|No_Attack|None|(0.6743, 0)|0.0
+======= Test Attack 0 :  GenerativeRegressionNetwork  =======
+attack configs: {'party': [1], 'lr': 1e-05, 'epochs': 60, 'batch_size': 1024}
+load_dataset_per_party  args.need_auxiliary =  0
+nuswide dataset [train]: torch.Size([60000, 1000]) torch.Size([60000, 634]) torch.Size([60000, 5])
+nuswide dataset [test]: torch.Size([40000, 1000]) torch.Size([40000, 634]) torch.Size([40000, 5])
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [0]
+begin to load mid model for party 0
+load local mid model for party 0
+lambda for passive party local mid model: 1e-08
+small MID model for nuswide
+load_dataset_per_party  args.need_auxiliary =  0
+nuswide dataset [train]: torch.Size([60000, 1000]) torch.Size([60000, 634]) torch.Size([60000, 5])
+nuswide dataset [test]: torch.Size([40000, 1000]) torch.Size([40000, 634]) torch.Size([40000, 5])
+current_model_type=MLP2
+Load Defense models
+mid defense parties: [0]
+validate and test
+Epoch 0% 	 train_loss:0.94 train_acc:0.61 test_acc:0.67 test_auc:0.90
+========= Feature Inference Training ========

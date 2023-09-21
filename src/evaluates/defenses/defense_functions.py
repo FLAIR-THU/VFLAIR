@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import random
 
+DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 3, 'nuswide': 30}
 
 # Privacy Preserving Deep Learning
 def bound(grad, gamma):
@@ -216,22 +217,25 @@ def LaplaceDP_for_pred(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 39
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
         with torch.no_grad():
             scale = dp_strength
             
-            abs_factor_a = torch.max(torch.abs(original_object))
-            dist_a = torch.distributions.laplace.Laplace(location, scale)
-            new_object = (torch.div(original_object, abs_factor_a) + \
-                                    dist_a.sample(original_object.shape).to(args.device))
-            new_object *= abs_factor_a
-
-            # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-            #                             threshold + 1e-6).clamp(min=1.0)
-            # # add laplace noise
+            # abs_factor_a = torch.max(torch.abs(original_object))
             # dist_a = torch.distributions.laplace.Laplace(location, scale)
-            # new_object = (torch.div(original_object, norm_factor_a) + \
+            # new_object = (torch.div(original_object, abs_factor_a) + \
             #                         dist_a.sample(original_object.shape).to(args.device))
+            # new_object *= abs_factor_a
+
+            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                        threshold + 1e-6).clamp(min=1.0)
+            # norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+            # print(f"for l_dp_pred, norm_factor_a={norm_factor_a}")
+            # add laplace noise
+            dist_a = torch.distributions.laplace.Laplace(location, scale)
+            new_object = (torch.div(original_object, norm_factor_a) + \
+                                    dist_a.sample(original_object.shape).to(args.device))
+            # new_object *= norm_factor_a
 
         return new_object
     else:
@@ -245,21 +249,24 @@ def LaplaceDP_for_pred_grn(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 39
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
         scale = dp_strength
         
-        abs_factor_a = torch.max(torch.abs(original_object))
-        dist_a = torch.distributions.laplace.Laplace(location, scale)
-        new_object = (torch.div(original_object, abs_factor_a) + \
-                                dist_a.sample(original_object.shape).to(args.device))
-        new_object *= abs_factor_a
+        # abs_factor_a = torch.max(torch.abs(original_object))
+        # dist_a = torch.distributions.laplace.Laplace(location, scale)
+        # new_object = (torch.div(original_object, abs_factor_a) + \
+        #                         dist_a.sample(original_object.shape).to(args.device))
+        # new_object *= abs_factor_a
 
-            # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-            #                             threshold + 1e-6).clamp(min=1.0)
-            # # add laplace noise
-            # dist_a = torch.distributions.laplace.Laplace(location, scale)
-            # new_object = (torch.div(original_object, norm_factor_a) + \
-            #                         dist_a.sample(original_object.shape).to(args.device))
+        norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                    threshold + 1e-6).clamp(min=1.0)
+        # norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+        # print(f"for l_dp_pred_grn, norm_factor_a={norm_factor_a}")
+        # add laplace noise
+        dist_a = torch.distributions.laplace.Laplace(location, scale)
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                dist_a.sample(original_object.shape).to(args.device))
+        # new_object *= norm_factor_a
 
         return new_object
     else:
@@ -296,30 +303,29 @@ def GaussianDP_for_pred(args, original_object):
     # print('Gaussian DP for pred')
     original_object = original_object[0]
 
-    # original_object = original_object[0].requires_grad_()
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
     # print('dp_strength:',dp_strength)
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 38  # 1e9
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
         with torch.no_grad():
             scale = dp_strength
-            # normalized_object = F.softmax(original_object[0],dim=-1)
-            # noise_object = normalized_object + torch.normal(location, scale, original_object[0].shape).to(args.device)
 
-            abs_factor_a = torch.max(torch.abs(original_object[0]))
-            new_object = (torch.div(original_object[0], abs_factor_a) + \
-                                    torch.normal(location, scale, original_object[0].shape).to(args.device))
-            new_object *= abs_factor_a
+            # abs_factor_a = torch.max(torch.abs(original_object))
+            # new_object = (torch.div(original_object, abs_factor_a) + \
+            #                         torch.normal(location, scale, original_object.shape).to(args.device))
+            # new_object *= abs_factor_a
             
-            # norm_factor_a = torch.div(torch.max(torch.norm(original_object[0], dim=1)),
-            #                         threshold + 1e-6).clamp(min=1.0)
-            # new_object = (torch.div(original_object[0], norm_factor_a) + \
-            #                         torch.normal(location, scale, original_object[0].shape).to(args.device))
-            
-            # print("norm of gradients after gaussian:", torch.norm(original_object[0], dim=1), torch.max(torch.norm(original_object, dim=1)))
+            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                    threshold + 1e-6).clamp(min=1.0)
+            # norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+            # print(f"for g_dp_pred, norm_factor_a={norm_factor_a}")
+            new_object = (torch.div(original_object, norm_factor_a) + \
+                                    torch.normal(location, scale, original_object.shape).to(args.device))
+            # new_object *= norm_factor_a
+        
         return new_object
     else:
         return original_object
@@ -327,29 +333,29 @@ def GaussianDP_for_pred(args, original_object):
 def GaussianDP_for_pred_grn(args, original_object):
     # print('Gaussian DP for pred')
 
-    # original_object = original_object[0].requires_grad_()
+    # original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
     # print('dp_strength:',dp_strength)
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 38  # 1e9
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
         scale = dp_strength
-        # normalized_object = F.softmax(original_object[0],dim=-1)
-        # noise_object = normalized_object + torch.normal(location, scale, original_object[0].shape).to(args.device)
 
-        abs_factor_a = torch.max(torch.abs(original_object[0]))
-        new_object = (torch.div(original_object[0], abs_factor_a) + \
-                                torch.normal(location, scale, original_object[0].shape).to(args.device))
-        new_object *= abs_factor_a
-        
-        # norm_factor_a = torch.div(torch.max(torch.norm(original_object[0], dim=1)),
-        #                         threshold + 1e-6).clamp(min=1.0)
-        # new_object = (torch.div(original_object[0], norm_factor_a) + \
+        # abs_factor_a = torch.max(torch.abs(original_object[0]))
+        # new_object = (torch.div(original_object[0], abs_factor_a) + \
         #                         torch.normal(location, scale, original_object[0].shape).to(args.device))
+        # new_object *= abs_factor_a
         
-        # print("norm of gradients after gaussian:", torch.norm(original_object[0], dim=1), torch.max(torch.norm(original_object, dim=1)))
+        norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+                                threshold + 1e-6).clamp(min=1.0)
+        # norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+        # print(f"for g_dp_pred_grn, norm_factor_a={norm_factor_a}")
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                torch.normal(location, scale, original_object.shape).to(args.device))
+        # new_object *= norm_factor_a
+        
         return new_object
     else:
         return original_object

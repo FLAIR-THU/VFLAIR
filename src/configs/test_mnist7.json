@@ -26,20 +26,20 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
-            "party": [1],
-            "lr": 0.001,
-            "lambda": 1.0
+            "party": [0],
+            "dp_strength": 0.1
         }
     },
     "attack_list": {
         "0":{
-            "name": "NoisySample",
+            "name": "GenerativeRegressionNetwork",
             "parameters": {
-                "party": [0],
-                "noise_lambda": 2,
-                "noise_rate": 0.01
+                "party": [1],
+                "lr": 0.005,
+                "epochs": 60,
+                "batch_size": 1024
             }
         }
     }

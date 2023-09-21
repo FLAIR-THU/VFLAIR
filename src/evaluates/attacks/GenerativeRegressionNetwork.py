@@ -239,6 +239,12 @@ class GenerativeRegressionNetwork(Attacker):
                     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
                     + self.unknownVarLambda * unknown_var_loss * 0.25)
                     train_mse = criterion(generated_data_b, batch_data_b)
+                    # print(f'[debug] see pred_match_loss: {((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum()}')
+                    # print(f'[debug] see var_loss: {unknown_var_loss}')
+                    # print(f'[debug] see gradients of pred_match_loss: {torch.autograd.grad(((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum(), self.netG.parameters(), retain_graph=True)}')
+                    # print(f'[debug] see gradients of var_loss: {torch.autograd.grad(unknown_var_loss, self.netG.parameters(), retain_graph=True)}')
+                    # print(f'[debug] see fake data_b={generated_data_b}')
+                    # print(f'[debug] see real data_b={batch_data_b}')
                     loss.backward()
 
                     # # check if gradient is not None
@@ -247,6 +253,7 @@ class GenerativeRegressionNetwork(Attacker):
                     #     if mark == 0:
                     #         print('Check grad:',name, param.grad)
                     #         mark = mark + 1
+
 
                     self.optimizerG.step() 
 
@@ -270,12 +277,12 @@ class GenerativeRegressionNetwork(Attacker):
                         origin_data = test_data_b.reshape(generated_data_b.size()).to(self.device)
                         noise_data = noise_data_b.reshape(generated_data_b.size()).to(self.device)
                         mse = criterion(generated_data_b, origin_data)
-                        rand_mse = criterion(noise_data, origin_data)
+                        rand_mse = criterion(noise_data, origin_data) #1.006
                        
                         # MSE.append(mse)
                         # PSNR.append(psnr)
-                    print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} '.format(
-                        i_epoch, loss.item(), train_mse, mse))
+                    print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} rand_mse:{:.3f}'.format(
+                        i_epoch, loss.item(), train_mse, mse, rand_mse))
             
             # mark = 0
             # print('Final Model')

@@ -29,7 +29,7 @@
         "name": "GaussianDP",
         "parameters": {
             "party": [0],
-            "dp_strength": 0.0001
+            "dp_strength": 0.1
         }
     },
     "attack_list": {
@@ -37,7 +37,7 @@
             "name": "GenerativeRegressionNetwork",
             "parameters": {
                 "party": [1],
-                "lr": 0.5,
+                "lr": 0.005,
                 "epochs": 60,
                 "batch_size": 1024
             }
