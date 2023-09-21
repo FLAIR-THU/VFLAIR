@@ -338,9 +338,9 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in range(12345,12345+5): # test 5 times 
-    # for seed in [97,98,99,100,101,0,1,2,3,4,5]: # test 5 times 
+    for seed in [97,98,99,100,101,0,1,2,3,4,5,6,7,8,9,10]: # test 5 times 
     # for seed in range(101,102): # test 5 times 
-    for seed in range(60,61):
+    # for seed in range(60,61):
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -403,8 +403,8 @@ if __name__ == '__main__':
         args.main_acc_noattack = None
 
         args = load_attack_configs(args.configs, args, -1)
-        # args = load_parties(args)
-        # args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        args = load_parties(args)
+        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
         
         if args.label_inference_list != []:
             evaluate_label_inference(args)

@@ -58,46 +58,6 @@ class custom_AE(nn.Module):
         x = torch.tensor(x,dtype=torch.float32)
         return self.net(x)
 
-# def LaplaceDP_for_pred(args, original_object):
-#     original_object = original_object[0]
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-    
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-#         scale = dp_strength
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                     threshold + 1e-6).clamp(min=1.0)
-#         # add laplace noise
-#         dist_a = torch.distributions.laplace.Laplace(location, scale)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 dist_a.sample(original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
-
-
-# def GaussianDP_for_pred(args, original_object):
-#     print('original_object',original_object.size())
-#     original_object = original_object[0]
-#     print('original_object',original_object.size())
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-
-#         scale = dp_strength
-        
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                 threshold + 1e-6).clamp(min=1.0)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 torch.normal(location, scale, original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
-
 
 class ResSFL(Attacker):
     def __init__(self, top_vfl, args):
@@ -251,8 +211,6 @@ class ResSFL(Attacker):
 
                         img = test_data_b # target img
                         # test_pred_b = net_b(test_data_b)
-
-                        
 
                         if self.args.dataset == 'cifar10':
                             test_data_b[ik] = test_data_b[ik].reshape([len(test_data_b[ik]),3,16,32])

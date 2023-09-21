@@ -5,19 +5,21 @@
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 2
+        "dataset_name": "cifar10",
+        "num_classes": 10
     },
     "model_list":{
         "0": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 2
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 10,
+            "path": "random_20"
         },
         "1": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 2
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 10,
+            "path": "random_20"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -25,16 +27,19 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
+            "party": [0],
             "lr": 0.001,
             "lambda": 0.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectionbasedScoring",
+            "name": "ResSFL",
             "parameters": {
-                "party": [0]
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
             }
         }
     }
