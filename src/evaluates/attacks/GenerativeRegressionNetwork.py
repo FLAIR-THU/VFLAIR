@@ -227,8 +227,8 @@ class GenerativeRegressionNetwork(Attacker):
                     ####### DP Defense On FR ########
 
                     # aggregate logits of clients
-                    real_pred = global_model([pred_a, pred_b])
-                    dummy_pred = global_model([pred_a, dummy_pred_b])
+                    real_pred = global_model([pred_b, pred_a])
+                    dummy_pred = global_model([dummy_pred_b, pred_a])
 
                     # print('dummy_pred_b:',dummy_pred_b.requires_grad)
                     # print('dummy_pred:',dummy_pred.requires_grad)
@@ -236,8 +236,19 @@ class GenerativeRegressionNetwork(Attacker):
                     unknown_var_loss = 0.0
                     for i in range(generated_data_b.size(0)):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
-                    loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
-                    + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # if self.args.dataset == 'nuswide' and torch.sum(dummy_pred,dim=-1)[0] != 1.0:
+                    #     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
+                    #     + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # else:
+                    #     loss = (((dummy_pred - real_pred)**2).sum() \
+                    #     + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    loss = (((dummy_pred - real_pred)**2).sum() \
+                        + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # if self.args.dataset == 'nuswide':
+                    #     # print(f"[debug] (generated_data_b > 0.5).float().shape={(generated_data_b > 0.5).float().shape}, batch_data_b.shape={batch_data_b.shape}")
+                    #     train_mse = criterion((generated_data_b > 0.5).float(), batch_data_b)
+                    # else:
+                    #     train_mse = criterion(generated_data_b, batch_data_b)
                     train_mse = criterion(generated_data_b, batch_data_b)
                     # print(f'[debug] see pred_match_loss: {((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum()}')
                     # print(f'[debug] see var_loss: {unknown_var_loss}')
@@ -257,8 +268,6 @@ class GenerativeRegressionNetwork(Attacker):
 
                     self.optimizerG.step() 
 
-                    
-
 
                 ####### Test Performance of Generator #######
                 if (i_epoch + 1) % print_every == 0:
@@ -276,6 +285,12 @@ class GenerativeRegressionNetwork(Attacker):
 
                         origin_data = test_data_b.reshape(generated_data_b.size()).to(self.device)
                         noise_data = noise_data_b.reshape(generated_data_b.size()).to(self.device)
+                        # if self.args.dataset == 'nuswide':
+                        #     mse = criterion((generated_data_b > 0.5).float(), origin_data)
+                        #     rand_mse = criterion((noise_data > 0.5).float(), origin_data) #1.006
+                        # else:
+                        #     mse = criterion(generated_data_b, origin_data)
+                        #     rand_mse = criterion(noise_data, origin_data) #1.006
                         mse = criterion(generated_data_b, origin_data)
                         rand_mse = criterion(noise_data, origin_data) #1.006
                        

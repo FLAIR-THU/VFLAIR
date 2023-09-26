@@ -47,18 +47,20 @@ def evaluate_no_attack(args):
 
     vfl = MainTaskVFL(args)
     if args.dataset not in ['cora']:
-        main_acc = vfl.train()
+        main_acc , stopping_iter= vfl.train()
     else:
         main_acc = vfl.train_graph()
 
     main_acc_noattack = main_acc
-    attack_metric = main_acc_noattack[0] - main_acc[0]
+    attack_metric = main_acc_noattack - main_acc
     attack_metric_name = 'acc_loss'
     # Save record 
     exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
         (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
+    append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}")
+    
     return vfl, main_acc_noattack
 
 def evaluate_feature_inference(args):
@@ -74,18 +76,10 @@ def evaluate_feature_inference(args):
         if args.attack_name == 'ResSFL':
             args.need_auxiliary = 1
             args = load_parties(args)
-            # if args.basic_vfl_withaux == None:
-            #     vfl = MainTaskVFL(args)
-            #     if args.dataset not in ['cora']:
-            #         main_acc = vfl.train()
-            #     else:
-            #         main_acc = vfl.train_graph()
-            # else:
-            #     main_acc = args.main_acc_noattack_withaux 
-            #     vfl = args.basic_vfl_withaux 
+
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+                main_acc, stopping_iter = vfl.train()
             else:
                 main_acc = vfl.train_graph()
                 main_acc = args.main_acc_noattack_withaux 
@@ -94,11 +88,11 @@ def evaluate_feature_inference(args):
             args.basic_vfl_withaux = vfl
         
         else: # GRN
-            args.need_auxiliary = 0 
+            args.need_auxiliary = 0
             args = load_parties(args)
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+                main_acc , stopping_iter= vfl.train()
             else:
                 main_acc = vfl.train_graph()
 
@@ -168,7 +162,7 @@ def evaluate_label_inference(args):
             # actual train = train-aux
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+                main_acc, stopping_iter = vfl.train()
             else:
                 main_acc = vfl.train_graph()
 
@@ -225,7 +219,7 @@ def evaluate_attribute_inference(args):
 
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc = vfl.train()
+                main_acc , stopping_iter= vfl.train()
             else:
                 main_acc = vfl.train_graph()
             # vfl = args.basic_vfl
@@ -337,10 +331,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # for seed in range(97,102): # test 5 times 
-    # for seed in range(12345,12345+5): # test 5 times 
-    for seed in [97,98,99,100,101,0,1,2,3,4,5,6,7,8,9,10]: # test 5 times 
-    # for seed in range(101,102): # test 5 times 
-    # for seed in range(60,61):
+    # for seed in [97]:
+    for seed in [0,1,2,3,4,5,6,7,8,9]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')

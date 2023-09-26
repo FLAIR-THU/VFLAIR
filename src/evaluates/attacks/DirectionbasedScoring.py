@@ -31,11 +31,19 @@ def update_all_cosine_leak_auc(cosine_leak_auc_dict, grad_list, pos_grad_list, y
         #             y=y,
         #             predicted_value=cosine_similarity(grad, pos_grad),
         #             m_auc=cosine_leak_auc_dict[key])
+        
+        # print(f"[debug] in update_all_cosine_leak_auc, grad.shape={grad.shape}, pos_grad.shape={pos_grad.shape}, y.shape={y.shape}")
+        # print(f'[debug] pos_grad={pos_grad}')
+        # print(f'[deubg] possitive sample is of ratio {sum(y.numpy())/grad.shape[0]}')
         predicted_value = cosine_similarity(grad, pos_grad).numpy()
    
         predicted_label = np.where(predicted_value>0,1,0).reshape(-1)
         _y = y.numpy()
         acc = ((predicted_label==_y).sum()/len(_y))
+        # print(f'[debug] grad=[')
+        # for _grad, _lable, _pred in zip(grad,y, predicted_label):
+        #     print(_grad, _lable, _pred)
+        # print("]")
 
         predicted_value = tf.reshape(predicted_value, shape=(-1))
         if tf.reduce_sum(y) == 0: # no positive examples in this batch
