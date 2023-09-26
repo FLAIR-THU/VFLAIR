@@ -79,6 +79,12 @@ class NodeAPI:
     def __init__(self) -> None:
         pass
 
+    def count_nodes(self, node: Node) -> int:
+        if (node.is_leaf()):
+            return 1
+        else:
+            return 1 + self.count_nodes(node.right) + self.count_nodes(node.left)
+
     def print(self, node: Node, target_party_id: int = -1) -> str:
         result, skip_flag = self.recursive_print(node, "", False, target_party_id)
         if skip_flag:
@@ -193,6 +199,9 @@ class Tree:
             for i, val in zip(indices, values):
                 y_train_pred[i] = val
         return y_train_pred
+
+    def count_nodes(self) -> int:
+        return self.nodeapi(self.dtree)
 
     def print(self, target_party_id: int = -1) -> str:
         return self.nodeapi.print(self.dtree, target_party_id)
