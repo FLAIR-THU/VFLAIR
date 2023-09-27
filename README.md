@@ -33,7 +33,7 @@
 
 ## Code Structure
 
- ![VFLAIR](usage_guidance/figures/VFLAIR.png)
+ <!-- ![VFLAIR](usage_guidance/figures/VFLAIR.png) -->
 ```
 VFLAIR
 ├── src
@@ -45,14 +45,23 @@ VFLAIR
 │   │   |   ├── ...                    # Defense Implementation & Functions
 │   |   ├── MainTaskVFL                # Pipeline for BasicVFL & VFL with LI/FR/NTB
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
+│   |   ├── MainTaskVFLwithNoisySample # Pipeline for VFL with NTB-NSB    
 │   |   ├── MainTaskTVFL               # Pipeline for Tree-based VFL
 │   ├── load                           # Load Configurations into training pipeline
 │   |   ├── LoadConfigs.py             # Load basic parameters   
 │   |   ├── LoadDataset.py             # Load dataset and do data partition
 │   |   ├── LoadModels.py              # Initialize models
 │   |   ├── LoadParty.py               # Initialized parties with data and model
+│   |   ├── LoadTreeConfigs.py         # Load basic parameters   
+│   |   ├── LoadTreeParty.py           # Initialized parties with data and model
 │   ├── configs                        # Customizable configurations    
-│   |   ├── standard_configs           # Standard configurations for reference
+│   |   ├── standard_configs           # Standard configurations for NN-based VFL
+│   │   │   ├── ...   
+│   |   ├── active_party_attack        # Standard configurations for active party attack
+│   │   │   ├── ...   
+│   |   ├── passive_party_attack       # Standard configurations for passive party attack
+│   │   │   ├── ...   
+│   |   ├── tree                       # Standard configurations for tree-based VFL 
 │   │   │   ├── ...   
 │   |   ├── README.md                  # Guidance for configuration files 
 │   |   ├── README_TREE.md             # Guidance for testing tree-based VFL
@@ -77,6 +86,7 @@ VFLAIR
 │   ├── Add_New_Algorithm.md           # Guidance on how to add user defined attacks and defenses algorithms
 │   ├── Dataset_Usage.md               # Guidance on how to achieve dataset for experiments
 ├── README.md
+├── requirements.txt                   # installation requirement, we mainly use pytorch3.8 for experiments
 ```
 
 
