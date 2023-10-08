@@ -125,7 +125,7 @@ if __name__ == "__main__":
         ]
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=args.seed, stratify=y
+        X, y, test_size=0.2, random_state=args.seed, stratify=y
     )
 
     datasets = [
