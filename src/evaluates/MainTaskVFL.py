@@ -222,6 +222,7 @@ class MainTaskVFL(object):
             predict_prob = encoder.decoder(predict_prob)
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
+        
         return loss.item(), train_acc
 
     def train(self):
@@ -239,6 +240,7 @@ class MainTaskVFL(object):
         LR_active_list = []
 
         communication = 0
+        total_time = 0.0
         flag = 0
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -270,9 +272,14 @@ class MainTaskVFL(object):
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state(True)
 
+                enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
+                exit_time = time.time()
+                total_time += (exit_time-enter_time)
 
                 communication = communication + 1
+                if communication % 10 == 0:
+                    print(f"total time for {communication} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
                         self.stopping_iter = communication
                         flag = 1

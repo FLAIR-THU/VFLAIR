@@ -165,6 +165,24 @@ class MLP3(nn.Module):
         x = self.layer3(x)
         return x
 
+
+# for Nursery dataset
+class MLP3_Nursery(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP3_Nursery, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 200),
+            nn.ReLU(),
+            nn.Linear(200, 100),
+            nn.ReLU(),
+            nn.Linear(100, output_dim)
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
+
+
 # for adult income dataset
 class MLP4(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -182,6 +200,26 @@ class MLP4(nn.Module):
     def forward(self, x):
         out = self.layer(x)
         return out
+
+
+# for Credit dataset
+class MLP4_Credit(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP4_Credit, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 100),
+            nn.ReLU(),
+            nn.Linear(100, 50),
+            nn.ReLU(),
+            nn.Linear(50, 20),
+            nn.ReLU(),
+            nn.Linear(20, output_dim)
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
+
 
 # For news20 dataset
 class MLP5(nn.Module):
