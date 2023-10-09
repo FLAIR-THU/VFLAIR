@@ -1,3 +1,4 @@
+import sys
 import threading
 from typing import Callable, List
 
@@ -94,6 +95,8 @@ class XGBoostNode(Node):
         self.best_entropy = None
         self.left = None
         self.right = None
+        self.data_trafic = 0
+        self.num_comm = 0
 
         self.row_count = len(self.idxs)
         self.num_parties = len(self.parties)
@@ -202,10 +205,15 @@ class XGBoostNode(Node):
                         )
                         tls = search_results_encrypted[j][k][2]
                         search_results[-1].append((tlg, tlh, tls))
+                self.data_trafic += sys.getsizeof(search_results_encrypted)
+                self.num_comm += len(search_results)
             else:
                 search_results = self.parties[temp_party_id].greedy_search_split(
                     self.gradient, self.hessian, self.idxs
                 )
+                if (temp_party_id != self.active_party_id):
+                    self.data_trafic += sys.getsizeof(search_results)
+                    self.num_comm += len(search_results)
 
             temp_score, temp_entropy = 0, 0
             temp_left_grad, temp_left_hess, temp_right_grad, temp_right_hess = (
@@ -284,7 +292,7 @@ class XGBoostNode(Node):
             else:
                 num_parties_per_thread = self.get_num_parties_per_process(
                     self.n_job, self.num_parties
-                )
+)
 
                 cnt_parties = 0
                 threads_parties = []
@@ -362,6 +370,9 @@ class XGBoostNode(Node):
         )
         if self.right.is_leaf_flag == 1:
             self.right.party_id = self.party_id
+
+        self.num_comm += self.left.num_comm + self.right.num_comm
+        self.data_trafic += self.left.data_trafic + self.right.data_trafic
 
         # Notice: this flag only supports for the case of two parties
         if (

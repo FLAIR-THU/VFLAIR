@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import Callable, List
 
 import numpy as np
@@ -141,6 +142,9 @@ class XGBoostBase:
         self.estimators = []
         self.logging_loss = []
 
+        self.distribution_num_comm = 0
+        self.distribution_data_trafic = 0
+
     def get_init_pred(self, y: np.ndarray) -> List[List[float]]:
         pass
 
@@ -154,9 +158,18 @@ class XGBoostBase:
     def get_estimators(self) -> List:
         return self.estimators
 
+    def get_size(self) -> List:
+        num_comm = self.distribution_num_comm
+        data_trafic = self.distribution_data_trafic
+        for i in range(len(self.estimators)):
+            num_comm += self.estimators[i].dtree.num_comm
+            data_trafic += self.estimators[i].dtree.data_trafic
+        return num_comm, data_trafic
+
     def fit(self, parties: List, y: np.ndarray) -> None:
         row_count = len(y)
         base_pred = []
+
         if not self.estimators:
             self.init_pred = self.get_init_pred(y)
             base_pred = self.init_pred.copy()
@@ -165,6 +178,7 @@ class XGBoostBase:
             for i in range(len(self.estimators)):
                 pred_temp = self.estimators[i].get_train_prediction()
                 base_pred += self.learning_rate * np.array(pred_temp)
+
         for i in range(self.boosting_rounds):
             grad, hess = self.lossfunc_obj.get_grad(
                 base_pred, y
@@ -172,9 +186,13 @@ class XGBoostBase:
 
             grad_encrypted = None
             hess_encrypted = None
+            self.distribution_num_comm += 1
             if self.use_encryption:
                 grad_encrypted = parties[self.active_party_id].encrypt_2dlist(grad)
                 hess_encrypted = parties[self.active_party_id].encrypt_2dlist(hess)
+                self.distribution_data_trafic += sys.getsizeof(grad_encrypted) + sys.getsizeof(hess_encrypted)
+            else:
+                self.distribution_data_trafic += sys.getsizeof(grad) + sys.getsizeof(hess)
 
             boosting_tree = XGBoostTree()
             boosting_tree.fit(
@@ -260,6 +278,9 @@ class RandomForestClassifier:
         self.custom_secure_cond_func = custom_secure_cond_func
         self.estimators = []
 
+        self.distribution_num_comm = 0
+        self.distribution_data_trafic = 0
+
     def load_estimators(self, estimators):
         self.estimators = estimators
 
@@ -269,16 +290,29 @@ class RandomForestClassifier:
     def get_estimators(self):
         return self.estimators
 
+    def get_size(self) -> List:
+        num_comm = self.distribution_num_comm
+        data_trafic = self.distribution_data_trafic
+        for i in range(len(self.estimators)):
+            num_comm += self.estimators[i].dtree.num_comm
+            data_trafic += self.estimators[i].dtree.data_trafic
+        return num_comm, data_trafic
+
     def fit(self, parties, y):
         y_onehot_encoded = [
             [1 if y[i] == c else 0 for c in range(self.num_classes)]
             for i in range(len(y))
         ]
+        self.distribution_num_comm += 1
+
         y_onehot_encoded_encrypted = None
         if self.use_encryption:
             y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
                 y_onehot_encoded
             )
+            self.distribution_data_trafic += sys.getsizeof(y_onehot_encoded_encrypted)
+        else:
+            self.distribution_data_trafic += sys.getsizeof(y_onehot_encoded)
 
         for _ in range(self.num_trees):
             tree = RandomForestTree()

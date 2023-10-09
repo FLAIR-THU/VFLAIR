@@ -1,4 +1,5 @@
 import math
+import sys
 import threading
 from typing import List
 
@@ -42,6 +43,8 @@ class RandomForestNode(Node):
         self.custom_secure_cond_func = custom_secure_cond_func
         self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
 
+        self.data_trafic = 0
+        self.num_comm = 0
         self.left = None
         self.right = None
         self.giniimp = 0.0
@@ -75,6 +78,7 @@ class RandomForestNode(Node):
                 self.make_children_nodes(best_split[0], best_split[1], best_split[2])
             else:
                 self.is_leaf_flag = 1
+
 
     def get_idxs(self) -> List[int]:
         return self.idxs
@@ -147,10 +151,15 @@ class RandomForestNode(Node):
                             search_results_encrypted[j][k][1]
                         )
                         search_results[-1].append((tls, tlc))
+                self.data_trafic += sys.getsizeof(search_results_encrypted)
+                self.num_comm += len(search_results)
             else:
                 search_results = self.parties[temp_party_id].greedy_search_split(
                     self.idxs, self.y_onehot_encoded
                 )
+                if (temp_party_id != self.active_party_id):
+                    self.data_trafic += sys.getsizeof(search_results)
+                    self.num_comm += len(search_results)
 
             num_search_results = len(search_results)
             for j in range(num_search_results):
@@ -282,6 +291,9 @@ class RandomForestNode(Node):
         )
         if self.right.is_leaf_flag == 1:
             self.right.party_id = self.party_id
+
+        self.num_comm += self.left.num_comm + self.right.num_comm
+        self.data_trafic += self.left.data_trafic + self.right.data_trafic
 
         # Notice: this flag only supports for the case of two parties
         if (

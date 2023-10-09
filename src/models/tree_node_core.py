@@ -201,7 +201,7 @@ class Tree:
         return y_train_pred
 
     def count_nodes(self) -> int:
-        return self.nodeapi(self.dtree)
+        return self.nodeapi.count_nodes(self.dtree)
 
     def print(self, target_party_id: int = -1) -> str:
         return self.nodeapi.print(self.dtree, target_party_id)
