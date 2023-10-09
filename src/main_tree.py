@@ -94,22 +94,27 @@ if __name__ == "__main__":
         ].values
         y = df["default.payment.next.month"].values
         featureid_lists = [
-            [1, 2, 3, 4],
-            list(set(range(X.shape[1])) - set([1, 2, 3, 4])),
+            list(range(10)),
+            list(set(range(X.shape[1])) - set(list(range(10)))),
         ]
 
     elif args.dataset == "nursery":
-        featureid_lists = [
+        origin_featureid_lists = [
             [0, 1, 6, 7],
             [2, 3, 4, 5],
         ]
         df = pd.read_csv(os.path.join("tabledata", "nursery.data"), header=None)
         df[8] = LabelEncoder().fit_transform(df[8].values)
         X_d = df.drop(8, axis=1)
-        X_a = pd.get_dummies(X_d[featureid_lists[0]], drop_first=True, dtype=int)
-        X_p = pd.get_dummies(X_d[featureid_lists[1]], drop_first=True, dtype=int)
+        X_a = pd.get_dummies(X_d[origin_featureid_lists[0]], drop_first=True, dtype=int)
+        X_p = pd.get_dummies(X_d[origin_featureid_lists[1]], drop_first=True, dtype=int)
         X = pd.concat([X_a, X_p], axis=1).values
         y = df[8].values
+
+        featureid_lists = [
+            list(range(X_a.shape[1])),
+            list(range(X_a.shape[1], X_a.shape[1] + X_p.shape[1])),
+        ]
 
     else:
         data = load_breast_cancer()
@@ -120,10 +125,10 @@ if __name__ == "__main__":
             range(int(X.shape[1] / 2), X.shape[1]),
         ]
 
-    random.shuffle(featureid_lists)
+    # random.shuffle(featureid_lists)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=args.seed, stratify=y
+        X, y, test_size=0.2, random_state=args.seed, stratify=y
     )
 
     datasets = [
@@ -132,10 +137,7 @@ if __name__ == "__main__":
     ]
     args.datasets = datasets
     args.y = y_train
-    args.featureid_lists = [
-        list(range(datasets[0].shape[1])),
-        list(range(datasets[0].shape[1], datasets[0].shape[1] + datasets[1].shape[1])),
-    ]
+    args.featureid_lists = featureid_lists
 
     print(f"type of model: {args.model_type}, encryption:{args.use_encryption}")
     args = load_tree_parties(args)
@@ -150,3 +152,4 @@ if __name__ == "__main__":
     evaluate_performance(tvfl, X_train, y_train, X_test, y_test, args.grid)
 
     print(f" #Nodes: {sum([tree.count_nodes() for tree in tvfl.clf.estimators])}")
+    print(f" Comm: {tvfl.clf.get_size()}")
