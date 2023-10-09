@@ -1,86 +1,99 @@
 {
-    "epochs": 10,
-    "lr": 0.003,
+    "epochs": 50,
+    "lr": 0.05,
     "k": 2,
-    "batch_size": 1024,
+    "batch_size": 256,
     "iteration_per_aggregation": 1,
     "dataset":{
-        "dataset_name": "nuswide",
-        "num_classes": 5
+        "dataset_name": "breast_cancer_diagnose",
+        "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "MLP2",
-            "input_dim": 1000,
-            "output_dim": 5
+            "type": "MLP2_128",
+            "input_dim": 15,
+            "output_dim": 2,
+            "path": ""
         },
         "1": {
-            "type": "MLP2",
-            "input_dim": 634,
-            "output_dim": 5
+            "type": "MLP2_128",
+            "input_dim": 15,
+            "output_dim": 2,
+            "path": ""
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "DistanceCorrelation",
+        "name": "GaussianDP",
         "parameters": {
-            "lambda": 0.0001,
             "party": [1],
-            "model_path": ""
+            "dp_strength": 0.0001
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectLabelScoring",
+            "name": "NormbasedScoring",
             "parameters": {
                 "party": [0]
             }
         },
         "1":{
-            "name": "BatchLabelReconstruction",
+            "name": "DirectionbasedScoring",
             "parameters": {
-                "party": [0],
-                "lr": 0.003,
-                "epochs": 10000
+                "party": [0]
             }
         },
         "2":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "3":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "4":{
             "name": "PassiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 20,
+                "epochs": 10,
                 "batch_size":16,
                 "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "n_labeled_per_class": 10
             }
         },
-        "3":{
+        "5":{
             "name": "ActiveModelCompletion",
             "parameters": {
                 "party": [0],
                 "val_iteration": 1024,
-                "epochs": 20,
+                "epochs": 10,
                 "batch_size":16,
                 "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "n_labeled_per_class": 10
             }
         },
-        "4": {
+        "6": {
             "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
-        "5": {
+        "7": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "6":{
+        "8":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
@@ -88,5 +101,5 @@
                 "noise_rate": 0.01
             }
         }
-    } 
+    }
 }

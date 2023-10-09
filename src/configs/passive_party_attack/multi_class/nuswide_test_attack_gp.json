@@ -41,7 +41,7 @@
             "name": "BatchLabelReconstruction",
             "parameters": {
                 "party": [0],
-                "lr": 0.05,
+                "lr": 0.003,
                 "epochs": 10000
             }
         },

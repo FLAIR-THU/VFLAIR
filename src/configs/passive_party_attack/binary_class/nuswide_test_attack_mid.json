@@ -26,7 +26,7 @@
         "name": "MID",
         "parameters": {
             "party": [1],
-            "lr": 0.003,
+            "lr": 0.001,
             "lambda": 0.0
         }
     },

@@ -26,7 +26,7 @@
         "name": "MID",
         "parameters": {
             "party": [1],
-            "lr": 0.003,
+            "lr": 0.001,
             "lambda": 0.0
         }
     },
@@ -41,7 +41,7 @@
             "name": "BatchLabelReconstruction",
             "parameters": {
                 "party": [0],
-                "lr": 0.05,
+                "lr": 0.003,
                 "epochs": 10000
             }
         },
@@ -68,23 +68,24 @@
             }
         },
         "4": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "5": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "5":{
+        "6":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
-                "noise_lambda": 2
-            }
-        },
-        "6": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
+                "noise_lambda": 2,
+                "noise_rate": 0.01
             }
         }
     }
