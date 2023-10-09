@@ -38,9 +38,17 @@ In VFLAIR, we defaultly provide several dataset that are oftenly used under VFL 
      3. Adult Income
         * By default, the data are stored under directory `../../share_dataset/Income/`
         * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
-      4. Cretio
+     4. Cretio
          * By default, the data are stored under directory `../../share_dataset/Criteo/`.
          * Download `tain.txt` from [Criteo | Kaggle](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
+
+     5. Nursery
+         * By default, the data are stored under directory `../../share_dataset/Nursery/`
+         * Download `nursery.data` from [Nursery | UCI ML Repo](http://archive.ics.uci.edu/dataset/76/nursery).
+
+     6. Credit
+         * By default, the data are stored under directory `../../share_dataset/Credit/`
+         * Download `UCI_Credit_Card.csv` from [Default of Credit Card Clients Dataset | Kaggle](https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset).
 
   4. Text Dataset
 

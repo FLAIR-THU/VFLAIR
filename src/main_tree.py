@@ -63,7 +63,7 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     if args.dataset == "credit":
-        df = pd.read_csv(os.path.join("tabledata", "UCI_Credit_Card.csv"))
+        df = pd.read_csv(os.path.join("../../share_dataset/Credit/", "UCI_Credit_Card.csv"))
 
         X = df[
             [
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             [0, 1, 6, 7],
             [2, 3, 4, 5],
         ]
-        df = pd.read_csv(os.path.join("tabledata", "nursery.data"), header=None)
+        df = pd.read_csv(os.path.join("../../share_dataset/Nursery/", "nursery.data"), header=None)
         df[8] = LabelEncoder().fit_transform(df[8].values)
         X_d = df.drop(8, axis=1)
         X_a = pd.get_dummies(X_d[origin_featureid_lists[0]], drop_first=True, dtype=int)
