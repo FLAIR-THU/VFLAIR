@@ -1,5 +1,5 @@
 {
-    "epochs": 160,
+    "epochs": 30,
     "lr": 0.001,
     "k": 2,
     "batch_size": 2048,
@@ -23,13 +23,5 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "attack": {
-        "name": "BatchLabelReconstruction",
-        "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 2000
-        }
     }
 }

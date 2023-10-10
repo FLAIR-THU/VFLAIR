@@ -1,9 +1,9 @@
 {
     "epochs": 30,
-    "lr": 0.01,
+    "lr": 0.005,
     "k": 2,
     "batch_size": 1024,
-    "iteration_per_aggregation": 1,
+    "iteration_per_aggregation": 5,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
@@ -21,8 +21,15 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [1],
+            "dp_strength": 0.0001
+        }
     },
     "attack_list": {
         "0":{
@@ -34,14 +41,9 @@
             }
         },
         "1":{
-            "name": "PassiveModelCompletion",
+            "name": "DirectLabelScoring",
             "parameters": {
-                "party": [0],
-                "val_iteration": 1024,
-                "epochs": 25,
-                "batch_size":16,
-                "lr": 2e-3,
-                "n_labeled_per_class": 4
+                "party": [0]
             }
         },
         "2":{
@@ -56,51 +58,36 @@
             }
         },
         "3":{
-            "name": "DirectLabelScoring",
+            "name": "PassiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "4": {
+            "name": "ReplacementBackdoor",
             "parameters": {
                 "party": [0]
             }
         },
-        "4": {
+        "5": {
             "name": "MissingFeature",
             "parameters": {
                 "party": [0],
                 "missing_rate": 0.25
             }
         },
-        "5":{
+        "6":{
             "name": "NoisySample",
             "parameters": {
                 "party": [0],
                 "noise_lambda": 2,
                 "noise_rate": 0.01
             }
-        },
-
-        "6": {
-            "name": "ReplacementBackdoor",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "7":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.005,
-                "epochs": 60,
-                "batch_size": 1024
-            }
-        },
-        "8":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
         }
-        
     }
 }

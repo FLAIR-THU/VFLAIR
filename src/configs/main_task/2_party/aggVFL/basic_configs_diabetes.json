@@ -1,8 +1,8 @@
 {
-    "epochs": 30,
+    "epochs": 80,
     "lr": 0.05,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 64,
     "iteration_per_aggregation": 1,
     "num_exp": 10,
     "dataset":{

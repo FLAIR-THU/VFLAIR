@@ -1,23 +1,25 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.01,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "mnist",
-        "num_classes": 2
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "1": {
             "type": "MLP2",
             "input_dim": 392,
-            "output_dim": 2
+            "output_dim": 10,
+            "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -25,16 +27,28 @@
     "defense": {
         "name": "MID",
         "parameters": {
-            "party": [1],
-            "lr": 0.003,
+            "party": [0],
+            "lr": 0.0001,
             "lambda": 0.0
         }
     },
     "attack_list": {
         "0":{
-            "name": "DirectionbasedScoring",
+            "name": "GenerativeRegressionNetwork",
             "parameters": {
-                "party": [0]
+                "party": [1],
+                "lr": 0.005,
+                "epochs": 60,
+                "batch_size": 1024
+            }
+        },
+        "1":{
+            "name": "ResSFL",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 50,
+                "batch_size": 32
             }
         }
     }

@@ -1,0 +1,57 @@
+{
+    "epochs": 30,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "cifar10",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 10,
+            "path": "random_20"
+        },
+        "1": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 10,
+            "path": "random_20"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "GradPerturb",
+        "parameters": {
+            "party": [1],
+            "perturb_epsilon": 0.01,
+            "model_path": ""
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 200
+            }
+        },
+        "2": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}

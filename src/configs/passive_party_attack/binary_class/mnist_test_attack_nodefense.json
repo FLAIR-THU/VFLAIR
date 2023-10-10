@@ -24,12 +24,6 @@
     },
     "attack_list": {
         "0":{
-            "name": "NormbasedScoring",
-            "parameters": {
-                "party": [0]
-            }
-        },
-        "1":{
             "name": "DirectionbasedScoring",
             "parameters": {
                 "party": [0]

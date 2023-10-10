@@ -1,8 +1,8 @@
 {
-    "epochs": 60,
+    "epochs": 40,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 1024,
+    "batch_size": 2048,
     "iteration_per_aggregation": 1,
     "dataset":{
         "dataset_name": "cifar10",
