@@ -125,3 +125,15 @@ VFLAIR
 We **greatly appreciate** any contribution to VFLAIR! Also, we'll continue to improve our framework and documentation to provide more flexible and convenient usage.
 
 Please feel free to contact us if there's any problem with the code base or documentation!
+
+## Citation
+
+If you are using VFLAIR for your work, please cite our paper with:
+```
+@article{zou2023vflair,
+  title={VFLAIR: A Research Library and Benchmark for Vertical Federated Learning},
+  author={Zou, Tianyuan and Gu, Zixuan and He, Yu and Takahashi, Hideaki and Liu, Yang and Ye, Guangnan and Zhang, Ya-Qin},
+  journal={arXiv preprint arXiv:2310.09827},
+  year={2023}
+}
+```
