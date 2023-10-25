@@ -33,6 +33,8 @@ src/metrics/_figures/
 src/metrics/_record/
 src/metrics/_test_data_by_attack/
 src/cifar_grn/
+src/*.sh
+src/*.txt
 
 # Distribution / packaging
 .Python
