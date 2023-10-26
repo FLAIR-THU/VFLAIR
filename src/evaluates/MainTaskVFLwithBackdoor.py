@@ -125,7 +125,6 @@ class MainTaskVFLwithBackdoor(object):
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
             if (self.k-1) in self.args.defense_configs['party']:
-                print('ok')
                 gradient = self.launch_defense(gradient, "gradients")   
         if self.args.apply_dcae == True:
             if (self.k-1) in self.args.defense_configs['party']:
