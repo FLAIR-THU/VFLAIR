@@ -1,0 +1,56 @@
+{
+    "epochs": 30,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "cifar100",
+        "num_classes": 100
+    },
+    "model_list":{
+        "0": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "1": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "DCAE",
+        "parameters": {
+            "party": [1],
+            "bin_numbers": 12,
+            "input_dim": 100,
+            "encode_dim": 122,
+            "lambda": 0.0,
+            "model_path": "../src/evaluates/defenses/trained_CAE_models/autoencoder_100_0.0_1698171184"
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        
+     
+        "1":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 200
+            }
+        }
+    }
+}

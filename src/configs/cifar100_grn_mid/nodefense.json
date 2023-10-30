@@ -1,0 +1,38 @@
+{
+    "epochs": 60,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 2048,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "cifar100",
+        "num_classes": 100
+    },
+    "model_list":{
+        "0": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "1": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "GenerativeRegressionNetwork",
+            "parameters": {
+                "party": [1],
+                "lr": 0.0001,
+                "epochs": 60,
+                "batch_size": 1024
+            }
+        }
+    }
+}

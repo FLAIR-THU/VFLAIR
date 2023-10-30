@@ -219,7 +219,8 @@ class MainTaskVFL(object):
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
-            predict_prob = encoder.decoder(predict_prob)
+            predict_prob = encoder.decode(predict_prob)
+
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         
@@ -376,7 +377,9 @@ class MainTaskVFL(object):
                         test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
-                            dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                
+                            dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
+                                
                             test_preds.append(list(dec_predict_prob.detach().cpu().numpy()))
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
@@ -399,7 +402,7 @@ class MainTaskVFL(object):
                             # noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
                             # noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
                             # if self.args.apply_cae == True:
-                            #     noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                            #     noise_dec_predict_prob = self.args.encoder.decode(noise_enc_predict_prob)
                             #     noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
                             # else:
                             #     noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
@@ -413,7 +416,7 @@ class MainTaskVFL(object):
                         #     noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
                         #     noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
                         #     if self.args.apply_cae == True:
-                        #         noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                        #         noise_dec_predict_prob = self.args.encoder.decode(noise_enc_predict_prob)
                         #         noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
                         #     else:
                         #         noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
@@ -515,7 +518,7 @@ class MainTaskVFL(object):
 
                 enc_predict_prob = F.softmax(test_logit, dim=-1)
                 if self.args.apply_cae == True:
-                    dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                    dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -556,7 +559,7 @@ class MainTaskVFL(object):
 
                 enc_predict_prob = F.softmax(test_logit, dim=-1)
                 if self.args.apply_cae == True:
-                    dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                    dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -587,7 +590,7 @@ class MainTaskVFL(object):
 
         #         enc_predict_prob = F.softmax(test_logit, dim=-1)
         #         if self.args.apply_cae == True:
-        #             dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+        #             dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
         #             predict_label = torch.argmax(dec_predict_prob, dim=-1)
         #         else:
         #             predict_label = torch.argmax(enc_predict_prob, dim=-1)

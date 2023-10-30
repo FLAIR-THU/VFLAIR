@@ -93,10 +93,12 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     # some defense need model, add here
     if args.apply_defense == True:
         current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
-        # std_shift_hyperparameter = 5 if (('nuswide' == args.dataset.lower() and args.num_classes==5) or 'cifar' in args.dataset.lower()) else 0.5 
-        std_shift_hyperparameter = 5 if ('mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5 
-        # std_shift_hyperparameter = 5 if ('nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5 
-        # std_shift_hyperparameter = 5 if ('nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 10
+        
+        if 'std_shift_hyperparameter' in args.defense_configs:
+            std_shift_hyperparameter = int(args.defense_configs['std_shift_hyperparameter'])
+        else:
+            std_shift_hyperparameter = 5 if ('mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5 
+
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [args.k-1]

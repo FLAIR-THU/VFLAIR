@@ -1,0 +1,52 @@
+{
+    "epochs": 60,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "cifar100",
+        "num_classes": 100
+    },
+    "model_list":{
+        "0": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "1": {
+            "type": "resnet18",
+            "input_dim": 512,
+            "output_dim": 100,
+            "path": "random_20"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "party": [1],
+            "gradient_sparse_rate": 100.0
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        
+     
+        "1":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 200
+            }
+        }
+    }
+}
