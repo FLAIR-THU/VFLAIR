@@ -36,7 +36,7 @@ def mark_contaminated_nodes(node, target_nodes, original_y):
                 target_nodes.append(node)
 
 
-def selfrepair_tree(tree, original_y):
+def grafting_tree(tree, original_y):
     root_of_problems = []
     mark_contaminated_nodes(tree.dtree, root_of_problems, original_y)
 
@@ -49,7 +49,7 @@ def selfrepair_tree(tree, original_y):
         node.is_pure_flag = -1
 
         node.use_only_active_party = True
-        node.lmir_flag_exclude_passive_parties = True
+        node.secure_flag_exclude_passive_parties = True
         node.y = original_y
         node.entire_class_cnt = [0] * node.num_classes
         node.entire_datasetsize = len(node.y)
@@ -74,6 +74,6 @@ def selfrepair_tree(tree, original_y):
                 node.is_leaf_flag = 1
 
 
-def selfrepair_forest(clf, original_y):
+def grafting_forest(clf, original_y):
     for tree in clf.estimators:
-        selfrepair_tree(tree, original_y)
+        grafting_tree(tree, original_y)

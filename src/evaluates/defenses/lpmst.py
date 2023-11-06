@@ -75,7 +75,7 @@ class LPMST:
         for m in range(self.M):
             if m == 0:
                 self.rrp = RRWithPrior(self.epsilon, init_prior_dist, self.seed)
-                y_hat.extend([self.rrp.rrtop_k(y[i]) for i in range(temp_ptr, chunk_size)])
+                y_hat = [self.rrp.rrtop_k(y[i]) for i in range(temp_ptr, chunk_size)]
                 temp_ptr = chunk_size
             else:
                 temp_party_vec = [parties[clf.active_party_id]]
