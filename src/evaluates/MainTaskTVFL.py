@@ -1,4 +1,6 @@
 from party.tree_party import *
+from evaluate.defenses.lpmst import *
+from evaluate.defenses.grafting import *
 from models.tree import *
 from phe import paillier
 import random
@@ -23,6 +25,11 @@ class MainTaskTVFL(object):
         self.seed = args.seed
         self.number_of_trees = args.number_of_trees
         self.depth = args.depth
+
+        self.apply_defense = args.apply_defense
+        self.defense_name = args.defense_name
+        self.lpmst_eps = args.lpmst_eps
+        self.lpmst_m = args.lpmst_m
 
     def setup_keypair(self):
         public_key, private_key = paillier.generate_paillier_keypair(
@@ -55,4 +62,14 @@ class MainTaskTVFL(object):
 
         random.seed(self.seed)
 
-        self.clf.fit(self.parties, self.y)
+        if self.apply_defense:
+            if self.defense_name == "grafting-ldp":
+                lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
+                lpmst.fit(self.clf, self.parties, self.y)
+                grafting_forest(self.clf, self.y)
+            elif self.defense_name == "idlmid":
+                pass
+            else:
+                raise ValueError(f"defense_name should be `grafting-ldp` or `idlmid`")
+        else:
+            self.clf.fit(self.parties, self.y)
