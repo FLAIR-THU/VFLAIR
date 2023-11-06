@@ -14,6 +14,7 @@ class MainTaskTVFL(object):
     def __init__(self, args):
         self.args = args
         self.k = args.k
+        self.active_party_id = args.active_party_id
         self.parties = args.parties
         self.y = args.y
         self.num_classes = len(np.unique(self.y))
@@ -46,7 +47,7 @@ class MainTaskTVFL(object):
                 self.num_classes,
                 boosting_rounds=self.number_of_trees,
                 depth=self.depth,
-                active_party_id=self.k - 1,
+                active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
             )
         elif self.model_type == "randomforest":
@@ -54,7 +55,7 @@ class MainTaskTVFL(object):
                 self.num_classes,
                 num_trees=self.number_of_trees,
                 depth=self.depth,
-                active_party_id=self.k - 1,
+                active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
             )
         else:
@@ -67,6 +68,9 @@ class MainTaskTVFL(object):
                 lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
                 lpmst.fit(self.clf, self.parties, self.y)
                 grafting_forest(self.clf, self.y)
+            elif self.defense_name == "lpmst":
+                lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
+                lpmst.fit(self.clf, self.parties, self.y)
             elif self.defense_name == "idlmid":
                 pass
             else:

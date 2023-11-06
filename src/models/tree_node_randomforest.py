@@ -50,6 +50,7 @@ class RandomForestNode(Node):
         self.entire_class_cnt = [0 for _ in range(num_classes_)]
 
         self.secure_flag_exclude_passive_parties = use_only_active_party_
+        self.is_all_subsequent_children_contaminated = False
 
         self.row_count = len(idxs_)
         self.num_parties = len(parties_)
@@ -286,6 +287,7 @@ class RandomForestNode(Node):
             self.right.not_splitted_flag = True
 
         # Clear unused index
+        """
         if not (
             (self.left.not_splitted_flag and self.right.not_splitted_flag)
             or (
@@ -295,6 +297,7 @@ class RandomForestNode(Node):
         ):
             self.idxs.clear()
             self.idxs = []
+        """
 
     def is_leaf(self):
         if self.is_leaf_flag == -1:

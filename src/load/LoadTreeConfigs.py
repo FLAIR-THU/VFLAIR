@@ -12,6 +12,7 @@ def load_tree_configs(config_file_name, args):
     config_dict = json.load(config_file)
 
     args.k = config_dict["k"] if ("k" in config_dict) else 2
+    args.active_party_id = config_dict["active_party_id"] if ("active_party_id" in config_dict) else 0
     args.model_type = config_dict["model_type"]
     args.number_of_trees = (
         config_dict["number_of_trees"] if ("number_of_trees" in config_dict) else 3
@@ -34,7 +35,7 @@ def load_tree_configs(config_file_name, args):
         config_dict["use_encryption"] if ("use_encryption" in config_dict) else False
     )
     args.apply_defense = (config_dict["apply_defense"] if ("apply_defense" in config_dict) else False)
-    args.defense_name = (config.dict["defense_name"] if ("defense_name" in config_dict) else None)
+    args.defense_name = (config_dict["defense_name"] if ("defense_name" in config_dict) else None)
     args.lpmst_eps = (config_dict["lpmst_eps"] if ("lpmst_eps" in config_dict) else 1.0)
-    args.lpmst_m = (config_dict["lpmst_m"] if ("lpmst_m" in config_dict) else 1)
+    args.lpmst_m = (config_dict["lpmst_m"] if ("lpmst_m" in config_dict) else 2)
     return args

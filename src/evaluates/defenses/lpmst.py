@@ -3,15 +3,13 @@ import math
 
 import numpy as np
 
+
 class RRWithPrior:
-    def __init__(self, epsilon=0.0, K=0, seed=0, prior_dist=None):
+    def __init__(self, epsilon, prior_dist, seed=0):
         self.epsilon = epsilon
-        self.K = K
-        if prior_dist is None:
-            self.prior_dist = [[1.0 / K] for _ in range(K)]
-        else:
-            self.prior_dist = prior_dist
-        
+        self.K = len(prior_dist)
+        self.prior_dist = prior_dist
+
         self._set_random(seed)
         self._set_label2argmaxpos()
         self.search_optimal_k()
@@ -56,7 +54,6 @@ class RRWithPrior:
         return y_random
 
 
-
 class LPMST:
     def __init__(self, M=1, epsilon=1.0, seed=0):
         self.M = M
@@ -64,13 +61,14 @@ class LPMST:
         self.seed = seed
         self.rrp = None
 
-    def fit(self, clf, parties, y, y_hat):
+    def fit(self, clf, parties, y):
         n = len(y)
         chunk_size = n // self.M
         class_num = max(y) + 1
-        init_prior_dist = [[1.0 / class_num] for _ in range(class_num)]
+        init_prior_dist = [1.0 / class_num for _ in range(class_num)]
 
         temp_ptr = 0
+        temp_seed = self.seed
 
         for m in range(self.M):
             if m == 0:
@@ -82,9 +80,10 @@ class LPMST:
                 clf.clear()
                 clf.fit(temp_party_vec, y_hat)
                 for i in range(temp_ptr, min(n, chunk_size * (m + 1))):
-                    temp_x = [parties[clf.active_party_id].x[i]]
+                    temp_x = parties[clf.active_party_id].x[i].reshape(1, -1)
                     prior_dist = clf.predict_proba(temp_x)[0]
-                    self.rrp = RRWithPrior(self.epsilon, prior_dist, self.seed + i)
+                    self.rrp = RRWithPrior(self.epsilon, prior_dist, temp_seed)
+                    temp_seed += 1
                     y_hat.append(self.rrp.rrtop_k(y[i]))
                 temp_ptr = min(n, chunk_size * (m + 1))
 
