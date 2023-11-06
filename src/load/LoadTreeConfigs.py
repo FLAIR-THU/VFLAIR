@@ -33,7 +33,7 @@ def load_tree_configs(config_file_name, args):
     args.use_encryption = (
         config_dict["use_encryption"] if ("use_encryption" in config_dict) else False
     )
-    args.apply_defense = (config_dict["apply_defense"] if ("apply_defense" in condig_dict) else False)
+    args.apply_defense = (config_dict["apply_defense"] if ("apply_defense" in config_dict) else False)
     args.defense_name = (config.dict["defense_name"] if ("defense_name" in config_dict) else None)
     args.lpmst_eps = (config_dict["lpmst_eps"] if ("lpmst_eps" in config_dict) else 1.0)
     args.lpmst_m = (config_dict["lpmst_m"] if ("lpmst_m" in config_dict) else 1)

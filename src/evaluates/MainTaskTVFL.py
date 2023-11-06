@@ -1,6 +1,6 @@
 from party.tree_party import *
-from evaluate.defenses.lpmst import *
-from evaluate.defenses.grafting import *
+from evaluates.defenses.lpmst import *
+from evaluates.defenses.grafting import *
 from models.tree import *
 from phe import paillier
 import random

@@ -1,5 +1,5 @@
 {
-    "model_type": "xgboost",
+    "model_type": "randomforest",
     "number_of_trees": 3,
     "k": 2,
     "depth": 2,
@@ -7,6 +7,6 @@
     "subsample_cols": 0.8,
     "max_bin": 4,
     "use_missing_value": false,
-    "use_encryption": true,
+    "use_encryption": false,
     "key_length": 128
 }

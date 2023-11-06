@@ -3,7 +3,7 @@ def mismatch_preds(node, original_y):
     original_val = [0] * node.num_classes
 
     for r in range(node.row_count):
-        original_val[int(original_y[node.idxs[r])] - 1] += 1 / float(node.row_count)
+        original_val[int(original_y[node.idxs[r]]) - 1] += 1 / float(node.row_count)
 
     noised_argmax, original_argmax = 0, 0
     max_val = 0
