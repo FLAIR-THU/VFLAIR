@@ -31,6 +31,7 @@ class MainTaskTVFL(object):
         self.defense_name = args.defense_name
         self.lpmst_eps = args.lpmst_eps
         self.lpmst_m = args.lpmst_m
+        self.mi_bound = args.mi_bound
 
     def setup_keypair(self):
         public_key, private_key = paillier.generate_paillier_keypair(
@@ -72,7 +73,8 @@ class MainTaskTVFL(object):
                 lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
                 lpmst.fit(self.clf, self.parties, self.y)
             elif self.defense_name == "idlmid":
-                pass
+                self.clf.mi_bound = self.mi_bound
+                self.clf.fit(self.parties, self.y)
             else:
                 raise ValueError(f"defense_name should be `grafting-ldp` or `idlmid`")
         else:

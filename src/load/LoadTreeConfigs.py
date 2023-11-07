@@ -38,4 +38,6 @@ def load_tree_configs(config_file_name, args):
     args.defense_name = (config_dict["defense_name"] if ("defense_name" in config_dict) else None)
     args.lpmst_eps = (config_dict["lpmst_eps"] if ("lpmst_eps" in config_dict) else 1.0)
     args.lpmst_m = (config_dict["lpmst_m"] if ("lpmst_m" in config_dict) else 2)
+    args.mi_bound = (config_dict["mi_bound"] if ("mi_bound" in config_dict) else -1.0)
+
     return args

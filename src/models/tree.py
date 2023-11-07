@@ -65,11 +65,12 @@ class RandomForestTree(Tree):
         y_onehot_encoded: List[List[int]],
         num_classes: int,
         depth: int,
+        prior: List[float],
+        mi_bound: float,
         max_samples_ratio: float = 1.0,
         active_party_id: int = -1,
         n_job: int = 1,
         seed: int = 0,
-        custom_secure_cond_func: Callable = (lambda _: False),
         y_onehot_encoded_encrypted=None,
     ):
         idxs = list(range(len(y)))
@@ -89,10 +90,11 @@ class RandomForestTree(Tree):
             num_classes,
             idxs,
             depth,
+            prior,
+            mi_bound,
             active_party_id,
             False,
             n_job,
-            custom_secure_cond_func,
             y_onehot_encoded_encrypted,
         )
 
@@ -242,22 +244,22 @@ class RandomForestClassifier:
         depth=5,
         max_samples_ratio=1.0,
         num_trees=5,
+        mi_bound=-1,
         active_party_id=-1,
         use_encryption=False,
         n_job=1,
         seed=0,
-        custom_secure_cond_func=(lambda _: False),
     ):
         self.num_classes = num_classes
         self.subsample_cols = subsample_cols
         self.depth = depth
         self.max_samples_ratio = max_samples_ratio
         self.num_trees = num_trees
+        self.mi_bound = mi_bound
         self.active_party_id = active_party_id
         self.use_encryption = use_encryption
         self.n_job = n_job
         self.seed = seed
-        self.custom_secure_cond_func = custom_secure_cond_func
         self.estimators = []
 
     def load_estimators(self, estimators):
@@ -270,6 +272,13 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
+
+        prior = [0 for _ in range(self.num_classes)]
+        for i in range(len(y)):
+            prior[int(y[i])] += 1
+        for c in range(self.num_classes):
+            prior[c] /= float(len(y))
+
         y_onehot_encoded = [
             [1 if y[i] == c else 0 for c in range(self.num_classes)]
             for i in range(len(y))
@@ -288,11 +297,12 @@ class RandomForestClassifier:
                 y_onehot_encoded,
                 self.num_classes,
                 self.depth,
+                prior,
+                self.mi_bound,
                 self.max_samples_ratio,
                 self.active_party_id,
                 self.n_job,
                 self.seed,
-                self.custom_secure_cond_func,
                 y_onehot_encoded_encrypted,
             )
             self.estimators.append(tree)
