@@ -14,6 +14,7 @@ class XGBoostTree(Tree):
         self,
         parties: List,
         y: List[int],
+        y_onehot_encoded: List[List[int]],
         num_classes: int,
         gradient: List[List[float]],
         hessian: List[List[float]],
@@ -22,12 +23,14 @@ class XGBoostTree(Tree):
         gamma: float,
         eps: float,
         depth: int,
+        prior: List[float],
+        mi_bound: float,
         active_party_id: int = -1,
         use_only_active_party: bool = False,
         n_job: int = 1,
-        custom_secure_cond_func: Callable = (lambda _: False),
         grad_encrypted=None,
         hess_encrypted=None,
+        y_onehot_encoded_encrypted=None,
     ):
         idxs = list(range(len(y)))
         for i in range(len(parties)):
@@ -36,6 +39,7 @@ class XGBoostTree(Tree):
         self.dtree = XGBoostNode(
             parties,
             y,
+            y_onehot_encoded,
             num_classes,
             gradient,
             hessian,
@@ -45,12 +49,14 @@ class XGBoostTree(Tree):
             gamma,
             eps,
             depth,
+            prior,
+            mi_bound,
             active_party_id,
             use_only_active_party,
             n_job,
-            custom_secure_cond_func,
             grad_encrypted,
             hess_encrypted,
+            y_onehot_encoded_encrypted
         )
 
 
@@ -111,12 +117,12 @@ class XGBoostBase:
         lam: float = 1.5,
         gamma: float = 1,
         eps: float = 0.1,
+        mi_bound: float = -1.0,
         active_party_id: int = -1,
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
         use_encryption=False,
         n_job: int = 1,
-        custom_secure_cond_func: Callable = (lambda _: False),
         save_loss: bool = True,
     ):
         self.num_classes = num_classes
@@ -128,12 +134,12 @@ class XGBoostBase:
         self.lam = lam
         self.gamma = gamma
         self.eps = eps
+        self.mi_bound = mi_bound
         self.active_party_id = active_party_id
         self.completelly_secure_round = completelly_secure_round
         self.init_value = init_value
         self.use_encryption = use_encryption
         self.n_job = n_job
-        self.custom_secure_cond_func = custom_secure_cond_func
         self.save_loss = save_loss
         if num_classes == 2:
             self.lossfunc_obj = BCELoss()
@@ -157,6 +163,22 @@ class XGBoostBase:
         return self.estimators
 
     def fit(self, parties: List, y: np.ndarray) -> None:
+        prior = [0 for _ in range(self.num_classes)]
+        for i in range(len(y)):
+            prior[int(y[i])] += 1
+        for c in range(self.num_classes):
+            prior[c] /= float(len(y))
+
+        y_onehot_encoded = [
+            [1 if y[i] == c else 0 for c in range(self.num_classes)]
+            for i in range(len(y))
+        ]
+        y_onehot_encoded_encrypted = None
+        if self.use_encryption:
+            y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
+                y_onehot_encoded
+            )
+
         row_count = len(y)
         base_pred = []
         if not self.estimators:
@@ -182,6 +204,7 @@ class XGBoostBase:
             boosting_tree.fit(
                 parties,
                 y,
+                y_onehot_encoded,
                 self.num_classes,
                 grad,
                 hess,
@@ -190,12 +213,14 @@ class XGBoostBase:
                 self.gamma,
                 self.eps,
                 self.depth,
+                prior,
+                self.mi_bound,
                 self.active_party_id,
                 (self.completelly_secure_round > i),
                 self.n_job,
-                self.custom_secure_cond_func,
                 grad_encrypted=grad_encrypted,
                 hess_encrypted=hess_encrypted,
+                y_onehot_encoded_encrypted=y_onehot_encoded_encrypted
             )
             pred_temp = boosting_tree.get_train_prediction()
             base_pred += self.learning_rate * np.array(pred_temp)
@@ -272,7 +297,6 @@ class RandomForestClassifier:
         return self.estimators
 
     def fit(self, parties, y):
-
         prior = [0 for _ in range(self.num_classes)]
         for i in range(len(y)):
             prior[int(y[i])] += 1

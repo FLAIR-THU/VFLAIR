@@ -37,7 +37,7 @@ class MainTaskTVFL(object):
         public_key, private_key = paillier.generate_paillier_keypair(
             n_length=self.key_length
         )
-        self.parties[self.k - 1].set_keypair(public_key, private_key)
+        self.parties[self.active_party_id].set_keypair(public_key, private_key)
 
     def train(self):
         if self.use_encryption:

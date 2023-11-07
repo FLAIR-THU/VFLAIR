@@ -270,14 +270,14 @@ class RandomForestNode(Node):
         )
         right_idxs = [idx for idx in self.idxs if idx not in left_idxs]
 
-        left_y_class_cnt_within_node = [0 for _ in range(self.num_classes)];
+        left_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
         for i in left_idxs:
-            left_y_class_cnt_within_node[int(self.y[i])] += 1;
+            left_y_class_cnt_within_node[int(self.y[i])] += 1
 
-        right_y_class_cnt_within_node = [0 for _ in range(self.num_classes)];
+        right_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
         for i in right_idxs:
-            right_y_class_cnt_within_node[int(self.y[i])] += 1;
-        
+            right_y_class_cnt_within_node[int(self.y[i])] += 1
+
         left_is_satisfied_secure_cond = is_satisfied_mi_bound(
             self.num_classes,
             self.mi_bound,
