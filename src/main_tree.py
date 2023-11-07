@@ -23,7 +23,7 @@ def evaluate_performance(tvfl, X_train, y_train, X_test, y_test):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("tree")
-    parser.add_argument("--seed", type=int, default=42, help="random seed")
+    parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument(
         "--configs",
         type=str,
@@ -40,14 +40,14 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.33, random_state=args.seed
     )
-
+    print(X_train.shape)
     datasets = [
-        X_train[:, : int(X_train.shape[1] / 2)],
-        X_train[:, int(X_train.shape[1] / 2) :],
+        X_train[:, : int(X_train.shape[1] / 30)],
+        X_train[:, int(X_train.shape[1] / 30) :],
     ]
     featureid_lists = [
-        range(int(X_train.shape[1] / 2)),
-        range(int(X_train.shape[1] / 2), X_train.shape[1]),
+        range(int(X_train.shape[1] / 30)),
+        range(int(X_train.shape[1] / 30), X_train.shape[1]),
     ]
     args.datasets = datasets
     args.y = y_train
