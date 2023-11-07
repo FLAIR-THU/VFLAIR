@@ -1,0 +1,42 @@
+{
+    "epochs": 30,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 2
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 2
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "DistanceCorrelation",
+        "parameters": {
+            "lambda": 0.0001,
+            "party": [1],
+            "model_path": ""
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "DirectionbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+    
+}

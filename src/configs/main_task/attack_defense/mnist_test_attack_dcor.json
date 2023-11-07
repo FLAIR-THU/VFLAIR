@@ -1,0 +1,53 @@
+{
+    "epochs": 30,
+    "lr": 0.01,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
+    },
+    "defense": {
+        "name": "DistanceCorrelation",
+        "parameters": {
+            "party": [1],
+            "lambda": 0.0001,
+            "model_path": ""
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "1":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    
+    }
+    
+}

@@ -32,6 +32,7 @@ class MainTaskTVFL(object):
         self.lpmst_eps = args.lpmst_eps
         self.lpmst_m = args.lpmst_m
         self.mi_bound = args.mi_bound
+        self.advanced_params = args.advanced_params
 
     def setup_keypair(self):
         public_key, private_key = paillier.generate_paillier_keypair(
@@ -50,6 +51,7 @@ class MainTaskTVFL(object):
                 depth=self.depth,
                 active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
+                **self.advanced_params
             )
         elif self.model_type == "randomforest":
             self.clf = RandomForestClassifier(
@@ -58,6 +60,7 @@ class MainTaskTVFL(object):
                 depth=self.depth,
                 active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
+                **self.advanced_params
             )
         else:
             raise ValueError(f"model_type should be `xgboost` or `randomforest`")

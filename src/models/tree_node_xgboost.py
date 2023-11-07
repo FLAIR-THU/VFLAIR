@@ -159,6 +159,12 @@ class XGBoostNode(Node):
     def get_num_parties(self):
         return len(self.parties)
 
+    def get_num_parties_per_process(self, n_job, num_parties):
+        num_parties_per_process = [num_parties // n_job for _ in range(n_job)]
+        for i in range(num_parties % n_job):
+            num_parties_per_process[i] += 1
+        return num_parties_per_process
+
     def compute_weight(self):
         return xgboost_compute_weight(
             self.row_count, self.gradient, self.hessian, self.idxs, self.lam

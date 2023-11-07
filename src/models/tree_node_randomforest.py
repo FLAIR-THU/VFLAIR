@@ -104,6 +104,12 @@ class RandomForestNode(Node):
     def get_num_parties(self) -> int:
         return self.num_parties
 
+    def get_num_parties_per_process(self, n_job, num_parties) -> List[int]:
+        num_parties_per_process = [num_parties // n_job for _ in range(n_job)]
+        for i in range(num_parties % n_job):
+            num_parties_per_process[i] += 1
+        return num_parties_per_process
+
     def compute_giniimp(self) -> float:
         temp_y_class_cnt = [0 for _ in range(self.num_classes)]
         for r in range(self.row_count):
@@ -248,6 +254,7 @@ class RandomForestNode(Node):
                             cnt_parties, local_num_parties, tot_cnt, temp_y_class_cnt
                         )
                     )
+                    temp_th.start()
                     threads_parties.append(temp_th)
                     cnt_parties += num_parties_per_thread[i]
                 for i in range(self.num_parties):

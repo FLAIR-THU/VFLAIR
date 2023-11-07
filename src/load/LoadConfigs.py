@@ -9,6 +9,7 @@ TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB']
 UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample']
 LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
 'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
+ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
 def load_basic_configs(config_file_name, args):
@@ -62,7 +63,7 @@ def load_basic_configs(config_file_name, args):
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    if 'path' in config_model_dict[str(ik)]:
+                    if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                     else:
                         model_type_name = config_model_dict[str(ik)]['type']
@@ -104,7 +105,7 @@ def load_basic_configs(config_file_name, args):
         args.apply_dcae = False
         args.apply_dp = False
         args.Q=1
-        return args
+        # return args
 
     # if defense appears
     args.apply_defense = False
@@ -112,20 +113,27 @@ def load_basic_configs(config_file_name, args):
     args.apply_mid = False # mid defense
     args.apply_cae = False # cae defense
     args.apply_dcae = False # dcae defense
+    args.apply_adversarial = False # adversarial
     args.bin_size = [None for _ in range(args.k)] # for discrete bins
     args.gradients_res_a = [None for _ in range(args.k)] # for gradient sparsification
     args.apply_dcor = False # distance corrilation
     if 'defense' in config_dict:
+        print(config_dict['defense'].keys())
         if 'name' in config_dict['defense']:
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
             args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
+            assert 'party' in config_dict['defense']['parameters'], '[Error] Defense party not specified'
+            print(f"in load configs, defense_configs is type {type(args.defense_configs)}")
+            print(f"in load configs, defense_configs is type {type(dict(args.defense_configs))}")
             if 'mid' in args.defense_name.casefold():
                 args.apply_mid = True
             elif 'cae' in args.defense_name.casefold():
                 args.apply_cae = True
                 if 'dcae' in args.defense_name.casefold():
                     args.apply_dcae = True
+            elif 'adversarial' in args.defense_name.casefold():
+                args.apply_adversarial = True
             elif 'distancecorrelation' in args.defense_name.casefold():
                 args.apply_dcor = True
             elif ('gaussian' in args.defense_name.casefold()) or ('laplace' in args.defense_name.casefold()):
@@ -134,11 +142,11 @@ def load_basic_configs(config_file_name, args):
             assert 'name' in config_dict['defense'], "missing defense name"
     else:
         args.defense_name = 'None'
-        args.defense_configs = 'None'
+        args.defense_configs = None
         print('===== No Defense ======')
     # get Info: args.defense_param  args.defense_param_name
     if args.apply_defense == True:
-        if args.defense_name == "CAE" or args.defense_name=="DCAE" or args.defense_name=="MID" or args.defense_name=="DistanceCorrelation":
+        if args.defense_name in ["CAE", "DCAE", "MID", "DistanceCorrelation", "AdversarialTraining"]:
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
@@ -173,6 +181,8 @@ def load_basic_configs(config_file_name, args):
     args.untargeted_backdoor_index = []
     args.label_inference_list = []
     args.label_inference_index = []
+    args.attribute_inference_list = []
+    args.attribute_inference_index = []
     args.feature_inference_list = []
     args.feature_inference_index = []
     args.apply_attack = False
@@ -195,6 +205,10 @@ def load_basic_configs(config_file_name, args):
                     elif _name in LABEL_INFERENCE:
                         args.label_inference_list.append(_name)
                         args.label_inference_index.append(ik)
+
+                    elif _name in ATTRIBUTE_INFERENCE:
+                        args.attribute_inference_list.append(_name)
+                        args.attribute_inference_index.append(ik)
 
                     elif _name in FEATURE_INFERENCE:
                         args.feature_inference_list.append(_name)
@@ -257,6 +271,9 @@ def load_attack_configs(config_file_name, args, index):
 
         elif args.attack_name in LABEL_INFERENCE:
             args.attack_type = 'label_inference'
+
+        elif args.attack_name in ATTRIBUTE_INFERENCE:
+            args.attack_type = 'attribute_inference'
 
         elif args.attack_name in FEATURE_INFERENCE:
             args.attack_type = 'feature_inference'

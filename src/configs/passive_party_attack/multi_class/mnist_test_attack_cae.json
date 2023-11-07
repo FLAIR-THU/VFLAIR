@@ -1,0 +1,82 @@
+{
+    "epochs": 30,
+    "lr": 0.005,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 5,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "CAE",
+        "parameters": {
+            "party": [1],
+            "bin_numbers": 12,
+            "input_dim": 10,
+            "encode_dim": 62,
+            "lambda": 1.0,
+            "model_path": "../src/evaluates/defenses/trained_CAE_models/autoencoder_10_1.0_1642396548"
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "BatchLabelReconstruction",
+            "parameters": {
+                "party": [0],
+                "lr": 0.05,
+                "epochs": 10000
+            }
+        },
+        "1":{
+            "name": "DirectLabelScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "2":{
+            "name": "ActiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "3":{
+            "name": "PassiveModelCompletion",
+            "parameters": {
+                "party": [0],
+                "val_iteration": 1024,
+                "epochs": 25,
+                "batch_size":16,
+                "lr": 2e-3,
+                "n_labeled_per_class": 4
+            }
+        },
+        "4": {
+            "name": "ReplacementBackdoor",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}

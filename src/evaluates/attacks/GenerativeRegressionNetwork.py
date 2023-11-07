@@ -17,47 +17,10 @@ from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
 from dataset.party_dataset import PassiveDataset
 from dataset.party_dataset import ActiveDataset
 
-##### add DP noise with torch.no_grad()
-from evaluates.defenses.defense_functions import LaplaceDP_for_pred,GaussianDP_for_pred
-
 ##### add DP noise without torch.no_grad()
-# def LaplaceDP_for_pred(args, original_object):
-#     original_object = original_object[0]
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-    
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-#         scale = dp_strength
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                     threshold + 1e-6).clamp(min=1.0)
-#         # add laplace noise
-#         dist_a = torch.distributions.laplace.Laplace(location, scale)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 dist_a.sample(original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
+from evaluates.defenses.defense_functions import LaplaceDP_for_pred_grn,GaussianDP_for_pred_grn
 
 
-# def GaussianDP_for_pred(args, original_object):
-#     original_object = original_object[0]
-#     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
-#     dp_strength = args.defense_configs['dp_strength']
-#     if dp_strength > 0.0:
-#         location = 0.0
-#         threshold = 0.2  # 1e9
-
-#         scale = dp_strength
-        
-#         norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-#                                 threshold + 1e-6).clamp(min=1.0)
-#         original_object = (torch.div(original_object, norm_factor_a) + \
-#                                 torch.normal(location, scale, original_object.shape).to(args.device))
-#         return original_object
-#     else:
-#         return original_object
 
 def cal_ssim(im1,im2):
     assert len(im1.shape) == 2 and len(im2.shape) == 2
@@ -253,16 +216,19 @@ class GenerativeRegressionNetwork(Attacker):
                     ####### DP Defense On FR ########
                     if self.args.apply_dp == True:
                         if 'laplace' in self.args.defense_name.casefold():
-                            pred_b = LaplaceDP_for_pred(self.args, [pred_b])
-                            dummy_pred_b = LaplaceDP_for_pred(self.args, [dummy_pred_b])
+                            pred_b = LaplaceDP_for_pred_grn(self.args, pred_b)
+                            dummy_pred_b = LaplaceDP_for_pred_grn(self.args, dummy_pred_b)
                         elif 'gaussian' in self.args.defense_name.casefold():
-                            pred_b = GaussianDP_for_pred(self.args, [pred_b])
-                            dummy_pred_b = GaussianDP_for_pred(self.args, [dummy_pred_b])
+                            # print("before",pred_b.shape,pred_b)
+                            pred_b = GaussianDP_for_pred_grn(self.args, pred_b)
+                            dummy_pred_b = GaussianDP_for_pred_grn(self.args, dummy_pred_b)
+                            # print("after",pred_b.shape,pred_b)
+                            # assert 1>2
                     ####### DP Defense On FR ########
 
                     # aggregate logits of clients
-                    real_pred = global_model([pred_a, pred_b])
-                    dummy_pred = global_model([pred_a, dummy_pred_b])
+                    real_pred = global_model([pred_b, pred_a])
+                    dummy_pred = global_model([dummy_pred_b, pred_a])
 
                     # print('dummy_pred_b:',dummy_pred_b.requires_grad)
                     # print('dummy_pred:',dummy_pred.requires_grad)
@@ -270,19 +236,36 @@ class GenerativeRegressionNetwork(Attacker):
                     unknown_var_loss = 0.0
                     for i in range(generated_data_b.size(0)):
                         unknown_var_loss = unknown_var_loss + (generated_data_b[i].var())     # var() unknown
-                    # print(unknown_var_loss, ((pred.detach() - ground_truth_pred.detach())**2).sum())
-                    # print((pred.detach() - ground_truth_pred.detach())[-5:])
-                    loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
-                    + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # if self.args.dataset == 'nuswide' and torch.sum(dummy_pred,dim=-1)[0] != 1.0:
+                    #     loss = (((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum() \
+                    #     + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # else:
+                    #     loss = (((dummy_pred - real_pred)**2).sum() \
+                    #     + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    loss = (((dummy_pred - real_pred)**2).sum() \
+                        + self.unknownVarLambda * unknown_var_loss * 0.25)
+                    # if self.args.dataset == 'nuswide':
+                    #     # print(f"[debug] (generated_data_b > 0.5).float().shape={(generated_data_b > 0.5).float().shape}, batch_data_b.shape={batch_data_b.shape}")
+                    #     train_mse = criterion((generated_data_b > 0.5).float(), batch_data_b)
+                    # else:
+                    #     train_mse = criterion(generated_data_b, batch_data_b)
                     train_mse = criterion(generated_data_b, batch_data_b)
+                    # print(f'[debug] see pred_match_loss: {((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum()}')
+                    # print(f'[debug] see var_loss: {unknown_var_loss}')
+                    # print(f'[debug] see gradients of pred_match_loss: {torch.autograd.grad(((F.softmax(dummy_pred,dim=-1) - F.softmax(real_pred,dim=-1))**2).sum(), self.netG.parameters(), retain_graph=True)}')
+                    # print(f'[debug] see gradients of var_loss: {torch.autograd.grad(unknown_var_loss, self.netG.parameters(), retain_graph=True)}')
+                    # print(f'[debug] see fake data_b={generated_data_b}')
+                    # print(f'[debug] see real data_b={batch_data_b}')
                     loss.backward()
 
                     # # check if gradient is not None
-                    mark = 0
-                    for name, param in self.netG.named_parameters():
-                        if mark == 0:
-                            # print(name, param.grad)
-                            mark = mark + 1
+                    # mark = 0
+                    # for name, param in self.netG.named_parameters():
+                    #     if mark == 0:
+                    #         print('Check grad:',name, param.grad)
+                    #         mark = mark + 1
+
+
                     self.optimizerG.step() 
 
 
@@ -299,26 +282,38 @@ class GenerativeRegressionNetwork(Attacker):
                         else:
                             generated_data_b = self.netG(torch.cat((test_data_a,noise_data_b),dim=2))
                         
-                        # mse, psnr = self.MSE_PSNR(test_data_b, generated_data_b)
-                        # rand_mse,rand_pnsr = self.MSE_PSNR(test_data_b, noise_data_b)
-                        # mse_reduction = rand_mse-mse
 
                         origin_data = test_data_b.reshape(generated_data_b.size()).to(self.device)
                         noise_data = noise_data_b.reshape(generated_data_b.size()).to(self.device)
+                        # if self.args.dataset == 'nuswide':
+                        #     mse = criterion((generated_data_b > 0.5).float(), origin_data)
+                        #     rand_mse = criterion((noise_data > 0.5).float(), origin_data) #1.006
+                        # else:
+                        #     mse = criterion(generated_data_b, origin_data)
+                        #     rand_mse = criterion(noise_data, origin_data) #1.006
                         mse = criterion(generated_data_b, origin_data)
-                        rand_mse = criterion(noise_data, origin_data)
+                        rand_mse = criterion(noise_data, origin_data) #1.006
                        
                         # MSE.append(mse)
                         # PSNR.append(psnr)
-                    print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} '.format(
-                        i_epoch, loss.item(), train_mse, mse))
+                    print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} rand_mse:{:.3f}'.format(
+                        i_epoch, loss.item(), train_mse, mse, rand_mse))
             
             # mark = 0
+            # print('Final Model')
             # for name, param in self.netG.named_parameters():
             #     if mark == 0:
             #         print(name, param)
             #         mark = mark + 1
             
+            ####### Clean ######
+            del(self.netG)
+            del(train_dst_a)
+            del(train_loader_a)
+            del(train_dst_b)
+            del(train_loader_b)
+            del(train_loader_list)
+
             print(f"GRN, if self.args.apply_defense={self.args.apply_defense}")
             print(f'batch_size=%d,class_num=%d,party_index=%d,mse=%lf' % (self.batch_size, self.label_size, index, mse))
 
