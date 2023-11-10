@@ -79,6 +79,6 @@ class MainTaskTVFL(object):
                 self.clf.mi_bound = self.mi_bound
                 self.clf.fit(self.parties, self.y)
             else:
-                raise ValueError(f"defense_name should be `grafting-ldp` or `idlmid`")
+                raise ValueError(f"defense_name should be `grafting-ldp`, `idlmid`, or `lpmst`")
         else:
             self.clf.fit(self.parties, self.y)
