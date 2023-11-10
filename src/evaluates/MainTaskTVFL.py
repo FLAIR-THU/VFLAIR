@@ -72,13 +72,13 @@ class MainTaskTVFL(object):
                 lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
                 lpmst.fit(self.clf, self.parties, self.y)
                 grafting_forest(self.clf, self.y)
-            elif self.defense_name == "lpmst":
+            elif self.defense_name == "lp-mst":
                 lpmst = LPMST(self.lpmst_m, self.lpmst_eps, 0)
                 lpmst.fit(self.clf, self.parties, self.y)
-            elif self.defense_name == "idlmid":
+            elif self.defense_name == "id-lmid":
                 self.clf.mi_bound = self.mi_bound
                 self.clf.fit(self.parties, self.y)
             else:
-                raise ValueError(f"defense_name should be `grafting-ldp`, `idlmid`, or `lpmst`")
+                raise ValueError(f"defense_name should be `grafting-ldp`, `id-lmid`, or `lp-mst`")
         else:
             self.clf.fit(self.parties, self.y)
