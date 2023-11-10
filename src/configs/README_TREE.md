@@ -28,7 +28,7 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
  }
 ```
 
-- Grafting-LDP ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/abs/2307.10318))
+- Grafting-LDP ([Eliminating Label Leakage in Tree-Based Vertical Federated Learning](https://arxiv.org/abs/2307.10318))
 
 > Grafting-LDP is implemented on the top of LP-MST.
 
@@ -39,7 +39,7 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
  }
 ```
 
-- ID-LMID ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/abs/2307.10318))
+- ID-LMID ([Eliminating Label Leakage in Tree-Based Vertical Federated Learning](https://arxiv.org/abs/2307.10318))
 
 ```json
  "defense": {
