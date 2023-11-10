@@ -1,6 +1,6 @@
 {
     "tree_type": "randomforest",
-    "number_of_trees": 5,
+    "number_of_trees": 3,
     "k": 2,
     "depth": 6,
     "min_leaf": 1,
@@ -9,6 +9,10 @@
     "use_missing_value": false,
     "use_encryption": false,
     "key_length": 128,
-    "advanced_params":{"n_job":1}
+    "defense": {
+        "name": "lp-mst",
+        "parameters": {"lpmst_eps": 0.3,
+                       "mi_bound": 0.01
+        }
+    }
 }
-
