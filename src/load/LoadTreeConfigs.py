@@ -15,7 +15,7 @@ def load_tree_configs(config_file_name, args):
     args.active_party_id = (
         config_dict["active_party_id"] if ("active_party_id" in config_dict) else 0
     )
-    args.model_type = config_dict["model_type"]
+    args.model_type = config_dict["tree_type"]
     args.number_of_trees = (
         config_dict["number_of_trees"] if ("number_of_trees" in config_dict) else 3
     )
