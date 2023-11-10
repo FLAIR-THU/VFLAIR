@@ -19,7 +19,7 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
 
 ### 2. Defense
 
-- LP-MST ([Deep Learning with Label Differential Privacy](https://arxiv.org/pdf/2102.06062.pdf))
+- LP-MST ([Deep Learning with Label Differential Privacy](https://arxiv.org/abs/2102.06062))
 
 ```json
  "defense": {
@@ -28,7 +28,7 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
  }
 ```
 
-- Grafting-LDP ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/pdf/2307.10318.pdf))
+- Grafting-LDP ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/abs/2307.10318))
 
 > Grafting-LDP is implemented on the top of LP-MST.
 
@@ -39,7 +39,7 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
  }
 ```
 
-- ID-LMID ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/pdf/2307.10318.pdf))
+- ID-LMID ([ELIMINATING LABEL LEAKAGE IN TREE-BASED VERTICAL FEDERATED LEARNING](https://arxiv.org/abs/2307.10318))
 
 ```json
  "defense": {

@@ -28,7 +28,10 @@
     * **Distance Correlation(dCor)** ([paper]([[2203.01451\] Label Leakage and Protection from Forward Embedding in Vertical Federated Learning (arxiv.org)](https://arxiv.org/abs/2203.01451)))
   * Multiple datasets are provided along with VFLAIR.
   * Defense Capability Score ——a comprehensive metric for assessing defense ability is also introduced.
-  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description.
+  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description. In adition, we currently support three defense methods against label leakage attack.
+    * ** LP-MST ** ([paper](https://arxiv.org/abs/2102.06062))
+    * ** Grafting-LDP ** ([paper](https://arxiv.org/abs/2307.10318))
+    * ** ID-LMID ** ([paper](https://arxiv.org/abs/2307.10318))
 
 
 ## Code Structure
