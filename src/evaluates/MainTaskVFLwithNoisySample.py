@@ -109,11 +109,11 @@ class MainTaskVFLwithNoisySample(object):
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
 
             if ik < (self.k-1): # Passive party sends pred for aggregation
-                ########### comminication_protocals ###########
-                if self.args.comminication_protocal == 'Compress':
-                    pred_detach = compress_pred(pred_detach , self.parties[ik].local_gradient,\
+                ########### communication_protocols ###########
+                if self.args.communication_protocol in ['Quantization','Topk']:
+                    pred_detach = compress_pred(self.args.communication_protocol , pred_detach , self.parties[ik].local_gradient,\
                                     self.current_epoch, self.current_step).to(self.args.device)
-                ########### comminication_protocals ###########
+                ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
             else: 
@@ -167,7 +167,7 @@ class MainTaskVFLwithNoisySample(object):
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ============
-        if self.args.comminication_protocal in ['FedBCD_p','Compress'] or self.Q ==1 : # parallel FedBCD & noBCD situation
+        if self.args.communication_protocol in ['FedBCD_p','Compress'] or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties

@@ -23,7 +23,7 @@ import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
-from utils.comminication_protocal_funcs import compress_pred
+from utils.communication_protocol_funcs import compress_pred
 from evaluates.attacks.attack_api import AttackerLoader
 
 
@@ -105,11 +105,11 @@ class MainTaskVFL(object):
                 self.parties[ik].update_local_pred(pred_clone)
             
             if ik < (self.k-1): # Passive party sends pred for aggregation
-                ########### comminication_protocals ###########
-                if self.args.comminication_protocal == 'Compress':
-                    pred_detach = compress_pred(pred_detach , self.parties[ik].local_gradient,\
+                ########### communication_protocols ###########
+                if self.args.communication_protocol in ['Quantization','Topk']:
+                    pred_detach = compress_pred( self.args.communication_protocol ,pred_detach , self.parties[ik].local_gradient,\
                                     self.current_epoch, self.current_step).to(self.args.device)
-                ########### comminication_protocals ###########
+                ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
@@ -172,7 +172,7 @@ class MainTaskVFL(object):
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ===========
-        if self.args.comminication_protocal in ['FedBCD_p','Compress'] or self.Q ==1 : # parallel FedBCD & noBCD situation
+        if self.args.communication_protocol in ['FedBCD_p','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties
@@ -192,6 +192,18 @@ class MainTaskVFL(object):
                     _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
+        elif self.args.communication_protocol in ['CELU']:
+            # exchange info between parties
+            self.pred_transmit() 
+            self.gradient_transmit() 
+            # update parameters for all parties
+
+            local_gradient
+            for ik in range(self.k):
+                self.parties[ik].local_backward()
+            self.parties[self.k-1].global_backward()
+            self.cache.put(batch, act_val, dev_val, num_total_comms + num_local_updates)
+            num_total_comms += 1
         else: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
@@ -254,8 +266,14 @@ class MainTaskVFL(object):
         communication = 0
         total_time = 0.0
         flag = 0
-
         self.current_epoch = 0
+
+        # if self.args.communication_protocol == 'CELU':
+        #     num_total_comms = 0
+        #     num_local_updates = 0
+        #     is_finished = False
+        #     self.cache = Cache() 
+
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -283,6 +301,7 @@ class MainTaskVFL(object):
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
                 self.parties[self.k-1].global_model.train()
+                
                 # ====== train batch (start) ======
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state = self.save_state(True)
@@ -293,7 +312,6 @@ class MainTaskVFL(object):
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
                 exit_time = time.time()
                 total_time += (exit_time-enter_time)
-
                 communication = communication + 1
                 if communication % 10 == 0:
                     print(f"total time for {communication} communication is {total_time}")
@@ -305,6 +323,16 @@ class MainTaskVFL(object):
                     self.first_epoch_state.update(self.save_state(False))
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state.update(self.save_state(False))
+
+                ######### Communication: CELU #########
+                # if batch_num_update + 1 >= num_update_per_batch:
+                #     cache.remove(batch)
+                # else:
+                #     cache.inc(batch)
+                # prev_batches.append(batch)
+                # prev_batches = prev_batches[-(num_batch_per_workset - 1):]
+                # num_local_updates += 1
+                ######### Communication: CELU #########
                 # ====== train batch (end) ======
 
                 self.current_step = self.current_step + 1

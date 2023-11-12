@@ -12,7 +12,7 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
-comminication_protocal_list = ['FedBCD_p','FedBCD_s','CELU','Compress']
+communication_protocol_list = ['FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -37,16 +37,21 @@ def load_basic_configs(config_file_name, args):
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
     
-    # args.Q ,iteration_per_aggregation for FedBCD
-    args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
+    # Communication Protocol
+    communication_protocol_dict = config_dict['communication'] if ('communication' in config_dict) else None
+    
+    args.communication_protocol = communication_protocol_dict['communication_protocol'] if ('communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
+    assert (args.communication_protocol in communication_protocol_list), "communication_protocol not available"
+    
+    args.Q = communication_protocol_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in communication_protocol_dict) else 1
     assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
     
-    args.comminication_protocal = config_dict['comminication_protocal'] if ('comminication_protocal' in config_dict) else "FedBCD_p"
-    assert (args.comminication_protocal in comminication_protocal_list), "comminication_protocal not available"
-    print('comminication_protocal:',args.comminication_protocal)
-    print('iteration_per_aggregation:',args.Q)
-    # args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
-    # assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
+    # args.comp = communication_protocol_dict['comp'] if ('comp' in communication_protocol_dict) else 'topk'
+    args.quant_level = communication_protocol_dict['quant_level'] if ('quant_level' in communication_protocol_dict) else 0
+    args.vecdim = communication_protocol_dict['vecdim'] if ('vecdim' in communication_protocol_dict) else 1
+    
+    print('communication_protocol:',args.communication_protocol)
+
     
     args.attacker_id = []
     # # args.early_stop, if use early stop
