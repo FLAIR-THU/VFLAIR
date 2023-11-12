@@ -326,7 +326,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack_mnist_', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 

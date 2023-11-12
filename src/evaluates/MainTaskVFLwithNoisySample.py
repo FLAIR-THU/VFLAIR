@@ -70,6 +70,8 @@ class MainTaskVFLwithNoisySample(object):
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
         self.final_epoch = 0
+        self.current_epoch = 0
+        self.current_step = 0
 
         # some state of VFL throughout training process
         self.first_epoch_state = None
@@ -106,12 +108,17 @@ class MainTaskVFLwithNoisySample(object):
                     # print('dp on pred')
                     pred_detach =torch.tensor(self.launch_defense(pred_detach, "pred")) 
 
-            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-
             if ik < (self.k-1): # Passive party sends pred for aggregation
+                ########### comminication_protocals ###########
+                if self.args.comminication_protocal == 'Compress':
+                    pred_detach = compress_pred(pred_detach , self.parties[ik].local_gradient,\
+                                    self.current_epoch, self.current_step).to(self.args.device)
+                ########### comminication_protocals ###########
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
             else: 
                 assert ik == (self.k-1) # Active party update local pred
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 self.parties[ik].update_local_pred(pred_clone)
     
     def LR_Decay(self,i_epoch):
@@ -160,7 +167,7 @@ class MainTaskVFLwithNoisySample(object):
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ============
-        if self.args.BCD_type == 'p' or self.Q ==1 : # parallel FedBCD & noBCD situation
+        if self.args.comminication_protocal in ['FedBCD_p','Compress'] or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties
@@ -229,7 +236,10 @@ class MainTaskVFLwithNoisySample(object):
         train_acc_history = []
         test_acc_histoty = []
         backdoor_acc_history = []
+
+        self.current_epoch = 0
         for i_epoch in range(self.epochs):
+            self.current_epoch = i_epoch
             # tqdm_train = tqdm(self.parties[self.k-1].train_loader, desc='Training (epoch #{})'.format(i_epoch + 1))
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
@@ -238,6 +248,8 @@ class MainTaskVFLwithNoisySample(object):
             # for parties_data in zip(self.parties[0].train_loader, self.parties[self.k-1].train_loader, tqdm_train): ## TODO: what to de for 4 party?
             # poison_id = random.randint(0, self.parties[0].train_poison_data.size()[0]-1)
             # target_id = random.randint(0, len(self.parties[0].train_target_list)-1)
+
+            self.current_step = 0
             for parties_data in zip(*data_loader_list):
                 # # ######### for backdoor start #########
                 # # print("parties data", len(parties_data[self.k-1][0]),len(parties_data[self.k-1][1]))
@@ -278,6 +290,7 @@ class MainTaskVFLwithNoisySample(object):
                 #     self.first_epoch_state = self.save_state()
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state()
+                self.current_step = self.current_step + 1
 
             # LR decay
             self.LR_Decay(i_epoch)

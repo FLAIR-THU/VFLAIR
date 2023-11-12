@@ -12,6 +12,8 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
+comminication_protocal_list = ['FedBCD_p','FedBCD_s','CELU','Compress']
+
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
     config_file = open(config_file_path,"r")
@@ -38,8 +40,13 @@ def load_basic_configs(config_file_name, args):
     # args.Q ,iteration_per_aggregation for FedBCD
     args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
     assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
-    args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
-    assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
+    
+    args.comminication_protocal = config_dict['comminication_protocal'] if ('comminication_protocal' in config_dict) else "FedBCD_p"
+    assert (args.comminication_protocal in comminication_protocal_list), "comminication_protocal not available"
+    print('comminication_protocal:',args.comminication_protocal)
+    print('iteration_per_aggregation:',args.Q)
+    # args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
+    # assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
     
     args.attacker_id = []
     # # args.early_stop, if use early stop
