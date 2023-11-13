@@ -47,9 +47,9 @@ def evaluate_no_attack(args):
 
     vfl = MainTaskVFL(args)
     if args.dataset not in ['cora']:
-        main_acc , stopping_iter= vfl.train()
+        main_acc, stopping_iter, stopping_time = vfl.train()
     else:
-        main_acc = vfl.train_graph()
+        main_acc, stopping_iter, stopping_time = vfl.train_graph()
 
     main_acc_noattack = main_acc
     attack_metric = main_acc_noattack - main_acc
