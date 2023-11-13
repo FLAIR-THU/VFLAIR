@@ -10,13 +10,13 @@
     },
     "model_list":{
         "0": {
-            "type": "MLP2",
+            "type": "MLP2_Softmax",
             "input_dim": 392,
             "output_dim": 10,
             "path": "random_14*28_10"
         },
         "1": {
-            "type": "MLP2",
+            "type": "MLP2_Softmax",
             "input_dim": 392,
             "output_dim": 10,
             "path": "random_14*28_10"
