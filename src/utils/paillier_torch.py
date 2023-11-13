@@ -18,6 +18,15 @@ def implements(torch_function):
     return decorator
 
 
+def _ignore_overflow_decrypt(sk):
+    def f(x):
+        try:
+            return sk.decrypt(x)
+        except:
+            return 0.0
+    return f
+
+
 class PaillierTensor(object):
     """torch.Tensor-like object for Paillier Encryption"""
 
@@ -34,7 +43,7 @@ class PaillierTensor(object):
 
     def decrypt(self, sk, device="cpu"):
         return torch.Tensor(
-            np.vectorize(lambda x: sk.decrypt(x))(self._paillier_np_array)
+            np.vectorize(_ignore_overflow_decrypt(sk))(self._paillier_np_array)
         ).to(device)
 
     def tensor(self, sk=None):

@@ -5,12 +5,13 @@ import torch
 from torch.utils.data import DataLoader
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
+from utils.paillier_torch import PaillierMSELoss
 from dataset.party_dataset import ActiveDataset
 
 class PaillierActiveParty(Party):
     def __init__(self, args, index):
         super().__init__(args, index)
-        self.criterion = cross_entropy_for_onehot
+        self.criterion = PaillierMSELoss()
         self.encoder = args.encoder
         # print(f"in active party, encoder=None? {self.encoder==None}, {self.encoder}")
         self.train_index = args.idx_train
@@ -41,7 +42,7 @@ class PaillierActiveParty(Party):
         self.pred_received[giver_index] = pred
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        pred = sum(pred_list)
+        pred = sum(pred_list[:1])
         loss = self.criterion(pred, gt_one_hot_label)
         return pred, loss
 
