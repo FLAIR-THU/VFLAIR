@@ -29,7 +29,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
 
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.7,'avazu':0.7,'criteo':0.7,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL(object):
@@ -74,6 +74,7 @@ class MainTaskVFL(object):
         self.train_acc = None
         self.flag = 1
         self.stopping_iter = 0
+        self.stopping_time = 0.0
 
 
         # Early Stop
@@ -495,6 +496,9 @@ class MainTaskVFL(object):
         # Early Stop
         last_loss = 1000000
         early_stop_count = 0
+        communication = 0
+        flag = 0
+        total_time = 0.0
 
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -518,7 +522,18 @@ class MainTaskVFL(object):
             elif i_epoch == self.epochs//2:
                 self.middle_epoch_state = self.save_state(True)
             
+            enter_time = time.time()
             self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
+            exit_time = time.time()
+            total_time += (exit_time-enter_time)
+
+            communication = communication + 1
+            if communication % 10 == 0:
+                print(f"total time for {communication} communication is {total_time}")
+            if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+                self.stopping_iter = communication
+                self.stopping_time = total_time
+                flag = 1
         
             if  i_epoch == 0:
                 self.first_epoch_state.update(self.save_state(False))
@@ -643,9 +658,9 @@ class MainTaskVFL(object):
         self.final_state.update(self.save_state(False)) 
         self.final_state.update(self.save_party_data()) 
         
-        if args.apply_mf==True:
+        if self.args.apply_mf==True:
             return self.test_acc,self.noise_test_acc
-        return self.test_acc
+        return self.test_acc,self.stopping_iter,self.stopping_time
 
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):

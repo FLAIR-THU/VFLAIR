@@ -50,7 +50,7 @@ def evaluate_no_attack(args):
         
         main_acc , stopping_iter, stopping_time, stopping_commu_cost= vfl.train()
     else:
-        main_acc = vfl.train_graph()
+        main_acc, stopping_iter, stopping_time = vfl.train_graph()
 
     main_acc_noattack = main_acc
     attack_metric = main_acc_noattack - main_acc
