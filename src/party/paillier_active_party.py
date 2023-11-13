@@ -42,15 +42,14 @@ class PaillierActiveParty(Party):
         self.pred_received[giver_index] = pred
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        pred = sum(pred_list[:1])
+        pred = sum(pred_list) / self.args.k
         loss = self.criterion(pred, gt_one_hot_label)
         return pred, loss
 
-    def gradient_calculation(self, pred_list, loss):
+    def gradient_calculation(self, pred_list, ground_truth):
         pred_gradients_list = []
-        grad = self.criterion.p_backward()
         for ik in range(self.args.k):
-            pred_gradients_list.append(grad)
+            pred_gradients_list.append((pred_list[ik] - ground_truth) * (1 / (self.args.k * ground_truth.shape[0])))
         return pred_gradients_list
     
     def give_gradient(self):
@@ -60,10 +59,16 @@ class PaillierActiveParty(Party):
             print('give gradient:self.gt_one_hot_label == None')
             assert 1>2
 
-        self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
-        pred_gradients_list = self.gradient_calculation(pred_list, self.global_loss)
+        # self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
+        pred_gradients_list = self.gradient_calculation(pred_list, self.gt_one_hot_label)
 
         return pred_gradients_list
     
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient
+
+    def local_backward(self):
+        # update local model
+        self.local_model_optimizer.zero_grad()
+        torch.autograd.backward(self.local_pred, self.local_gradient)
+        self.local_model_optimizer.step()

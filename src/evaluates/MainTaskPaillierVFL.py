@@ -94,6 +94,9 @@ class MainTaskPaillierVFL(object):
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
                 pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
                 self.parties[self.k - 1].receive_pred(pred_clone, ik)
+            else:
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                self.parties[ik].update_local_pred(pred_detach)
 
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k - 1].give_gradient()  # gradient_clone
@@ -154,7 +157,7 @@ class MainTaskPaillierVFL(object):
                     self.pred_transmit()
                     self.gradient_transmit()
                     # update parameters for all parties
-                    for ik in range(self.k - 1):
+                    for ik in range(self.k):
                         self.parties[ik].local_backward()
                 else:  # FedBCD: additional iterations without info exchange
                     # for passive party, do local update without info exchange
@@ -170,6 +173,7 @@ class MainTaskPaillierVFL(object):
                 for ik in range(self.k - 1):
                     _pred, _pred_clone = self.parties[ik].give_pred()
                     self.parties[ik].local_backward()
+            self.parties[self.k-1].local_backward()
         # ============= FedBCD ===================
 
         # ###### Noisy Label Attack #######
@@ -331,7 +335,7 @@ class MainTaskPaillierVFL(object):
                             pred_list, gt_val_one_hot_label, test="True"
                         )
 
-                        enc_predict_prob = F.softmax(test_logit, dim=-1)
+                        enc_predict_prob = test_logit
                         if self.args.apply_cae == True:
                             dec_predict_prob = self.args.encoder.decoder(
                                 enc_predict_prob

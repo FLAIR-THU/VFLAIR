@@ -26,7 +26,7 @@ class PaillierPassiveParty(PassiveParty):
         else:
             self.local_pred = self.local_model(self.local_batch_data)
         self.local_pred_clone = self.local_pred.detach().clone()
-        return torch.nn.functional.softmax(self.local_pred, dim=1), torch.nn.functional.softmax(self.local_pred_clone, dim=1)
+        return self.local_pred, self.local_pred_clone
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
