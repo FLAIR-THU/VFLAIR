@@ -171,8 +171,8 @@ class MainTaskVFL(object):
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
-        # ======== FedBCD ===========
-        if self.args.communication_protocol in ['FedBCD_p','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
+        # ======== Commu ===========
+        if self.args.communication_protocol in ['Vanilla','FedBCD_p','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties
@@ -204,7 +204,7 @@ class MainTaskVFL(object):
             self.parties[self.k-1].global_backward()
             self.cache.put(batch, act_val, dev_val, num_total_comms + num_local_updates)
             num_total_comms += 1
-        else: # Sequential FedBCD_s
+        elif self.args.communication_protocol in ['FedBCD_s']: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
                     #first iteration, active party gets pred from passsive party
@@ -228,7 +228,9 @@ class MainTaskVFL(object):
                 for ik in range(self.k-1): 
                     _pred, _pred_clone= self.parties[ik].give_pred() 
                     self.parties[ik].local_backward() 
-        # ============= FedBCD ===================
+        else:
+            assert 1>2 , 'Communication Protocol not provided'
+        # ============= Commu ===================
         
         # ###### Noisy Label Attack #######
         # convert back to clean label to get true acc
@@ -274,6 +276,7 @@ class MainTaskVFL(object):
         #     is_finished = False
         #     self.cache = Cache() 
 
+        start_time = time.time()
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -316,8 +319,13 @@ class MainTaskVFL(object):
                 if communication % 10 == 0:
                     print(f"total time for {communication} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-                        self.stopping_iter = communication
-                        flag = 1
+                    stop_time = time.time()
+                    self.stopping_time = stop_time - start_time
+                    self.stopping_iter = communication
+                    self.stopping_commu_cost = 0 
+                    for _ik in range(self.args.k):
+                        self.stopping_commu_cost += self.parties[_ik].communication_cost
+                    flag = 1
 
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
@@ -395,27 +403,7 @@ class MainTaskVFL(object):
                                 pred_list.append(_local_pred)
                                 noise_pred_list.append(_local_pred[missing_list])
                             ####### missing feature attack ######
-                            ####### Noisy Sample #########
-                            # elif self.args.apply_ns == True :
-                            #     assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
-                            #     assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
-                            #     assert 'party' in self.args.attack_configs, 'need parameter: party'
-                            #     noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
-                                
-                            #     noisy_list = []
-                            #     noisy_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*noise_rate)))
-
-                            #     if (ik in self.args.attack_configs['party']):
-                            #         scale = self.args.attack_configs['noise_lambda']
-                            #         noised_sample = noisy_sample(parties_data[ik][0][noisy_list],scale)
-                            #         parties_data[ik][0][noisy_list] = noised_sample
-
-                            #         pred_list.append( self.parties[ik].local_model(parties_data[ik][0]))
-                            #         noise_pred_list.append( self.parties[ik].local_model( noised_sample ) )
-                            #     else:
-                            #         pred_list.append( self.parties[ik].local_model(parties_data[ik][0] ) )
-                            #         noise_pred_list.append( self.parties[ik].local_model((parties_data[ik][0][noisy_list]) ) )
-                            # # ####### Noisy Sample #########
+     
                             else:
                                 pred_list.append(_local_pred)
 
@@ -497,7 +485,7 @@ class MainTaskVFL(object):
         if self.args.apply_mf==True:
             return self.test_acc, self.noise_test_acc
 
-        return self.test_acc,self.stopping_iter
+        return self.test_acc,self.stopping_iter,self.stopping_time,self.stopping_commu_cost
 
 
 

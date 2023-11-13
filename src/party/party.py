@@ -16,6 +16,7 @@ from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 
+from sys import getsizeof
 
 class Party(object):
     def __init__(self, args, index):
@@ -69,6 +70,8 @@ class Party(object):
         self.local_pred = None
         self.local_pred_clone = None
 
+        self.communication_cost = 0 # MB of data tranamitted from this party
+
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
         return
@@ -103,6 +106,8 @@ class Party(object):
         # ####### Missing Feature #######
 
         self.local_pred_clone = self.local_pred.detach().clone()
+
+        self.communication_cost += getsizeof(self.local_pred_clone) / (1024 **2) #MB
         return self.local_pred, self.local_pred_clone
 
     def prepare_data(self, args, index):

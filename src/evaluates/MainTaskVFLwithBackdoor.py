@@ -166,8 +166,8 @@ class MainTaskVFLwithBackdoor(object):
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
-        # ======== FedBCD ============
-        if self.args.communication_protocol in ['FedBCD_p','Compress'] or self.Q ==1 : # parallel FedBCD & noBCD situation
+        # ======== Commu ============
+        if self.args.communication_protocol in ['Vanilla','FedBCD_p','Quantization','Topk']  or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties
@@ -187,7 +187,7 @@ class MainTaskVFLwithBackdoor(object):
                     _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
-        else: # Sequential FedBCD
+        elif self.args.communication_protocol in ['FedBCD_s']: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
                     #first iteration, active party gets pred from passsive party
@@ -210,7 +210,9 @@ class MainTaskVFLwithBackdoor(object):
             for _q in range(self.Q):
                 for ik in range(self.k-1): 
                     self.parties[ik].local_backward() 
-        # ============= FedBCD ===================
+        else:
+            assert 1>2 , 'Communication Protocol not provided'
+        # ============= Commu ===================
 
         pred = self.parties[self.k-1].global_pred
         loss = self.parties[self.k-1].global_loss

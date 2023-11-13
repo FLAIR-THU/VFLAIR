@@ -12,7 +12,7 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
-communication_protocol_list = ['FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
+communication_protocol_list = ['Vanilla','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -46,9 +46,11 @@ def load_basic_configs(config_file_name, args):
     args.Q = communication_protocol_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in communication_protocol_dict) else 1
     assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
     
-    # args.comp = communication_protocol_dict['comp'] if ('comp' in communication_protocol_dict) else 'topk'
     args.quant_level = communication_protocol_dict['quant_level'] if ('quant_level' in communication_protocol_dict) else 0
     args.vecdim = communication_protocol_dict['vecdim'] if ('vecdim' in communication_protocol_dict) else 1
+    
+    if args.communication_protocol == 'Vanilla':
+        args.Q = 1
     
     print('communication_protocol:',args.communication_protocol)
 

@@ -6,8 +6,8 @@
 
 # GaussianDP #SBATCH --qos high
 # Begin with GaussianDP 0.0001
-echo 'cifar100 quant'
+echo 'mnist quant'
 
-python main_pipeline_quant.py --configs quantization/cifar100
+python main_pipeline_topk.py --configs topk/mnist
 
 

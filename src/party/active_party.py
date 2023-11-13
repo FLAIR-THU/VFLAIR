@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
+from sys import getsizeof
 
 class ActiveParty(Party):
     def __init__(self, args, index):
@@ -117,6 +118,8 @@ class ActiveParty(Party):
         if self.args.defense_name == "GradPerturb":
             self.calculate_gradient_each_class(self.global_pred, pred_list)
 
+        self.communication_cost += getsizeof(pred_gradients_list_clone) / (1024**2)
+        
         return pred_gradients_list_clone
     
     def update_local_gradient(self, gradient):

@@ -8,6 +8,6 @@
 # Begin with GaussianDP 0.0001
 echo 'cifar100 quant'
 
-python main_pipeline_quant.py --configs quantization/cifar100
+python main_pipeline_topk.py --configs topk/cifar100
 
 
