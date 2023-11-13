@@ -17,6 +17,17 @@ class PaillierPassiveParty(PassiveParty):
         self.pk = pk
         self.sk = sk
 
+    def give_pred(self):
+        # ####### Noisy Sample #########
+        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
+            scale = self.args.attack_configs['noise_lambda']
+            self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
+        # ####### Noisy Sample #########
+        else:
+            self.local_pred = self.local_model(self.local_batch_data)
+        self.local_pred_clone = self.local_pred.detach().clone()
+        return torch.nn.functional.softmax(self.local_pred, dim=1), torch.nn.functional.softmax(self.local_pred_clone, dim=1)
+
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
         self.train_dst = PassiveDataset(self.train_data)
