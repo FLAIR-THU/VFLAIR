@@ -55,7 +55,7 @@ def evaluate_no_attack(args, debug=False):
 
     vfl = MainTaskPaillierVFL(args, debug)
     if args.dataset not in ["cora"]:
-        main_acc = vfl.train()
+        main_acc, stopping_iter = vfl.train()
     else:
         main_acc = vfl.train_graph()
 
@@ -77,6 +77,8 @@ def evaluate_no_attack(args, debug=False):
     )
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
+    append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}")
+
     return vfl, main_acc_noattack
 
 

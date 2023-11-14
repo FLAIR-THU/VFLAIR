@@ -77,6 +77,7 @@ class MainTaskPaillierVFL(object):
         self.loss = None
         self.train_acc = None
         self.flag = 1
+        self.stopping_iter = 0
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
@@ -227,6 +228,11 @@ class MainTaskPaillierVFL(object):
         early_stop_count = 0
         LR_passive_list = []
         LR_active_list = []
+
+        communication = 0
+        total_time = 0.0
+        flag = 0
+
         for i_epoch in range(self.epochs):
             postfix = {"train_loss": 0.0, "train_acc": 0.0, "test_acc": 0.0}
             i = -1
@@ -259,11 +265,17 @@ class MainTaskPaillierVFL(object):
                 elif i_epoch == self.epochs // 2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
 
+                enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(
                     self.parties_data, self.gt_one_hot_label
                 )
-                #  self.gt_one_hot_label
+                exit_time = time.time()
+                total_time += (exit_time-enter_time)
 
+                communication = communication + 1
+                if communication % 10 == 0:
+                    print(f"total time for {communication} communication is {total_time}")
+                
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs // 2 and i == 0:
@@ -367,6 +379,12 @@ class MainTaskPaillierVFL(object):
                     )
 
                     self.final_epoch = i_epoch
+
+                    if self.test_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+                        self.stopping_iter = communication
+                        flag = 1
+
+
         self.final_state = self.save_state(True)
         self.final_state.update(self.save_state(False))
         self.final_state.update(self.save_party_data())
@@ -379,7 +397,7 @@ class MainTaskPaillierVFL(object):
         # plt.legend()
         # plt.savefig('./exp_result/LR_Scope.png')
 
-        return self.test_acc
+        return self.test_acc, self.stopping_iter
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
         if BEFORE_MODEL_UPDATE:
