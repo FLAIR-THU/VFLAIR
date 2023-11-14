@@ -1,5 +1,5 @@
 {
-    "model_type": "randomforest",
+    "tree_type": "randomforest",
     "number_of_trees": 5,
     "k": 2,
     "depth": 6,

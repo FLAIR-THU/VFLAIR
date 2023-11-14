@@ -125,7 +125,7 @@ class XGBoostParty(Party):
         else:
             return super().get_threshold_candidates(x_col)
 
-    def greedy_search_split(self, gradient, hessian, idxs):
+    def greedy_search_split(self, gradient, hessian, y, idxs):
         if self.use_missing_value:
             num_thresholds = self.subsample_col_count * 2
         else:
@@ -160,9 +160,12 @@ class XGBoostParty(Party):
                 temp_grad = [0 for _ in range(grad_dim)]
                 temp_hess = [0 for _ in range(grad_dim)]
                 temp_left_size = 0
+                temp_left_y_class_cnt = [0 for _ in range(self.num_classes)]
 
                 for r in range(current_min_idx, not_missing_values_count):
                     if x_col[r] <= percentiles[p]:
+                        for c in range(self.num_classes):
+                            temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                         for c in range(grad_dim):
                             temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                             temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
@@ -176,7 +179,7 @@ class XGBoostParty(Party):
                     and row_count - cumulative_left_size >= self.min_leaf
                 ):
                     split_candidates_grad_hess[i].append(
-                        (temp_grad, temp_hess, temp_left_size)
+                        (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
                     )
                     self.temp_thresholds[i].append(percentiles[p])
 
@@ -188,9 +191,12 @@ class XGBoostParty(Party):
                     temp_grad = [0 for _ in range(grad_dim)]
                     temp_hess = [0 for _ in range(grad_dim)]
                     temp_left_size = 0
+                    temp_left_y_class_cnt = [0 for _ in range(self.num_classes)]
 
                     for r in range(current_max_idx, 0, -1):
                         if x_col[r] <= percentiles[p]:
+                            for c in range(self.num_classes):
+                                temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                             for c in range(grad_dim):
                                 temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                                 temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
@@ -208,6 +214,7 @@ class XGBoostParty(Party):
                                 temp_grad,
                                 temp_hess,
                                 temp_left_size,
+                                temp_left_y_class_cnt
                             )
                         )
                         self.temp_thresholds[i + self.subsample_col_count].append(

@@ -3,6 +3,7 @@ import threading
 from typing import List
 
 from .tree_node_core import Node
+from .idlmid import is_satisfied_mi_bound
 
 
 def calc_giniimp(tot_cnt: float, class_cnt: List[float]) -> float:
@@ -23,10 +24,11 @@ class RandomForestNode(Node):
         num_classes_,
         idxs_,
         depth_,
+        prior_,
+        mi_bound_=-1,
         active_party_id_=-1,
         use_only_active_party_=False,
         n_job_=1,
-        custom_secure_cond_func=(lambda _: False),
         y_onehot_encoded_encrypted=None,
     ):
         super().__init__()
@@ -36,10 +38,11 @@ class RandomForestNode(Node):
         self.num_classes = num_classes_
         self.idxs = idxs_
         self.depth = depth_
+        self.prior = prior_
+        self.mi_bound = mi_bound_
         self.active_party_id = active_party_id_
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
-        self.custom_secure_cond_func = custom_secure_cond_func
         self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
 
         self.left = None
@@ -50,6 +53,7 @@ class RandomForestNode(Node):
         self.entire_class_cnt = [0 for _ in range(num_classes_)]
 
         self.secure_flag_exclude_passive_parties = use_only_active_party_
+        self.is_all_subsequent_children_contaminated = False
 
         self.row_count = len(idxs_)
         self.num_parties = len(parties_)
@@ -171,6 +175,32 @@ class RandomForestNode(Node):
                             temp_y_class_cnt[c] - temp_left_class_cnt[c]
                         )
 
+                    if (temp_party_id != self.active_party_id) and (
+                        (
+                            not is_satisfied_mi_bound(
+                                self.num_classes,
+                                self.mi_bound,
+                                temp_left_size,
+                                len(self.y),
+                                self.entire_class_cnt,
+                                self.prior,
+                                temp_left_class_cnt,
+                            )
+                        )
+                        or (
+                            not is_satisfied_mi_bound(
+                                self.num_classes,
+                                self.mi_bound,
+                                temp_right_size,
+                                len(self.y),
+                                self.entire_class_cnt,
+                                self.prior,
+                                temp_right_class_cnt,
+                            )
+                        )
+                    ):
+                        continue
+
                     temp_left_giniimp = calc_giniimp(
                         temp_left_size, temp_left_class_cnt
                     )
@@ -247,9 +277,31 @@ class RandomForestNode(Node):
         )
         right_idxs = [idx for idx in self.idxs if idx not in left_idxs]
 
-        left_is_satisfied_secure_cond = self.custom_secure_cond_func((self, left_idxs))
-        right_is_satisfied_secure_cond = self.custom_secure_cond_func(
-            (self, right_idxs)
+        left_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
+        for i in left_idxs:
+            left_y_class_cnt_within_node[int(self.y[i])] += 1
+
+        right_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
+        for i in right_idxs:
+            right_y_class_cnt_within_node[int(self.y[i])] += 1
+
+        left_is_satisfied_secure_cond = is_satisfied_mi_bound(
+            self.num_classes,
+            self.mi_bound,
+            len(left_idxs),
+            len(self.y),
+            self.entire_class_cnt,
+            self.prior,
+            left_y_class_cnt_within_node,
+        )
+        right_is_satisfied_secure_cond = is_satisfied_mi_bound(
+            self.num_classes,
+            self.mi_bound,
+            len(right_idxs),
+            len(self.y),
+            self.entire_class_cnt,
+            self.prior,
+            right_y_class_cnt_within_node,
         )
 
         self.left = RandomForestNode(
@@ -259,10 +311,11 @@ class RandomForestNode(Node):
             self.num_classes,
             left_idxs,
             self.depth - 1,
+            self.prior,
+            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or left_is_satisfied_secure_cond),
             self.n_job,
-            self.custom_secure_cond_func,
             self.y_onehot_encoded_encrypted,
         )
         if self.left.is_leaf_flag == 1:
@@ -274,10 +327,11 @@ class RandomForestNode(Node):
             self.num_classes,
             right_idxs,
             self.depth - 1,
+            self.prior,
+            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or right_is_satisfied_secure_cond),
             self.n_job,
-            self.custom_secure_cond_func,
             self.y_onehot_encoded_encrypted,
         )
         if self.right.is_leaf_flag == 1:
@@ -293,6 +347,7 @@ class RandomForestNode(Node):
             self.right.not_splitted_flag = True
 
         # Clear unused index
+        """
         if not (
             (self.left.not_splitted_flag and self.right.not_splitted_flag)
             or (
@@ -302,6 +357,7 @@ class RandomForestNode(Node):
         ):
             self.idxs.clear()
             self.idxs = []
+        """
 
     def is_leaf(self):
         if self.is_leaf_flag == -1:

@@ -1,5 +1,5 @@
 {
-    "model_type": "xgboost",
+    "tree_type": "xgboost",
     "number_of_trees": 5,
     "k": 2,
     "depth": 6,
@@ -9,6 +9,6 @@
     "use_missing_value": false,
     "use_encryption": false,
     "key_length": 128,
-    "advanced_params":{"learning_rate":0.03, "lam":1.0, "gamma":0.0, "eps":1.0}
+    "advanced_params":{"learning_rate":0.1, "lam":1.0, "gamma":0.0, "eps":1.0}
 }
 
