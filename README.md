@@ -93,18 +93,31 @@ VFLAIR
 ## Quick Start
 
 ### Zero. Environment Preparation
-
-  Use `pip install -r requirements.txt` to install all the necessary requirements.
+1. Download code files and install all the necessary requirements.
+    ```shell
+      # clone the repository
+      $ git clone <link-to-our-github-repo>
+      
+      # install required packages
+      $ conda create -n VFLAIR python=3.8
+      $ conda activate VFLAIR
+      $ pip install --upgrade pip
+      $ cd VFLAIR
+      $ pip install -r requirements.txt
+      
+      # install cuda related pytorch
+      $ pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+    ```
+  2. New datasets, except MNIST, CIAFR10 and CIAFR100, can be put under `../../share_dataset/` folder on your device.
 
 ### One. Basic Benchmark Usage: A Quick Example
 
-1. Customize your own configurations
+1. Customize your own configurations.
+    * Create a json file for your own evaluation configuration in `/src/configs` folder. Name it whatever you want, like `my_configs.json`.
+    * `/src/configs/basic_configs.json` is a sample configuration file. You can copy it and modify the contents for your own purpose.
+    * For detail information about configuration parameters, see `/src/configs/README.md` for detail information.
 
-* Create a json file for your own evaluation configuration in `/src/configs` folder. Name it whatever you want, like `my_configs.json`.
-* `/src/configs/basic_configs.json` is a sample configuration file. You can copy it and modify the contents for your own purpose.
-* For detail information about configuration parameters, see `/src/configs/README.md` for detail information.
-
-2. Use `cd src` and `python main_pipeline.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
+2. Use `cd src` and `python main_pipeline.py --gpu 0 --configs <your_config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. Advanced Usage: Implement Your Own Algorithm
 

@@ -119,7 +119,8 @@ def dataset_partition(args, index, dst, half_dim):
         for ik in range(args.k):
             dim_list.append(int(args.model_list[str(ik)]['input_dim']))
             if len(dim_list)>1:
-                dim_list[-1]=dim_list[-1]+dim_list[-2]
+                for i in range(1, len(dim_list)):
+                    dim_list[i]=dim_list[i]+dim_list[i-1]
         dim_list.insert(0,0)
 
         if args.k == 1: # Centralized Training

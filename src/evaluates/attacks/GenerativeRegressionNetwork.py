@@ -296,6 +296,9 @@ class GenerativeRegressionNetwork(Attacker):
                        
                         # MSE.append(mse)
                         # PSNR.append(psnr)
+                    if i_epoch == self.epochs - 1:
+                        generated_data_b = generated_data_b.reshape(test_data_b.size())
+                        torch.save(generated_data_b, f"./exp_result/grn/{self.args.defense_name}.pkl") 
                     print('Epoch {}% \t train_loss:{} train_mse:{:.3f} mse:{:.3f} rand_mse:{:.3f}'.format(
                         i_epoch, loss.item(), train_mse, mse, rand_mse))
             

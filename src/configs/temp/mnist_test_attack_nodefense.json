@@ -24,13 +24,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "GaussianDP",
-        "parameters": {
-            "party": [0],
-            "dp_strength": 0.1
-        }
-    },
     "attack_list": {
         "0":{
             "name": "GenerativeRegressionNetwork",
@@ -51,5 +44,4 @@
             }
         }
     }
-    
 }
