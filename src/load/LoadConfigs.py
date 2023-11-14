@@ -48,6 +48,9 @@ def load_basic_configs(config_file_name, args):
     
     args.quant_level = communication_protocol_dict['quant_level'] if ('quant_level' in communication_protocol_dict) else 0
     args.vecdim = communication_protocol_dict['vecdim'] if ('vecdim' in communication_protocol_dict) else 1
+    args.num_update_per_batch = communication_protocol_dict['num_update_per_batch'] if ('num_update_per_batch' in communication_protocol_dict) else 5
+    args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if ('num_batch_per_workset' in communication_protocol_dict) else 5
+    args.smi_thresh = communication_protocol_dict['smi_thresh'] if ('smi_thresh' in communication_protocol_dict) else 0.5
     
     if args.communication_protocol == 'Vanilla':
         args.Q = 1

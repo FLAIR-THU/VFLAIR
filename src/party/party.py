@@ -239,7 +239,7 @@ class Party(object):
     #     self.local_model_optimizer.step()
 
 
-    def local_backward(self):
+    def local_backward(self,weight=None):
         self.num_local_updates += 1 # another update
         
         # update local model
@@ -339,12 +339,21 @@ class Party(object):
             # ########## adversarial training loss (end) ##########
         else:
             torch.autograd.set_detect_anomaly(True)
-            self.weights_grad_a = torch.autograd.grad(
-                self.local_pred,
-                self.local_model.parameters(),
-                grad_outputs=self.local_gradient,
-                retain_graph=True
-            )
+            if weight != None: # CELU
+                ins_batch_cached_grad = torch.mul(weight.unsqueeze(1),self.local_gradient)
+                self.weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.parameters(),
+                    grad_outputs=ins_batch_cached_grad,
+                    retain_graph=True
+                )
+            else:
+                self.weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True
+                )
             for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
                     w.grad = g.detach()

@@ -1,13 +1,14 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.0003,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 1024,
     "communication":{
-        "comminication_protocal": "Quantization",
-        "iteration_per_aggregation": 1,
+        "communication_protocol": "CELU",
+        "iteration_per_aggregation": 5,
         "quant_level": 0,
-        "vecdim": 1
+        "vecdim": 1,
+        "smi_thresh": 0.5
     },
     "dataset":{
         "dataset_name": "cifar10",

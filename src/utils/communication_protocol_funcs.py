@@ -41,7 +41,14 @@ class Cache(object):
         if batch in self._cache:
             del self._cache[batch]
 
+def ins_weight(V, stale_V, smi_thresh):
+    weights = F.cosine_similarity(V, stale_V, dim=1)
+    # print(weights.shape) # [2048]
 
+    for i in range(weights.shape[0]):
+        if weights[i] <  smi_thresh:
+            weights[i] = 0
+    return weights
 
 # Compress
 def compress_pred( args, pred , local_grad,  epoch ,step ):

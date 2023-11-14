@@ -23,7 +23,7 @@ import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
-from utils.communication_protocol_funcs import compress_pred
+from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
 from evaluates.attacks.attack_api import AttackerLoader
 
 
@@ -89,8 +89,8 @@ class MainTaskVFL(object):
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
-        self.num_update_per_batch = 5
-        self.num_batch_per_workset = 5
+        self.num_update_per_batch = args.num_update_per_batch
+        self.num_batch_per_workset = args.Q #args.num_batch_per_workset
         self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
 
     
@@ -223,22 +223,22 @@ class MainTaskVFL(object):
                                 = val
                         
                         _pred, _pred_detach = self.parties[ik].give_pred()
-                        # self.parties[ik].local_pred = batch_cached_pred # PROBLEM TO DO
-
+                        weight = ins_weight(_pred_detach,batch_cached_pred,self.args.smi_thresh) # ins weight
+                        
                         # Using this batch for backward
                         if (ik == self.k-1): # active
                             self.parties[ik].update_local_gradient(batch_cached_grad)
-                            self.parties[ik].local_backward()
+                            self.parties[ik].local_backward(weight)
                             self.parties[ik].global_backward()
                         else:
                             self.parties[ik].receive_gradient(batch_cached_grad)
-                            self.parties[ik].local_backward()
+                            self.parties[ik].local_backward(weight)
 
 
                         # Mark used once for this batch + check staleness
                         self.parties[ik].cache.inc(batch)
                         if (self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness) or\
-                            (batch_num_update + 1 >= self.num_update_per_batch:):
+                            (batch_num_update + 1 >= self.num_update_per_batch):
                             self.parties[ik].cache.remove(batch)
                         
             
