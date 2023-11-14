@@ -47,7 +47,9 @@ class BottomModelPlus(nn.Module):
 
 
     def forward(self, x):
+        # print(x.shape)
         x = self.bottom_model(x)
+        # print(x.shape)
 
         if self.num_layer >= 2:
             if self.use_bn:
@@ -172,12 +174,12 @@ class SemiLoss(object):
         Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
         Lu = torch.mean((probs_u - targets_u) ** 2)
         
-        LAMBDA_U =50
+        LAMBDA_U = 50
         return Lx, Lu, LAMBDA_U * linear_rampup(epoch, all_epoch)
 
 
 class WeightEMA(object):
-    def __init__(self, model, ema_model,lr,  alpha=0.999):
+    def __init__(self, model, ema_model,lr, alpha=0.999):
         self.model = model
         self.ema_model = ema_model
         self.alpha = alpha

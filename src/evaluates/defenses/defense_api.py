@@ -24,5 +24,5 @@ def apply_defense(args, _type,*params):
     elif _type == "pred":
         if args.defense_name in ['LaplaceDP', 'GaussianDP']:
             defense_name = args.defense_name+'_for_pred'
-            gradient_list = params
-            return globals()[defense_name](args, gradient_list)
+            pred_list = params
+            return globals()[defense_name](args, pred_list)

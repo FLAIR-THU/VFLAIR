@@ -13,6 +13,7 @@ import itertools
 from evaluates.attacks.attacker import Attacker
 from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+torch.backends.cudnn.enabled = False
 
 def label_to_one_hot(target, num_classes=10):
     # print('label_to_one_hot:', target, type(target))
@@ -86,9 +87,7 @@ class BatchLabelReconstruction(Attacker):
             active_data = self.vfl_info['data'][1][0] # Active party data
 
             local_gradient = self.vfl_info['gradient'][ik] 
-            # [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)]
             original_dy_dx = self.vfl_info['local_model_gradient'][ik] # gradient calculated for local model update
-            #[copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)]
             
             net_a = self.vfl_info['model'][0].to(self.device)
             net_b = self.vfl_info['model'][1].to(self.device)
@@ -193,10 +192,16 @@ class BatchLabelReconstruction(Attacker):
                             break
                     
                     rec_rate = self.calc_label_recovery_rate(dummy_label, true_label)
-                    # if iters%200==0:
+                    # if iters%100==0:
                     #     print('Iters',iters,' rec_rate:',rec_rate)
                     recovery_rate_history[i].append(rec_rate)
                     end_time = time.time()
+                
+                ########## Clean #########
+                del(dummy_active_aggregate_model)
+                del(dummy_pred_b)
+                del(dummy_label)
+                
 
                 print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf,time_used=%lf' % (sample_count, self.label_size, index, rec_rate, end_time - start_time))
             

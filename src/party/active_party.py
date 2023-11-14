@@ -51,17 +51,47 @@ class ActiveParty(Party):
             loss = self.criterion(pred, gt_one_hot_label)
         # ########## for active mid model loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+            # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
             assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
             for mid_loss in self.global_model.mid_loss_list:
                 loss = loss + mid_loss
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
-        elif self.args.apply_dcor:
+        # ########## for active mid model loss (end) ##########
+        elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
+            # print('dcor active defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
             for ik in range(self.args.k-1):
                 loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
-        # ########## for active mid model loss (end) ##########
         return pred, loss
+
+    # def pure_aggregate(self, pred_list, gt_one_hot_label, test=False):
+    #     if self.args.apply_mid == True:
+    #         pred = self.global_model.global_model(pred_list)
+    #     else:
+    #         pred = self.global_model(pred_list)
+    #     if self.train_index != None: # for graph data
+    #         if test == False:
+    #             loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
+    #         else:
+    #             loss = self.criterion(pred[self.test_index], gt_one_hot_label[self.test_index])
+    #     else:
+    #         loss = self.criterion(pred, gt_one_hot_label)
+    #     # # ########## for active mid model loss (start) ##########
+    #     # if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+    #     #     # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
+    #     #     assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
+    #     #     for mid_loss in self.global_model.mid_loss_list:
+    #     #         loss = loss + mid_loss
+    #     #     self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+    #     # # ########## for active mid model loss (end) ##########
+    #     # elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
+    #     #     # print('dcor active defense')
+    #     #     self.distance_correlation_lambda = self.args.defense_configs['lambda']
+    #     #     # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
+    #     #     for ik in range(self.args.k-1):
+    #     #         loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
+    #     return pred, loss
 
     def gradient_calculation(self, pred_list, loss):
         pred_gradients_list = []
@@ -107,32 +137,35 @@ class ActiveParty(Party):
             _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
             _gradients_clone = _gradients[0].detach().clone()
             
-            if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
-                return # no need to update
+            # if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
+            #     return # no need to update
 
             # update global model
             self.global_model_optimizer.zero_grad()
-
-            parameters = []
-            
-            if (self.args.apply_mid == True) and (1 in self.args.defense_configs['party']): 
+            parameters = []          
+            if (self.args.apply_mid == True) and (self.index in self.args.defense_configs['party']): 
                 # mid parameters
                 for mid_model in self.global_model.mid_model_list:
                     parameters += list(mid_model.parameters())
                 # trainable layer parameters
                 if self.args.apply_trainable_layer == True:
                     parameters += list(self.global_model.global_model.parameters())
-                    weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                    for w, g in zip(parameters, weights_grad_a):
-                        if w.requires_grad:
-                            w.grad = g.detach()
+                
+                # load grads into parameters
+                weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
+                for w, g in zip(parameters, weights_grad_a):
+                    if w.requires_grad:
+                        w.grad = g.detach()
+                        
             else:
                 # trainable layer parameters
                 if self.args.apply_trainable_layer == True:
+                    # load grads into parameters
                     weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                     for w, g in zip(self.global_model.parameters(), weights_grad_a):
                         if w.requires_grad:
                             w.grad = g.detach()
+                # non-trainabel layer: no need to update
             self.global_model_optimizer.step()
 
     def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):

@@ -28,12 +28,15 @@
     * **Distance Correlation(dCor)** ([paper]([[2203.01451\] Label Leakage and Protection from Forward Embedding in Vertical Federated Learning (arxiv.org)](https://arxiv.org/abs/2203.01451)))
   * Multiple datasets are provided along with VFLAIR.
   * Defense Capability Score ——a comprehensive metric for assessing defense ability is also introduced.
-  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description.
+  * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description. In adition, we currently support three defense methods against label leakage attack.
+    * **LP-MST** ([paper](https://arxiv.org/abs/2102.06062))
+    * **Grafting-LDP** ([paper](https://arxiv.org/abs/2307.10318))
+    * **ID-LMID** ([paper](https://arxiv.org/abs/2307.10318))
 
 
 ## Code Structure
 
- ![VFLAIR](usage_guidance/figures/VFLAIR.png)
+ <!-- ![VFLAIR](usage_guidance/figures/VFLAIR.png) -->
 ```
 VFLAIR
 ├── src
@@ -45,14 +48,23 @@ VFLAIR
 │   │   |   ├── ...                    # Defense Implementation & Functions
 │   |   ├── MainTaskVFL                # Pipeline for BasicVFL & VFL with LI/FR/NTB
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
+│   |   ├── MainTaskVFLwithNoisySample # Pipeline for VFL with NTB-NSB    
 │   |   ├── MainTaskTVFL               # Pipeline for Tree-based VFL
 │   ├── load                           # Load Configurations into training pipeline
 │   |   ├── LoadConfigs.py             # Load basic parameters   
 │   |   ├── LoadDataset.py             # Load dataset and do data partition
 │   |   ├── LoadModels.py              # Initialize models
 │   |   ├── LoadParty.py               # Initialized parties with data and model
+│   |   ├── LoadTreeConfigs.py         # Load basic parameters   
+│   |   ├── LoadTreeParty.py           # Initialized parties with data and model
 │   ├── configs                        # Customizable configurations    
-│   |   ├── standard_configs           # Standard configurations for reference
+│   |   ├── standard_configs           # Standard configurations for NN-based VFL
+│   │   │   ├── ...   
+│   |   ├── active_party_attack        # Standard configurations for active party attack
+│   │   │   ├── ...   
+│   |   ├── passive_party_attack       # Standard configurations for passive party attack
+│   │   │   ├── ...   
+│   |   ├── tree                       # Standard configurations for tree-based VFL 
 │   │   │   ├── ...   
 │   |   ├── README.md                  # Guidance for configuration files 
 │   |   ├── README_TREE.md             # Guidance for testing tree-based VFL
@@ -69,7 +81,7 @@ VFLAIR
 │   |   ├── ...
 │   ├── metrics                        # Benchmark and Defense Capability Score (DCS) definition
 │   |   ├── ...
-│   ├── main_separate.py               # Main VFL(launch this file for NN based VFL)  
+│   ├── main_pipeline.py               # Main VFL(launch this file for NN based VFL)  
 │   ├── main_tree.py                   # Main Tree-based VFL(launch this file for tree-based VFL)  
 ├── usage_guidance                     # Detailed Usage  
 │   ├── figures
@@ -77,6 +89,7 @@ VFLAIR
 │   ├── Add_New_Algorithm.md           # Guidance on how to add user defined attacks and defenses algorithms
 │   ├── Dataset_Usage.md               # Guidance on how to achieve dataset for experiments
 ├── README.md
+├── requirements.txt                   # installation requirement, we mainly use pytorch3.8 for experiments
 ```
 
 
@@ -94,7 +107,7 @@ VFLAIR
 * `/src/configs/basic_configs.json` is a sample configuration file. You can copy it and modify the contents for your own purpose.
 * For detail information about configuration parameters, see `/src/configs/README.md` for detail information.
 
-2. Use `cd src` and `python main_separate.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_separate.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
+2. Use `cd src` and `python main_pipeline.py --seed 0 --gpu 0 --configs <Your_Config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. Advanced Usage: Implement Your Own Algorithm
 
@@ -112,6 +125,18 @@ VFLAIR
 
 ## Contributing
 
-We **greatly appreciate** any contribution to VFLAIR! 
+We **greatly appreciate** any contribution to VFLAIR! Also, we'll continue to improve our framework and documentation to provide more flexible and convenient usage.
 
-Please feel free to contact us if there's any problem with the code base!
+Please feel free to contact us if there's any problem with the code base or documentation!
+
+## Citation
+
+If you are using VFLAIR for your work, please cite our paper with:
+```
+@article{zou2023vflair,
+  title={VFLAIR: A Research Library and Benchmark for Vertical Federated Learning},
+  author={Zou, Tianyuan and Gu, Zixuan and He, Yu and Takahashi, Hideaki and Liu, Yang and Ye, Guangnan and Zhang, Ya-Qin},
+  journal={arXiv preprint arXiv:2310.09827},
+  year={2023}
+}
+```

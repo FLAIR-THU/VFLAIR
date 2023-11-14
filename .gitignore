@@ -11,6 +11,10 @@ __pycache__/
 data/
 src/load/share_dataset
 
+# # experiment config files
+# src/configs/main*/
+# src/configs/nsds*/
+
 # experiment result files
 src/exp_result/
 ./src/exp_result/*/*
@@ -20,6 +24,7 @@ src/exp_result/
 src/debug.*
 _HYPER_PARAMETERS.md
 src/_old_main_separate.py
+src/__old_main_separate.py
 src/sh_file/
 src/metrics/figures/
 src/metrics/record/
@@ -27,7 +32,7 @@ src/metrics/test_data_by_attack/
 src/metrics/_figures/
 src/metrics/_record/
 src/metrics/_test_data_by_attack/
-
+src/cifar_grn/
 
 # Distribution / packaging
 .Python

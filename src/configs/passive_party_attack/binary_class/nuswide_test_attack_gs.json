@@ -1,0 +1,46 @@
+{
+    "epochs": 10,
+    "lr": 0.003,
+    "k": 2,
+    "batch_size": 1024,
+    "iteration_per_aggregation": 1,
+    "dataset":{
+        "dataset_name": "nuswide",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "MLP2",
+            "input_dim": 1000,
+            "output_dim": 2
+        },
+        "1": {
+            "type": "MLP2",
+            "input_dim": 634,
+            "output_dim": 2
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "GradientSparsification",
+        "parameters": {
+            "party": [1],
+            "gradient_sparse_rate": 100.0
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "NormbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        },
+        "1":{
+            "name": "DirectionbasedScoring",
+            "parameters": {
+                "party": [0]
+            }
+        }
+    }
+}

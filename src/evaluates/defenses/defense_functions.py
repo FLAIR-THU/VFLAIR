@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import random
 
+DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 8, 'nuswide': 3}
 
 # Privacy Preserving Deep Learning
 def bound(grad, gamma):
@@ -175,6 +176,7 @@ class DPLaplacianNoiseApplyer():
         tensor = tensor + noisy_mask
         return tensor
 
+
 def LaplaceDP(args, original_object):
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
@@ -205,33 +207,80 @@ def LaplaceDP(args, original_object):
 
 
 def LaplaceDP_for_pred(args, original_object):
+    # print('Laplace DP for pred')
+
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
-    
+
+    # print('dp_strength:',dp_strength)
+
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
         with torch.no_grad():
             scale = dp_strength
-            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-                                        threshold + 1e-6).clamp(min=1.0)
+            
+            # abs_factor_a = torch.max(torch.abs(original_object))
+            # dist_a = torch.distributions.laplace.Laplace(location, scale)
+            # new_object = (torch.div(original_object, abs_factor_a) + \
+            #                         dist_a.sample(original_object.shape).to(args.device))
+            # new_object *= abs_factor_a
+
+            # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+            #                             threshold + 1e-6).clamp(min=1.0)
+            norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+            # print(f"for l_dp_pred, norm_factor_a={norm_factor_a}")
             # add laplace noise
             dist_a = torch.distributions.laplace.Laplace(location, scale)
-            original_object = (torch.div(original_object, norm_factor_a) + \
+            new_object = (torch.div(original_object, norm_factor_a) + \
                                     dist_a.sample(original_object.shape).to(args.device))
-        return original_object
+            new_object *= norm_factor_a
+
+        return new_object
     else:
         return original_object
 
+def LaplaceDP_for_pred_grn(args, original_object):
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+
+    # print('dp_strength:',dp_strength)
+
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
+        scale = dp_strength
+        
+        # abs_factor_a = torch.max(torch.abs(original_object))
+        # dist_a = torch.distributions.laplace.Laplace(location, scale)
+        # new_object = (torch.div(original_object, abs_factor_a) + \
+        #                         dist_a.sample(original_object.shape).to(args.device))
+        # new_object *= abs_factor_a
+
+        # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+        #                             threshold + 1e-6).clamp(min=1.0)
+        norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+        # print(f"for l_dp_pred_grn, norm_factor_a={norm_factor_a}")
+        # add laplace noise
+        dist_a = torch.distributions.laplace.Laplace(location, scale)
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                dist_a.sample(original_object.shape).to(args.device))
+        new_object *= norm_factor_a
+
+        return new_object
+    else:
+        return original_object
 
 def GaussianDP(args, original_object):
+
     original_object = original_object[0]
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
+
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = 0.2#0.2  # 1e9
         new_object = []
         with torch.no_grad():
             scale = dp_strength
@@ -244,31 +293,72 @@ def GaussianDP(args, original_object):
                                             threshold + 1e-6).clamp(min=1.0)
                     new_object.append(torch.div(original_object[ik], norm_factor_a) + \
                                             torch.normal(location, scale, original_object[ik].shape).to(args.device))
-                    # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+
         return new_object
     else:
         return original_object
 
 
 def GaussianDP_for_pred(args, original_object):
+    # print('Gaussian DP for pred')
     original_object = original_object[0]
+
     assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
     dp_strength = args.defense_configs['dp_strength']
+    # print('dp_strength:',dp_strength)
+
     if dp_strength > 0.0:
         location = 0.0
-        threshold = 0.2  # 1e9
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
         with torch.no_grad():
             scale = dp_strength
+
+            # abs_factor_a = torch.max(torch.abs(original_object))
+            # new_object = (torch.div(original_object, abs_factor_a) + \
+            #                         torch.normal(location, scale, original_object.shape).to(args.device))
+            # new_object *= abs_factor_a
             
-            norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
-                                    threshold + 1e-6).clamp(min=1.0)
+            # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+            #                         threshold + 1e-6).clamp(min=1.0)
+            norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+            # print(f"for g_dp_pred, norm_factor_a={norm_factor_a}")
             new_object = (torch.div(original_object, norm_factor_a) + \
                                     torch.normal(location, scale, original_object.shape).to(args.device))
-            # print("norm of gradients after gaussian:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+            new_object *= norm_factor_a
+        
         return new_object
     else:
         return original_object
 
+def GaussianDP_for_pred_grn(args, original_object):
+    # print('Gaussian DP for pred')
+
+    # original_object = original_object[0]
+    assert ('dp_strength' in args.defense_configs) , "missing defense parameter: 'dp_strength'"
+    dp_strength = args.defense_configs['dp_strength']
+    # print('dp_strength:',dp_strength)
+
+    if dp_strength > 0.0:
+        location = 0.0
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
+        scale = dp_strength
+
+        # abs_factor_a = torch.max(torch.abs(original_object[0]))
+        # new_object = (torch.div(original_object[0], abs_factor_a) + \
+        #                         torch.normal(location, scale, original_object[0].shape).to(args.device))
+        # new_object *= abs_factor_a
+        
+        # norm_factor_a = torch.div(torch.max(torch.norm(original_object, dim=1)),
+        #                         threshold + 1e-6).clamp(min=1.0)
+        norm_factor_a = torch.max(torch.norm(original_object, dim=1))
+        # print(f"for g_dp_pred_grn, norm_factor_a={norm_factor_a}")
+        new_object = (torch.div(original_object, norm_factor_a) + \
+                                torch.normal(location, scale, original_object.shape).to(args.device))
+        new_object *= norm_factor_a
+        
+        return new_object
+    else:
+        return original_object
 
 def GradientSparsification(args, original_object):
     # print("using gradient sparsification function")
@@ -301,7 +391,7 @@ def discrete(args, ik, original_tensor, W):
     _sigma = torch.std(original_tensor).item()  #np.std(original_object)   
 
     if args.bin_size[ik] == None:
-        args.bin_size[ik] = (3*_sigma)/(W//2)
+        args.bin_size[ik] = (2*_sigma)/(W//2)
     # A = np.linespace(_mu-(W//2)*args.bin_size[ik], _mu+(W//2)*args.bin_size[ik], num=W , endpoint=True, retstep=False, dtype=None)
     # # A = np.linspace(_mu-2*_sigma, _mu+2*_sigma, num=W , endpoint=True, retstep=False, dtype=None)
     # new_tensor = torch.empty(original_tensor.shape[0],original_tensor.shape[1])
@@ -322,9 +412,13 @@ def discrete(args, ik, original_tensor, W):
     
     interval = args.bin_size[ik]
     # print("befere descrete", original_tensor, _mu)
-    tensor_ratio_interval = torch.div(original_tensor-_mu, interval)
+
+    # tensor_ratio_interval = torch.div(original_tensor-_mu, interval)
+    # tensor_ratio_interval_rounded = torch.round(tensor_ratio_interval)
+    # tensor_multistep = tensor_ratio_interval_rounded * interval + _mu
+    tensor_ratio_interval = torch.div(original_tensor, interval)
     tensor_ratio_interval_rounded = torch.round(tensor_ratio_interval)
-    tensor_multistep = tensor_ratio_interval_rounded * interval + _mu
+    tensor_multistep = tensor_ratio_interval_rounded * interval
     # print("after discrete", tensor_multistep)
     return tensor_multistep
 

@@ -8,6 +8,7 @@ from models.mlp import *
 from models.regression import *
 from models.resnet import *
 from models.rnn import *
+from models.adversarial_model import *
 
 def weights_init(m):
     if hasattr(m, "weight"):

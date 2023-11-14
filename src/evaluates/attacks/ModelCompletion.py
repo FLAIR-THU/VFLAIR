@@ -3,6 +3,8 @@ sys.path.append(os.pardir)
 
 import torch
 import torch.nn.functional as F
+import torch.nn.init as init
+import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 import time
 import numpy as np
@@ -13,25 +15,10 @@ import itertools
 
 from evaluates.attacks.attacker import Attacker
 from models.global_models import *
-from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, label_to_one_hot
 from utils.pmc_functions import precision_recall, interleave_offsets, interleave, BottomModelPlus, SemiLoss, WeightEMA, AverageMeter, InferenceHead, accuracy
 from dataset.party_dataset import ActiveDataset
 
-import torch.nn.init as init
-
-
-def label_to_one_hot(target, num_classes=10):
-    # print('label_to_one_hot:', target, type(target))
-    try:
-        _ = target.size()[1]
-        # print("use target itself", target.size())
-        onehot_target = target.type(torch.float32)
-    except:
-        target = torch.unsqueeze(target, 1)
-        # print("use unsqueezed target", target.size())
-        onehot_target = torch.zeros(target.size(0), num_classes)
-        onehot_target.scatter_(1, target, 1)
-    return onehot_target
 
 class ModelCompletion(Attacker):
     def __init__(self, top_vfl, args):
@@ -83,7 +70,7 @@ class ModelCompletion(Attacker):
         total = dummy_label.shape[0]
         return success / total
 
-    def train(self,labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_optimizer, criterion, epoch, num_classes):
+    def train(self, labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_optimizer, criterion, epoch, num_classes):
         batch_time = AverageMeter()
         data_time = AverageMeter()
         losses = AverageMeter()
@@ -99,17 +86,26 @@ class ModelCompletion(Attacker):
 
         val_iteration = self.val_iteration # len(labeled_trainloader)
         for batch_idx in range(val_iteration): # args.val_iteration
+            # try:
+            #     inputs_x, targets_x = next(labeled_train_iter) 
+            # except StopIteration:
+            #     labeled_train_iter = iter(labeled_trainloader)
+            #     inputs_x, targets_x = next(labeled_train_iter)
+            # try:
+            #     inputs_u, _ = next(unlabeled_train_iter)
+            # except StopIteration:
+            #     unlabeled_train_iter = iter(unlabeled_trainloader)
+            #     inputs_u, _ = next(unlabeled_train_iter)
             try:
-                inputs_x, targets_x = next(labeled_train_iter) 
-                # inputs_x, targets_x = labeled_trainloader.dataset[batch_idx]
+                inputs_x, targets_x = labeled_train_iter.__next__()
             except StopIteration:
                 labeled_train_iter = iter(labeled_trainloader)
-                inputs_x, targets_x = next(labeled_train_iter)
+                inputs_x, targets_x = labeled_train_iter.__next__()
             try:
-                inputs_u, _ = next(unlabeled_train_iter)
+                inputs_u, _ = unlabeled_train_iter.__next__()
             except StopIteration:
                 unlabeled_train_iter = iter(unlabeled_trainloader)
-                inputs_u, _ = next(unlabeled_train_iter)
+                inputs_u, _ = unlabeled_train_iter.__next__()
 
             # measure data loading time
             data_time.update(time.time() - end)
@@ -120,7 +116,6 @@ class ModelCompletion(Attacker):
             batch_size = inputs_x.size(0)
 
             # Transform label to one-hot
-   
             if len(targets_x.size()) == 1:
                 targets_x = targets_x.unsqueeze(1)
             if targets_x.size()[1] ==1:
@@ -128,7 +123,7 @@ class ModelCompletion(Attacker):
             # targets_x = targets_x.view(-1, 1).type(torch.long)
             # targets_x = torch.zeros(batch_size, num_classes).scatter_(1, targets_x, 1)
             
-            inputs_x, targets_x = inputs_x.to(self.device), targets_x.to(self.device) #.cuda(non_blocking=True)
+            inputs_x, targets_x = inputs_x.to(self.device), targets_x.cuda(non_blocking=True).to(self.device) #.cuda(non_blocking=True)
             inputs_u = inputs_u.to(self.device)
 
             with torch.no_grad():
@@ -168,9 +163,11 @@ class ModelCompletion(Attacker):
             logits_x = logits[0]
             logits_u = torch.cat(logits[1:], dim=0)
             # (self,outputs_x, targets_x, outputs_u, targets_u, epoch, all_epochs):
-            x_length = logits_x.size()[0] # x_length batch_size
-            Lx, Lu, w = criterion(logits_x, mixed_target[:x_length], logits_u, mixed_target[x_length:],
-                                epoch+ batch_idx / val_iteration, self.epochs) #  
+            # x_length = logits_x.size()[0] # x_length batch_size
+            # Lx, Lu, w = criterion(logits_x, mixed_target[:x_length], logits_u, mixed_target[x_length:],
+            #                     epoch+ batch_idx / val_iteration, self.epochs) #  
+            Lx, Lu, w = criterion(logits_x, mixed_target[:batch_size], logits_u, mixed_target[batch_size:],
+                                epoch+batch_idx/val_iteration, self.epochs) #  
             loss = Lx + w * Lu
 
             # record loss
@@ -208,9 +205,6 @@ class ModelCompletion(Attacker):
         end = time.time()
         with torch.no_grad():
             for batch_idx, (inputs, targets) in enumerate(valloader):
-                # in vertical federated learning scenario, attacker(party A) only has part of features, i.e. half of the img
-                #inputs = clip_function(inputs, args.half)
-
                 # measure data loading time
                 data_time.update(time.time() - end)
 
@@ -262,7 +256,7 @@ class ModelCompletion(Attacker):
             train_data = self.vfl_info["train_data"][index]
             train_label = self.vfl_info["train_label"][-1]     
             test_data = self.vfl_info["test_data"][index]
-            test_label = self.vfl_info["test_label"][-1] # onli active party have label
+            test_label = self.vfl_info["test_label"][-1] # only active party have label
 
             n_labeled_per_class = self.n_labeled_per_class
             
@@ -272,17 +266,6 @@ class ModelCompletion(Attacker):
 
             print('all_train_data:',train_data.size())
             print('all_train_label:',train_label.size())
-            # labels = np.array((torch.argmax(aux_label, dim=-1)))
-            # train_labeled_idxs = []
-            # train_unlabeled_idxs = []
-            # for i in range(self.num_classes):
-            #     idxs = np.where(labels == i)[0]
-            #     np.random.shuffle(idxs)
-            #     train_labeled_idxs.extend(idxs[:n_labeled_per_class])
-            # np.random.shuffle(train_labeled_idxs)
-
-            # aux_data = aux_data[train_labeled_idxs]
-            # aux_label = aux_label[train_labeled_idxs]
 
             if len(train_label.size())==2:
                 labels = np.array((torch.argmax(train_label.cpu(), dim=-1)))
@@ -320,32 +303,34 @@ class ModelCompletion(Attacker):
             # complete_train_dst = ActiveDataset(complete_train_data, complete_train_label)
             # complete_train_loader = DataLoader(complete_train_dst, batch_size=batch_size)
             
-            bottom_model = self.vfl_info['model'][index].to(self.device)  # local bottom model for attacker
-            bottom_model.eval()
+            bottom_model = copy.deepcopy(self.vfl_info['model'][index]).to(self.device)  # local bottom model for attacker
+            # bottom_model.eval()
             
-            def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
-                model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
+            def create_model(bottom_model, device, ema=False, size_bottom_out=10, num_classes=10):
+                model = BottomModelPlus(bottom_model, size_bottom_out, num_classes,
                                             num_layer=1,
                                             activation_func_type='ReLU',
                                             use_bn=True)
-                model = model
+                model = model.to(device)
                 if ema:
                     for param in model.parameters():
                         param.detach_()
                 return model
 
-            model = create_model(copy.deepcopy(bottom_model),ema=False, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
-            # fix parameters
-            ema_model = create_model(copy.deepcopy(bottom_model),ema=True, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
-           
-            model = model.to(self.device) # dummy top model
-            ema_model = ema_model.to(self.device)
+            model = create_model(copy.deepcopy(bottom_model), device=self.device, ema=False, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
+            ema_model = create_model(copy.deepcopy(bottom_model), device=self.device, ema=True, size_bottom_out=self.args.model_list[str(index)]['output_dim'], num_classes=self.num_classes)
+
+            cudnn.benchmark = True
 
             # Optimizers & Criterion
-            optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
-            ema_optimizer = WeightEMA(model, ema_model, lr=self.lr, alpha=self.ema_decay) # ema_decay = 0.999
             train_criterion = SemiLoss()
             criterion = nn.CrossEntropyLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
+            ema_optimizer = WeightEMA(model, ema_model, lr=self.lr, alpha=self.ema_decay) # ema_decay = 0.999
+
+            # Resume
+            model.bottom_model = copy.deepcopy(bottom_model)
+            ema_model.bottom_model = copy.deepcopy(bottom_model)
             
             # === Begin Attack ===
             print(f"MC Attack, self.device={self.device}")
@@ -360,14 +345,25 @@ class ModelCompletion(Attacker):
                 
                 print("---MC: Label inference on test dataset:")
                 _, test_acc = self.validate(test_loader, ema_model, criterion, epoch, mode='Test Stats',num_classes=self.num_classes)
-                best_acc = max(test_acc, best_acc)
+                if epoch > (2*self.epochs//3):
+                    best_acc = max(test_acc, best_acc)
 
             print(f"MC, if self.args.apply_defense={self.args.apply_defense}")
             print('MC Best top 1 accuracy:',best_acc)
             #print('PMC Best top 1 accuracy:',p_best_acc)
 
             # print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % (batch_size, self.label_size, index, best_acc))
-
+            
+            ####### Clean ######
+            del(model)
+            del(ema_model)
+            del(aux_data)
+            del(aux_label)
+            del(train_data)
+            del(train_label)  
+            del(aux_dst)  
+            del(aux_loader)   
+           
         print("returning from PMC/AMC")
         return best_acc
         # return recovery_history

@@ -15,11 +15,22 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import torchvision.transforms as transforms
 from datetime import datetime
-import numpy as np
 import logging
 import copy
-
+from sklearn.metrics import roc_auc_score
+from utils.noisy_sample_functions import noisy_sample
 tp = transforms.ToTensor()
+
+
+def multiclass_auc(targets, scores):
+    aucs = []
+    for i in range(scores.shape[1]):
+        if len(np.unique(targets[:, i])) == 1:
+            continue
+        auc = roc_auc_score(targets[:, i], scores[:, i])
+        aucs.append(auc)
+    return aucs
+
 
 # For Distance Corrrelation Defense
 def pairwise_dist(A, B):
@@ -55,9 +66,9 @@ def tf_distance_cov_cor(input1, input2, debug=False):
     A = a - torch.mean(a,axis=1) - torch.unsqueeze(torch.mean(a,axis=0),axis=1) + torch.mean(a)
     B = b - torch.mean(b,axis=1) - torch.unsqueeze(torch.mean(b,axis=0),axis=1) + torch.mean(b)
 
-    dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2))
+    dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2) + 1e-16)
     dVarXX = torch.sqrt(torch.sum(A * A) / (n ** 2))
-    dVarYY = torch.sqrt(torch.sum(B * B) / (n ** 2))
+    dVarYY = torch.sqrt(torch.sum(B * B) / (n ** 2) + 1e-16)
 
     dCorXY = dCovXY / torch.sqrt(dVarXX * dVarYY)
     if debug:
@@ -211,10 +222,17 @@ def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_
 def get_timestamp():
     return int(datetime.utcnow().timestamp())
 
-def label_to_onehot(target, num_classes=100):
-    target = torch.unsqueeze(target, 1)
-    onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
-    onehot_target.scatter_(1, target, 1)
+def label_to_one_hot(target, num_classes=10):
+    # print('label_to_one_hot:', target, type(target))
+    try:
+        _ = target.size()[1]
+        # print("use target itself", target.size())
+        onehot_target = target.type(torch.float32)
+    except:
+        target = torch.unsqueeze(target, 1)
+        # print("use unsqueezed target", target.size())
+        onehot_target = torch.zeros(target.size(0), num_classes, device=target.device)
+        onehot_target.scatter_(1, target, 1)
     return onehot_target
 
 def cross_entropy_for_onehot(pred, target):
@@ -241,10 +259,10 @@ def get_class_i(dataset, label_set):
             gt_data.append(np.array(img))
             # gt_data = torch.cat((gt_data, (img if torch.is_tensor(img) else tp(img))))
             gt_labels.append(label_new)
-            #gt_labels.append(label_to_onehot(torch.Tensor([label_new]).long(),num_classes=num_cls))
+            #gt_labels.append(label_to_one_hot(torch.Tensor([label_new]).long(),num_classes=num_cls))
     # gt_data = torch.tensor([item.numpy() for item in gt_data])
     gt_data = torch.tensor(np.array(gt_data))
-    gt_labels =label_to_onehot(torch.Tensor(gt_labels).long(),num_classes=num_cls)
+    gt_labels =label_to_one_hot(torch.Tensor(gt_labels).long(),num_classes=num_cls)
     # print(gt_data.size(),type(gt_data))
     return gt_data,gt_labels
 
@@ -440,69 +458,22 @@ def get_images():
                 print("thumbnail", arr.shape)
 
 
-def data_poison(images, poison_list, k, dataset):
-    target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
-    
-    if 'cifar' in dataset.casefold():
-        if k == 2: # 1 party poison, passive party-0 poison
-            images[poison_list,0,15,31] = target_pixel_value[0][0]
-            images[poison_list,0,14,30] = target_pixel_value[0][1]
-            images[poison_list,0,13,31] = target_pixel_value[0][2]
-            images[poison_list,0,15,29] = target_pixel_value[0][3]
-            images[poison_list,1,15,31] = target_pixel_value[1][0]
-            images[poison_list,1,14,30] = target_pixel_value[1][1]
-            images[poison_list,1,13,31] = target_pixel_value[1][2]
-            images[poison_list,1,15,29] = target_pixel_value[1][3]
-            images[poison_list,2,15,31] = target_pixel_value[2][0]
-            images[poison_list,2,14,30] = target_pixel_value[2][1]
-            images[poison_list,2,13,31] = target_pixel_value[2][2]
-            images[poison_list,2,15,29] = target_pixel_value[2][3]
-        elif k == 4:
-            # 3 party poison, passive party-[0,1,2] poison
-            images[poison_list,0,15,15] = target_pixel_value[0][0]
-            images[poison_list,1,15,15] = target_pixel_value[1][0]
-            images[poison_list,2,15,15] = target_pixel_value[2][0]
-            images[poison_list,0,15,31] = target_pixel_value[0][1]
-            images[poison_list,1,15,31] = target_pixel_value[1][1]
-            images[poison_list,2,15,31] = target_pixel_value[2][1]
-            images[poison_list,0,31,15] = target_pixel_value[0][2]
-            images[poison_list,1,31,15] = target_pixel_value[1][2]
-            images[poison_list,2,31,15] = target_pixel_value[2][2]
-        else:
-            assert k == 4, "poison type not supported yet"
-    elif 'mnist' in dataset.casefold():
-        if k == 2:
-            images[poison_list, 0, 13, 27] = 1.0
-            images[poison_list, 0, 12, 26] = 1.0
-            images[poison_list, 0, 11, 27] = 1.0
-            images[poison_list, 0, 13, 25] = 1.0
-        elif k == 4:
-            images[poison_list, 0, 13, 13] = 1.0 # 3 party poison
-            images[poison_list, 0, 13, 27] = 1.0 # 3 party poison
-            images[poison_list, 0, 27, 13] = 1.0 # 3 party poison
-        else:
-            assert k == 4, "poison type not supported yet"
-    else:
-        assert 'mnist' in dataset.casefold(), "dataset not supported yet"
-    return images, poison_list
-
-
-def generate_poison_data(data, label, poison_list, _type, k, dataset):
+def generate_poison_data(args, data, label, poison_list, _type, k, dataset, party_index):
     '''
     generate poisoned image data
     '''
     if dataset == 'nuswide':
         # X_image = data[0]
         # X_test = data[1]
-        # data = torch.tensor([torch.tensor(X_image, dtype=torch.float32), torch.tensor(X_text, dtype=torch.float32)]）
+        # data = torch.tensor([torch.tensor(X_text, dtype=torch.float32), torch.tensor(X_image, dtype=torch.float32)]）
         # mixed_data_image, poison_list = data_poison(data[0], poison_list, k, dataset)
         # poison_data_image = copy.deepcopy(mixed_data_image[poison_list])
-        mixed_data_text, poison_list = data_poison_text(data[1], poison_list, k, dataset)
+        mixed_data_text, poison_list = data_poison_text(args, data[0], poison_list, k, dataset, party_index)
         poison_data_text = copy.deepcopy(mixed_data_text[poison_list])
 
-        poison_data_image = torch.tensor(data[0][poison_list])
+        poison_data_image = torch.tensor(data[1][poison_list])
         poison_data_text = torch.tensor(poison_data_text)
-        poison_data =[poison_data_image,poison_data_text]
+        poison_data =[poison_data_text, poison_data_image]
         #torch.tensor([data[0][poison_list],poison_data_text].cpu().numpy())
         poison_label = copy.deepcopy(label[poison_list])
         # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
@@ -513,7 +484,7 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
         return data, label, poison_data, poison_label
     
     elif dataset in ['breast_cancer_diagnose','diabetes','adult_income','criteo']:
-        mixed_data_text, poison_list = data_poison_text(data, poison_list, k, dataset)
+        mixed_data_text, poison_list = data_poison_text(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data_text[poison_list])
         poison_data = torch.tensor(poison_data)
         poison_label = copy.deepcopy(label[poison_list])
@@ -524,7 +495,7 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
         return data, label, poison_data, poison_label
     
     else:
-        mixed_data, poison_list = data_poison(data, poison_list, k, dataset)
+        mixed_data, poison_list = data_poison(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data[poison_list])
         poison_label = copy.deepcopy(label[poison_list])
         # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
@@ -539,40 +510,122 @@ def generate_poison_data(data, label, poison_list, _type, k, dataset):
 
         return data, label, poison_data, poison_label
 
-def data_poison_text(texts, poison_list, k, dataset):
+
+
+def data_poison(args, images, poison_list, k, dataset, party_index):
+    target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
+    if args.apply_ns:
+        assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
+        assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
+        assert 'party' in args.attack_configs, 'need parameter: party'
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.01
+        scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
+        # print(f"[debug] in basic_function.py, args.attack_configs['party']={args.attack_configs['party']}")
+        # print(f"[debug] in basic_function.py, party_index={party_index}, {type(party_index)}, k in  args.attack_configs['party']={party_index in args.attack_configs['party']}")
+        if party_index in args.attack_configs['party']: # if not attacker party, return unchanged image
+            # print(f'[debug] in basic_function.py, party {party_index} poison')
+            # print(f'[debug] in basic_function.py, images[0]={images[0]}')
+            images[poison_list] = noisy_sample(images[poison_list],scale)
+    else:
+        if 'cifar' in dataset.casefold():
+            if k == 2: # 1 party poison, passive party-0 poison
+                images[poison_list,0,15,31] = target_pixel_value[0][0]
+                images[poison_list,0,14,30] = target_pixel_value[0][1]
+                images[poison_list,0,13,31] = target_pixel_value[0][2]
+                images[poison_list,0,15,29] = target_pixel_value[0][3]
+                images[poison_list,1,15,31] = target_pixel_value[1][0]
+                images[poison_list,1,14,30] = target_pixel_value[1][1]
+                images[poison_list,1,13,31] = target_pixel_value[1][2]
+                images[poison_list,1,15,29] = target_pixel_value[1][3]
+                images[poison_list,2,15,31] = target_pixel_value[2][0]
+                images[poison_list,2,14,30] = target_pixel_value[2][1]
+                images[poison_list,2,13,31] = target_pixel_value[2][2]
+                images[poison_list,2,15,29] = target_pixel_value[2][3]
+            elif k == 4:
+                # 3 party poison, passive party-[0,1,2] poison
+                images[poison_list,0,15,15] = target_pixel_value[0][0]
+                images[poison_list,1,15,15] = target_pixel_value[1][0]
+                images[poison_list,2,15,15] = target_pixel_value[2][0]
+                images[poison_list,0,15,31] = target_pixel_value[0][1]
+                images[poison_list,1,15,31] = target_pixel_value[1][1]
+                images[poison_list,2,15,31] = target_pixel_value[2][1]
+                images[poison_list,0,31,15] = target_pixel_value[0][2]
+                images[poison_list,1,31,15] = target_pixel_value[1][2]
+                images[poison_list,2,31,15] = target_pixel_value[2][2]
+            else:
+                assert k == 4, "poison type not supported yet"
+        elif 'mnist' in dataset.casefold():
+            if k == 2:
+                images[poison_list, 0, 13, 27] = 1.0
+                images[poison_list, 0, 12, 26] = 1.0
+                images[poison_list, 0, 11, 27] = 1.0
+                images[poison_list, 0, 13, 25] = 1.0
+            elif k == 4:
+                images[poison_list, 0, 13, 13] = 1.0 # 3 party poison
+                images[poison_list, 0, 13, 27] = 1.0 # 3 party poison
+                images[poison_list, 0, 27, 13] = 1.0 # 3 party poison
+            else:
+                assert k == 4, "poison type not supported yet"
+        else:
+            assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+    return images, poison_list
+
+def data_poison_text(args,texts, poison_list, k, dataset, party_index):
     '''
     text or tabular data
     trigger: set the last element as target_text_value(1)
     '''
-
-    if 'nuswide' in dataset.casefold():
-        if k == 2: # 1 party poison, passive party-0 poison
-            texts[poison_list,-1] = 0
-        else:
-            assert k == 2, "poison type not supported yet"
-    elif 'breast_cancer_diagnose' in dataset.casefold():
-        if k == 2: # first feature of attacker(pasive party 0) set to 0.1
-            texts[poison_list,0] = 0.1
-        else:
-            assert k == 2, "poison type not supported yet"
-  
+    if args.apply_ns:
+        assert 'noise_lambda' in args.attack_configs, 'need parameter: noise_lambda'
+        assert 'noise_rate' in args.attack_configs, 'need parameter: noise_rate'
+        assert 'party' in args.attack_configs, 'need parameter: party'
+        noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
+        scale = args.attack_configs['noise_lambda']
+        if party_index in args.attack_configs['party']: # only if party is in the attacker party pool, poison the test data
+            if 'nuswide' in dataset.casefold():
+                if k == 2: # 1 party poison, passive party-0 poison
+                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                else:
+                    assert k == 2, "poison type not supported yet"
+            elif 'breast_cancer_diagnose' in dataset.casefold():
+                if k == 2: # first feature of attacker(pasive party 0) set to 0.1
+                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                else:
+                    assert k == 2, "poison type not supported yet"
+            else:
+                assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+        return texts, poison_list
     else:
-        assert 'mnist' in dataset.casefold(), "dataset not supported yet"
+        if 'nuswide' in dataset.casefold():
+            # if k == 2: # 1 party poison, passive party-0 poison
+            #     texts[poison_list,-1] = 0
+            # else:
+            #     assert k == 2, "poison type not supported yet"
+            assert poison_list != None, "nuswide dataset poison list should not be none, and no operation needs to be done"
+        elif 'breast_cancer_diagnose' in dataset.casefold():
+            if k == 2: # first feature of attacker(pasive party 0) set to 0.1
+                texts[poison_list,0] = 0.1
+            else:
+                assert k == 2, "poison type not supported yet"
+    
+        else:
+            assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return texts, poison_list
 
-def generate_poison_data_text(data, label, poison_list, _type, k, dataset):
-    '''
-    generate poisoned text data
-    '''
-    mixed_data, poison_list = data_poison_text(data, poison_list, k, dataset)
-    poison_data = copy.deepcopy(mixed_data[poison_list])
-    poison_label = copy.deepcopy(label[poison_list])
-    # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
-    if _type == 'train':
-        data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
-        label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
+# def generate_poison_data_text(args,data, label, poison_list, _type, k, dataset, party_index):
+#     '''
+#     generate poisoned text data
+#     '''
+#     mixed_data, poison_list = data_poison_text(args,data, poison_list, k, dataset)
+#     poison_data = copy.deepcopy(mixed_data[poison_list])
+#     poison_label = copy.deepcopy(label[poison_list])
+#     # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
+#     if _type == 'train':
+#         data = torch.tensor(np.delete(data.cpu().numpy(), poison_list, axis=0))
+#         label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
 
-    return data, label, poison_data, poison_label
+#     return data, label, poison_data, poison_label
+
 
 
 def entropy(predictions):
@@ -652,21 +705,21 @@ def param_size(model):
 class AverageMeter():
     """ Computes and stores the average and current value """
     def __init__(self):
-        self.reset()
+        reset()
 
     def reset(self):
         """ Reset all statistics """
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
+        val = 0
+        avg = 0
+        sum = 0
+        count = 0
 
     def update(self, val, n=1):
         """ Update statistics """
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+        val = val
+        sum += val * n
+        count += n
+        avg = sum / count
 
 
 def accuracy(output, target, topk=(1,)):
