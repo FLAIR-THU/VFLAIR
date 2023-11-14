@@ -31,7 +31,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 tf.compat.v1.enable_eager_execution()
 
 STOPPING_ACC = {
-    "mnist": 0.977,
+    "mnist": 0.955,
     "cifar10": 0.80,
     "cifar100": 0.40,
 }  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
