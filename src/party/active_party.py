@@ -26,7 +26,6 @@ class ActiveParty(Party):
         self.global_pred = None
         self.global_loss = None
 
-    
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)

@@ -4,8 +4,8 @@
     "k": 2,
     "batch_size": 2048,
     "communication":{
-        "comminication_protocal": "Quantization",
-        "iteration_per_aggregation": 1,
+        "communication_protocol": "CELU",
+        "iteration_per_aggregation": 5,
         "quant_level": 0,
         "vecdim": 1
     },

@@ -112,7 +112,7 @@ class MainTaskVFLwithBackdoor(object):
             if ik < (self.k-1): # Passive party sends pred for aggregation
                 ########### communication_protocols ###########
                 if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred(self.args.communication_protocol ,pred_detach , self.parties[ik].local_gradient,\
+                    pred_detach = compress_pred(self.args, pred_detach , self.parties[ik].local_gradient,\
                                     self.current_epoch, self.current_step).to(self.args.device)
                 ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)

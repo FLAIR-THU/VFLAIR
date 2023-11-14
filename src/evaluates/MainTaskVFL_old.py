@@ -88,8 +88,6 @@ class MainTaskVFL(object):
         self.middle_epoch_state = None
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
-
-        self.max_staleness = 25 # 
     
     def pred_transmit(self): # Active party gets pred from passive parties
         for ik in range(self.k):
@@ -110,7 +108,7 @@ class MainTaskVFL(object):
             if ik < (self.k-1): # Passive party sends pred for aggregation
                 ########### communication_protocols ###########
                 if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
+                    pred_detach = compress_pred( self.args.communication_protocol ,pred_detach , self.parties[ik].local_gradient,\
                                     self.current_epoch, self.current_step).to(self.args.device)
                 ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
@@ -196,51 +194,17 @@ class MainTaskVFL(object):
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
         elif self.args.communication_protocol in ['CELU']:
-            for q in range(self.Q):
-                if (q == 0) or (batch_label.shape[0] != self.args.batch_size): 
-                    # exchange info between parties
-                    self.pred_transmit() 
-                    self.gradient_transmit() 
-                    # update parameters for all parties
-                    for ik in range(self.k):
-                        self.parties[ik].local_backward()
-                    self.parties[self.k-1].global_backward()
+            # exchange info between parties
+            self.pred_transmit() 
+            self.gradient_transmit() 
+            # update parameters for all parties
 
-                    if (batch_label.shape[0] == self.args.batch_size): # available batch to cache
-                        for ik in range(self.k):
-                            batch = self.num_total_comms # current batch id
-                            self.parties[ik].cache.put(batch, self.parties[ik].local_pred,\
-                                self.parties[ik].local_gradient, self.num_total_comms + self.parties[ik].num_local_updates)
-                else: 
-                    for ik in range(self.k):
-                        # Sample from cache
-                        batch, val = self.parties[ik].cache.sample(self.parties[ik].prev_batches)
-                        batch_cached_pred, batch_cached_grad, \
-                            batch_cached_at, batch_num_update \
-                                = val
-                        
-                        _pred, _pred_detach = self.parties[ik].give_pred()
-                        # self.parties[ik].local_pred = batch_cached_pred # PROBLEM TO DO
-
-                        # Using this batch for backward
-                        if (ik == self.k-1): # active
-                            self.parties[ik].update_local_gradient(batch_cached_grad)
-                            self.parties[ik].local_backward()
-                            self.parties[ik].global_backward()
-                        else:
-                            self.parties[ik].receive_gradient(batch_cached_grad)
-                            self.parties[ik].local_backward()
-
-
-                        # Mark used once for this batch + check staleness
-                        self.parties[ik].cache.inc(batch)
-                        if self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness:
-                            self.parties[ik].cache.remove(batch)
-            
-                        self.parties[ik].prev_batches.append(batch)
-                        self.parties[ik].prev_batches = self.parties[ik].prev_batches[1:]#[-(num_batch_per_workset - 1):]
-                        self.parties[ik].num_local_updates += 1
-
+            local_gradient
+            for ik in range(self.k):
+                self.parties[ik].local_backward()
+            self.parties[self.k-1].global_backward()
+            self.cache.put(batch, act_val, dev_val, num_total_comms + num_local_updates)
+            num_total_comms += 1
         elif self.args.communication_protocol in ['FedBCD_s']: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
@@ -302,7 +266,7 @@ class MainTaskVFL(object):
         LR_passive_list = []
         LR_active_list = []
 
-        self.num_total_comms = 0
+        communication = 0
         total_time = 0.0
         flag = 0
         self.current_epoch = 0
@@ -352,13 +316,13 @@ class MainTaskVFL(object):
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
                 exit_time = time.time()
                 total_time += (exit_time-enter_time)
-                self.num_total_comms = self.num_total_comms + 1
-                if self.num_total_comms % 10 == 0:
-                    print(f"total time for {self.num_total_comms} communication is {total_time}")
+                communication = communication + 1
+                if communication % 10 == 0:
+                    print(f"total time for {communication} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
                     stop_time = time.time()
                     self.stopping_time = stop_time - start_time
-                    self.stopping_iter = self.num_total_comms
+                    self.stopping_iter = communication
                     self.stopping_commu_cost = 0 
                     for _ik in range(self.args.k):
                         self.stopping_commu_cost += self.parties[_ik].communication_cost
@@ -368,6 +332,16 @@ class MainTaskVFL(object):
                     self.first_epoch_state.update(self.save_state(False))
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state.update(self.save_state(False))
+
+                ######### Communication: CELU #########
+                # if batch_num_update + 1 >= num_update_per_batch:
+                #     cache.remove(batch)
+                # else:
+                #     cache.inc(batch)
+                # prev_batches.append(batch)
+                # prev_batches = prev_batches[-(num_batch_per_workset - 1):]
+                # num_local_updates += 1
+                ######### Communication: CELU #########
                 # ====== train batch (end) ======
 
                 self.current_step = self.current_step + 1

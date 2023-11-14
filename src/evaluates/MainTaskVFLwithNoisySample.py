@@ -21,6 +21,7 @@ import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from evaluates.attacks.attack_api import AttackerLoader
 from utils.noisy_sample_functions import noisy_sample
+from utils.communication_protocol_funcs import compress_pred
 
 tf.compat.v1.enable_eager_execution() 
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.90, 'cifar100': 0.60, 'nuswide':0.88}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
@@ -111,7 +112,7 @@ class MainTaskVFLwithNoisySample(object):
             if ik < (self.k-1): # Passive party sends pred for aggregation
                 ########### communication_protocols ###########
                 if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred(self.args.communication_protocol , pred_detach , self.parties[ik].local_gradient,\
+                    pred_detach = compress_pred(self.args, pred_detach , self.parties[ik].local_gradient,\
                                     self.current_epoch, self.current_step).to(self.args.device)
                 ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)

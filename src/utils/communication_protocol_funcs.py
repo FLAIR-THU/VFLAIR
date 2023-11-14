@@ -20,39 +20,33 @@ import threading
 # CELU
 class Cache(object):
     def __init__(self):
+        # batch: pred grad batch_cached_at used_time
         self._cache = {}
-        self._cv = threading.Condition()
+        # self._cv = threading.Condition()
     
     def put(self, batch, act, dev, timestamp):
-        with self._cv:
-            self._cache[batch] = [act, dev, timestamp, 0]
-            self._cv.notify_all()
+        self._cache[batch] = [act, dev, timestamp, 0]
     
     def sample(self, reject_lists):
-        while True:
-            with self._cv:
-                while len(self._cache) == 0:
-                    self._cv.wait()
-                ret = random.sample(self._cache.items(), 1)[0]
-                if ret[0] not in reject_lists:
-                    return ret
+        # while len(self._cache) == 0:
+        ret = random.sample(self._cache.items(), 1)[0]
+        if ret[0] not in reject_lists:
+            return ret
     
-    def inc(self, batch):
-        with self._cv:
-            if batch in self._cache:
-                self._cache[batch][-1] += 1
+    def inc(self, batch): # used once
+        if batch in self._cache:
+            self._cache[batch][-1] += 1
     
     def remove(self, batch):
-        with self._cv:
-            if batch in self._cache:
-                del self._cache[batch]
+        if batch in self._cache:
+            del self._cache[batch]
 
 
 
 # Compress
-def compress_pred( comp, pred , local_grad,  epoch ,step ):
+def compress_pred( args, pred , local_grad,  epoch ,step ):
     
-    
+    comp = args.communication_protocol
     if comp == 'Topk':
         ratio = 0
         if args.quant_level > 0:

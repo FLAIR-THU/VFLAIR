@@ -15,6 +15,7 @@ from load.LoadModels import load_models_per_party
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
+from utils.communication_protocol_funcs import Cache
 
 from sys import getsizeof
 
@@ -71,6 +72,10 @@ class Party(object):
         self.local_pred_clone = None
 
         self.communication_cost = 0 # MB of data tranamitted from this party
+
+        self.cache = Cache()
+        self.prev_batches = []
+        self.num_local_updates = 0
 
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
@@ -235,6 +240,8 @@ class Party(object):
 
 
     def local_backward(self):
+        self.num_local_updates += 1 # another update
+        
         # update local model
         self.local_model_optimizer.zero_grad()
         # for w in self.local_model.parameters():
@@ -331,11 +338,12 @@ class Party(object):
                         w.grad = g.detach()
             # ########## adversarial training loss (end) ##########
         else:
+            torch.autograd.set_detect_anomaly(True)
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.local_model.parameters(),
                 grad_outputs=self.local_gradient,
-                retain_graph=True,
+                retain_graph=True
             )
             for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
