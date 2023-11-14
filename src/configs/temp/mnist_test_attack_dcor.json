@@ -25,10 +25,11 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "GaussianDP",
+        "name": "DistanceCorrelation",
         "parameters": {
             "party": [0],
-            "dp_strength": 0.1
+            "lambda": 0.3,
+            "model_path": ""
         }
     },
     "attack_list": {
