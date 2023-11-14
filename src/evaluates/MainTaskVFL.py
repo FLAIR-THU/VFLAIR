@@ -75,6 +75,7 @@ class MainTaskVFL(object):
         self.flag = 1
         self.stopping_iter = 0
         self.stopping_time = 0.0
+        self.stopping_commu_cost = 0
 
 
         # Early Stop

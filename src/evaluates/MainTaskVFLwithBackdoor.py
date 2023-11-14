@@ -67,6 +67,9 @@ class MainTaskVFLwithBackdoor(object):
         self.loss = None
         self.train_acc = None
         self.flag = 1
+        self.stopping_iter = 0
+        self.stopping_time = 0.0
+        self.stopping_commu_cost = 0
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
@@ -78,6 +81,10 @@ class MainTaskVFLwithBackdoor(object):
         self.first_epoch_state = None
         self.middle_epoch_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
+
+        self.num_update_per_batch = args.num_update_per_batch
+        self.num_batch_per_workset = args.Q #args.num_batch_per_workset
+        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
 
     def label_to_one_hot(self, target, num_classes=10):
         try:
@@ -187,6 +194,53 @@ class MainTaskVFLwithBackdoor(object):
                     _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
+        elif self.args.communication_protocol in ['CELU']:
+            for q in range(self.Q):
+                if (q == 0) or (batch_label.shape[0] != self.args.batch_size): 
+                    # exchange info between parties
+                    self.pred_transmit() 
+                    self.gradient_transmit() 
+                    # update parameters for all parties
+                    for ik in range(self.k):
+                        self.parties[ik].local_backward()
+                    self.parties[self.k-1].global_backward()
+
+                    if (batch_label.shape[0] == self.args.batch_size): # available batch to cache
+                        for ik in range(self.k):
+                            batch = self.num_total_comms # current batch id
+                            self.parties[ik].cache.put(batch, self.parties[ik].local_pred,\
+                                self.parties[ik].local_gradient, self.num_total_comms + self.parties[ik].num_local_updates)
+                else: 
+                    for ik in range(self.k):
+                        # Sample from cache
+                        batch, val = self.parties[ik].cache.sample(self.parties[ik].prev_batches)
+                        batch_cached_pred, batch_cached_grad, \
+                            batch_cached_at, batch_num_update \
+                                = val
+                        
+                        _pred, _pred_detach = self.parties[ik].give_pred()
+                        weight = ins_weight(_pred_detach,batch_cached_pred,self.args.smi_thresh) # ins weight
+                        
+                        # Using this batch for backward
+                        if (ik == self.k-1): # active
+                            self.parties[ik].update_local_gradient(batch_cached_grad)
+                            self.parties[ik].local_backward(weight)
+                            self.parties[ik].global_backward()
+                        else:
+                            self.parties[ik].receive_gradient(batch_cached_grad)
+                            self.parties[ik].local_backward(weight)
+
+
+                        # Mark used once for this batch + check staleness
+                        self.parties[ik].cache.inc(batch)
+                        if (self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness) or\
+                            (batch_num_update + 1 >= self.num_update_per_batch):
+                            self.parties[ik].cache.remove(batch)
+                        
+            
+                        self.parties[ik].prev_batches.append(batch)
+                        self.parties[ik].prev_batches = self.parties[ik].prev_batches[1:]#[-(num_batch_per_workset - 1):]
+                        self.parties[ik].num_local_updates += 1
         elif self.args.communication_protocol in ['FedBCD_s']: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
