@@ -38,7 +38,7 @@ STOPPING_ACC = {
 
 
 class MainTaskPaillierVFL(object):
-    def __init__(self, args):
+    def __init__(self, args, debug=False):
         self.args = args
         self.k = args.k
         self.device = args.device
@@ -88,11 +88,16 @@ class MainTaskPaillierVFL(object):
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
+        self.debug = debug
+
     def pred_transmit(self):  # Active party gets pred from passive parties
         for ik in range(self.k):
             pred, pred_detach = self.parties[ik].give_pred()
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
-                pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
+                if self.debug:
+                    pred_clone = pred_detach.clone() #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                else:
+                    pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
                 self.parties[self.k - 1].receive_pred(pred_clone, ik)
             else:
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
@@ -105,7 +110,10 @@ class MainTaskPaillierVFL(object):
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
         # active party transfer gradient to passive parties
         for ik in range(self.k - 1):
-            self.parties[ik].receive_gradient(gradient[ik].decrypt(self.parties[ik].sk).to(self.device))
+            if self.debug:
+                self.parties[ik].receive_gradient(gradient[ik].to(self.device))
+            else:
+                self.parties[ik].receive_gradient(gradient[ik].decrypt(self.parties[ik].sk).to(self.device))
         return
 
     def label_to_one_hot(self, target, num_classes=10):
