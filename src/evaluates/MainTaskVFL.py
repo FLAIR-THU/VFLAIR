@@ -89,7 +89,10 @@ class MainTaskVFL(object):
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
-        self.max_staleness = 25 # 
+        self.num_update_per_batch = 5
+        self.num_batch_per_workset = 5
+        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
+
     
     def pred_transmit(self): # Active party gets pred from passive parties
         for ik in range(self.k):
@@ -234,8 +237,10 @@ class MainTaskVFL(object):
 
                         # Mark used once for this batch + check staleness
                         self.parties[ik].cache.inc(batch)
-                        if self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness:
+                        if (self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness) or\
+                            (batch_num_update + 1 >= self.num_update_per_batch:):
                             self.parties[ik].cache.remove(batch)
+                        
             
                         self.parties[ik].prev_batches.append(batch)
                         self.parties[ik].prev_batches = self.parties[ik].prev_batches[1:]#[-(num_batch_per_workset - 1):]
