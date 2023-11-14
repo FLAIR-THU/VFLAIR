@@ -49,11 +49,11 @@ def set_seed(seed=0):
     torch.backends.cudnn.benchmark = True
 
 
-def evaluate_no_attack(args):
+def evaluate_no_attack(args, debug=False):
     # No Attack
     set_seed(args.current_seed)
 
-    vfl = MainTaskPaillierVFL(args)
+    vfl = MainTaskPaillierVFL(args, debug)
     if args.dataset not in ["cora"]:
         main_acc = vfl.train()
     else:
@@ -97,6 +97,7 @@ if __name__ == "__main__":
         default=False,
         help="whether to save the trained model",
     )
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     for seed in range(97, 102):  # test 5 times
@@ -185,4 +186,4 @@ if __name__ == "__main__":
         args = load_attack_configs(args.configs, args, -1)
         args = load_paillier_parties(args, pk, sk)
 
-        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
+        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args, args.debug)
