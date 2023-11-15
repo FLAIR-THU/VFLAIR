@@ -182,7 +182,7 @@ if __name__ == "__main__":
         args.basic_vfl = None
         args.main_acc_noattack = None
 
-        keypair = paillier.generate_paillier_keypair(n_length=128)
+        keypair = paillier.generate_paillier_keypair(n_length=256)
         pk, sk = keypair
 
         args = load_attack_configs(args.configs, args, -1)
