@@ -255,6 +255,23 @@ class MLP4_Credit(nn.Module):
         out = self.layer(x)
         return out
 
+class MLP4_Credit_Softmax(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP4_Credit_Softmax, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 100),
+            nn.ReLU(),
+            nn.Linear(100, 50),
+            nn.ReLU(),
+            nn.Linear(50, 20),
+            nn.ReLU(),
+            nn.Linear(20, output_dim),
+            nn.Softmax(dim=-1)
+        )
+
+    def forward(self, x):
+        out = self.layer(x)
+        return out
 
 # For news20 dataset
 class MLP5(nn.Module):

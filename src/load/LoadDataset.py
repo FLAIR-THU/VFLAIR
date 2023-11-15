@@ -38,7 +38,7 @@ from utils.graph_functions import load_data1, split_graph
 # DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
-TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','nursery']
+TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','nursery','credit']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
 
@@ -559,6 +559,7 @@ def load_dataset_per_party(args, index):
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
+        
         elif args.dataset == "nursery":
             df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
             print("nursery dataset loaded")
@@ -575,6 +576,40 @@ def load_dataset_per_party(args, index):
             X = pd.concat([X_a, X_p], axis=1).values
             print('X',X.shape)
             y = df[8].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+
+        elif args.dataset == "credit":
+            df = pd.read_csv(DATA_PATH+"tabledata/UCI_Credit_Card.csv")
+            print("credit dataset loaded")
+
+            X = df[
+                [
+                    "LIMIT_BAL",
+                    "SEX",
+                    "EDUCATION",
+                    "MARRIAGE",
+                    "AGE",
+                    "PAY_0",
+                    "PAY_2",
+                    "PAY_3",
+                    "PAY_4",
+                    "PAY_5",
+                    "PAY_6",
+                    "BILL_AMT1",
+                    "BILL_AMT2",
+                    "BILL_AMT3",
+                    "BILL_AMT4",
+                    "BILL_AMT5",
+                    "BILL_AMT6",
+                    "PAY_AMT1",
+                    "PAY_AMT2",
+                    "PAY_AMT3",
+                    "PAY_AMT4",
+                    "PAY_AMT5",
+                    "PAY_AMT6",
+                ]
+            ].values
+            y = df["default.payment.next.month"].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
 
 
