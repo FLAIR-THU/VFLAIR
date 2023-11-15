@@ -1,6 +1,6 @@
 import sys, os
 sys.path.append(os.pardir)
-
+import math
 import json
 import argparse
 from models.autoencoder import AutoEncoder
@@ -52,6 +52,13 @@ def load_basic_configs(config_file_name, args):
     args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if ('num_batch_per_workset' in communication_protocol_dict) else 5
     args.smi_thresh = communication_protocol_dict['smi_thresh'] if ('smi_thresh' in communication_protocol_dict) else 0.5
     
+    if args.quant_level > 0:
+        args.ratio = math.log(args.quant_level,2)/32
+    args.ratio = communication_protocol_dict['ratio'] if ('ratio' in communication_protocol_dict) else 0.5
+    print('Topk Ratio:',args.ratio)
+    
+
+
     if args.communication_protocol == 'Vanilla':
         args.Q = 1
     

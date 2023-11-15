@@ -1,11 +1,11 @@
 {
     "epochs": 30,
-    "lr": 0.0003,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 1024,
     "communication":{
         "communication_protocol": "Quantization",
-        "iteration_per_aggregation": 5,
+        "iteration_per_aggregation": 1,
         "quant_level": 16,
         "vecdim": 1
     },

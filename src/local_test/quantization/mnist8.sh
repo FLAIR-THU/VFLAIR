@@ -8,12 +8,12 @@
 # Begin with GaussianDP 0.0001
 echo 'mnist8 quant'
 
-python main_pipeline_quant8.py --configs quantization/mnist8
+python main_pipeline_quant.py --configs quantization/mnist8
 
 sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/quantization/mnist8.json
 sed -i 's/"lr": 0.01/"lr": 0.005/g' ./configs/quantization/mnist8.json
 
-python main_pipeline_quant8.py --configs quantization/mnist8
+python main_pipeline_quant.py --configs quantization/mnist8
 
 sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/quantization/mnist8.json
 sed -i 's/"lr": 0.005/"lr": 0.01/g' ./configs/quantization/mnist8.json

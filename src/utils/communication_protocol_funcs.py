@@ -55,23 +55,31 @@ def compress_pred( args, pred , local_grad,  epoch ,step ):
     
     comp = args.communication_protocol
     if comp == 'Topk':
-        ratio = 0
-        if args.quant_level > 0:
-            ratio = math.log(args.quant_level,2)/32
-        if not (epoch == 0 and step == 0):
+        ratio = args.ratio
+        # if args.quant_level > 0:
+        #     ratio = math.log(args.quant_level,2)/32
+        if not ( step == 0): # epoch == 0 and
             # Choose top k elements based on local_grad
             pred = pred.cpu().detach().numpy()
             local_grad = local_grad.cpu().detach().numpy()
-            grads = np.abs(local_grad)
+            grads = np.abs(local_grad) #[2048,10]
 
             num = math.ceil(pred.shape[1]*(1-ratio))
+            # print('changed num:',num)
             
-            sorted_indices = np.argsort(grads)
-            indices = sorted_indices[-num:]
+            for _i in range(pred.shape[0]):
+                sorted_indices = np.argsort(grads[_i])
+                indices = sorted_indices[-num:]
+                pred[_i,indices[:num]] = 0
+            # print('pred:',pred.shape,pred[0])
+            # print('sorted_indices:',sorted_indices)
+            # print('indices:',indices)
+
             # idx = np.argpartition(grads, num)[:num]
             # indices = idx[np.argsort((grads)[idx])]
 
-            pred[:,indices[:num]] = 0
+            # print('pred:',pred[0])
+
             pred = torch.from_numpy(pred).float()
         else: 
             # If first iteration, do nothing

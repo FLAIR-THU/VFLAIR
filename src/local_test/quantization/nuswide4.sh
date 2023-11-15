@@ -8,10 +8,10 @@
 # Begin with GaussianDP 0.0001
 echo 'nuswide4 quant'
 
-python main_pipeline_quant4.py --configs quantization/nuswide4
+python main_pipeline_quant.py --configs quantization/nuswide4
 
 sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/quantization/nuswide4.json
 
-python main_pipeline_quant4.py --configs quantization/nuswide4
+python main_pipeline_quant.py --configs quantization/nuswide4
 
 sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/quantization/nuswide4.json

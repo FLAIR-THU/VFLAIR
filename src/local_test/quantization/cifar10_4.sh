@@ -8,12 +8,12 @@
 # Begin with GaussianDP 0.0001
 echo 'cifar10_4 quant'
 
-python main_pipeline_quant4.py --configs quantization/cifar10_4
+python main_pipeline_quant.py --configs quantization/cifar10_4
 
 sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/quantization/cifar10_4.json
 sed -i 's/"lr": 0.001/"lr": 0.0003/g' ./configs/quantization/cifar10_4.json
 
-python main_pipeline_quant4.py --configs quantization/cifar10_4
+python main_pipeline_quant.py --configs quantization/cifar10_4
 
 sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/quantization/cifar10_4.json
 sed -i 's/"lr": 0.0003/"lr": 0.001/g' ./configs/quantization/cifar10_4.json
