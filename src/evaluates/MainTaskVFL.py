@@ -366,8 +366,7 @@ class MainTaskVFL(object):
                 if self.num_total_comms % 10 == 0:
                     print(f"total time for {self.num_total_comms} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-                    stop_time = time.time()
-                    self.stopping_time = stop_time - start_time
+                    self.stopping_time = total_time
                     self.stopping_iter = self.num_total_comms
                     self.stopping_commu_cost = self.communication_cost
                     flag = 1
