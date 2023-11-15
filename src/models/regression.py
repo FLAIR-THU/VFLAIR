@@ -16,3 +16,14 @@ class LogisticRegressionModel(nn.Module):
     def forward(self, x):
         out = self.layer(x) #F.sigmoid(self.layer(x))
         return out
+
+class LogisticRegressionModel_Softmax(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(LogisticRegressionModel, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, output_dim)
+        )
+
+    def forward(self, x):
+        out = F.sigmoid(self.layer(x), dim = -1)
+        return out
