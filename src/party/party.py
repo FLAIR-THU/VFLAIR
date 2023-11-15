@@ -71,8 +71,6 @@ class Party(object):
         self.local_pred = None
         self.local_pred_clone = None
 
-        self.communication_cost = 0 # MB of data tranamitted from this party
-
         self.cache = Cache()
         self.prev_batches = []
         self.num_local_updates = 0
@@ -112,8 +110,6 @@ class Party(object):
 
         self.local_pred_clone = self.local_pred.detach().clone()
 
-        if transmit:
-            self.communication_cost += getsizeof(self.local_pred_clone) / (1024 **2) #MB
         return self.local_pred, self.local_pred_clone
 
     def prepare_data(self, args, index):

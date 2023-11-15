@@ -116,9 +116,6 @@ class ActiveParty(Party):
 
         if self.args.defense_name == "GradPerturb":
             self.calculate_gradient_each_class(self.global_pred, pred_list)
-
-        if transmit:
-            self.communication_cost += getsizeof(pred_gradients_list_clone) / (1024**2)
         
         return pred_gradients_list_clone
     

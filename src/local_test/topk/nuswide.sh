@@ -14,16 +14,16 @@ python main_pipeline_topk.py --configs topk/nuswide
 
 sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/topk/nuswide.json
 
-### 0.7
-sed -i 's/"ratio": 0.8/"ratio": 0.7/g' ./configs/topk/nuswide.json
+# ### 0.7
+# sed -i 's/"ratio": 0.8/"ratio": 0.7/g' ./configs/topk/nuswide.json
 
-python main_pipeline_topk.py --configs topk/nuswide
+# python main_pipeline_topk.py --configs topk/nuswide
 
-sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/topk/nuswide.json
+# sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/topk/nuswide.json
 
-python main_pipeline_topk.py --configs topk/nuswide
+# python main_pipeline_topk.py --configs topk/nuswide
 
-sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/topk/nuswide.json
+# sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/topk/nuswide.json
 
 
-sed -i 's/"ratio": 0.7/"ratio": 0.8/g' ./configs/topk/nuswide.json
+# sed -i 's/"ratio": 0.7/"ratio": 0.8/g' ./configs/topk/nuswide.json

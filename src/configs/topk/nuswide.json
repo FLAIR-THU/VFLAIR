@@ -6,7 +6,7 @@
     "communication":{
         "communication_protocol": "Topk",
         "iteration_per_aggregation": 1,
-        "ratio": 0.8,
+        "ratio": 0.9,
         "vecdim": 1
     },
     "dataset":{

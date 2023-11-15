@@ -1,6 +1,6 @@
 import sys, os
 sys.path.append(os.pardir)
-
+from sys import getsizeof
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
