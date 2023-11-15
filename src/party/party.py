@@ -81,7 +81,7 @@ class Party(object):
         self.local_gradient = gradient
         return
 
-    def give_pred(self):
+    def give_pred(self, transmit = True):
         self.local_pred = self.local_model(self.local_batch_data)
         
         # ####### Noisy Sample #########
@@ -112,7 +112,8 @@ class Party(object):
 
         self.local_pred_clone = self.local_pred.detach().clone()
 
-        self.communication_cost += getsizeof(self.local_pred_clone) / (1024 **2) #MB
+        if transmit:
+            self.communication_cost += getsizeof(self.local_pred_clone) / (1024 **2) #MB
         return self.local_pred, self.local_pred_clone
 
     def prepare_data(self, args, index):

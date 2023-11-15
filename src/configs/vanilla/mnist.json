@@ -1,30 +1,31 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.01,
     "k": 2,
-    "batch_size": 1024,
+    "batch_size": 2048,
     "communication":{
-        "communication_protocol": "Topk",
+        "communication_protocol": "FedBCD_p",
         "iteration_per_aggregation": 1,
         "quant_level": 0,
-        "vecdim": 1
+        "vecdim": 1,
+        "smi_thresh": 0.5
     },
     "dataset":{
-        "dataset_name": "cifar10",
+        "dataset_name": "mnist",
         "num_classes": 10
     },
     "model_list":{
         "0": {
-            "type": "resnet18",
-            "input_dim": 512,
+            "type": "MLP2",
+            "input_dim": 392,
             "output_dim": 10,
-            "path": "random_20"
+            "path": "random_14*28_10"
         },
         "1": {
-            "type": "resnet18",
-            "input_dim": 512,
+            "type": "MLP2",
+            "input_dim": 392,
             "output_dim": 10,
-            "path": "random_20"
+            "path": "random_14*28_10"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"

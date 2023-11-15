@@ -29,7 +29,9 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution() 
 
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,\
+'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,\
+'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL(object):
@@ -192,11 +194,11 @@ class MainTaskVFL(object):
                 else: # FedBCD: additional iterations without info exchange
                     # for passive party, do local update without info exchange
                     for ik in range(self.k-1):
-                        _pred, _pred_clone= self.parties[ik].give_pred() 
+                        _pred, _pred_clone= self.parties[ik].give_pred(False) 
                         self.parties[ik].local_backward() 
                     # for active party, do local update without info exchange
-                    _pred, _pred_clone = self.parties[self.k-1].give_pred() 
-                    _gradient = self.parties[self.k-1].give_gradient()
+                    _pred, _pred_clone = self.parties[self.k-1].give_pred(False) 
+                    _gradient = self.parties[self.k-1].give_gradient(False)
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
         elif self.args.communication_protocol in ['CELU']:
@@ -223,7 +225,7 @@ class MainTaskVFL(object):
                             batch_cached_at, batch_num_update \
                                 = val
                         
-                        _pred, _pred_detach = self.parties[ik].give_pred()
+                        _pred, _pred_detach = self.parties[ik].give_pred(False)
                         weight = ins_weight(_pred_detach,batch_cached_pred,self.args.smi_thresh) # ins weight
                         
                         # Using this batch for backward
@@ -252,14 +254,14 @@ class MainTaskVFL(object):
                 if q == 0: 
                     #first iteration, active party gets pred from passsive party
                     self.pred_transmit() 
-                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    _gradient = self.parties[self.k-1].give_gradient()
                     # active party: update parameters 
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
                 else: 
                     # active party do additional iterations without info exchange
-                    self.parties[self.k-1].give_pred(self)
-                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    self.parties[self.k-1].give_pred(False)
+                    _gradient = self.parties[self.k-1].give_gradient(False)
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
 
@@ -269,7 +271,7 @@ class MainTaskVFL(object):
             # passive party do Q iterations
             for _q in range(self.Q):
                 for ik in range(self.k-1): 
-                    _pred, _pred_clone= self.parties[ik].give_pred() 
+                    _pred, _pred_clone= self.parties[ik].give_pred(False) 
                     self.parties[ik].local_backward() 
         else:
             assert 1>2 , 'Communication Protocol not provided'

@@ -103,7 +103,7 @@ class ActiveParty(Party):
         # self.global_backward(pred, loss)
         return pred_gradients_list, pred_gradients_list_clone
     
-    def give_gradient(self):
+    def give_gradient(self,transmit = True):
         pred_list = self.pred_received 
 
         if self.gt_one_hot_label == None:
@@ -117,7 +117,8 @@ class ActiveParty(Party):
         if self.args.defense_name == "GradPerturb":
             self.calculate_gradient_each_class(self.global_pred, pred_list)
 
-        self.communication_cost += getsizeof(pred_gradients_list_clone) / (1024**2)
+        if transmit:
+            self.communication_cost += getsizeof(pred_gradients_list_clone) / (1024**2)
         
         return pred_gradients_list_clone
     

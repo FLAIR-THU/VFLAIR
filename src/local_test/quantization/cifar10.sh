@@ -10,4 +10,10 @@ echo 'cifar100 quant'
 
 python main_pipeline_quant.py --configs quantization/cifar10
 
+sed -i 's/"iteration_per_aggregation": 1/"iteration_per_aggregation": 5/g' ./configs/quantization/cifar10.json
+sed -i 's/"lr": 0.001/"lr": 0.0003/g' ./configs/quantization/cifar10.json
 
+python main_pipeline_quant.py --configs quantization/cifar10
+
+sed -i 's/"iteration_per_aggregation": 5/"iteration_per_aggregation": 1/g' ./configs/quantization/cifar10.json
+sed -i 's/"lr": 0.0003/"lr": 0.001/g' ./configs/quantization/cifar10.json

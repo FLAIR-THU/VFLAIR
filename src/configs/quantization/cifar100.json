@@ -4,7 +4,7 @@
     "k": 2,
     "batch_size": 2048,
     "communication":{
-        "communication_protocol": "Topk",
+        "communication_protocol": "Quantization",
         "iteration_per_aggregation": 1,
         "quant_level": 0,
         "vecdim": 1

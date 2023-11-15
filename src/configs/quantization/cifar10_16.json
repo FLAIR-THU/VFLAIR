@@ -1,29 +1,29 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.0003,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 1024,
     "communication":{
-        "communication_protocol": "Topk",
-        "iteration_per_aggregation": 1,
-        "quant_level": 0,
+        "communication_protocol": "Quantization",
+        "iteration_per_aggregation": 5,
+        "quant_level": 16,
         "vecdim": 1
     },
     "dataset":{
-        "dataset_name": "cifar100",
-        "num_classes": 100
+        "dataset_name": "cifar10",
+        "num_classes": 10
     },
     "model_list":{
         "0": {
             "type": "resnet18",
             "input_dim": 512,
-            "output_dim": 100,
+            "output_dim": 10,
             "path": "random_20"
         },
         "1": {
             "type": "resnet18",
             "input_dim": 512,
-            "output_dim": 100,
+            "output_dim": 10,
             "path": "random_20"
         },
         "apply_trainable_layer": 0,
