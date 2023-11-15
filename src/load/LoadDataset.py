@@ -14,6 +14,8 @@ from collections import Counter
 
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler
 import torch
 from torchvision import datasets
@@ -36,7 +38,7 @@ from utils.graph_functions import load_data1, split_graph
 # DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
-TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
+TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','nursery']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
 
@@ -173,8 +175,9 @@ def dataset_partition(args, index, dst, half_dim):
             return ([args.A_B,args.X_B],dst[1]), args
         else:
             assert index <= 1, 'invalid party index'
+    
     else:
-        assert args.dataset == 'mnist', "dataset not supported"
+        assert args.dataset == 'mnist', f"dataset not supported {args.dataset}"
         return None
 
 def load_dataset_per_party(args, index):
@@ -556,7 +559,25 @@ def load_dataset_per_party(args, index):
             X = df.iloc[:, :-1].values
             y = df.iloc[:, -1].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
-        
+        elif args.dataset == "nursery":
+            df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
+            print("nursery dataset loaded")
+            df[8] = LabelEncoder().fit_transform(df[8].values)
+            X_d = df.drop(8, axis=1)
+            X_a = pd.get_dummies(
+                X_d[X_d.columns[: int(len(X_d.columns) / 2)]], drop_first=True, dtype=int
+            )
+            print('X_a',X_a.shape)
+            X_p = pd.get_dummies(
+                X_d[X_d.columns[int(len(X_d.columns) / 2) :]], drop_first=True, dtype=int
+            )
+            print('X_p',X_p.shape)
+            X = pd.concat([X_a, X_p], axis=1).values
+            print('X',X.shape)
+            y = df[8].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+
+
         if args.need_auxiliary == 1:
             X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)
