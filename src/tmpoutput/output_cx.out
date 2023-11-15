@@ -1,0 +1,25 @@
+type of model: xgboost, encryption:False
+ training time: 311.01061034202576 [s]
+ train acc: 0.826125, test acc: 0.8201666666666667
+ #Nodes: 625
+ Comm: (2485, 1984000)
+type of model: xgboost, encryption:False
+ training time: 319.33687925338745 [s]
+ train acc: 0.8280833333333333, test acc: 0.8155
+ #Nodes: 633
+ Comm: (2517, 1984480)
+type of model: xgboost, encryption:False
+ training time: 324.8504686355591 [s]
+ train acc: 0.8270416666666667, test acc: 0.819
+ #Nodes: 631
+ Comm: (2509, 1984360)
+type of model: xgboost, encryption:False
+ training time: 331.8596098423004 [s]
+ train acc: 0.8283333333333334, test acc: 0.8151666666666667
+ #Nodes: 629
+ Comm: (2501, 1984240)
+type of model: xgboost, encryption:False
+ training time: 349.6193768978119 [s]
+ train acc: 0.8190833333333334, test acc: 0.808
+ #Nodes: 623
+ Comm: (2477, 1983880)

@@ -1,0 +1,15 @@
+type of model: randomforest, encryption:True
+ training time: 91.45492482185364 [s]
+ train acc: 0.8937003339859495, test acc: 0.9015665185877951
+type of model: randomforest, encryption:True
+ training time: 100.83559203147888 [s]
+ train acc: 0.8986525394448923, test acc: 0.8982931961655366
+type of model: randomforest, encryption:True
+ training time: 101.3581862449646 [s]
+ train acc: 0.8971553610503282, test acc: 0.8875379939209727
+type of model: randomforest, encryption:True
+ training time: 103.30919075012207 [s]
+ train acc: 0.8763100310952435, test acc: 0.8632218844984803
+type of model: randomforest, encryption:True
+ training time: 104.2151370048523 [s]
+ train acc: 0.9029137394909593, test acc: 0.8933832125321487

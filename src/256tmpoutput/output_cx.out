@@ -1,0 +1,15 @@
+type of model: xgboost, encryption:False
+ training time: 251.9828691482544 [s]
+ train acc: 0.8258706467661692, test acc: 0.8190909090909091
+type of model: xgboost, encryption:False
+ training time: 255.51698660850525 [s]
+ train acc: 0.8269651741293532, test acc: 0.8146464646464646
+type of model: xgboost, encryption:False
+ training time: 259.9448037147522 [s]
+ train acc: 0.8283084577114428, test acc: 0.8184848484848485
+type of model: xgboost, encryption:False
+ training time: 264.2162501811981 [s]
+ train acc: 0.8285572139303483, test acc: 0.8171717171717172
+type of model: xgboost, encryption:False
+ training time: 276.64566230773926 [s]
+ train acc: 0.82681592039801, test acc: 0.8112121212121212

@@ -1,0 +1,25 @@
+type of model: randomforest, encryption:False
+ training time: 26.629347801208496 [s]
+ train acc: 0.902295524691358, test acc: 0.8896604938271605
+ #Nodes: 383
+ Comm: (3065, 131136)
+type of model: randomforest, encryption:False
+ training time: 28.419957160949707 [s]
+ train acc: 0.8941936728395061, test acc: 0.8854166666666666
+ #Nodes: 385
+ Comm: (3081, 131376)
+type of model: randomforest, encryption:False
+ training time: 29.030741214752197 [s]
+ train acc: 0.8983410493827161, test acc: 0.8904320987654321
+ #Nodes: 417
+ Comm: (3337, 135216)
+type of model: randomforest, encryption:False
+ training time: 32.063920736312866 [s]
+ train acc: 0.8980516975308642, test acc: 0.8915895061728395
+ #Nodes: 419
+ Comm: (3353, 135456)
+type of model: randomforest, encryption:False
+ training time: 32.0515878200531 [s]
+ train acc: 0.8699845679012346, test acc: 0.8657407407407407
+ #Nodes: 409
+ Comm: (3273, 134256)
