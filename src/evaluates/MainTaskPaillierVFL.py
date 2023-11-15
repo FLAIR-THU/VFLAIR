@@ -30,12 +30,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution()
 
-STOPPING_ACC = {
-    "mnist": 0.955,
-    "cifar10": 0.80,
-    "cifar100": 0.40,
-}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
-
+STOPPING_ACC = {'mnist': 0.955, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 class MainTaskPaillierVFL(object):
     def __init__(self, args, debug=False):

@@ -25,5 +25,5 @@ class LogisticRegressionModel_Softmax(nn.Module):
         )
 
     def forward(self, x):
-        out = F.sigmoid(self.layer(x), dim = -1)
+        out = F.sigmoid(self.layer(x))
         return out

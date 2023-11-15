@@ -203,6 +203,20 @@ class MLP3_Nursery(nn.Module):
         out = self.layer(x)
         return out
 
+class MLP3_Nursery_Softmax(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(MLP3_Nursery_Softmax, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Linear(input_dim, 200),
+            nn.ReLU(),
+            nn.Linear(200, 100),
+            nn.ReLU(),
+            nn.Linear(100, output_dim)
+        )
+
+    def forward(self, x):
+        out = F.softmax(self.layer(x))
+        return out
 
 # for adult income dataset
 class MLP4(nn.Module):
