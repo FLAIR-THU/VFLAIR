@@ -12,7 +12,7 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 
-communication_protocol_list = ['Vanilla','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
+communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -59,7 +59,7 @@ def load_basic_configs(config_file_name, args):
     
 
 
-    if args.communication_protocol == 'Vanilla':
+    if args.communication_protocol == 'FedSGD':
         args.Q = 1
     
     print('communication_protocol:',args.communication_protocol)
