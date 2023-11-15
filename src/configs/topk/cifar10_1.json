@@ -2,13 +2,12 @@
     "epochs": 30,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 512,
+    "batch_size": 1024,
     "communication":{
-        "communication_protocol": "FedBCD_p",
-        "iteration_per_aggregation": 5,
-        "quant_level": 0,
-        "vecdim": 1,
-        "smi_thresh": 0.5
+        "communication_protocol": "Topk",
+        "iteration_per_aggregation": 1,
+        "ratio": 0.7,
+        "vecdim": 1
     },
     "dataset":{
         "dataset_name": "cifar10",

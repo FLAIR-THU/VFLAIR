@@ -5,7 +5,7 @@
     "batch_size": 1024,
     "communication":{
         "communication_protocol": "Topk",
-        "iteration_per_aggregation": 5,
+        "iteration_per_aggregation": 1,
         "ratio": 0.8,
         "vecdim": 1
     },

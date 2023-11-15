@@ -78,6 +78,7 @@ class MainTaskVFL(object):
         self.stopping_iter = 0
         self.stopping_time = 0.0
         self.stopping_commu_cost = 0
+        self.communication_cost = 0
 
 
         # Early Stop
@@ -120,11 +121,16 @@ class MainTaskVFL(object):
                                     self.current_epoch, self.current_step).to(self.args.device)
                 ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                
+                self.communication_cost += getsizeof(pred_clone) / (1024 **2) #MB
+                
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
-        
+ 
+        self.communication_cost += getsizeof(gradient) / (1024 **2) #MB
+
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
             if (self.k-1) in self.args.defense_configs['party']:
@@ -255,6 +261,7 @@ class MainTaskVFL(object):
                     #first iteration, active party gets pred from passsive party
                     self.pred_transmit() 
                     _gradient = self.parties[self.k-1].give_gradient()
+                    self.communication_cost += getsizeof(_gradient) / (1024 **2) #MB
                     # active party: update parameters 
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
@@ -315,11 +322,6 @@ class MainTaskVFL(object):
         flag = 0
         self.current_epoch = 0
 
-        # if self.args.communication_protocol == 'CELU':
-        #     num_total_comms = 0
-        #     num_local_updates = 0
-        #     is_finished = False
-        #     self.cache = Cache() 
 
         start_time = time.time()
         for i_epoch in range(self.epochs):
@@ -351,9 +353,9 @@ class MainTaskVFL(object):
                 self.parties[self.k-1].global_model.train()
                 
                 # ====== train batch (start) ======
-                if i == 0 and i_epoch == 0:
-                    self.first_epoch_state = self.save_state(True)
-                # elif i_epoch == self.epochs//2 and i == 0:
+                # if i == 0 and i_epoch == 0:
+                #     self.first_epoch_state = self.save_state(True)
+                # # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state(True)
 
                 enter_time = time.time()
@@ -367,13 +369,11 @@ class MainTaskVFL(object):
                     stop_time = time.time()
                     self.stopping_time = stop_time - start_time
                     self.stopping_iter = self.num_total_comms
-                    self.stopping_commu_cost = 0 
-                    for _ik in range(self.args.k):
-                        self.stopping_commu_cost += self.parties[_ik].communication_cost
+                    self.stopping_commu_cost = self.communication_cost
                     flag = 1
 
-                if i == 0 and i_epoch == 0:
-                    self.first_epoch_state.update(self.save_state(False))
+                # if i == 0 and i_epoch == 0:
+                #     self.first_epoch_state.update(self.save_state(False))
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state.update(self.save_state(False))
                 # ====== train batch (end) ======

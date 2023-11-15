@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in [97]:
-    for seed in [60,61,62,63,64]: # test 5 times 
+    for seed in [97,99,100,103,104]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')

@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in [97]:
-    for seed in [97,99,100,103,104]: # test 5 times 
+    for seed in [60,61,62,63,64,65,66,97]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -381,7 +381,7 @@ if __name__ == '__main__':
         
         
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/topk{str(args.ratio)}_{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
