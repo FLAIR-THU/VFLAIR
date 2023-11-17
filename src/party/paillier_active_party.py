@@ -68,7 +68,7 @@ class PaillierActiveParty(Party):
     def gradient_calculation(self, pred, ground_truth):
         pred_gradients_list = []
         for ik in range(self.args.k):
-            pred_gradients_list.append((pred - ground_truth))
+            pred_gradients_list.append((pred.to(ground_truth.device) - ground_truth))
         
         return pred_gradients_list
     

@@ -116,10 +116,7 @@ class MainTaskPaillierVFL(object):
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
         # active party transfer gradient to passive parties
         for ik in range(self.k - 1):
-            if self.debug:
-                self.parties[ik].receive_gradient(gradient[ik].to(self.device))
-            else:
-                self.parties[ik].receive_gradient(gradient[ik].decrypt(self.parties[ik].sk).to(self.device))
+            self.parties[ik].receive_gradient(gradient[ik].to(self.device))
         return
 
     def label_to_one_hot(self, target, num_classes=10):

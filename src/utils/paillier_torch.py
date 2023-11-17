@@ -37,6 +37,7 @@ class PaillierTensor(object):
             self._paillier_np_array = paillier_array
         else:
             raise TypeError(f"{type(paillier_array)} is not supported.")
+        self.device = torch.device("cpu")
 
     def __repr__(self):
         return "PaillierTensor"
@@ -60,6 +61,9 @@ class PaillierTensor(object):
 
     def cpu(self):
         return self
+
+    def size(self):
+        return torch.Size(self._paillier_np_array.shape)
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):

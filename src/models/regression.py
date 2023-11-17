@@ -19,7 +19,7 @@ class LogisticRegressionModel(nn.Module):
 
 class LogisticRegressionModel_Normalized(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(LogisticRegressionModel_Softmax, self).__init__()
+        super(LogisticRegressionModel_Normalized, self).__init__()
         self.layer = nn.Sequential(
             nn.Linear(input_dim, output_dim)
         )
