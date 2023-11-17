@@ -11,11 +11,9 @@ class PaillierPassiveParty(PassiveParty):
     def __init__(self, args, index):
         super().__init__(args, index)
         self.pk = None
-        self.sk = None
 
-    def set_keypairs(self, pk, sk):
+    def set_pk(self, pk):
         self.pk = pk
-        self.sk = sk
 
     def give_pred(self):
         # ####### Noisy Sample #########

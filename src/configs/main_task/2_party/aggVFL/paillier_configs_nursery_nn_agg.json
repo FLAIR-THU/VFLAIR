@@ -10,13 +10,13 @@
     },
     "model_list":{
         "0": {
-            "type": "MLP3_Nursery_Softmax",
+            "type": "MLP3_Nursery_Normalized",
             "input_dim": 7,
             "output_dim": 5,
             "path": ""
         },
         "1": {
-            "type": "MLP3_Nursery_Softmax",
+            "type": "MLP3_Nursery_Normalized",
             "input_dim": 12,
             "output_dim": 5,
             "path": ""

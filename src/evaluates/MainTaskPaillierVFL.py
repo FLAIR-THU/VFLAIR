@@ -33,7 +33,7 @@ tf.compat.v1.enable_eager_execution()
 STOPPING_ACC = {'mnist': 0.955, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 class MainTaskPaillierVFL(object):
-    def __init__(self, args, debug=False):
+    def __init__(self, args, pk, sk, debug=False):
         self.args = args
         self.k = args.k
         self.device = args.device
@@ -84,6 +84,8 @@ class MainTaskPaillierVFL(object):
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
+        self.pk = pk
+        self.sk = sk
         self.debug = debug
 
     def pred_transmit(self):  # Active party gets pred from passive parties
@@ -91,16 +93,24 @@ class MainTaskPaillierVFL(object):
             pred, pred_detach = self.parties[ik].give_pred()
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
                 if self.debug:
-                    pred_clone = pred_detach.clone() #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                    pred_clone = pred_detach.clone()
+                    pred_square_clone = torch.square(pred_clone)
                 else:
                     pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
-                self.parties[self.k - 1].receive_pred(pred_clone, ik)
+                    pred_square_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x * x) for x in xs] for xs in pred_detach.tolist()])
+                self.parties[self.k - 1].receive_pred((pred_clone, pred_square_clone), ik)
             else:
-                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                self.parties[ik].update_local_pred(pred_detach)
+                pred_clone = pred_detach #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                pred_square_clone = torch.square(pred_clone)
+                self.parties[ik].update_local_pred((pred_clone, pred_square_clone))
 
-    def gradient_transmit(self):  # Active party sends gradient to passive parties
-        gradient = self.parties[self.k - 1].give_gradient()  # gradient_clone
+    def calculate_y_pred_from_exp_H(self, exp_H):
+        if not self.debug:
+            exp_H = exp_H.decrypt(self.sk)
+        return exp_H / (torch.sum(exp_H, dim=-1).reshape(-1, 1))
+
+    def gradient_transmit(self, pred):  # Active party sends gradient to passive parties
+        gradient = self.parties[self.k - 1].give_gradient(pred)  # gradient_clone
 
         # active party update local gradient
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
@@ -159,7 +169,9 @@ class MainTaskPaillierVFL(object):
                 if q == 0:
                     # exchange info between parties
                     self.pred_transmit()
-                    self.gradient_transmit()
+                    exp_H = self.parties[ik].calculate_exp_H()
+                    pred = self.calculate_y_pred_from_exp_H(exp_H)
+                    self.gradient_transmit(pred)
                     # update parameters for all parties
                     for ik in range(self.k):
                         self.parties[ik].local_backward()
@@ -170,7 +182,9 @@ class MainTaskPaillierVFL(object):
                         self.parties[ik].local_backward()
         else:  # Sequential FedBCD
             # active party transmit grad to passive parties
-            self.gradient_transmit()
+            exp_H = self.parties[ik].calculate_exp_H()
+            pred = self.calculate_y_pred_from_exp_H(exp_H)
+            self.gradient_transmit(pred)
 
             # passive party do Q iterations
             for _q in range(self.Q):

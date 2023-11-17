@@ -17,7 +17,7 @@ class LogisticRegressionModel(nn.Module):
         out = self.layer(x) #F.sigmoid(self.layer(x))
         return out
 
-class LogisticRegressionModel_Softmax(nn.Module):
+class LogisticRegressionModel_Normalized(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(LogisticRegressionModel_Softmax, self).__init__()
         self.layer = nn.Sequential(
@@ -25,5 +25,6 @@ class LogisticRegressionModel_Softmax(nn.Module):
         )
 
     def forward(self, x):
-        out = F.sigmoid(self.layer(x))
+        out = self.layer(x)
+        out = (out - torch.mean(out)) / (torch.std(out) + 1e-16)
         return out

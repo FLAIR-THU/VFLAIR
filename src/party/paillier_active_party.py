@@ -2,6 +2,7 @@ import sys, os
 sys.path.append(os.pardir)
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
@@ -42,27 +43,44 @@ class PaillierActiveParty(Party):
         self.pred_received[giver_index] = pred
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        pred = sum(pred_list) / self.args.k
+        pred = F.softmax(sum(pred_list), dim=-1)
         loss = self.criterion(pred, gt_one_hot_label)
         return pred, loss
 
-    def gradient_calculation(self, pred_list, ground_truth):
+    def calculate_exp_H(self):
+        # currently support only two parties
+        H_a = self.pred_received[0][0]
+        H_a_square = self.pred_received[0][1]
+        H_b = self.pred_received[1][0]
+        H_b_square = self.pred_received[1][1]
+        
+        H = H_a + H_b
+        H_square = H_a_square + 2 * H_a * H_b + H_b_square
+        exp_H = 1 + H + 0.5 * H_square
+        # exp_H = torch.exp(H)
+        
+        self.mask = torch.rand(exp_H.size())
+        self.mask = self.mask - (self.mask.sum(dim=1) / self.mask.shape[1]).reshape(-1, 1)
+        exp_H = exp_H + self.mask.to(exp_H.device)
+
+        return exp_H
+
+    def gradient_calculation(self, pred, ground_truth):
         pred_gradients_list = []
         for ik in range(self.args.k):
-            pred_gradients_list.append((pred_list[ik] - ground_truth) * (1 / (self.args.k * ground_truth.shape[0])))
+            pred_gradients_list.append((pred - ground_truth))
+        
         return pred_gradients_list
     
-    def give_gradient(self):
-        pred_list = self.pred_received 
-
+    def give_gradient(self, pred):
+        pred = pred - self.mask.to(pred.device)
         if self.gt_one_hot_label == None:
             print('give gradient:self.gt_one_hot_label == None')
             assert 1>2
 
-        # self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
-        pred_gradients_list = self.gradient_calculation(pred_list, self.gt_one_hot_label)
+        gradients_list = self.gradient_calculation(pred, self.gt_one_hot_label)
 
-        return pred_gradients_list
+        return gradients_list
     
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient

@@ -8,7 +8,7 @@ import torch.nn.functional as F
     
 class MLP2_ReLu(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2, self).__init__()
+        super(MLP2_ReLu, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
             nn.Linear(input_dim, 32, bias=True),
@@ -27,9 +27,9 @@ class MLP2_ReLu(nn.Module):
         return x
 
 
-class MLP2_Softmax(nn.Module):
+class MLP2_Normalized(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2_Softmax, self).__init__()
+        super(MLP2_Normalized, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
             nn.Linear(input_dim, 32, bias=True),
@@ -38,13 +38,13 @@ class MLP2_Softmax(nn.Module):
 
         self.layer2 = nn.Sequential(
             nn.Linear(32, output_dim, bias=True),
-            nn.Softmax(dim=1)
         )
 
 
     def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
+        x = (x - torch.mean(x)) / (torch.std(x) + 1e-16) 
         return x
 
 
