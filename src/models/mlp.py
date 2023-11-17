@@ -26,27 +26,31 @@ class MLP2_ReLu(nn.Module):
         x = self.layer2(x)
         return x
 
-
 class MLP2_Normalized(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP2_Normalized, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
             nn.Linear(input_dim, 32, bias=True),
+            nn.BatchNorm1d(32),
             nn.ReLU(inplace=True)
         )
+        torch.nn.init.xavier_uniform_(self.layer1[1].weight)
+        torch.nn.init.zeros_(self.layer1[1].bias)
 
         self.layer2 = nn.Sequential(
             nn.Linear(32, output_dim, bias=True),
+            nn.BatchNorm1d(output_dim),
+            #nn.ReLU(inplace=True)
         )
-
+        #torch.nn.init.xavier_uniform_(self.layer2[0].weight)
+        #torch.nn.init.zeros_(self.layer2[0].bias)
 
     def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
-        x = (x - torch.mean(x)) / (torch.std(x) + 1e-16) 
+        # x = (x - torch.mean(x)) / (torch.std(x) + 1e-16) 
         return x
-
 
 class MLP2(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -203,19 +207,23 @@ class MLP3_Nursery(nn.Module):
         out = self.layer(x)
         return out
 
-class MLP3_Nursery_Softmax(nn.Module):
+class MLP3_Nursery_Normalized(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP3_Nursery_Softmax, self).__init__()
+        super(MLP3_Nursery_Normalized, self).__init__()
         self.layer = nn.Sequential(
             nn.Linear(input_dim, 200),
+            nn.BatchNorm1d(200),
             nn.ReLU(),
             nn.Linear(200, 100),
+            nn.BatchNorm1d(100),
             nn.ReLU(),
-            nn.Linear(100, output_dim)
+            nn.Linear(100, output_dim),
+            nn.BatchNorm1d(output_dim),
         )
 
     def forward(self, x):
-        out = F.softmax(self.layer(x))
+        out = self.layer(x)
+        # out = (out - torch.mean(out)) / (torch.std(out) + 1e-16)
         return out
 
 # for adult income dataset

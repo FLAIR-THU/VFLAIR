@@ -26,5 +26,5 @@ class LogisticRegressionModel_Normalized(nn.Module):
 
     def forward(self, x):
         out = self.layer(x)
-        out = (out - torch.mean(out)) / (torch.std(out) + 1e-16)
+        # out = (out - torch.mean(out)) / (torch.std(out) + 1e-16)
         return out

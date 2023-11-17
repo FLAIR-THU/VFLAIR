@@ -108,10 +108,10 @@ class MainTaskPaillierVFL(object):
         if not self.debug:
             exp_H = exp_H.decrypt(self.sk)
         exp_H_sum = torch.sum(exp_H, dim=-1).reshape(-1, 1)
-        return exp_H / exp_H_sum, exp_H_sum
+        return exp_H / exp_H_sum
 
-    def gradient_transmit(self, pred, pred_sum):  # Active party sends gradient to passive parties
-        gradient = self.parties[self.k - 1].give_gradient(pred, pred_sum)  # gradient_clone
+    def gradient_transmit(self, pred):  # Active party sends gradient to passive parties
+        gradient = self.parties[self.k - 1].give_gradient(pred)  # gradient_clone
 
         # active party update local gradient
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
@@ -168,8 +168,8 @@ class MainTaskPaillierVFL(object):
                     # exchange info between parties
                     self.pred_transmit()
                     exp_H = self.parties[ik].calculate_exp_H()
-                    pred, pred_sum = self.calculate_y_pred_from_exp_H(exp_H)
-                    self.gradient_transmit(pred, pred_sum)
+                    pred = self.calculate_y_pred_from_exp_H(exp_H)
+                    self.gradient_transmit(pred)
                     # update parameters for all parties
                     for ik in range(self.k):
                         self.parties[ik].local_backward()
@@ -178,6 +178,9 @@ class MainTaskPaillierVFL(object):
                     for ik in range(self.k - 1):
                         _pred, _pred_clone = self.parties[ik].give_pred()
                         self.parties[ik].local_backward()
+                    _pred, _pred_clone = self.parties[self.k-1].give_pred()
+                    _gradient = self.parties[self.k-1].give_gradient()
+                    self.parties[self.k-1].local_backward()
         else:  # Sequential FedBCD
             # active party transmit grad to passive parties
             exp_H = self.parties[ik].calculate_exp_H()
@@ -361,8 +364,7 @@ class MainTaskPaillierVFL(object):
                         test_logit, test_loss = self.parties[self.k - 1].aggregate(
                             pred_list, gt_val_one_hot_label, test="True"
                         )
-
-                        enc_predict_prob = test_logit
+                        enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
                             dec_predict_prob = self.args.encoder.decoder(
                                 enc_predict_prob
