@@ -107,10 +107,11 @@ class MainTaskPaillierVFL(object):
     def calculate_y_pred_from_exp_H(self, exp_H):
         if not self.debug:
             exp_H = exp_H.decrypt(self.sk)
-        return exp_H / (torch.sum(exp_H, dim=-1).reshape(-1, 1))
+        exp_H_sum = torch.sum(exp_H, dim=-1).reshape(-1, 1)
+        return exp_H / exp_H_sum, exp_H_sum
 
-    def gradient_transmit(self, pred):  # Active party sends gradient to passive parties
-        gradient = self.parties[self.k - 1].give_gradient(pred)  # gradient_clone
+    def gradient_transmit(self, pred, pred_sum):  # Active party sends gradient to passive parties
+        gradient = self.parties[self.k - 1].give_gradient(pred, pred_sum)  # gradient_clone
 
         # active party update local gradient
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
@@ -167,8 +168,8 @@ class MainTaskPaillierVFL(object):
                     # exchange info between parties
                     self.pred_transmit()
                     exp_H = self.parties[ik].calculate_exp_H()
-                    pred = self.calculate_y_pred_from_exp_H(exp_H)
-                    self.gradient_transmit(pred)
+                    pred, pred_sum = self.calculate_y_pred_from_exp_H(exp_H)
+                    self.gradient_transmit(pred, pred_sum)
                     # update parameters for all parties
                     for ik in range(self.k):
                         self.parties[ik].local_backward()

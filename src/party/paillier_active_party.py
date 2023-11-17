@@ -72,8 +72,8 @@ class PaillierActiveParty(Party):
         
         return pred_gradients_list
     
-    def give_gradient(self, pred):
-        pred = pred - self.mask.to(pred.device)
+    def give_gradient(self, pred, pred_sum):
+        pred = pred - self.mask.to(pred.device) / pred_sum
         if self.gt_one_hot_label == None:
             print('give gradient:self.gt_one_hot_label == None')
             assert 1>2
