@@ -102,7 +102,7 @@ class PaillierActiveParty(Party):
     def gradient_calculation(self, pred, ground_truth):
         pred_gradients_list = []
         for ik in range(self.args.k):
-            pred_gradients_list.append((pred.to(ground_truth.device) - ground_truth))
+            pred_gradients_list.append((pred.to(ground_truth.device) - ground_truth) / pred.shape[0])
 
         return pred_gradients_list
 
@@ -112,7 +112,6 @@ class PaillierActiveParty(Party):
             assert 1 > 2
 
         gradients_list = self.gradient_calculation(pred, self.gt_one_hot_label)
-
         return gradients_list
 
     def update_local_gradient(self, gradient):
