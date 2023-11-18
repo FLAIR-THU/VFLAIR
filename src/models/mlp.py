@@ -44,7 +44,7 @@ class MLP2_Clamped(nn.Module):
     def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
-        x = torch.clamp(x, min=-0.5)
+        x = torch.clamp(x, min=-1.0)
         return x
 
 class MLP2(nn.Module):
@@ -215,7 +215,7 @@ class MLP3_Nursery_Clamped(nn.Module):
 
     def forward(self, x):
         out = self.layer(x)
-        out = torch.clamp(out, min=-0.5)
+        out = torch.clamp(out, min=-1.0)
         return out
 
 # for adult income dataset
@@ -270,7 +270,7 @@ class MLP4_Credit_Clamped(nn.Module):
 
     def forward(self, x):
         out = self.layer(x)
-        out = torch.clamp(out, min=-0.5)
+        out = torch.clamp(out, min=-1.0)
         return out
 
 # For news20 dataset

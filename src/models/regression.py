@@ -26,5 +26,5 @@ class LogisticRegressionModel_Clamped(nn.Module):
 
     def forward(self, x):
         out = self.layer(x)
-        out = torch.clamp(out, min=-0.5)
+        out = torch.clamp(out, min=-1.0)
         return out
