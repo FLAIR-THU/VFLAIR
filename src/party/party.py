@@ -79,7 +79,7 @@ class Party(object):
         self.local_gradient = gradient
         return
 
-    def give_pred(self, transmit = True):
+    def give_pred(self):
         self.local_pred = self.local_model(self.local_batch_data)
         
         # ####### Noisy Sample #########

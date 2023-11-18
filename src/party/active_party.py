@@ -106,7 +106,7 @@ class ActiveParty(Party):
         # self.global_backward(pred, loss)
         return pred_gradients_list, pred_gradients_list_clone
     
-    def give_gradient(self,transmit = True):
+    def give_gradient(self):
         pred_list = self.pred_received 
 
         if self.gt_one_hot_label == None:

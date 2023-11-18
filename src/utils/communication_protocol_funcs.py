@@ -17,6 +17,12 @@ import copy
 import math
 import threading
 
+def get_size_of(target_tensor):
+    _size = 1
+    for _dim in target_tensor.shape:
+        _size = _size*_dim
+    return _size*4/(1024*1024) # MB
+    
 # CELU
 class Cache(object):
     def __init__(self):

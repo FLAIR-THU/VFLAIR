@@ -3,7 +3,10 @@
     "lr": 0.05,
     "k": 2,
     "batch_size": 256,
-    "iteration_per_aggregation": 1,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
     "dataset":{
         "dataset_name": "breast_cancer_diagnose",
         "num_classes": 2

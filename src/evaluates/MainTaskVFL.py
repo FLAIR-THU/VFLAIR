@@ -1,6 +1,5 @@
 import sys, os
 sys.path.append(os.pardir)
-from sys import getsizeof
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -15,6 +14,8 @@ import copy
 
 # from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
+from utils.communication_protocol_funcs import get_size_of
+
 # from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
@@ -122,14 +123,16 @@ class MainTaskVFL(object):
                 ########### communication_protocols ###########
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 
-                self.communication_cost += getsizeof(pred_clone) / (1024 **2) #MB
+                self.communication_cost += get_size_of(pred_clone) #MB
                 
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
- 
-        self.communication_cost += getsizeof(gradient) / (1024 **2) #MB
+
+        if len(gradient)>1:
+            for _i in range(len(gradient)-1):
+                self.communication_cost += get_size_of(gradient[_i+1])#MB
 
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
@@ -200,11 +203,11 @@ class MainTaskVFL(object):
                 else: # FedBCD: additional iterations without info exchange
                     # for passive party, do local update without info exchange
                     for ik in range(self.k-1):
-                        _pred, _pred_clone= self.parties[ik].give_pred(False) 
+                        _pred, _pred_clone= self.parties[ik].give_pred() 
                         self.parties[ik].local_backward() 
                     # for active party, do local update without info exchange
-                    _pred, _pred_clone = self.parties[self.k-1].give_pred(False) 
-                    _gradient = self.parties[self.k-1].give_gradient(False)
+                    _pred, _pred_clone = self.parties[self.k-1].give_pred() 
+                    _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
         elif self.args.communication_protocol in ['CELU']:
@@ -231,7 +234,7 @@ class MainTaskVFL(object):
                             batch_cached_at, batch_num_update \
                                 = val
                         
-                        _pred, _pred_detach = self.parties[ik].give_pred(False)
+                        _pred, _pred_detach = self.parties[ik].give_pred()
                         weight = ins_weight(_pred_detach,batch_cached_pred,self.args.smi_thresh) # ins weight
                         
                         # Using this batch for backward
@@ -261,14 +264,16 @@ class MainTaskVFL(object):
                     #first iteration, active party gets pred from passsive party
                     self.pred_transmit() 
                     _gradient = self.parties[self.k-1].give_gradient()
-                    self.communication_cost += getsizeof(_gradient) / (1024 **2) #MB
+                    if len(_gradient)>1:
+                        for _i in range(len(_gradient)-1):
+                            self.communication_cost += get_size_of(_gradient[_i+1])#MB
                     # active party: update parameters 
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
                 else: 
                     # active party do additional iterations without info exchange
-                    self.parties[self.k-1].give_pred(False)
-                    _gradient = self.parties[self.k-1].give_gradient(False)
+                    self.parties[self.k-1].give_pred()
+                    _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
 
@@ -278,7 +283,7 @@ class MainTaskVFL(object):
             # passive party do Q iterations
             for _q in range(self.Q):
                 for ik in range(self.k-1): 
-                    _pred, _pred_clone= self.parties[ik].give_pred(False) 
+                    _pred, _pred_clone= self.parties[ik].give_pred() 
                     self.parties[ik].local_backward() 
         else:
             assert 1>2 , 'Communication Protocol not provided'
