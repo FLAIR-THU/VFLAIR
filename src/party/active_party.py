@@ -41,7 +41,10 @@ class ActiveParty(Party):
         self.pred_received[giver_index] = pred
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        pred = self.global_model(pred_list)
+        if self.args.dataset == 'cora' and self.args.apply_trainable_layer == 1:
+            pred = self.global_model(pred_list, self.local_batch_data)
+        else:
+            pred = self.global_model(pred_list)
         if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
