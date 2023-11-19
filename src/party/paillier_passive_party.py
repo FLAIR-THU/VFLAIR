@@ -37,5 +37,9 @@ class PaillierPassiveParty(PassiveParty):
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
-        torch.autograd.backward(self.local_pred, self.local_gradient)
+        # dummy_local_gradient = torch.ones(self.local_gradient.size())
+        # torch.autograd.backward(self.local_pred, self.local_pred)
+        params = list(self.local_model.parameters())
+        params[0].grad = torch.matmul(self.local_gradient.T, self.local_batch_data.reshape(self.local_gradient.shape[0], -1)) / self.local_batch_data.shape[0]
+        params[1].grad = torch.sum(self.local_gradient, dim=0) / self.local_batch_data.shape[0]
         self.local_model_optimizer.step()

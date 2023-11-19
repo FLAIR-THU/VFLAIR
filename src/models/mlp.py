@@ -31,20 +31,13 @@ class MLP2_Clamped(nn.Module):
         super(MLP2_Clamped, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(input_dim, 32, bias=True),
-            nn.ReLU(inplace=True)
+            nn.Linear(input_dim, output_dim, bias=True),
         )
         torch.nn.init.xavier_uniform_(self.layer1[1].weight)
         torch.nn.init.zeros_(self.layer1[1].bias)
 
-        self.layer2 = nn.Sequential(
-            nn.Linear(32, output_dim, bias=True),
-        )
-
     def forward(self, x):
         x = self.layer1(x)
-        x = self.layer2(x)
-        x = torch.clamp(x, min=-0.5, max=0.5)
         return x
 
 class MLP2(nn.Module):

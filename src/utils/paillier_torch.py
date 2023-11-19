@@ -146,6 +146,8 @@ class PaillierTensor(object):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __iter__(self):
+        yield from self._paillier_np_array
 
 class PaillierMSELoss(nn.Module):
     def __init__(self):

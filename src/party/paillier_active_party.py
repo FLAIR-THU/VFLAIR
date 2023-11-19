@@ -85,33 +85,31 @@ class PaillierActiveParty(Party):
                 )  # passive party's loss
         return pred, loss
 
-    def calculate_exp_H(self):
+    def calculate_H(self):
         # currently support only two parties
         H_a = self.pred_received[0][0]
-        H_a_square = self.pred_received[0][1]
         H_b = self.pred_received[1][0]
-        H_b_square = self.pred_received[1][1]
-
         H = H_a + H_b
-        H_square = H_a_square + 2 * H_a * H_b + H_b_square
-        exp_H = 1 + H + 0.5 * H_square
-        # exp_H = torch.exp(H)
 
-        return exp_H
+        return H
 
-    def gradient_calculation(self, pred, ground_truth):
+    def gradient_calculation(self, ground_truth):
+        pred = self.calculate_H()
+        ground_truth = (ground_truth - 0.5) * 2
+        grad = 0.25 * pred - 0.5 * ground_truth
+
         pred_gradients_list = []
         for ik in range(self.args.k):
-            pred_gradients_list.append((pred.to(ground_truth.device) - ground_truth) / pred.shape[0])
+            pred_gradients_list.append(grad)
 
         return pred_gradients_list
 
-    def give_gradient(self, pred):
+    def give_gradient(self):
         if self.gt_one_hot_label == None:
             print("give gradient:self.gt_one_hot_label == None")
             assert 1 > 2
 
-        gradients_list = self.gradient_calculation(pred, self.gt_one_hot_label)
+        gradients_list = self.gradient_calculation(self.gt_one_hot_label)
         return gradients_list
 
     def update_local_gradient(self, gradient):
