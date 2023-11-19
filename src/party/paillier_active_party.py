@@ -114,18 +114,18 @@ class PaillierActiveParty(Party):
         self.local_gradient = (
             torch.matmul(
                 gradient.T,
-                self.local_batch_data.reshape(gradient.shape[0], -1),
+                self.local_batch_data.reshape(gradient.size()[0], -1),
             ),
             torch.sum(gradient, dim=0),
         )
-        self.local_batch_size = gradient.shape[0]
+        self.local_batch_size = gradient.size()[0]
 
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
         params = list(self.local_model.parameters())
-        params[0].grad = self.local_gradient[0]
-        params[1].grad = self.local_gradient[1]
+        params[0].grad = self.local_gradient[0].to(params[0].device)
+        params[1].grad = self.local_gradient[1].to(params[1].device)
         params[0].grad = params[0].grad / self.local_batch_size
         params[1].grad = params[1].grad / self.local_batch_size
         self.local_model_optimizer.step()

@@ -113,8 +113,10 @@ class MainTaskPaillierVFL(object):
     def gradient_decrypt(self):
         if not self.debug:
             for ik in range(self.k):
+                dg = []
                 for grad in self.parties[ik].local_gradient:
-                    grad = grad.decrypt(self.sk)
+                    dg.append(grad.decrypt(self.sk))
+                self.parties[ik].local_gradient = dg
 
     def label_to_one_hot(self, target, num_classes=10):
         # print('label_to_one_hot:', target, type(target))

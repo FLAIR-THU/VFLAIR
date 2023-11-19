@@ -122,6 +122,10 @@ class PaillierTensor(object):
             np.matmul(x._paillier_np_array, other.detach().cpu().numpy())
         )
 
+    @implements(torch.sum)
+    def sum(input, dim=None):
+        return PaillierTensor(np.array(np.sum(input._paillier_np_array, axis=dim)))
+
     @implements(torch.nn.functional.linear)
     def linear(x, w, bias):
         return torch.matmul(x, w.T) + bias
