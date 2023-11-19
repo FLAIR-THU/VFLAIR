@@ -65,6 +65,10 @@ class PaillierTensor(object):
     def size(self):
         return torch.Size(self._paillier_np_array.shape)
 
+    @property
+    def T(self):
+        return PaillierTensor(self._paillier_np_array.T)
+
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
         if kwargs is None:

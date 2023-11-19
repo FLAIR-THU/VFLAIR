@@ -85,16 +85,14 @@ class PaillierActiveParty(Party):
                 )  # passive party's loss
         return pred, loss
 
-    def calculate_H(self):
+    def aggregate_H(self):
         # currently support only two parties
-        H_a = self.pred_received[0][0]
-        H_b = self.pred_received[1][0]
-        H = H_a + H_b
+        H = sum(self.pred_received)
 
         return H
 
     def gradient_calculation(self, ground_truth):
-        pred = self.calculate_H()
+        pred = self.aggregate_H()
         ground_truth = (ground_truth - 0.5) * 2
         grad = 0.25 * pred - 0.5 * ground_truth
 
@@ -113,10 +111,21 @@ class PaillierActiveParty(Party):
         return gradients_list
 
     def update_local_gradient(self, gradient):
-        self.local_gradient = gradient
+        self.local_gradient = (
+            torch.matmul(
+                gradient.T,
+                self.local_batch_data.reshape(gradient.shape[0], -1),
+            ),
+            torch.sum(gradient, dim=0),
+        )
+        self.local_batch_size = gradient.shape[0]
 
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
-        torch.autograd.backward(self.local_pred, self.local_gradient)
+        params = list(self.local_model.parameters())
+        params[0].grad = self.local_gradient[0]
+        params[1].grad = self.local_gradient[1]
+        params[0].grad = params[0].grad / self.local_batch_size
+        params[1].grad = params[1].grad / self.local_batch_size
         self.local_model_optimizer.step()

@@ -94,21 +94,12 @@ class MainTaskPaillierVFL(object):
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
                 if self.debug:
                     pred_clone = pred_detach.clone()
-                    pred_square_clone = torch.square(pred_clone)
                 else:
                     pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
-                    pred_square_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x * x) for x in xs] for xs in pred_detach.tolist()])
-                self.parties[self.k - 1].receive_pred((pred_clone, pred_square_clone), ik)
+                self.parties[self.k - 1].receive_pred(pred_clone, ik)
             else:
                 pred_clone = pred_detach #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                pred_square_clone = torch.square(pred_clone)
-                self.parties[ik].update_local_pred((pred_clone, pred_square_clone))
-
-    def calculate_y_pred_from_exp_H(self, exp_H):
-        if not self.debug:
-            exp_H = exp_H.decrypt(self.sk)
-        # exp_H_sum = torch.sum(exp_H, dim=-1).reshape(-1, 1)
-        return exp_H #/ exp_H_sum
+                self.parties[ik].update_local_pred(pred_clone)
 
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k - 1].give_gradient()  # gradient_clone
@@ -118,7 +109,12 @@ class MainTaskPaillierVFL(object):
         # active party transfer gradient to passive parties
         for ik in range(self.k - 1):
             self.parties[ik].receive_gradient(gradient[ik])
-        return
+
+    def gradient_decrypt(self):
+        if not self.debug:
+            for ik in range(self.k):
+                for grad in self.parties[ik].local_gradient:
+                    grad = grad.decrypt(self.sk)
 
     def label_to_one_hot(self, target, num_classes=10):
         # print('label_to_one_hot:', target, type(target))
@@ -167,9 +163,8 @@ class MainTaskPaillierVFL(object):
                 if q == 0:
                     # exchange info between parties
                     self.pred_transmit()
-                    # exp_H = self.parties[ik].calculate_exp_H()
-                    # pred = self.calculate_y_pred_from_exp_H(exp_H)
                     self.gradient_transmit()
+                    self.gradient_decrypt()
                     # update parameters for all parties
                     for ik in range(self.k):
                         self.parties[ik].local_backward()
@@ -183,9 +178,8 @@ class MainTaskPaillierVFL(object):
                     self.parties[self.k-1].local_backward()
         else:  # Sequential FedBCD
             # active party transmit grad to passive parties
-            # exp_H = self.parties[ik].calculate_exp_H()
-            # pred = self.calculate_y_pred_from_exp_H(exp_H)
             self.gradient_transmit()
+            self.gradient_decrypt()
 
             # passive party do Q iterations
             for _q in range(self.Q):

@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.append(os.pardir)
 import torch
 from torch.utils.data import DataLoader
@@ -17,9 +18,13 @@ class PaillierPassiveParty(PassiveParty):
 
     def give_pred(self):
         # ####### Noisy Sample #########
-        if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
-            scale = self.args.attack_configs['noise_lambda']
-            self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
+        if self.args.apply_ns == True and (
+            self.index in self.args.attack_configs["party"]
+        ):
+            scale = self.args.attack_configs["noise_lambda"]
+            self.local_pred = self.local_model(
+                noisy_sample(self.local_batch_data, scale)
+            )
         # ####### Noisy Sample #########
         else:
             self.local_pred = self.local_model(self.local_batch_data)
@@ -34,12 +39,22 @@ class PaillierPassiveParty(PassiveParty):
             self.aux_dst = ActiveDataset(self.aux_data, self.aux_label)
             # self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)
 
+    def receive_gradient(self, gradient):
+        self.local_gradient = (
+            torch.matmul(
+                gradient.T,
+                self.local_batch_data.reshape(gradient.shape[0], -1),
+            ),
+            torch.sum(gradient, dim=0),
+        )
+        self.local_batch_size = gradient.shape[0]
+
     def local_backward(self):
         # update local model
         self.local_model_optimizer.zero_grad()
-        # dummy_local_gradient = torch.ones(self.local_gradient.size())
-        # torch.autograd.backward(self.local_pred, self.local_pred)
         params = list(self.local_model.parameters())
-        params[0].grad = torch.matmul(self.local_gradient.T, self.local_batch_data.reshape(self.local_gradient.shape[0], -1)) / self.local_batch_data.shape[0]
-        params[1].grad = torch.sum(self.local_gradient, dim=0) / self.local_batch_data.shape[0]
+        params[0].grad = self.local_gradient[0]
+        params[1].grad = self.local_gradient[1]
+        params[0].grad = params[0].grad / self.local_batch_size
+        params[1].grad = params[1].grad / self.local_batch_size
         self.local_model_optimizer.step()
