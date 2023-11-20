@@ -195,22 +195,6 @@ class MLP3_Nursery(nn.Module):
         out = self.layer(x)
         return out
 
-class MLP3_Nursery_Clamped(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(MLP3_Nursery_Clamped, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Linear(input_dim, 200),
-            nn.ReLU(),
-            nn.Linear(200, 100),
-            nn.ReLU(),
-            nn.Linear(100, output_dim),
-        )
-
-    def forward(self, x):
-        out = self.layer(x)
-        out = torch.clamp(out, min=-0.5, max=0.5)
-        return out
-
 # for adult income dataset
 class MLP4(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -246,24 +230,6 @@ class MLP4_Credit(nn.Module):
 
     def forward(self, x):
         out = self.layer(x)
-        return out
-
-class MLP4_Credit_Clamped(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(MLP4_Credit_Clamped, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Linear(input_dim, 100),
-            nn.ReLU(),
-            nn.Linear(100, 50),
-            nn.ReLU(),
-            nn.Linear(50, 20),
-            nn.ReLU(),
-            nn.Linear(20, output_dim),
-        )
-
-    def forward(self, x):
-        out = self.layer(x)
-        out = torch.clamp(out, min=-0.5, max=0.5)
         return out
 
 # For news20 dataset
