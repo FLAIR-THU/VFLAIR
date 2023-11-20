@@ -95,6 +95,7 @@ class PaillierActiveParty(Party):
         pred = self.aggregate_H()
         ground_truth = (ground_truth - 0.5) * 2
         grad = 0.25 * pred - 0.5 * ground_truth
+        # grad = -ground_truth * torch.exp(-ground_truth * pred) / (1 + torch.exp(-ground_truth * pred))
 
         pred_gradients_list = []
         for ik in range(self.args.k):
