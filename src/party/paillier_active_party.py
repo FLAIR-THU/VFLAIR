@@ -1,3 +1,4 @@
+import random
 import sys, os
 
 sys.path.append(os.pardir)
@@ -23,6 +24,8 @@ class PaillierActiveParty(Party):
         # print(f"in active party, encoder=None? {self.encoder==None}, {self.encoder}")
         self.train_index = args.idx_train
         self.test_index = args.idx_test
+        self.partial_update = args.partial_update
+        self.partial_update_num = args.partial_update_num
 
         self.gt_one_hot_label = None
 
@@ -94,7 +97,7 @@ class PaillierActiveParty(Party):
     def gradient_calculation(self, ground_truth, debug=False):
         pred = self.aggregate_H()
         ground_truth = (ground_truth - 0.5) * 2
-        
+
         if debug:
             grad = -ground_truth / (1 + torch.exp(ground_truth * pred))
         else:
@@ -115,13 +118,21 @@ class PaillierActiveParty(Party):
         return gradients_list
 
     def update_local_gradient(self, gradient):
-        self.local_gradient = [
-            torch.matmul(
-                gradient.T,
-                self.local_batch_data.reshape(gradient.size()[0], -1),
-            ),
-            torch.sum(gradient, dim=0),
-        ]
+        if self.partial_update:
+            bd = self.local_batch_data.reshape(gradient.size()[0], -1)
+            self.sampled_idx = random.sample(list(range(bd.shape[1])), self.partial_update_num)
+            self.local_gradient = [
+                torch.matmul(gradient.T, bd[:, self.sampled_idx]),
+                torch.sum(gradient, dim=0),
+            ]
+        else:
+            self.local_gradient = [
+                torch.matmul(
+                    gradient.T,
+                    self.local_batch_data.reshape(gradient.size()[0], -1),
+                ),
+                torch.sum(gradient, dim=0),
+            ]
         self.local_batch_size = gradient.size()[0]
 
         self.random_masks = []
@@ -136,9 +147,16 @@ class PaillierActiveParty(Party):
         # update local model
         self.local_model_optimizer.zero_grad()
         params = list(self.local_model.parameters())
-        params[0].grad = (self.local_gradient[0] - self.random_masks[0]).to(
-            params[0].device
-        )
+        if self.partial_update:
+            temp_grad = torch.zeros_like(params[0]).to(params[0].device)
+            temp_grad[:, self.sampled_idx] = (
+                self.local_gradient[0] - self.random_masks[0]
+            ).to(params[0].device)
+        else:
+            temp_grad = (self.local_gradient[0] - self.random_masks[0]).to(
+                params[0].device
+            )
+        params[0].grad = temp_grad
         params[1].grad = (self.local_gradient[1] - self.random_masks[1]).to(
             params[1].device
         )

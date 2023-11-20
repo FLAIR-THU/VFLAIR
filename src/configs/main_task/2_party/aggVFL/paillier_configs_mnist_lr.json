@@ -2,7 +2,9 @@
     "epochs": 30,
     "lr": 0.01,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 256,
+    "partial_update": true,
+    "partial_update_num": 1,
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10
