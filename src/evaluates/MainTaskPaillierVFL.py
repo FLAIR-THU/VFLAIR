@@ -102,7 +102,7 @@ class MainTaskPaillierVFL(object):
                 self.parties[ik].update_local_pred(pred_clone)
 
     def gradient_transmit(self):  # Active party sends gradient to passive parties
-        gradient = self.parties[self.k - 1].give_gradient()  # gradient_clone
+        gradient = self.parties[self.k - 1].give_gradient(self.debug)  # gradient_clone
 
         # active party update local gradient
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])

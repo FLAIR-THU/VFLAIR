@@ -91,11 +91,14 @@ class PaillierActiveParty(Party):
 
         return H
 
-    def gradient_calculation(self, ground_truth):
+    def gradient_calculation(self, ground_truth, debug=False):
         pred = self.aggregate_H()
         ground_truth = (ground_truth - 0.5) * 2
-        grad = 0.25 * pred - 0.5 * ground_truth
-        # grad = -ground_truth * torch.exp(-ground_truth * pred) / (1 + torch.exp(-ground_truth * pred))
+        
+        if debug:
+            grad = -ground_truth / (1 + torch.exp(ground_truth * pred))
+        else:
+            grad = 0.25 * pred - 0.5 * ground_truth
 
         pred_gradients_list = []
         for ik in range(self.args.k):
@@ -103,12 +106,12 @@ class PaillierActiveParty(Party):
 
         return pred_gradients_list
 
-    def give_gradient(self):
+    def give_gradient(self, debug):
         if self.gt_one_hot_label == None:
             print("give gradient:self.gt_one_hot_label == None")
             assert 1 > 2
 
-        gradients_list = self.gradient_calculation(self.gt_one_hot_label)
+        gradients_list = self.gradient_calculation(self.gt_one_hot_label, debug)
         return gradients_list
 
     def update_local_gradient(self, gradient):
