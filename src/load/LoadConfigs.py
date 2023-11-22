@@ -52,9 +52,6 @@ def load_basic_configs(config_file_name, args):
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
     args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
 
-    args.partial_update = config_dict["partial_update"] if ("partial_update" in config_dict) else False
-    args.partial_update_num = config_dict["partial_update_num"] if ("partial_update_num" in config_dict) else 1
-
     # args.model_list, specify the types of models
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
