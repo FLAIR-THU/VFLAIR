@@ -75,12 +75,17 @@ def load_basic_configs(config_file_name, args):
     # args.dataset_split
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
     args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
+    
+    args.tokenizer = None # for LLM if needed
 
     # args.model_list, specify the types of models
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
         #print('config_model_dict:',(len(config_model_dict)-2))
         assert ((len(config_model_dict)-2)==args.k), 'please alter party number k, model number should be equal to party number'
+        
+        # for LLM
+        args.max_sequence = config_model_dict['0']['max_sequence'] if ('max_sequence' in config_model_dict['0']) else -1
         
         model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10', 'input_dim': 392, 'output_dim': 10}

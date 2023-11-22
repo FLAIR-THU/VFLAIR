@@ -20,6 +20,75 @@ class SimpleDataset(Dataset):
         data_i, target_i = self.data[item_idx], self.labels[item_idx]
         return torch.tensor(data_i.clone().detach(), dtype=torch.float32), torch.tensor(target_i.clone().detach(), dtype=torch.long)
 
+class PassiveDataset_LLM(Dataset):
+    def __init__(self, args, texts):
+        
+        self.texts = []
+        for _text in texts:
+            ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+            self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+        self.texts=torch.tensor( [aa.tolist() for aa in self.texts] ).to(args.device)
+
+        self.labels = None
+        print('PassiveDataset_LLM texts:',self.texts.shape)
+
+
+    def __len__(self):
+        return len(self.texts)
+
+    def get_batch_texts(self, idx):
+        # Fetch a batch of inputs
+        return self.texts[idx]
+
+    def __getitem__(self, item_idx):
+        data_i= self.texts[item_idx]
+        return torch.tensor(data_i, dtype=torch.float32), torch.tensor([]*data_i.size()[0])
+
+    # def __getitem__(self, idx):
+    #     batch_texts = self.get_batch_texts(idx)
+    #     return batch_texts
+
+class ActiveDataset_LLM(Dataset):
+    def __init__(self, args, texts ,labels):
+        '''
+        texts: np.array
+        '''
+        
+        self.texts = []
+        for _text in texts:
+            ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+            self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+        self.texts=torch.tensor( [aa.tolist() for aa in self.texts] ).to(args.device)
+
+        self.labels = torch.tensor(labels).to(args.device)
+        print('ActiveDataset_LLM texts:', self.texts.shape, self.labels.shape)
+
+        # self.texts = texts
+
+    # def classes(self):
+    #     return self.labels
+
+    def __len__(self):
+        return len(self.labels)
+
+
+    def __getitem__(self, item_idx):
+        data_i, target_i = self.texts[item_idx], self.labels[item_idx]
+        return torch.tensor(data_i.clone().detach(), dtype=torch.float32), torch.tensor(target_i.clone().detach(), dtype=torch.long)
+
+
+    # def get_batch_labels(self, idx):
+    #     # Fetch a batch of labels
+    #     return np.array(self.labels[idx].cpu())
+
+    # def get_batch_texts(self, idx):
+    #     # Fetch a batch of inputs
+    #     return self.texts[idx]
+
+    # def __getitem__(self, idx):
+    #     batch_texts = self.get_batch_texts(idx)
+    #     batch_y = self.get_batch_labels(idx)
+    #     return batch_texts, batch_y
 
 class PassiveDataset(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.

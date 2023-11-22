@@ -4,11 +4,30 @@ sys.path.append(os.pardir)
 import argparse
 import numpy as np
 import pickle
+from transformers import BertTokenizer, BertModel, BertConfig,PretrainedConfig, BertPreTrainedModel
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPastAndCrossAttentions,
+    BaseModelOutputWithPoolingAndCrossAttentions,
+    CausalLMOutputWithCrossAttentions,
+    MaskedLMOutput,
+    MultipleChoiceModelOutput,
+    NextSentencePredictorOutput,
+    QuestionAnsweringModelOutput,
+    SequenceClassifierOutput,
+    TokenClassifierOutput,
+)
+import torch.nn as nn
+import torch
+import copy
 
+
+from models.LLM_models import *
 from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
 from utils.optimizers import MaliciousSGD, MaliciousAdam
+MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",}
+LLM_supported = ['bert-base-uncased']
 
 def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
     model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
@@ -219,9 +238,66 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
+
+def load_basic_models_llm(args,index):
+    current_model_type = args.model_list[str(index)]['type']
+    print(f"current_model_type={current_model_type}")
+    current_output_dim = args.model_list[str(index)]['output_dim']
+
+    args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+    full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
+    config = full_bert.config #print(full_bert.encoder.layer[0])
+
+
+    ########### Local Model ###########
+    local_model = LocalBertModel(full_bert,1)
+    # Freeze Backbone
+    for param in local_model.parameters():
+        param.requires_grad = False
+    local_model = local_model.to(args.device)
+    print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
+    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
+    # print(f"use SGD for local optimizer for PMC checking")
+    # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+    
+    # update optimizer
+    if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
+        print('AMC: use Malicious optimizer for party', index)
+        # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
+        # local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+        local_model_optimizer = MaliciousAdam(list(local_model.parameters()), lr=args.main_lr)
+    
+
+    ########### Global Model ###########
+    global_model = None
+    global_model_optimizer = None
+    if index == args.k-1:
+        # global part of bert(frozen)
+        global_bert = GlobalBertModel(full_bert,1)
+        # add Classification Layer(trainable)
+        global_model = GlobalBertClassifier(global_bert, current_output_dim)
+        # Freeze Backbone
+        for param in global_model.backbone.parameters():
+	        param.requires_grad = False
+        global_model = global_model.to(args.device)
+
+        global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
+        
+        # print(f"use SGD for global optimizer for PMC checking")
+        # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
+
 def load_models_per_party(args, index):
-    args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
-    args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+    current_model_type = args.model_list[str(index)]['type']
+    if current_model_type in LLM_supported:
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+    else:
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
     # important
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

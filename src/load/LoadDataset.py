@@ -40,6 +40,76 @@ TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','cre
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
 
+def dataset_partition_llm(args, index, dst, half_dim):
+    '''
+    dst : ( np.array(texts),np.array(label) )
+    '''
+    print('===== dataset_partition_llm =====')
+    total_dim = len(dst[0])
+
+    if args.k == 1:
+        return dst
+
+    if args.dataset in TEXT_DATA: 
+
+        dim_list=[0]
+        for ik in range(args.k-1):
+            dim_list.append( int(total_dim//(args.k))*(ik+1))
+        dim_list.append(total_dim)
+        # print('dim:',total_dim, dim_list)
+        # print('dst[0]:',dst[0].shape,type(dst[0][0])) # 1600* str np array
+        # print('dst[1]:',dst[1].shape,type(dst[1][0])) # 1600* label int
+
+        
+        # dim_list=[]
+        # for ik in range(args.k):
+        #     dim_list.append(int(args.model_list[str(ik)]['input_dim']))
+        #     if len(dim_list)>1:
+        #         dim_list[-1]=dim_list[-1]+dim_list[-2]
+        # dim_list.insert(0,0)
+        
+
+        if args.k == 1:
+            return (dst[0], dst[1])
+        
+        elif args.k ==2:
+            if index == (args.k-1): # active party has label
+                print('Active Index:',index,'___',dim_list[index],':')
+                active_dst = []
+                for _i in range(dst[0].shape[0]):
+                    word_num = len(dst[0][_i]) //2
+                    active_dst.append( dst[0][_i][:word_num] )
+                active_dst = np.array(active_dst)
+                return  (active_dst, dst[1])#(dst[0][dim_list[index]:], dst[1])
+                # return (dst[0], dst[1])
+            else: # passive party does not have label
+                if index <= (args.k-1):  
+                    print('Passive Index:',index,'___',dim_list[index],':',dim_list[index+1])
+                    passive_dst = []
+                    for _i in range(dst[0].shape[0]):
+                        word_num = len(dst[0][_i]) //2
+                        passive_dst.append( dst[0][_i][word_num:] )
+                    passive_dst = np.array(passive_dst)
+                    return (passive_dst ,None) #(dst[0][dim_list[index]:dim_list[index+1]], None)
+                else:
+                    assert index <= (args.k-1), "invalide party index"
+                    return None
+        else:
+            assert 1>2 , 'partition not available'
+
+
+        # if index == (args.k-1): # active party has label
+        #     print('Active:',dst[0][dim_list[index]:].shape, dst[1].shape)
+        #     return (dst[0][dim_list[index]:], dst[1])
+        #     # return (dst[0], dst[1])
+        # else: # passive party does not have label
+        #     if index <= (args.k-1):  
+        #         print('Passive:',dst[0][dim_list[index]:dim_list[index+1]].shape, ' None')
+        #         return (dst[0][dim_list[index]:dim_list[index+1]], None)
+        #     else:
+        #         assert index <= (args.k-1), "invalide party index"
+        #         return None
+
 
 def dataset_partition(args, index, dst, half_dim):
     if args.k == 1:
@@ -145,10 +215,9 @@ def dataset_partition(args, index, dst, half_dim):
         if args.k == 1:
             return (dst[0], dst[1])
 
-        if index == (args.k-1):
+        if index == (args.k-1): # active party has label
             return (dst[0][:, dim_list[index]:], dst[1])
-        else:
-            # passive party does not have label
+        else: # passive party does not have label
             if index <= (args.k-1):  
                 return (dst[0][:, dim_list[index]:dim_list[index+1]], None)
             else:
@@ -1173,4 +1242,121 @@ def load_dataset_per_party_noisysample(args, index):
     test_poison_dst = dataset_partition(args,index,test_poison_dst,half_dim)
     # important
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst
+
+
+
+def tokenize_and_truncate(text,tokenizer,max_length):
+    # clipping input to max_length
+    tokens = tokenizer.tokenize(tokenizer.decode(tokenizer.encode(text, max_length=max_length)))
+    return tokens[:max_length]
     
+def load_dataset_per_party_llm(args, index):
+    print('load_dataset_per_party_llm  args.need_auxiliary = ',args.need_auxiliary)
+    args.classes = [None] * args.num_classes
+
+    half_dim = -1
+    args.idx_train = None
+    args.idx_test = None
+
+    if args.dataset == 'news20':
+        texts, labels, labels_index = [], {}, []
+        Text_dir = DATA_PATH+'news20/'
+        for name in sorted(os.listdir(Text_dir)[:2]):
+            #  every file_folder under the root_file_folder should be labels with a unique number
+            labels[name] = len(labels) # 
+            path = join(Text_dir, name)
+            for fname in sorted(os.listdir(path)):
+                if fname.isdigit():# The training set we want is all have a digit name
+                    fpath = join(path,fname)
+                    # labels_index.append(labels[name])
+                    # skip header
+                    f = open(fpath, encoding='latin-1')
+                    t = f.read()
+
+                    # tokenized_text = args.tokenizer(t,padding='max_length', 
+                    #    max_length = args.max_sequence, 
+                    #    truncation=True,
+                    #    return_tensors="pt") 
+                    
+                    texts.append( t)
+
+                    # ids = args.tokenizer(t, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+                    # texts.append( torch.tensor(ids['input_ids']).squeeze() )
+
+                    # # input_ids.append( tokenized_text['input_ids'] ) 
+                    # # token_type_ids.append( tokenized_text['token_type_ids'] )
+                    # # attention_mask.append( tokenized_text['attention_mask'] )
+
+                    labels_index.append(labels[name])
+                    f.close()
+
+        # texts=[aa.tolist() for aa in texts]#列表中元素由tensor变成列表。
+        # X = torch.tensor( texts)
+        X = np.array(texts)
+        y = np.array(labels_index)
+       
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+        # token_type_ids_train, token_type_ids_test, y_train, y_test = train_test_split(token_type_ids, y, test_size=0.2, random_state=args.current_seed)
+        # attention_mask_train, attention_mask_test, y_train, y_test = train_test_split(attention_mask, y, test_size=0.2, random_state=args.current_seed)
+
+        print('X:',X_train.shape,X_test.shape) # (1600,3) (400,3)
+        print('y:',y_train.shape,y_test.shape) # (1600,) (400,)
+
+        if args.need_auxiliary == 1:
+            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
+            X_aux = torch.tensor(X_aux)
+            y_aux = torch.tensor(y_aux)
+            aux_dst = (X_aux,y_aux)
+
+        # X_train = torch.tensor(X_train)
+        # X_test = torch.tensor(X_test)
+        # y_train = torch.tensor(y_train)
+        # y_test = torch.tensor(y_test)
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+
+    elif args.dataset == 'cola_public':
+        text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_train.tsv'
+        df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
+        sentences = df.sentence.values 
+        # sentences = ["[CLS] " + sentence +' [SEP]' for sentence in sentences]
+        labels = df.label.values
+        labels = torch.tensor(labels).view(-1,1).to(args.device)
+        # print('Exaple sentence:\n', sentences[0])
+
+        ids = args.tokenizer.batch_encode_plus(sentences, add_special_tokens=True, max_length=args.max_sequence, padding='max_length')
+        ids['input_ids'] = torch.tensor(ids['input_ids']).to(args.device)
+        ids['attention_mask'] = torch.tensor(ids['attention_mask']).to(args.device)
+        input_ids = ids['input_ids']
+        attention_mask = ids['attention_mask']
+
+        X_train, X_test, y_train, y_test = train_test_split(input_ids, labels, test_size=0.2, random_state=args.current_seed)
+        train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, random_state=327, test_size=0.1)
+        
+        # print(X_train.shape,X_test.shape) # (6840,512) (1711,512)
+        # print(y_train.shape,y_test.shape) # (6840,1) (1711,1)
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+
+
+    else:
+        assert args.dataset == 'news20', "dataset not supported yet"
+
+
+    # train_dst = (train_dst[0].to(args.device),train_dst[1].to(args.device))
+    # test_dst = (test_dst[0].to(args.device),test_dst[1].to(args.device))
+    # if args.need_auxiliary == 1:
+    #     aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
+    
+    train_dst = dataset_partition_llm(args,index,train_dst,half_dim)
+    test_dst = dataset_partition_llm(args,index,test_dst,half_dim)
+    if args.need_auxiliary == 1:
+        aux_dst = dataset_partition_llm(args,index,aux_dst,half_dim)
+
+    # important
+    if args.need_auxiliary == 1:
+        return args, half_dim, train_dst, test_dst, aux_dst
+    else:
+        return args, half_dim, train_dst, test_dst
