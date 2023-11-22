@@ -1,4 +1,3 @@
-import random
 import sys, os
 
 sys.path.append(os.pardir)
@@ -13,9 +12,6 @@ class PaillierPassiveParty(PassiveParty):
     def __init__(self, args, index):
         super().__init__(args, index)
         self.pk = None
-
-        self.partial_update = args.partial_update
-        self.partial_update_num = args.partial_update_num
 
     def set_pk(self, pk):
         self.pk = pk
@@ -44,24 +40,6 @@ class PaillierPassiveParty(PassiveParty):
             # self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)
 
     def receive_gradient(self, gradient):
-        if self.partial_update:
-            bd = self.local_batch_data.reshape(gradient.size()[0], -1)
-            self.sampled_idx = random.sample(list(range(bd.shape[1])), self.partial_update_num)
-            self.local_gradient = [
-                torch.matmul(gradient.T, bd[:, self.sampled_idx]),
-                torch.sum(gradient, dim=0),
-            ]
-        else:
-            self.local_gradient = [
-                torch.matmul(
-                    gradient.T,
-                    self.local_batch_data.reshape(gradient.size()[0], -1),
-                ),
-                torch.sum(gradient, dim=0),
-            ]
-        self.local_batch_size = gradient.size()[0]
-
-        """
         self.local_gradient = [
             torch.matmul(
                 gradient.T,
@@ -70,7 +48,6 @@ class PaillierPassiveParty(PassiveParty):
             torch.sum(gradient, dim=0),
         ]
         self.local_batch_size = gradient.size()[0]
-        """
 
         self.random_masks = []
         for i in range(len(self.local_gradient)):
@@ -84,25 +61,6 @@ class PaillierPassiveParty(PassiveParty):
         # update local model
         self.local_model_optimizer.zero_grad()
         params = list(self.local_model.parameters())
-        if self.partial_update:
-            temp_grad = torch.zeros_like(params[0]).to(params[0].device)
-            temp_grad[:, self.sampled_idx] = (
-                self.local_gradient[0] - self.random_masks[0]
-            ).to(params[0].device)
-        else:
-            temp_grad = (self.local_gradient[0] - self.random_masks[0]).to(
-                params[0].device
-            )
-        params[0].grad = temp_grad
-        params[1].grad = (self.local_gradient[1] - self.random_masks[1]).to(
-            params[1].device
-        )
-        params[0].grad = params[0].grad / self.local_batch_size
-        params[1].grad = params[1].grad / self.local_batch_size
-
-        """
-        self.local_model_optimizer.zero_grad()
-        params = list(self.local_model.parameters())
         params[0].grad = (self.local_gradient[0] - self.random_masks[0]).to(
             params[0].device
         )
@@ -112,4 +70,3 @@ class PaillierPassiveParty(PassiveParty):
         params[0].grad = params[0].grad / self.local_batch_size
         params[1].grad = params[1].grad / self.local_batch_size
         self.local_model_optimizer.step()
-        """
