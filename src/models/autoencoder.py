@@ -37,6 +37,9 @@ class AutoEncoder(nn.Module):
         )
         initialize_weights(self)
 
+    def decode(self,d_y):
+        return self.decoder(d_y)
+        
     def forward(self, x):
         z = self.encoder(x.view(-1, self.d))
         d_y = F.softmax(z, dim=1)
@@ -52,7 +55,7 @@ class AutoEncoder(nn.Module):
 
 
 class AutoEncoder_large(nn.Module):
-    def __init__(self, input_dim=20, encode_dim=122, real_dim=100):
+    def __init__(self, real_dim=100,input_dim=20, encode_dim=122 ):
         super(AutoEncoder_large, self).__init__()
         self.d = input_dim
         self.real_dim = real_dim
@@ -69,6 +72,9 @@ class AutoEncoder_large(nn.Module):
             nn.Softmax(dim=1)
         )
         initialize_weights(self)
+
+    def decode(self,d_y):
+        return self.decoder(d_y.view(-1, self.d)).view(-1,self.real_dim)
 
     def forward(self, x):
         z = self.encoder(x.view(-1, self.d))

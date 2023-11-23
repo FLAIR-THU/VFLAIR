@@ -14,7 +14,7 @@ from collections import Counter
 
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
@@ -36,7 +36,7 @@ from utils.graph_functions import load_data1, split_graph
 # DATA_PATH ='./load/share_dataset/'  #'../../../share_dataset/'
 DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
-TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo']
+TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','credit','nursery','avazu']
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20']
 
@@ -552,12 +552,85 @@ def load_dataset_per_party(args, index):
             # half_dim = int(X.shape[1]//2) acc=0.77
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=args.current_seed)
         elif args.dataset == 'criteo':
-            df = pd.read_csv(DATA_PATH+"Criteo/criteo.csv",nrows=100000)
+            df = pd.read_csv(DATA_PATH+"Criteo/train.txt", sep='\t', header=None)
+            df = df.sample(frac=0.02, replace=False, random_state=42)
+            df.columns = ["labels"] + ["I%d"%i for i in range(1,14)] + ["C%d"%i for i in range(14,40)]
             print("criteo dataset loaded")
-            half_dim = (df.shape[1]-1)//2
-            X = df.iloc[:, :-1].values
-            y = df.iloc[:, -1].values
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
+            y = df["labels"].values
+            X_p =  [col for col in df.columns if col.startswith('I')]
+            X_a = [col for col in df.columns if col.startswith('C')]
+            X_p = process_dense_feats(df, X_p)
+            X_a = process_sparse_feats(df, X_a)
+            print('X_p shape',X_p.shape)
+            print('X_a shape',X_a.shape)
+            X = pd.concat([X_a, X_p], axis=1).values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, shuffle=False)
+        elif args.dataset == "credit":
+            df = pd.read_csv(DATA_PATH+"tabledata/UCI_Credit_Card.csv")
+            print("credit dataset loaded")
+
+            X = df[
+                [
+                    "LIMIT_BAL",
+                    "SEX",
+                    "EDUCATION",
+                    "MARRIAGE",
+                    "AGE",
+                    "PAY_0",
+                    "PAY_2",
+                    "PAY_3",
+                    "PAY_4",
+                    "PAY_5",
+                    "PAY_6",
+                    "BILL_AMT1",
+                    "BILL_AMT2",
+                    "BILL_AMT3",
+                    "BILL_AMT4",
+                    "BILL_AMT5",
+                    "BILL_AMT6",
+                    "PAY_AMT1",
+                    "PAY_AMT2",
+                    "PAY_AMT3",
+                    "PAY_AMT4",
+                    "PAY_AMT5",
+                    "PAY_AMT6",
+                ]
+            ].values
+            y = df["default payment next month"].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+
+        elif args.dataset == "nursery":
+            df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
+            print("nursery dataset loaded")
+            df[8] = LabelEncoder().fit_transform(df[8].values)
+            X_d = df.drop(8, axis=1)
+            X_a = pd.get_dummies(
+                X_d[X_d.columns[: int(len(X_d.columns) / 2)]], drop_first=True, dtype=int
+            )
+            print('X_a',X_a.shape)
+            X_p = pd.get_dummies(
+                X_d[X_d.columns[int(len(X_d.columns) / 2) :]], drop_first=True, dtype=int
+            )
+            print('X_p',X_p.shape)
+            X = pd.concat([X_a, X_p], axis=1).values
+            print('X',X.shape)
+            y = df[8].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+        elif args.dataset == 'avazu':
+            df = pd.read_csv(DATA_PATH+"avazu/train")
+            df = df.sample(frac=0.02, replace=False, random_state=42)
+            y = df["click"].values
+            feats = process_sparse_feats(df, df.columns[2:])
+            xp_idx = df.columns[-8:].tolist()
+            xp_idx.insert(0,'C1')
+            xa_idx = df.columns[2:-8].tolist()
+            xa_idx.remove('C1')
+            X_p = feats[xp_idx] # C14-C21
+            print('X_p shape',X_p.shape)
+            X_a = feats[xa_idx]
+            print('X_a shape',X_a.shape)
+            X = pd.concat([X_a, X_p], axis=1).values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, shuffle=False)
         
         if args.need_auxiliary == 1:
             X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
@@ -666,6 +739,27 @@ def load_dataset_per_party(args, index):
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
+
+def process_dense_feats(data, feats):
+    # logging.info(f"Processing feats: {feats}")
+    d = data.copy()
+    d = d[feats].fillna(0.0)
+    for f in feats:
+        d[f] = d[f].apply(lambda x: np.log(x + 1) if x > -1 else -1)
+    return d
+
+def process_sparse_feats(data, feats):
+    # logging.info(f"Processing feats: {feats}")
+    d = data.copy()
+    d = d[feats].fillna("-1")
+    for f in feats:
+        label_encoder = LabelEncoder()
+        d[f] = label_encoder.fit_transform(d[f])
+    feature_cnt = 0
+    for f in feats:
+        d[f] += feature_cnt
+        feature_cnt += d[f].nunique()
+    return d
 
 def prepare_poison_target_list(args):
     args.target_label = random.randint(0, args.num_classes-1)

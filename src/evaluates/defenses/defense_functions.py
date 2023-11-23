@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import random
 
-DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 8, 'nuswide': 3}
+DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 8,'cifar100': 8, 'nuswide': 3}
 
 # Privacy Preserving Deep Learning
 def bound(grad, gamma):

@@ -1,6 +1,5 @@
 import sys, os
 sys.path.append(os.pardir)
-
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -15,6 +14,8 @@ import copy
 
 # from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
+from utils.communication_protocol_funcs import get_size_of
+
 # from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
@@ -23,12 +24,15 @@ import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
+from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
 from evaluates.attacks.attack_api import AttackerLoader
 
 
 tf.compat.v1.enable_eager_execution() 
 
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,\
+'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,\
+'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL(object):
@@ -73,17 +77,27 @@ class MainTaskVFL(object):
         self.train_acc = None
         self.flag = 1
         self.stopping_iter = 0
+        self.stopping_time = 0.0
+        self.stopping_commu_cost = 0
+        self.communication_cost = 0
 
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
         self.final_epoch = 0
+        self.current_epoch = 0
+        self.current_step = 0
 
         # some state of VFL throughout training process
         self.first_epoch_state = None
         self.middle_epoch_state = None
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
+
+        self.num_update_per_batch = args.num_update_per_batch
+        self.num_batch_per_workset = args.Q #args.num_batch_per_workset
+        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
+
     
     def pred_transmit(self): # Active party gets pred from passive parties
         for ik in range(self.k):
@@ -96,16 +110,30 @@ class MainTaskVFL(object):
                     pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
                 # else:
                 #     print(self.args.attack_type)
-            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
 
             if ik == (self.k-1): # Active party update local pred
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 self.parties[ik].update_local_pred(pred_clone)
+            
             if ik < (self.k-1): # Passive party sends pred for aggregation
+                ########### communication_protocols ###########
+                if self.args.communication_protocol in ['Quantization','Topk']:
+                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
+                                    self.current_epoch, self.current_step).to(self.args.device)
+                ########### communication_protocols ###########
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                
+                self.communication_cost += get_size_of(pred_clone) #MB
+                
                 self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
     def gradient_transmit(self):  # Active party sends gradient to passive parties
         gradient = self.parties[self.k-1].give_gradient() # gradient_clone
-        
+
+        if len(gradient)>1:
+            for _i in range(len(gradient)-1):
+                self.communication_cost += get_size_of(gradient[_i+1])#MB
+
         # defense applied on gradients
         if self.args.apply_defense == True and self.args.apply_dcor == False and self.args.apply_mid == False and self.args.apply_cae == False:
             if (self.k-1) in self.args.defense_configs['party']:
@@ -116,6 +144,7 @@ class MainTaskVFL(object):
             
         # active party update local gradient
         self.parties[self.k-1].update_local_gradient(gradient[self.k-1])
+        
         # active party transfer gradient to passive parties
         for ik in range(self.k-1):
             self.parties[ik].receive_gradient(gradient[ik])
@@ -160,8 +189,8 @@ class MainTaskVFL(object):
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
-        # ======== FedBCD ============
-        if self.args.BCD_type == 'p' or self.Q ==1 : # parallel FedBCD & noBCD situation
+        # ======== Commu ===========
+        if self.args.communication_protocol in ['Vanilla','FedBCD_p','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0: 
                     # exchange info between parties
@@ -181,19 +210,70 @@ class MainTaskVFL(object):
                     _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].global_backward()
                     self.parties[self.k-1].local_backward()
-        else: # Sequential FedBCD
+        elif self.args.communication_protocol in ['CELU']:
+            for q in range(self.Q):
+                if (q == 0) or (batch_label.shape[0] != self.args.batch_size): 
+                    # exchange info between parties
+                    self.pred_transmit() 
+                    self.gradient_transmit() 
+                    # update parameters for all parties
+                    for ik in range(self.k):
+                        self.parties[ik].local_backward()
+                    self.parties[self.k-1].global_backward()
+
+                    if (batch_label.shape[0] == self.args.batch_size): # available batch to cache
+                        for ik in range(self.k):
+                            batch = self.num_total_comms # current batch id
+                            self.parties[ik].cache.put(batch, self.parties[ik].local_pred,\
+                                self.parties[ik].local_gradient, self.num_total_comms + self.parties[ik].num_local_updates)
+                else: 
+                    for ik in range(self.k):
+                        # Sample from cache
+                        batch, val = self.parties[ik].cache.sample(self.parties[ik].prev_batches)
+                        batch_cached_pred, batch_cached_grad, \
+                            batch_cached_at, batch_num_update \
+                                = val
+                        
+                        _pred, _pred_detach = self.parties[ik].give_pred()
+                        weight = ins_weight(_pred_detach,batch_cached_pred,self.args.smi_thresh) # ins weight
+                        
+                        # Using this batch for backward
+                        if (ik == self.k-1): # active
+                            self.parties[ik].update_local_gradient(batch_cached_grad)
+                            self.parties[ik].local_backward(weight)
+                            self.parties[ik].global_backward()
+                        else:
+                            self.parties[ik].receive_gradient(batch_cached_grad)
+                            self.parties[ik].local_backward(weight)
+
+
+                        # Mark used once for this batch + check staleness
+                        self.parties[ik].cache.inc(batch)
+                        if (self.num_total_comms + self.parties[ik].num_local_updates - batch_cached_at >= self.max_staleness) or\
+                            (batch_num_update + 1 >= self.num_update_per_batch):
+                            self.parties[ik].cache.remove(batch)
+                        
+            
+                        self.parties[ik].prev_batches.append(batch)
+                        self.parties[ik].prev_batches = self.parties[ik].prev_batches[1:]#[-(num_batch_per_workset - 1):]
+                        self.parties[ik].num_local_updates += 1
+
+        elif self.args.communication_protocol in ['FedBCD_s']: # Sequential FedBCD_s
             for q in range(self.Q):
                 if q == 0: 
                     #first iteration, active party gets pred from passsive party
                     self.pred_transmit() 
-                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    _gradient = self.parties[self.k-1].give_gradient()
+                    if len(_gradient)>1:
+                        for _i in range(len(_gradient)-1):
+                            self.communication_cost += get_size_of(_gradient[_i+1])#MB
                     # active party: update parameters 
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
                 else: 
                     # active party do additional iterations without info exchange
-                    self.parties[self.k-1].give_pred(self)
-                    _gradient = self.parties[self.k-1].give_gradient(self)
+                    self.parties[self.k-1].give_pred()
+                    _gradient = self.parties[self.k-1].give_gradient()
                     self.parties[self.k-1].local_backward()
                     self.parties[self.k-1].global_backward()
 
@@ -205,7 +285,9 @@ class MainTaskVFL(object):
                 for ik in range(self.k-1): 
                     _pred, _pred_clone= self.parties[ik].give_pred() 
                     self.parties[ik].local_backward() 
-        # ============= FedBCD ===================
+        else:
+            assert 1>2 , 'Communication Protocol not provided'
+        # ============= Commu ===================
         
         # ###### Noisy Label Attack #######
         # convert back to clean label to get true acc
@@ -219,7 +301,8 @@ class MainTaskVFL(object):
         loss = self.parties[self.k-1].global_loss
         predict_prob = F.softmax(pred, dim=-1)
         if self.args.apply_cae:
-            predict_prob = encoder.decoder(predict_prob)
+            predict_prob = encoder.decode(predict_prob)
+
         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
         train_acc = suc_cnt / predict_prob.shape[0]
         
@@ -239,13 +322,20 @@ class MainTaskVFL(object):
         LR_passive_list = []
         LR_active_list = []
 
-        communication = 0
+        self.num_total_comms = 0
         total_time = 0.0
         flag = 0
+        self.current_epoch = 0
+
+
+        start_time = time.time()
         for i_epoch in range(self.epochs):
+            self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
             data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
+
+            self.current_step = 0
             for parties_data in zip(*data_loader_list):
                 self.gt_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
                 self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
@@ -266,29 +356,33 @@ class MainTaskVFL(object):
                 for ik in range(self.k):
                     self.parties[ik].local_model.train()
                 self.parties[self.k-1].global_model.train()
+                
                 # ====== train batch (start) ======
-                if i == 0 and i_epoch == 0:
-                    self.first_epoch_state = self.save_state(True)
-                # elif i_epoch == self.epochs//2 and i == 0:
+                # if i == 0 and i_epoch == 0:
+                #     self.first_epoch_state = self.save_state(True)
+                # # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state = self.save_state(True)
 
                 enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(self.parties_data,self.gt_one_hot_label)
                 exit_time = time.time()
                 total_time += (exit_time-enter_time)
-
-                communication = communication + 1
-                if communication % 10 == 0:
-                    print(f"total time for {communication} communication is {total_time}")
+                self.num_total_comms = self.num_total_comms + 1
+                if self.num_total_comms % 10 == 0:
+                    print(f"total time for {self.num_total_comms} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-                    self.stopping_iter = communication
+                    self.stopping_time = total_time
+                    self.stopping_iter = self.num_total_comms
+                    self.stopping_commu_cost = self.communication_cost
                     flag = 1
 
-                if i == 0 and i_epoch == 0:
-                    self.first_epoch_state.update(self.save_state(False))
+                # if i == 0 and i_epoch == 0:
+                #     self.first_epoch_state.update(self.save_state(False))
                 # elif i_epoch == self.epochs//2 and i == 0:
                 #     self.middle_epoch_state.update(self.save_state(False))
                 # ====== train batch (end) ======
+
+                self.current_step = self.current_step + 1
 
             # if self.args.apply_attack == True:
             #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
@@ -348,27 +442,7 @@ class MainTaskVFL(object):
                                 pred_list.append(_local_pred)
                                 noise_pred_list.append(_local_pred[missing_list])
                             ####### missing feature attack ######
-                            ####### Noisy Sample #########
-                            # elif self.args.apply_ns == True :
-                            #     assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
-                            #     assert 'noise_rate' in self.args.attack_configs, 'need parameter: noise_rate'
-                            #     assert 'party' in self.args.attack_configs, 'need parameter: party'
-                            #     noise_rate = self.args.attack_configs['noise_rate'] if ('noise_rate' in self.args.attack_configs) else 0.1
-                                
-                            #     noisy_list = []
-                            #     noisy_list = random.sample(range(_local_pred.size()[0]), (int(_local_pred.size()[0]*noise_rate)))
-
-                            #     if (ik in self.args.attack_configs['party']):
-                            #         scale = self.args.attack_configs['noise_lambda']
-                            #         noised_sample = noisy_sample(parties_data[ik][0][noisy_list],scale)
-                            #         parties_data[ik][0][noisy_list] = noised_sample
-
-                            #         pred_list.append( self.parties[ik].local_model(parties_data[ik][0]))
-                            #         noise_pred_list.append( self.parties[ik].local_model( noised_sample ) )
-                            #     else:
-                            #         pred_list.append( self.parties[ik].local_model(parties_data[ik][0] ) )
-                            #         noise_pred_list.append( self.parties[ik].local_model((parties_data[ik][0][noisy_list]) ) )
-                            # # ####### Noisy Sample #########
+     
                             else:
                                 pred_list.append(_local_pred)
 
@@ -376,7 +450,9 @@ class MainTaskVFL(object):
                         test_logit, test_loss = self.parties[self.k-1].aggregate(pred_list, gt_val_one_hot_label, test="True")
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
-                            dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                
+                            dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
+                                
                             test_preds.append(list(dec_predict_prob.detach().cpu().numpy()))
                             predict_label = torch.argmax(dec_predict_prob, dim=-1)
                         else:
@@ -399,7 +475,7 @@ class MainTaskVFL(object):
                             # noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
                             # noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
                             # if self.args.apply_cae == True:
-                            #     noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                            #     noise_dec_predict_prob = self.args.encoder.decode(noise_enc_predict_prob)
                             #     noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
                             # else:
                             #     noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
@@ -413,7 +489,7 @@ class MainTaskVFL(object):
                         #     noise_test_logit, noise_test_loss = self.parties[self.k-1].aggregate(noise_pred_list, noise_gt_val_one_hot_label, test="True")
                         #     noise_enc_predict_prob = F.softmax(noise_test_logit, dim=-1)
                         #     if self.args.apply_cae == True:
-                        #         noise_dec_predict_prob = self.args.encoder.decoder(noise_enc_predict_prob)
+                        #         noise_dec_predict_prob = self.args.encoder.decode(noise_enc_predict_prob)
                         #         noise_predict_label = torch.argmax(noise_dec_predict_prob, dim=-1)
                         #     else:
                         #         noise_predict_label = torch.argmax(noise_enc_predict_prob, dim=-1)
@@ -448,7 +524,7 @@ class MainTaskVFL(object):
         if self.args.apply_mf==True:
             return self.test_acc, self.noise_test_acc
 
-        return self.test_acc,self.stopping_iter
+        return self.test_acc,self.stopping_iter,self.stopping_time,self.stopping_commu_cost
 
 
 
@@ -458,6 +534,9 @@ class MainTaskVFL(object):
         # Early Stop
         last_loss = 1000000
         early_stop_count = 0
+        communication = 0
+        flag = 0
+        total_time = 0.0
 
         for i_epoch in range(self.epochs):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -481,7 +560,18 @@ class MainTaskVFL(object):
             elif i_epoch == self.epochs//2:
                 self.middle_epoch_state = self.save_state(True)
             
+            enter_time = time.time()
             self.loss, self.train_acc = self.train_batch(self.parties_data, self.gt_one_hot_label)
+            exit_time = time.time()
+            total_time += (exit_time-enter_time)
+
+            communication = communication + 1
+            if communication % 10 == 0:
+                print(f"total time for {communication} communication is {total_time}")
+            if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+                self.stopping_iter = communication
+                self.stopping_time = total_time
+                flag = 1
         
             if  i_epoch == 0:
                 self.first_epoch_state.update(self.save_state(False))
@@ -515,7 +605,7 @@ class MainTaskVFL(object):
 
                 enc_predict_prob = F.softmax(test_logit, dim=-1)
                 if self.args.apply_cae == True:
-                    dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                    dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -556,7 +646,7 @@ class MainTaskVFL(object):
 
                 enc_predict_prob = F.softmax(test_logit, dim=-1)
                 if self.args.apply_cae == True:
-                    dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+                    dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
                     predict_label = torch.argmax(dec_predict_prob, dim=-1)
                 else:
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -587,7 +677,7 @@ class MainTaskVFL(object):
 
         #         enc_predict_prob = F.softmax(test_logit, dim=-1)
         #         if self.args.apply_cae == True:
-        #             dec_predict_prob = self.args.encoder.decoder(enc_predict_prob)
+        #             dec_predict_prob = self.args.encoder.decode(enc_predict_prob)
         #             predict_label = torch.argmax(dec_predict_prob, dim=-1)
         #         else:
         #             predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -606,9 +696,9 @@ class MainTaskVFL(object):
         self.final_state.update(self.save_state(False)) 
         self.final_state.update(self.save_party_data()) 
         
-        if args.apply_mf==True:
+        if self.args.apply_mf==True:
             return self.test_acc,self.noise_test_acc
-        return self.test_acc
+        return self.test_acc,self.stopping_iter,self.stopping_time
 
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
