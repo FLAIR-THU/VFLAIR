@@ -281,8 +281,8 @@ class MainTaskVFL(object):
                 if communication % 10 == 0:
                     print(f"total time for {communication} communication is {total_time}")
                 if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-                        self.stopping_iter = communication
-                        flag = 1
+                    self.stopping_iter = communication
+                    flag = 1
 
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))

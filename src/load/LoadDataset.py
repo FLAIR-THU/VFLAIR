@@ -488,6 +488,7 @@ def load_dataset_per_party(args, index):
             A = np.array(adj.todense())
             X = sparse_to_tuple(features.tocoo())
             print("cora dataset before split", A.shape, type(X), X[0].shape)
+            print(f"#train_sample={len(idx_train)}, #test_sample={len(idx_test)}")
             args.idx_train = torch.LongTensor(idx_train)
             args.idx_test = torch.LongTensor(idx_test)
             label = torch.LongTensor(label).to(args.device)
