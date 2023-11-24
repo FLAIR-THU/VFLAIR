@@ -5,7 +5,11 @@
   VFLAIR is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective communication improvement methods as well as attack and defense evaluations considering data safety and privacy. Aside from NN serving as local models for VFL systems, tree-based VFL is also supported.
 
   * VFLAIR provides simulation of the vanilar VFL process containing forward local model prediction transmits, backward gradient transmits as well as local and global model updates.
-  * **FedBCD** ([paper](https://ieeexplore.ieee.org/abstract/document/9855231/)) is provided for improving the effectiveness of VFL training process.
+  * Multiple Communication Protocols is provided for improving the effectiveness of VFL training process.
+      * **FedBCD** ([paper](https://ieeexplore.ieee.org/abstract/document/9855231/)) 
+      * **CELU** ([paper](https://arxiv.org/abs/2207.14628)) 
+      * **Quantization** ([paper](https://arxiv.org/abs/2206.08330)) 
+      * **Topk-Sparsification** ([paper](https://arxiv.org/abs/2206.08330)) 
   * Four attack types are included in VFLAIR as examples for training-decoupled attack and training-time attack separately. In each attack type, multiple attack is available for use:
       * **Label Inference(LI)** 
           * Batch-level Label Inference ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/))/Direct Label Inference ([paper](https://ieeexplore.ieee.org/abstract/document/9833321/))
