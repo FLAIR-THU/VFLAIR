@@ -3,21 +3,22 @@
     "lr": 0.001,
     "k": 1,
     "k_server":1,
-    "batch_size": 32,
+    "batch_size": 128,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
+    "max_sequence": 128,
     "dataset":{
-        "dataset_name": "jigsaw_toxic",
-        "num_classes": 6
+        "dataset_name": "semeval",
+        "num_classes": 3
     },
     "model_list":{
         "0": {
-            "type": "toxic-bert",
+            "type": "bertweet-base-sentiment-analysis",
             "pretrained": 1,
-            "output_dim": 6,
-            "max_sequence": 256,
+            "output_dim": 3,
+            "max_sequence": 128,
             "path": ""
         },
         "apply_trainable_layer": 0,

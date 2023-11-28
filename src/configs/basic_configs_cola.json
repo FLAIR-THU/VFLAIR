@@ -3,20 +3,20 @@
     "lr": 0.001,
     "k": 1,
     "k_server":1,
-    "batch_size": 32,
+    "batch_size": 64,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "jigsaw_toxic",
-        "num_classes": 6
+        "dataset_name": "cola_public",
+        "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "toxic-bert",
-            "pretrained": 1,
-            "output_dim": 6,
+            "type": "bert-base-uncased",
+            "pretrained": 0,
+            "output_dim": 2,
             "max_sequence": 256,
             "path": ""
         },

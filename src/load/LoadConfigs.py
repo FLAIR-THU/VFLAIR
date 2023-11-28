@@ -33,6 +33,10 @@ def load_basic_configs(config_file_name, args):
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
     assert (args.k % 1 == 0 and args.k>0), "k should be positive integers"
+    
+    # args.k_server, number of server(with only model, not data)
+    args.k_server = config_dict['k_server'] if('k_server' in config_dict) else 0
+    assert (args.k_server % 1 == 0 and args.k_server>=0), "k_server should be integers"
 
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
@@ -94,10 +98,14 @@ def load_basic_configs(config_file_name, args):
                 if 'type' in config_model_dict[str(ik)]:
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
+                        args.model_path = config_model_dict[str(ik)]['path']
+                        args.pretrained = config_model_dict[str(ik)]['pretrained']
                     else:
                         model_type_name = config_model_dict[str(ik)]['type']
                         temp = {'type':model_type_name, 'path':'../models/'+model_type_name+'/random'}
                         model_dict[str(ik)] = temp
+                        args.model_path = ""
+                        args.pretrained = 0
                 else:
                     # if 'path' in config_model_dict[str(ik)]:
                     #     model_type_name = config_model_dict[str(ik)]['path'].split('/')[-2]

@@ -42,29 +42,39 @@ def set_seed(seed=0):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-def evaluate_no_attack(args):
+def evaluate_no_attack_pretrained(args):
     # No Attack
     set_seed(args.current_seed)
 
     vfl = MainTaskVFL_LLM(args)
-    # if args.dataset not in ['cora']:
-    #     main_acc , stopping_iter, stopping_time, stopping_commu_cost= vfl.train()
-    # else:
-    #     main_acc, stopping_iter, stopping_time = vfl.train_graph()
+    exp_result, metric_val = vfl.inference()
 
-    test_acc = vfl.inference()
-    
-    main_acc_noattack = test_acc
     # attack_metric = main_acc_noattack - main_acc
     # attack_metric_name = 'acc_loss'
+
     # # Save record 
-    # exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
-    #     (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
-    # print(exp_result)
-    # append_exp_res(args.exp_res_path, exp_result)
+    append_exp_res(args.exp_res_path, exp_result)
+    
+    return vfl, metric_val
+
+def evaluate_no_attack_finetune(args):
+    # No Attack
+    set_seed(args.current_seed)
+
+    vfl = MainTaskVFL_LLM(args)
+    exp_result, metric_val= vfl.train()
+
+    # attack_metric = main_acc_noattack - main_acc
+    # attack_metric_name = 'acc_loss'
+
+    # # Save record 
+    exp_result = f"K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}| " \
+        + exp_result
+    print(exp_result)
+    append_exp_res(args.exp_res_path, exp_result)
     # append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}==stopping_time:{stopping_time}==stopping_commu_cost:{stopping_commu_cost}")
     
-    return vfl, main_acc_noattack
+    return vfl, metric_val
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
@@ -77,7 +87,7 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in [97]:
-    for seed in [97]: # test 5 times 
+    for seed in [60]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -111,8 +121,7 @@ if __name__ == '__main__':
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
-        # print(args.dataset)
-
+        
         print('======= Defense ========')
         print('Defense_Name:',args.defense_name)
         print('Defense_Config:',str(args.defense_configs))
@@ -128,7 +137,11 @@ if __name__ == '__main__':
         args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
-        filename = f'{args.defense_name}_{args.defense_param},model={args.model_list[str(0)]["type"]}.txt'
+        model_name = args.model_list[str(0)]["type"] #.replace('/','-')
+        if args.pretrained==1:
+            filename = f'pretrained_model={model_name}.txt'
+        else:
+            filename = f'finetuned_model={model_name}.txt'
         args.exp_res_path = args.exp_res_dir + filename
         print(args.exp_res_path)
         print('=================================\n')
@@ -147,26 +160,12 @@ if __name__ == '__main__':
         commuinfo='== commu:'+args.communication_protocol
         append_exp_res(args.exp_res_path, commuinfo)
 
-        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
-        
-        if args.label_inference_list != []:
-            evaluate_label_inference(args)
+        if args.pretrained == 1:
+            args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
+        else:
+            print('Finetune')
+            args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
 
-        if args.attribute_inference_list != []:
-            evaluate_attribute_inference(args)
-        
-        if args.feature_inference_list != []:
-            evaluate_feature_inference(args)
-
-        if args.untargeted_backdoor_list != []:
-            torch.cuda.empty_cache()
-            evaluate_untargeted_backdoor(args)
-
-        if args.targeted_backdoor_list != []:
-            torch.cuda.empty_cache()
-            evaluate_targeted_backdoor(args)
-        
-        
 
 
 

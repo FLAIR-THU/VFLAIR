@@ -43,6 +43,8 @@ TEXT_DATA = ['news20']
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
     dst : ( np.array(texts),np.array(label) )
+    party 1 ~ k-1: Passive Party with data/label, no global model
+    party k: Active Party with no data/label, but global model
     '''
     print('===== dataset_partition_llm =====')
     total_dim = len(dst[0])
@@ -718,7 +720,7 @@ def load_dataset_per_party(args, index):
                 #  every file_folder under the root_file_folder should be labels with a unique number
                 labels[name] = len(labels) # 
                 path = join(Text_dir, name)
-                for fname in sorted(os.listdir(path)):
+                for fname in sorted(os.listdir(path))[:2]:
                     if fname.isdigit():# The training set we want is all have a digit name
                         fpath = join(path,fname)
                         labels_index.append(labels[name])
@@ -1302,11 +1304,11 @@ def load_dataset_per_party_llm(args, index):
         print('X:',X_train.shape,X_test.shape) # (1600,3) (400,3)
         print('y:',y_train.shape,y_test.shape) # (1600,) (400,)
 
-        if args.need_auxiliary == 1:
-            X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
-            X_aux = torch.tensor(X_aux)
-            y_aux = torch.tensor(y_aux)
-            aux_dst = (X_aux,y_aux)
+        # if args.need_auxiliary == 1:
+        #     X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
+        #     X_aux = torch.tensor(X_aux)
+        #     y_aux = torch.tensor(y_aux)
+        #     aux_dst = (X_aux,y_aux)
 
         # X_train = torch.tensor(X_train)
         # X_test = torch.tensor(X_test)
@@ -1322,24 +1324,136 @@ def load_dataset_per_party_llm(args, index):
         sentences = df.sentence.values 
         # sentences = ["[CLS] " + sentence +' [SEP]' for sentence in sentences]
         labels = df.label.values
-        labels = torch.tensor(labels).view(-1,1).to(args.device)
-        # print('Exaple sentence:\n', sentences[0])
+        # labels = torch.tensor(labels).view(-1,1)
+       
 
-        ids = args.tokenizer.batch_encode_plus(sentences, add_special_tokens=True, max_length=args.max_sequence, padding='max_length')
-        ids['input_ids'] = torch.tensor(ids['input_ids']).to(args.device)
-        ids['attention_mask'] = torch.tensor(ids['attention_mask']).to(args.device)
-        input_ids = ids['input_ids']
-        attention_mask = ids['attention_mask']
+        # ids = args.tokenizer.batch_encode_plus(sentences, add_special_tokens=True, max_length=args.max_sequence, padding='max_length')
+        # ids['input_ids'] = torch.tensor(ids['input_ids'])
+        # ids['attention_mask'] = torch.tensor(ids['attention_mask'])
+        # input_ids = ids['input_ids']
+        # attention_mask = ids['attention_mask']
 
-        X_train, X_test, y_train, y_test = train_test_split(input_ids, labels, test_size=0.2, random_state=args.current_seed)
-        train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, random_state=327, test_size=0.1)
+        # X_train, X_test, y_train, y_test = train_test_split(input_ids, labels, test_size=0.2, random_state=args.current_seed)
+        # train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, random_state=327, test_size=0.1)
         
-        # print(X_train.shape,X_test.shape) # (6840,512) (1711,512)
-        # print(y_train.shape,y_test.shape) # (6840,1) (1711,1)
+        X = np.array(sentences)
+        y = np.array(labels)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
+        print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'jigsaw_toxic':
+        print('== Load jigsaw ==')
+        train_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/train.csv'
+        test_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/test.csv'
+        test_label_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/test_labels.csv'
+        change_names = {
+            "target": "toxicity",
+            "toxic": "toxicity",
+            "identity_hate": "identity_attack",
+            "severe_toxic": "severe_toxicity",
+        }
+        classes=["toxicity","severe_toxicity", "obscene",
+                "threat","insult","identity_attack"]
+        
+        test_labels_df = pd.read_csv(test_label_file)
+
+        train_df = pd.read_csv(train_file)
+        filtered_change_names = {k: v for k, v in change_names.items() if k in train_df.columns}
+        if len(filtered_change_names) > 0:
+            train_df.rename(columns=filtered_change_names, inplace=True)
+
+        test_df = pd.read_csv(test_file)
+        filtered_change_names = {k: v for k, v in change_names.items() if k in test_df.columns}
+        if len(filtered_change_names) > 0:
+            test_df.rename(columns=filtered_change_names, inplace=True)
+
+
+        X_train = train_df.comment_text.values
+        labels_meta = []
+        for index in range(len(train_df)):
+            meta = {}
+            entry = train_df.iloc[index]
+            text_id = entry["id"]
+            target_dict = {label: value for label, value in entry.items() if label in classes}
+
+            # meta["multi_target"] = torch.tensor(list( target_dict.values() ), dtype=torch.int32)
+            # meta["text_id"] = text_id
+
+            # labels_meta.append(torch.tensor(list( target_dict.values() ), dtype=torch.int32))
+            labels_meta.append( list(target_dict.values()) )
+        y_train = labels_meta
+
+        X_test = test_df.comment_text.values
+        labels_meta = []
+        # for category in test_labels.columns[1:]:
+        #     val_set[category] = data_labels[category]
+        for index in range(len(test_labels_df)):
+            meta = {}
+            entry = train_df.iloc[index]
+            text_id = entry["id"]
+            target_dict = {label: value for label, value in entry.items() if label in classes}
+            # meta["multi_target"] = torch.tensor(list( target_dict.values() ), dtype=torch.int32)
+            # meta["text_id"] = text_id
+            labels_meta.append( list( target_dict.values()) )
+        
+        y_test = labels_meta
+        print('y_test[0]:',y_test[0])
+
+        print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
+        print(type(y_train)) # (6840,1) (1711,1)
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
 
+    elif args.dataset == 'semeval':
+        label_dict={
+            'negative': 0,
+            'neutral': 1,
+            'positive': 2
+        }
+        
+        path = DATA_PATH + '/SemEval2017_en/GOLD/Subtask_A/twitter-2016train-A.txt'
+        texts = []
+        labels = []
+        with open(path) as file:
+            for item in file:
+                content = item.split('\t')
+                _id = content[0]
+                label = content[1]
+                text = " ".join(content[2:])
+                label = label_dict[label]
+                texts.append(text)
+                labels.append(label)
+        X_train = texts
+        y_train = labels
+
+        path = DATA_PATH + '/SemEval2017_en/GOLD/Subtask_A/twitter-2016test-A.txt'
+        texts = []
+        labels = []
+        with open(path) as file:
+            for item in file:
+                content = item.split('\t')
+                _id = content[0]
+                label = content[1]
+                if content[1] not in ['positive','negative','neutral']:
+                    continue
+                text = " ".join(content[2:])
+                label = label_dict[label]
+                texts.append(text)
+                labels.append(label)
+        X_test = texts
+        y_test = labels
+
+        print(type(X_train),len(X_train),len(X_test)) # (6840,512) (1711,512)
+        print(type(y_train),len(y_train),len(y_test)) # (6840,1) (1711,1)
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
 
     else:
         assert args.dataset == 'news20', "dataset not supported yet"

@@ -75,13 +75,16 @@ class Party(object):
         self.prev_batches = []
         self.num_local_updates = 0
 
+        self.input_shape = None
+        self.global_pred = None
+
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
         return
 
     def give_pred(self):
         self.local_pred , input_shape = self.local_model(self.local_batch_data)
-        print('give pred self.local_pred:',self.local_pred.requires_grad)
+        # print('give pred self.local_pred:',self.local_pred.requires_grad)
         # ####### Missing Feature #######
         if (self.args.apply_mf == True):
             assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
@@ -95,7 +98,8 @@ class Party(object):
         # ####### Missing Feature #######
 
         self.local_pred_clone = self.local_pred.detach().clone()
-
+        
+        
         return self.local_pred, self.local_pred_clone, input_shape
 
     def prepare_data(self, args, index):
@@ -123,6 +127,7 @@ class Party(object):
 
     def prepare_model(self, args, index):
         # prepare model and optimizer
+        
         (
             args,
             self.local_model,
@@ -130,7 +135,7 @@ class Party(object):
             self.global_model,
             self.global_model_optimizer,
         ) = load_models_per_party(args, index)
-
+       
     # def prepare_attacker(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.attacker = AttackerLoader(args, index, self.local_model)
@@ -157,7 +162,7 @@ class Party(object):
 
 
     def local_backward(self,weight=None):
-        print('local_backward self.local_pred:',self.local_pred.requires_grad)
+        # print('local_backward self.local_pred:',self.local_pred.requires_grad)
 
         self.num_local_updates += 1 # another update
         

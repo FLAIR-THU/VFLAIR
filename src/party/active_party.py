@@ -27,7 +27,6 @@ class ActiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
-        self.input_shape = None
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
@@ -50,12 +49,9 @@ class ActiveParty_LLM(Party_LLM):
     def receive_pred(self, pred, giver_index):
         self.pred_received[giver_index] = pred
 
-    def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        if self.args.dataset == 'cora' and self.args.apply_trainable_layer == 1:
-            pred = self.global_model(pred_list, self.local_batch_data)
-        else:
-            pred = self.global_model(pred_list,self.input_shape)
-
+    def cal_loss(self, test=False):
+        gt_one_hot_label = self.gt_one_hot_label
+        pred =  self.global_pred
         if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
@@ -77,7 +73,7 @@ class ActiveParty_LLM(Party_LLM):
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
             for ik in range(self.args.k-1):
                 loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
-        return pred, loss
+        return loss
 
     def gradient_calculation(self, pred_list, loss):
         pred_gradients_list = []
@@ -95,14 +91,15 @@ class ActiveParty_LLM(Party_LLM):
         if self.gt_one_hot_label == None:
             print('give gradient:self.gt_one_hot_label == None')
             assert 1>2
-
-        self.global_pred, self.global_loss = self.aggregate(pred_list, self.gt_one_hot_label)
+        self.global_loss  = self.cal_loss()
         pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
         # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
 
         if self.args.defense_name == "GradPerturb":
             self.calculate_gradient_each_class(self.global_pred, pred_list)
         
+        self.update_local_gradient(pred_gradients_list_clone[0])
+
         return pred_gradients_list_clone
     
     def update_local_gradient(self, gradient):

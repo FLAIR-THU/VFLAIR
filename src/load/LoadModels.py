@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import pickle
 from transformers import BertTokenizer, BertModel, BertConfig,PretrainedConfig, BertPreTrainedModel
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
@@ -26,8 +27,17 @@ from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
 from utils.optimizers import MaliciousSGD, MaliciousAdam
-MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",}
-LLM_supported = ['bert-base-uncased']
+MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
+"bertweet-base-sentiment-analysis": "/home/DAIR/guzx/.cache/huggingface/hub/bertweet-base-sentiment-analysis",
+"Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
+"toxic-bert": "/home/DAIR/guzx/.cache/huggingface/hub/toxic-bert",
+"textattackbert-base-uncased-CoLA": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-CoLA",
+"geckosbert-base-uncased-finetuned-glue-cola": "/home/DAIR/guzx/.cache/huggingface/hub/geckosbert-base-uncased-finetuned-glue-cola",
+
+}
+ROBERTA = ["bertweet-base-sentiment-analysis"]
+LLM_supported = ['bert-base-uncased','Bert-sequence-classification',"toxic-bert",'bertweet-base-sentiment-analysis',\
+    "textattackbert-base-uncased-CoLA","geckosbert-base-uncased-finetuned-glue-cola"]
 
 def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
     model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
@@ -238,56 +248,87 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
-
 def load_basic_models_llm(args,index):
     current_model_type = args.model_list[str(index)]['type']
     print(f"current_model_type={current_model_type}")
     current_output_dim = args.model_list[str(index)]['output_dim']
 
-    args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-    full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
-    config = full_bert.config #print(full_bert.encoder.layer[0])
+    if args.pretrained == 0:
+        args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        # full_bert_classifier = BertForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type], num_labels=args.num_classes).to(args.device)
+        full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
+        config = full_bert.config #print(full_bert.encoder.layer[0])
 
-
-    ########### Local Model ###########
-    local_model = LocalBertModel(full_bert,1)
-    # Freeze Backbone
-    for param in local_model.parameters():
-        param.requires_grad = False
-    local_model = local_model.to(args.device)
-    print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-
-    local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)
-    # print(f"use SGD for local optimizer for PMC checking")
-    # local_model_optimizer = torch.optim.SGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
-    
-    # update optimizer
-    if 'activemodelcompletion' in args.attack_name.lower() and index in args.attack_configs['party']:
-        print('AMC: use Malicious optimizer for party', index)
-        # local_model_optimizer = torch.optim.Adam(list(local_model.parameters()), lr=args.main_lr, weight_decay=0.0)     
-        # local_model_optimizer = MaliciousSGD(list(local_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
-        local_model_optimizer = MaliciousAdam(list(local_model.parameters()), lr=args.main_lr)
-    
-
-    ########### Global Model ###########
-    global_model = None
-    global_model_optimizer = None
-    if index == args.k-1:
-        # global part of bert(frozen)
-        global_bert = GlobalBertModel(full_bert,1)
-        # add Classification Layer(trainable)
-        global_model = GlobalBertClassifier(global_bert, current_output_dim)
+        ########### Local Model ###########
+        local_model = LocalBertModel(full_bert,1)
         # Freeze Backbone
-        for param in global_model.backbone.parameters():
-	        param.requires_grad = False
-        global_model = global_model.to(args.device)
+        for param in local_model.parameters():
+            param.requires_grad = False
+        local_model = local_model.to(args.device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+        local_model_optimizer = None
 
-        global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
-        
-        # print(f"use SGD for global optimizer for PMC checking")
-        # global_model_optimizer = torch.optim.SGD(list(global_model.parameters()), lr=args.main_lr, momentum=0.9, weight_decay=5e-4)
+        ########### Global Model ###########
+        global_model = None
+        global_model_optimizer = None
+        if index == args.k-1:
+            # global part of bert(frozen)
+            global_bert = GlobalBertModel(full_bert,1)
+            # add Classification Layer(trainable)
+            global_model = GlobalBertClassifier(global_bert, current_output_dim)
+            # Freeze Backbone
+            for param in global_model.backbone.parameters():
+                param.requires_grad = False
+            # Trainable Part for finetuning
+            print(args.model_path)
+            if args.model_path != "":
+                global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
+            for param in global_model.trainable_layer.parameters():
+                param.requires_grad = True
+            global_model = global_model.to(args.device)
+            global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
+    else:
+        print('###### load_basic_models_llm pretrained ######')
+        print('MODEL_PATH[current_model_type]:',MODEL_PATH[current_model_type])
+        print('current_model_type:',current_model_type)
+        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+        # for name, param in full_model.named_parameters():
+        #     print("-----full_model--{}:{}".format(name, param.shape))
+        if current_model_type in ROBERTA:
+            full_bert = full_model.roberta
+        else:
+            full_bert = full_model.bert
+        classifier = full_model.classifier
+        config = full_model.config
 
+        ########### Local Model ###########
+        local_model = LocalBertModel(full_bert,1)
+        # Freeze Backbone
+        for param in local_model.parameters():
+            param.requires_grad = False
+        local_model = local_model.to(args.device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+        local_model_optimizer = None
+
+        ########### Global Model ###########
+        global_model = None
+        global_model_optimizer = None
+        if index == args.k-1:
+            # global part of bert(frozen)
+            global_bert = GlobalBertModel(full_bert,1)
+            # add Classification Layer(untrainable)
+            global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+            # Freeze Backbone
+            for param in global_model.backbone.parameters():
+                param.requires_grad = False
+            # Classifier already pretrained
+            for param in global_model.classifier.parameters():
+                param.requires_grad = False
+            global_model = global_model.to(args.device)
+            global_model_optimizer = None
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 
 def load_models_per_party(args, index):
