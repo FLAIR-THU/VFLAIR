@@ -32,6 +32,9 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 tf.compat.v1.enable_eager_execution() 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+torch.backends.cudnn.enable =True
+torch.backends.cudnn.benchmark = True
+
 MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
 "bertweet-base-sentiment-analysis": "/home/DAIR/guzx/.cache/huggingface/hub/bertweet-base-sentiment-analysis",
 "Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
@@ -213,22 +216,24 @@ class MainTaskVFL_LLM(object):
         scores = []
         targets = []
         with torch.no_grad():
+
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)]
-            
             for parties_data in zip(*data_loader_list):
                 # parties_data[0]: (data, label, mask)
                 # parties_data[k-1]: (None,None,None)  no data for active party
+                print('parties_data:',len(parties_data),type(parties_data[0]) )
+                print(parties_data[0][0].shape,parties_data[0][1].shape,parties_data[0][2].shape)
+                print(parties_data[0][1])
+
+                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
+
                 if self.args.dataset == 'jigsaw_toxic':
                     gt_val_one_hot_label = parties_data[0][1]
                 else:
                     gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
-                gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-                
+                # gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
                 # parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
-                print('parties_data:',len(parties_data),type(parties_data[0]) )
-                print(parties_data[0][0].shape,parties_data[0][1].shape,parties_data[0][2].shape)
-
-                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
+                
 
                 pred_list = []
                 for ik in range(self.k-1): # Passive data local predict
