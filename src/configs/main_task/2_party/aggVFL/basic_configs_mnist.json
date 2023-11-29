@@ -3,6 +3,10 @@
     "lr": 0.01,
     "k": 2,
     "batch_size": 2048,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
     "dataset":{
         "dataset_name": "mnist",
         "num_classes": 10

@@ -1,6 +1,6 @@
 import sys, os
 sys.path.append(os.pardir)
-
+import math
 import json
 import argparse
 from models.autoencoder import AutoEncoder
@@ -11,6 +11,8 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
+
+communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/'+config_file_name+'.json'
@@ -35,11 +37,33 @@ def load_basic_configs(config_file_name, args):
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
     
-    # args.Q ,iteration_per_aggregation for FedBCD
-    args.Q = config_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in config_dict) else 1
+    # Communication Protocol
+    communication_protocol_dict = config_dict['communication'] if ('communication' in config_dict) else None
+    
+    args.communication_protocol = communication_protocol_dict['communication_protocol'] if ('communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
+    assert (args.communication_protocol in communication_protocol_list), "communication_protocol not available"
+    
+    args.Q = communication_protocol_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in communication_protocol_dict) else 1
     assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
-    args.BCD_type = config_dict['BCD_type'] if ('BCD_type' in config_dict) else "p"
-    assert (args.BCD_type == "s" or args.BCD_type == "p"), "args.BCD_type should be positive s/p"
+    
+    args.quant_level = communication_protocol_dict['quant_level'] if ('quant_level' in communication_protocol_dict) else 0
+    args.vecdim = communication_protocol_dict['vecdim'] if ('vecdim' in communication_protocol_dict) else 1
+    args.num_update_per_batch = communication_protocol_dict['num_update_per_batch'] if ('num_update_per_batch' in communication_protocol_dict) else 5
+    args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if ('num_batch_per_workset' in communication_protocol_dict) else 5
+    args.smi_thresh = communication_protocol_dict['smi_thresh'] if ('smi_thresh' in communication_protocol_dict) else 0.5
+    
+    if args.quant_level > 0:
+        args.ratio = math.log(args.quant_level,2)/32
+    args.ratio = communication_protocol_dict['ratio'] if ('ratio' in communication_protocol_dict) else 0.5
+    print('Topk Ratio:',args.ratio)
+    
+
+
+    if args.communication_protocol == 'FedSGD':
+        args.Q = 1
+    
+    print('communication_protocol:',args.communication_protocol)
+
     
     args.attacker_id = []
     # # args.early_stop, if use early stop

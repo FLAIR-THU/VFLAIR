@@ -137,7 +137,7 @@ class ResSFL(Attacker):
             
             criterion = nn.MSELoss()
 
-            if self.args.dataset == 'cifar10':
+            if self.args.dataset == 'cifar10' or self.args.dataset == 'cifar100':
                 decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], 3*self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
             else: # mnist
                 decoder_list = [custom_AE(self.args.model_list[str(ik)]['output_dim'], self.args.model_list[str(ik)]['input_dim']).to(self.device) for ik in attacked_party_list]
@@ -212,9 +212,8 @@ class ResSFL(Attacker):
                         img = test_data_b # target img
                         # test_pred_b = net_b(test_data_b)
 
-                        if self.args.dataset == 'cifar10':
+                        if self.args.dataset == 'cifar10' or self.args.dataset == 'cifar100':
                             test_data_b[ik] = test_data_b[ik].reshape([len(test_data_b[ik]),3,16,32])
-                        # print(test_data_b[ik].size()) #[10000,1536]
                         
                         test_pred_b = [net_b[ik](test_data_b[ik]) for ik in range(len(test_data_b))]
                         ir = test_pred_b 
@@ -241,9 +240,12 @@ class ResSFL(Attacker):
                             _rand_mse = criterion(rand_img, img[ik])
                             mse_list.append(_mse)
                             rand_mse_list.append(_rand_mse)
+                            output[ik] = output[ik].reshape(img[ik].size())
                         mse = torch.sum(torch.tensor(mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
                         rand_mse = torch.sum(torch.tensor(rand_mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
-                    
+                    if i_epoch == self.epochs - 1:
+                        output = torch.stack(output)
+                        torch.save(output, f"./exp_result/ressfl/{self.args.defense_name}.pkl")
                     print('Epoch {}% \t train_loss:{:.2f} mse:{:.4}, mse_reduction:{:.2f}'.format(
                         i_epoch, train_loss.item(), mse, rand_mse-mse))
             

@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from party.party import Party
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
+from sys import getsizeof
 
 class ActiveParty(Party):
     def __init__(self, args, index):
@@ -25,7 +26,6 @@ class ActiveParty(Party):
         self.global_pred = None
         self.global_loss = None
 
-    
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
         self.train_dst = ActiveDataset(self.train_data, self.train_label)
@@ -41,7 +41,10 @@ class ActiveParty(Party):
         self.pred_received[giver_index] = pred
 
     def aggregate(self, pred_list, gt_one_hot_label, test=False):
-        pred = self.global_model(pred_list)
+        if self.args.dataset == 'cora' and self.args.apply_trainable_layer == 1:
+            pred = self.global_model(pred_list, self.local_batch_data)
+        else:
+            pred = self.global_model(pred_list)
         if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
@@ -116,7 +119,7 @@ class ActiveParty(Party):
 
         if self.args.defense_name == "GradPerturb":
             self.calculate_gradient_each_class(self.global_pred, pred_list)
-
+        
         return pred_gradients_list_clone
     
     def update_local_gradient(self, gradient):
