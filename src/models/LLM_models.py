@@ -58,7 +58,7 @@ class GlobalBertForSequenceClassification(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        outputs = self.global_bert(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
+        outputs = self.global_bert(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
 
         # outputs = self.bert(
         #     input_ids,
@@ -111,7 +111,6 @@ class GlobalBertForSequenceClassification(BertPreTrainedModel):
         #     attentions=outputs.attentions,
         # )
 
-
 class GlobalBertClassifier_pretrained(nn.Module):
     def __init__(self, globalbert, classifier,dropout=0.5):
         super(GlobalBertClassifier_pretrained, self).__init__()
@@ -128,9 +127,9 @@ class GlobalBertClassifier_pretrained(nn.Module):
         # torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         # torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id, input_shape):
+    def forward(self, input_id, input_shape,attention_mask):
        # print('==== global model forward ====')
-        outputs = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
+        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
         # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
         pooled_output = outputs[1]
@@ -158,9 +157,9 @@ class GlobalBertClassifier(nn.Module):
         torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id, input_shape):
+    def forward(self, input_id, input_shape,attention_mask):
         # print('==== global model forward ====')
-        outputs = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
+        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
         # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
         pooled_output = outputs[1]
@@ -474,7 +473,7 @@ class LocalBertModel(BertPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        # print('intermediate:',type(intermediate), len(intermediate) )
+        # print('Local Bert intermediate:',type(intermediate), len(intermediate) )
         return intermediate, input_shape
         
 

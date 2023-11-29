@@ -1295,31 +1295,20 @@ def load_dataset_per_party_llm(args, index):
         text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_train.tsv'
         df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
-        labels = df.index.values
+        labels = df.label.values
         X = np.array(sentences)
         y = np.array(labels)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
-        
-        # X_train = np.array(sentences)
-        # y_train = np.array(labels)
-        # text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_test.tsv'
-        # df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
-        # sentences = df.sentence.values 
-        # labels = df.label.values
-        # X_test = np.array(sentences)
-        # y_test = np.array(labels)
 
         print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
         print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
-        
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
     
     elif args.dataset == 'SST-2':
         text_path = DATA_PATH + 'SST-2/train.tsv'
-        df = pd.read_csv(text_path , delimiter='\t', header=None, names=[ 'label', 'sentence'])
+        df = pd.read_csv(text_path , delimiter='\t', header=None)# names=[  'sentence','label']
         sentences = df.sentence.values 
-        # sentences = ["[CLS] " + sentence +' [SEP]' for sentence in sentences]
         labels = df.label.values
        
         X = np.array(sentences)

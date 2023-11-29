@@ -76,9 +76,9 @@ class PassiveDataset_LLM(Dataset):
 
     def __getitem__(self, item_idx):
         data_i, target_i , mask_i= self.texts[item_idx], self.labels[item_idx], self.masks[item_idx]
-        return torch.tensor(data_i.clone().detach(), dtype=torch.float32),\
+        return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
             torch.tensor(target_i.clone().detach(), dtype=torch.long),\
-            torch.tensor(mask_i.clone().detach(), dtype=torch.float32)
+            torch.tensor(mask_i.clone().detach(), dtype=torch.long) #torch.float32
 
 
 # class PassiveDataset_LLM(Dataset):

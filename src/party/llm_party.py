@@ -45,6 +45,7 @@ class Party(object):
         self.attribute_loader = None
         self.attribute_iter = None
         self.local_batch_data = None
+        self.local_batch_attention_mask = None
         # backdoor poison data and label and target images list
         self.train_poison_data = None
         self.train_poison_label = None
@@ -79,6 +80,7 @@ class Party(object):
         self.input_shape = None
         self.global_pred = None
 
+
     def prepare_data(self, args, index):
         print('====== prepare_data', index)
         (
@@ -103,20 +105,14 @@ class Party(object):
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
     def prepare_model(self, args, index):
-        print(' ## prepare_model parent ')
         # prepare model and optimizer
-        if index < args.k -1: # Passive
-            (
-                args,
-                self.local_model,
-                self.local_model_optimizer
-            ) = load_models_per_party(args, index)
-        else: # Active
-            (
-                args,
-                self.global_model,
-                self.global_model_optimizer
-            ) = load_models_per_party(args, index)
+        (
+            args,
+            self.local_model,
+            self.local_model_optimizer,
+            self.global_model,
+            self.global_model_optimizer
+        ) = load_models_per_party(args, index)
 
 
     def receive_gradient(self, gradient):
@@ -124,7 +120,7 @@ class Party(object):
         return
 
     def give_pred(self):
-        self.local_pred , input_shape = self.local_model(self.local_batch_data)
+        self.local_pred , input_shape = self.local_model(self.local_batch_data,attention_mask = self.local_batch_attention_mask)
         # print('give pred self.local_pred:',self.local_pred.requires_grad)
         # ####### Missing Feature #######
         if (self.args.apply_mf == True):

@@ -40,15 +40,13 @@ class PassiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
-
-
-    def prepare_model(self, args, index):
-        # prepare model and optimizer
-        (
-            args,
-            self.local_model,
-            self.local_model_optimizer
-        ) = load_models_per_party(args, index)
+    # def prepare_model(self, args, index):
+    #     # prepare model and optimizer
+    #     (
+    #         args,
+    #         self.local_model,
+    #         self.local_model_optimizer
+    #     ) = load_models_per_party(args, index)
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index)
@@ -68,6 +66,10 @@ class PassiveParty_LLM(Party_LLM):
     def cal_loss(self, test=False):
         gt_one_hot_label = self.gt_one_hot_label
         pred =  self.global_pred
+        # print('== In cal_loss ==')
+        # print('gt_one_hot_label:',gt_one_hot_label)
+        # print('pred:',pred)
+
         if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])

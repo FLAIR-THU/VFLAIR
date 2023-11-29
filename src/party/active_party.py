@@ -191,26 +191,27 @@ class ActiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
-    def prepare_model(self, args, index):
-        print(' ##  prepare_model Active ')
-        # prepare model and optimizer
-        (
-            args,
-            self.global_model,
-            self.global_model_optimizer
-        ) = load_models_per_party(args, index)
+    # def prepare_model(self, args, index):
+    #     print(' ##  prepare_model Active ')
+    #     # prepare model and optimizer
+    #     (
+    #         args,
+    #         self.global_model,
+    #         self.global_model_optimizer
+    #     ) = load_models_per_party(args, index)
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
 
     def receive_pred(self, pred, giver_index):
         self.pred_received[giver_index] = pred
+    
+    def receive_attention_mask(self, attention_mask):
+        self.local_batch_attention_mask = attention_mask
 
-    def aggregate(self, pred_list, test=False):
-        
-        pred = self.global_model(pred_list[0], self.input_shape)
+    def aggregate(self, pred_list, attention_mask, test=False):
+        pred = self.global_model(pred_list[0], self.input_shape, attention_mask)
         self.global_pred = pred
-
         return pred
 
 

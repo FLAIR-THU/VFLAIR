@@ -27,6 +27,7 @@ from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
 from utils.optimizers import MaliciousSGD, MaliciousAdam
+
 MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
 "bertweet-base-sentiment-analysis": "/home/DAIR/guzx/.cache/huggingface/hub/bertweet-base-sentiment-analysis",
 "Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
@@ -254,18 +255,20 @@ def load_basic_models_llm(args,index):
 
     if args.pretrained == 0:
         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        # full_bert_classifier = BertForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type], num_labels=args.num_classes).to(args.device)
         full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
         config = full_bert.config #print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
-        local_model = LocalBertModel(full_bert,1)
-        # Freeze Backbone
-        for param in local_model.parameters():
-            param.requires_grad = False
-        local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+        local_model = None
         local_model_optimizer = None
+        if index < args.k-1:
+            local_model = LocalBertModel(full_bert,1)
+            # Freeze Backbone
+            for param in local_model.parameters():
+                param.requires_grad = False
+            local_model = local_model.to(args.device)
+            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+            local_model_optimizer = None
 
         ########### Global Model ###########
         global_model = None
@@ -290,7 +293,7 @@ def load_basic_models_llm(args,index):
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
         full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
-
+        
         # for name, param in full_model.named_parameters():
         #     print("-----full_model--{}:{}".format(name, param.shape))
         if current_model_type in ROBERTA:
@@ -300,14 +303,18 @@ def load_basic_models_llm(args,index):
         classifier = full_model.classifier
         config = full_model.config
 
+
         ########### Local Model ###########
-        local_model = LocalBertModel(full_bert,1)
-        # Freeze Backbone
-        for param in local_model.parameters():
-            param.requires_grad = False
-        local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+        local_model = None
         local_model_optimizer = None
+        if index < args.k-1:
+            local_model = LocalBertModel(full_bert,1)
+            # Freeze Backbone
+            for param in local_model.parameters():
+                param.requires_grad = False
+            local_model = local_model.to(args.device)
+            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+            local_model_optimizer = None
 
         ########### Global Model ###########
         global_model = None
@@ -315,8 +322,10 @@ def load_basic_models_llm(args,index):
         if index == args.k-1:
             # global part of bert(frozen)
             global_bert = GlobalBertModel(full_bert,1)
+            
             # add Classification Layer(untrainable)
             global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+            
             # Freeze Backbone
             for param in global_model.backbone.parameters():
                 param.requires_grad = False
@@ -328,6 +337,90 @@ def load_basic_models_llm(args,index):
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
+# def load_basic_models_llm(args,index):
+#     current_model_type = args.model_list[str(index)]['type']
+#     current_output_dim = args.model_list[str(index)]['output_dim']
+
+#     if args.pretrained == 0:
+#         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+#         full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
+#         config = full_bert.config #print(full_bert.encoder.layer[0])
+
+#         ########### Local Model ###########
+#         local_model = LocalBertModel(full_bert,1)
+#         # Freeze Backbone
+#         for param in local_model.parameters():
+#             param.requires_grad = False
+#         local_model = local_model.to(args.device)
+#         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+#         local_model_optimizer = None
+
+#         ########### Global Model ###########
+#         global_model = None
+#         global_model_optimizer = None
+#         if index == args.k-1:
+#             # global part of bert(frozen)
+#             global_bert = GlobalBertModel(full_bert,1)
+#             # add Classification Layer(trainable)
+#             global_model = GlobalBertClassifier(global_bert, current_output_dim)
+#             # Freeze Backbone
+#             for param in global_model.backbone.parameters():
+#                 param.requires_grad = False
+#             # Trainable Part for finetuning
+#             print(args.model_path)
+#             if args.model_path != "":
+#                 global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
+#             for param in global_model.trainable_layer.parameters():
+#                 param.requires_grad = True
+#             global_model = global_model.to(args.device)
+#             global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
+#     else:
+#         print('load_basic_models_llm pretrained:',current_model_type)
+#         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+#         full_model = BertForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+        
+#         # for name, param in full_model.named_parameters():
+#         #     print("-----full_model--{}:{}".format(name, param.shape))
+#         if current_model_type in ROBERTA:
+#             full_bert = full_model.roberta
+#         else:
+#             full_bert = full_model.bert
+#         classifier = full_model.classifier
+#         config = full_model.config
+
+
+#         ########### Local Model ###########
+#         local_model = None
+#         local_model_optimizer = None
+#         if index < args.k-1:
+#             local_model = LocalBertModel(full_bert,1)
+#             # Freeze Backbone
+#             for param in local_model.parameters():
+#                 param.requires_grad = False
+#             local_model = local_model.to(args.device)
+#             print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+#             local_model_optimizer = None
+
+#         ########### Global Model ###########
+#         global_model = None
+#         global_model_optimizer = None
+#         if index == args.k-1:
+#             # global part of bert(frozen)
+#             global_bert = GlobalBertModel(full_bert,1)
+            
+#             # add Classification Layer(untrainable)
+#             global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+            
+#             # Freeze Backbone
+#             for param in global_model.backbone.parameters():
+#                 param.requires_grad = False
+#             # Classifier already pretrained
+#             for param in global_model.classifier.parameters():
+#                 param.requires_grad = False
+#             global_model = global_model.to(args.device)
+#             global_model_optimizer = None
+#     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
@@ -335,18 +428,11 @@ def load_models_per_party(args, index):
     if current_model_type in LLM_supported:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
-        # if val_model != None:
-        #     print('load_models_per_party, val_model OK')
-        if index < args.k-1: # Passive
-            return args, local_model, local_model_optimizer
-        else: # Active
-            return args, global_model, global_model_optimizer
-
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
         # important
-        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
 if __name__ == '__main__':
