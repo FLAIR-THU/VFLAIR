@@ -26,20 +26,6 @@ class MLP2_ReLu(nn.Module):
         x = self.layer2(x)
         return x
 
-class MLP2_Clamped(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(MLP2_Clamped, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(input_dim, output_dim, bias=True),
-        )
-        torch.nn.init.xavier_uniform_(self.layer1[1].weight)
-        torch.nn.init.zeros_(self.layer1[1].bias)
-
-    def forward(self, x):
-        x = self.layer1(x)
-        return x
-
 class MLP2(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP2, self).__init__()
