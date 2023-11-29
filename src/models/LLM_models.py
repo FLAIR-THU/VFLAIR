@@ -129,29 +129,30 @@ class GlobalBertClassifier_pretrained(nn.Module):
         # torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
     def forward(self, input_id, input_shape):
-        # print('==== global model forward ====')
-        _p1, pooled_output = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
-        # print('_p1:',type(_p1),_p1.shape)
-        # print('pooled_output:',type(pooled_output), pooled_output.shape,pooled_output[0])
-        
-        #final_layer = self.trainable_layer(pooled_output)
-        final_layer = self.classifier(pooled_output)
+       # print('==== global model forward ====')
+        outputs = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
+        # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
+        pooled_output = outputs[1]
+
+        logits = self.classifier(pooled_output)
         # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
         # print('==== global model forward ====')
 
-        return final_layer
+        # print('logits:',type(logits),logits.shape) #[128,num_classes]
+ 
+
+        return logits
 
 
 class GlobalBertClassifier(nn.Module):
     def __init__(self, globalbert, output_dim,dropout=0.5):
         super(GlobalBertClassifier, self).__init__()
         self.backbone = globalbert #BertModel.from_pretrained('bert-base-cased')
-        
+
         self.trainable_layer = nn.Sequential(
             nn.Dropout(dropout),
-            nn.Linear(768, output_dim, bias=True)
-            # nn.ReLU(inplace=True)
+            nn.Linear(768, output_dim)
         )
 
         torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
@@ -159,14 +160,26 @@ class GlobalBertClassifier(nn.Module):
 
     def forward(self, input_id, input_shape):
         # print('==== global model forward ====')
-        _p1, pooled_output = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
-        # print('_p1:',type(_p1),_p1.shape)
-        # print('pooled_output:',type(pooled_output), pooled_output.shape,pooled_output[0])
-        final_layer = self.trainable_layer(pooled_output)
+        outputs = self.backbone(input_id, input_shape,return_dict=False)#attention_mask=mask,return_dict=False)
+        # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
+
+        pooled_output = outputs[1]
+
+        logits = self.trainable_layer(pooled_output)
         # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
         # print('==== global model forward ====')
 
-        return final_layer
+        # print('logits:',type(logits),logits.shape) #[128,num_classes]
+ 
+        return logits
+
+        # return SequenceClassifierOutput(
+        #     loss=loss,
+        #     logits=logits,
+        #     hidden_states=outputs.hidden_states,
+        #     attentions=outputs.attentions,
+        # )
+
 ##################### Functional Global Models ######################
 
 

@@ -21,6 +21,7 @@ from utils.communication_protocol_funcs import Cache
 
 class Party(object):
     def __init__(self, args, index):
+        print(' === parent Party LLM ====', index)
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
@@ -78,30 +79,6 @@ class Party(object):
         self.input_shape = None
         self.global_pred = None
 
-    def receive_gradient(self, gradient):
-        self.local_gradient = gradient
-        return
-
-    def give_pred(self):
-        self.local_pred , input_shape = self.local_model(self.local_batch_data)
-        # print('give pred self.local_pred:',self.local_pred.requires_grad)
-        # ####### Missing Feature #######
-        if (self.args.apply_mf == True):
-            assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
-            assert 'party' in self.args.attack_configs, 'need parameter: party'
-            missing_rate = self.args.attack_configs['missing_rate']
-            
-            if (self.index in self.args.attack_configs['party']):
-                missing_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*missing_rate)))
-                # print(f"[debug] in party: party{self.index}, missing list:", missing_list, len(missing_list))
-                self.local_pred[missing_list] = torch.zeros(self.local_pred[missing_list].size()).to(self.args.device)
-        # ####### Missing Feature #######
-
-        self.local_pred_clone = self.local_pred.detach().clone()
-        
-        
-        return self.local_pred, self.local_pred_clone, input_shape
-
     def prepare_data(self, args, index):
         print('====== prepare_data', index)
         (
@@ -126,23 +103,45 @@ class Party(object):
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
     def prepare_model(self, args, index):
+        print(' ## prepare_model parent ')
         # prepare model and optimizer
-        
-        (
-            args,
-            self.local_model,
-            self.local_model_optimizer,
-            self.global_model,
-            self.global_model_optimizer,
-        ) = load_models_per_party(args, index)
-       
-    # def prepare_attacker(self, args, index):
-    #     if index in args.attack_configs['party']:
-    #         self.attacker = AttackerLoader(args, index, self.local_model)
+        if index < args.k -1: # Passive
+            (
+                args,
+                self.local_model,
+                self.local_model_optimizer
+            ) = load_models_per_party(args, index)
+        else: # Active
+            (
+                args,
+                self.global_model,
+                self.global_model_optimizer
+            ) = load_models_per_party(args, index)
 
-    # def prepare_defender(self, args, index):
-    #     if index in args.attack_configs['party']:
-    #         self.defender = DefenderLoader(args, index)
+
+    def receive_gradient(self, gradient):
+        self.local_gradient = gradient
+        return
+
+    def give_pred(self):
+        self.local_pred , input_shape = self.local_model(self.local_batch_data)
+        # print('give pred self.local_pred:',self.local_pred.requires_grad)
+        # ####### Missing Feature #######
+        if (self.args.apply_mf == True):
+            assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
+            assert 'party' in self.args.attack_configs, 'need parameter: party'
+            missing_rate = self.args.attack_configs['missing_rate']
+            
+            if (self.index in self.args.attack_configs['party']):
+                missing_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*missing_rate)))
+                # print(f"[debug] in party: party{self.index}, missing list:", missing_list, len(missing_list))
+                self.local_pred[missing_list] = torch.zeros(self.local_pred[missing_list].size()).to(self.args.device)
+        # ####### Missing Feature #######
+
+        self.local_pred_clone = self.local_pred.detach().clone()
+        
+        
+        return self.local_pred, self.local_pred_clone, input_shape
     
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])

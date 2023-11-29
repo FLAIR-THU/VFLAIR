@@ -1,8 +1,7 @@
 {
-    "epochs": 60,
-    "lr": 0.001,
-    "k": 1,
-    "k_server":1,
+    "epochs": 100,
+    "lr": 0.0005,
+    "k": 2,
     "batch_size": 64,
     "communication":{
         "communication_protocol": "FedSGD",
@@ -14,8 +13,15 @@
     },
     "model_list":{
         "0": {
-            "type": "bert-base-uncased",
-            "pretrained": 0,
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "output_dim": 2,
+            "max_sequence": 256,
+            "path": ""
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
             "output_dim": 2,
             "max_sequence": 256,
             "path": ""

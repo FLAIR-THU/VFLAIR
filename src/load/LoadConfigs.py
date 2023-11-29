@@ -33,10 +33,6 @@ def load_basic_configs(config_file_name, args):
     # args.k, number of participants
     args.k = config_dict['k'] if('k' in config_dict) else 2
     assert (args.k % 1 == 0 and args.k>0), "k should be positive integers"
-    
-    # args.k_server, number of server(with only model, not data)
-    args.k_server = config_dict['k_server'] if('k_server' in config_dict) else 0
-    assert (args.k_server % 1 == 0 and args.k_server>=0), "k_server should be integers"
 
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048

@@ -250,7 +250,6 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
 
 def load_basic_models_llm(args,index):
     current_model_type = args.model_list[str(index)]['type']
-    print(f"current_model_type={current_model_type}")
     current_output_dim = args.model_list[str(index)]['output_dim']
 
     if args.pretrained == 0:
@@ -288,11 +287,10 @@ def load_basic_models_llm(args,index):
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
     else:
-        print('###### load_basic_models_llm pretrained ######')
-        print('MODEL_PATH[current_model_type]:',MODEL_PATH[current_model_type])
-        print('current_model_type:',current_model_type)
+        print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
         full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+
         # for name, param in full_model.named_parameters():
         #     print("-----full_model--{}:{}".format(name, param.shape))
         if current_model_type in ROBERTA:
@@ -333,14 +331,22 @@ def load_basic_models_llm(args,index):
 
 def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
+    val_model = None
     if current_model_type in LLM_supported:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        # if val_model != None:
+        #     print('load_models_per_party, val_model OK')
+        if index < args.k-1: # Passive
+            return args, local_model, local_model_optimizer
+        else: # Active
+            return args, global_model, global_model_optimizer
+
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
-    # important
-    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+        # important
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
 if __name__ == '__main__':

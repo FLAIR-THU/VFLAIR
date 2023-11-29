@@ -28,9 +28,18 @@ from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
 from evaluates.attacks.attack_api import AttackerLoader
-
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 tf.compat.v1.enable_eager_execution() 
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
+"bertweet-base-sentiment-analysis": "/home/DAIR/guzx/.cache/huggingface/hub/bertweet-base-sentiment-analysis",
+"Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
+"toxic-bert": "/home/DAIR/guzx/.cache/huggingface/hub/toxic-bert",
+"textattackbert-base-uncased-CoLA": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-CoLA",
+"geckosbert-base-uncased-finetuned-glue-cola": "/home/DAIR/guzx/.cache/huggingface/hub/geckosbert-base-uncased-finetuned-glue-cola",
+
+}
 
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,\
 'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,\
@@ -42,7 +51,7 @@ class MainTaskVFL_LLM(object):
     def __init__(self, args):
         self.args = args
         self.k = args.k
-        self.k_server = args.k_server
+        # self.k_server = args.k_server
         self.device = args.device
         self.dataset_name = args.dataset
         # self.train_dataset = args.train_dst
@@ -59,7 +68,7 @@ class MainTaskVFL_LLM(object):
 
         self.exp_res_path = args.exp_res_path
         self.parties = args.parties
-        self.servers = args.servers
+        # self.servers = args.servers
 
         
         self.Q = args.Q # FedBCD
@@ -119,7 +128,7 @@ class MainTaskVFL_LLM(object):
     def LR_Decay(self,i_epoch):
         # for ik in range(self.k):
         #     self.parties[ik].LR_decay(i_epoch)
-        self.servers[0].global_LR_decay(i_epoch)
+        self.parties[self.k-1].global_LR_decay(i_epoch)
     
     # def gradient_transmit(self):  # Active party sends gradient to passive parties
     #     gradient = self.parties[self.k-1].give_gradient() # gradient_clone
@@ -145,7 +154,7 @@ class MainTaskVFL_LLM(object):
     #     return
 
     def pred_transmit(self): # Active party gets pred from passive parties
-        for ik in range(self.k):
+        for ik in range(self.k-1):
             pred, pred_detach, input_shape = self.parties[ik].give_pred()
 
             # defense applied on pred
@@ -157,7 +166,7 @@ class MainTaskVFL_LLM(object):
                 #     print(self.args.attack_type)
 
             self.parties[ik].input_shape = input_shape
-            self.servers[0].input_shape = input_shape
+            self.parties[self.k-1].input_shape = input_shape
 
             # Party sends pred for aggregation
             ########### communication_protocols ###########
@@ -170,81 +179,27 @@ class MainTaskVFL_LLM(object):
             self.communication_cost += get_size_of(pred_clone) #MB
             
             self.parties[ik].update_local_pred(pred_clone)
-            self.servers[0].receive_pred(pred_clone, ik) 
+            self.parties[self.k-1].receive_pred(pred_clone, ik) 
     
     def global_pred_transmit(self):
-        final_pred = self.servers[0].aggregate(self.servers[0].pred_received, test="True")
-        for ik in range(self.k):
+        final_pred = self.parties[self.k-1].aggregate(parties[self.k-1].pred_received, test="True")
+        for ik in range(self.k-1):
             self.parties[ik].global_pred = final_pred
     
     def global_loss_transmit(self):
         global_loss = self.parties[self.args.k-1].cal_loss()
-        self.servers[0].global_loss = global_loss
-
-    def train_batch(self, parties_data, batch_label):
-        '''
-        batch_label: self.gt_one_hot_label   may be noisy
-        '''
-        encoder = self.args.encoder
-        if self.args.apply_cae:
-            assert encoder != None, "[error] encoder is None for CAE"
-            _, gt_one_hot_label = encoder(batch_label) 
-            # _, test_one_hot_label = encoder(torch.tensor([[0.0,1.0],[1.0,0.0]]).to(self.args.device))
-            # print("one hot label for DCAE 1.0 of 2 class", test_one_hot_label)   
-            # for DCAE-1.0-2class, <[0.0,1.0],[1.0,0.0]> ==> <[0.9403, 0.0597],[0.0568, 0.9432]>        
-        else:
-            gt_one_hot_label = batch_label
-        
-        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
-        # allocate data to each party
-        for ik in range(self.k):
-            self.parties[ik].obtain_local_data(parties_data[ik][0])
-            self.parties[ik].local_batch_data = self.parties[ik].local_batch_data.to(self.device)
-
-        # ====== normal vertical federated learning ======
-        torch.autograd.set_detect_anomaly(True)
-        # ======== Commu ===========
-        if self.args.communication_protocol in ['Vanilla','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
-            for q in range(self.Q):
-                if q == 0: 
-                    # exchange info between party&server: local_prd/global_pred
-                    self.pred_transmit() 
-                    self.global_pred_transmit() 
-                    self.global_loss_transmit()
-                    
-                    # update parameters for server trainable part
-                    self.servers[0].global_backward() 
-                    # for ik in range(self.k):
-                    #     self.parties[ik].local_backward()
-        else:
-            assert 1>2 , 'Communication Protocol not provided'
-        # ============= Commu ===================
-        
-        # ###### Noisy Label Attack #######
-        # convert back to clean label to get true acc
-        if self.args.apply_nl==True:
-            real_batch_label = self.clean_one_hot_label
-        else:
-            real_batch_label = batch_label
-        # ###### Noisy Label Attack #######
-
-        pred = self.servers[0].global_pred
-        loss = self.servers[0].global_loss
-        predict_prob = F.softmax(pred, dim=-1)
-        if self.args.apply_cae:
-            predict_prob = encoder.decode(predict_prob)
-
-        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
-        train_acc = suc_cnt / predict_prob.shape[0]
-        
-        return loss.item(), train_acc
+        self.parties[self.k-1].global_loss = global_loss
     
     def inference(self):
+        current_model_type = self.args.model_list['0']['type']
+        full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type]).to(self.args.device)
+
+        print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k):
             self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
-
-        self.servers[0].global_model.eval()
+        self.parties[self.k-1].global_model.eval()
+        
                 
         suc_cnt = 0
         sample_cnt = 0
@@ -258,25 +213,40 @@ class MainTaskVFL_LLM(object):
         scores = []
         targets = []
         with torch.no_grad():
-            data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
+            data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)]
+            
             for parties_data in zip(*data_loader_list):
-                
+                # parties_data[0]: (data, label, mask)
+                # parties_data[k-1]: (None,None,None)  no data for active party
                 if self.args.dataset == 'jigsaw_toxic':
-                    gt_val_one_hot_label = parties_data[self.k-1][1]
+                    gt_val_one_hot_label = parties_data[0][1]
                 else:
-                    gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
+                    gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                 gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
+                
+                # parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
+                print('parties_data:',len(parties_data),type(parties_data[0]) )
+                print(parties_data[0][0].shape,parties_data[0][1].shape,parties_data[0][2].shape)
+
+                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
 
                 pred_list = []
-                for ik in range(self.k):
-                    _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
-                    self.servers[0].input_shape = input_shape
+                for ik in range(self.k-1): # Passive data local predict
+                    # _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
+                    _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0],attention_mask=parties_data[ik][2])
+                    self.parties[self.k-1].input_shape = input_shape
                     self.parties[ik].input_shape = input_shape
                     pred_list.append(_local_pred)
-                test_logit = self.servers[0].aggregate(pred_list, test="True")
+                test_logit = self.parties[self.k-1].aggregate(pred_list, test="True")
                 # print('test_logit:',type(test_logit),test_logit.shape)
+
+                val_pred = full_model(parties_data[0][0]) # ,return_dict = 'True'
+
+                print('val_pred:',type(val_pred),len(val_pred),val_pred[0].shape)
+                print(val_pred)
                 
+                print('test_logit:',test_logit)
+
                 if self.args.dataset == 'jigsaw_toxic':
                     sm = torch.sigmoid(test_logit).cpu().detach().numpy()
                     print('sm:',type(sm),sm.shape)
@@ -356,6 +326,63 @@ class MainTaskVFL_LLM(object):
                 print(exp_result)
                 return exp_result , self.test_acc
 
+    def train_batch(self, parties_data, batch_label):
+        '''
+        batch_label: self.gt_one_hot_label   may be noisy
+        '''
+        encoder = self.args.encoder
+        if self.args.apply_cae:
+            assert encoder != None, "[error] encoder is None for CAE"
+            _, gt_one_hot_label = encoder(batch_label) 
+            # _, test_one_hot_label = encoder(torch.tensor([[0.0,1.0],[1.0,0.0]]).to(self.args.device))
+            # print("one hot label for DCAE 1.0 of 2 class", test_one_hot_label)   
+            # for DCAE-1.0-2class, <[0.0,1.0],[1.0,0.0]> ==> <[0.9403, 0.0597],[0.0568, 0.9432]>        
+        else:
+            gt_one_hot_label = batch_label
+        
+        self.parties[self.k-1].gt_one_hot_label = gt_one_hot_label
+        # allocate data to each party
+        for ik in range(self.k):
+            self.parties[ik].obtain_local_data(parties_data[ik][0])
+            self.parties[ik].local_batch_data = self.parties[ik].local_batch_data.to(self.device)
+
+        # ====== normal vertical federated learning ======
+        torch.autograd.set_detect_anomaly(True)
+        # ======== Commu ===========
+        if self.args.communication_protocol in ['Vanilla','Quantization','Topk'] or self.Q ==1 : # parallel FedBCD & noBCD situation
+            for q in range(self.Q):
+                if q == 0: 
+                    # exchange info between party: local_prd/global_pred
+                    self.pred_transmit() 
+                    self.global_pred_transmit() 
+                    self.global_loss_transmit()
+                    
+                    # update parameters for global trainable part
+                    self.parties[self.k-1].global_backward() 
+                    # for ik in range(self.k):
+                    #     self.parties[ik].local_backward()
+        else:
+            assert 1>2 , 'Communication Protocol not provided'
+        # ============= Commu ===================
+        
+        # ###### Noisy Label Attack #######
+        # convert back to clean label to get true acc
+        if self.args.apply_nl==True:
+            real_batch_label = self.clean_one_hot_label
+        else:
+            real_batch_label = batch_label
+        # ###### Noisy Label Attack #######
+
+        pred = self.parties[self.k-1].global_pred
+        loss = self.parties[self.k-1].global_loss
+        predict_prob = F.softmax(pred, dim=-1)
+        if self.args.apply_cae:
+            predict_prob = encoder.decode(predict_prob)
+
+        suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
+        train_acc = suc_cnt / predict_prob.shape[0]
+        
+        return loss.item(), train_acc
 
     def train(self):
 
@@ -383,13 +410,12 @@ class MainTaskVFL_LLM(object):
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
             i = -1
 
-            data_loader_list = [self.parties[ik].train_loader for ik in range(self.k)]
+            data_loader_list = [self.parties[ik].train_loader for ik in range(self.k-1)]
 
             self.current_step = 0
             for parties_data in zip(*data_loader_list):
-                self.gt_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
+                self.gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                 self.gt_one_hot_label = self.gt_one_hot_label.to(self.device)
-                
                 # ###### Noisy Label Attack ######
                 if self.args.apply_nl==True:
                     # noisy label
@@ -399,8 +425,7 @@ class MainTaskVFL_LLM(object):
                 self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
 
                 i += 1
-                for ik in range(self.k_server):
-                    self.servers[ik].global_model.train()
+                self.parties[self.k-1].global_model.train()
                 
                 # ====== train batch (start) ======
                 enter_time = time.time()
@@ -440,7 +465,7 @@ class MainTaskVFL_LLM(object):
             # validation
             if (i + 1) % print_every == 0:
                 print("validate and test")
-                self.servers[0].global_model.eval()
+                self.parties[self.k-1].global_model.eval()
                 
                 suc_cnt = 0
                 sample_cnt = 0
@@ -453,20 +478,22 @@ class MainTaskVFL_LLM(object):
                 scores = []
                 targets = []
                 with torch.no_grad():
-                    data_loader_list = [self.parties[ik].test_loader for ik in range(self.k)]
+                    data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)]
+                    
                     for parties_data in zip(*data_loader_list):
-                        gt_val_one_hot_label = self.label_to_one_hot(parties_data[self.k-1][1], self.num_classes)
+                        gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                         gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
                         parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
+                        
                         pred_list = []
                         for ik in range(self.k):
                             _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
-                            self.servers[0].input_shape = input_shape
+                            self.parties[self.k-1].input_shape = input_shape
                             self.parties[ik].input_shape = input_shape
                             pred_list.append(_local_pred)
-                        test_logit = self.servers[0].aggregate(pred_list, test="True")
+                        test_logit = self.parties[self.k-1].aggregate(pred_list, test="True")
+                        # print('test_logit:',type(test_logit),test_logit.shape)
                         
-                        enc_predict_prob = test_logit
                         enc_predict_prob = F.softmax(test_logit, dim=-1)
 
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
@@ -498,13 +525,16 @@ class MainTaskVFL_LLM(object):
                     
                     exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_auc:{:.2f} test_mcc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc, self.test_auc, self.test_mcc)
+                    print(exp_result)
                     self.final_epoch = i_epoch
         
-
+        exp_result = 'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} test_auc:{:.2f} test_mcc:{:.2f}'.format(
+                        self.loss, self.train_acc, self.test_acc, self.test_auc, self.test_mcc)
+                    
         save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/' 
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        torch.save(self.servers[0].global_model.trainable_layer.state_dict(),\
+        torch.save(self.parties[self.k-1].global_model.trainable_layer.state_dict(),\
             save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
         print(save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
         

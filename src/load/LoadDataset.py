@@ -38,79 +38,52 @@ DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','credit','nursery','avazu']
 GRAPH_DATA = ['cora']
-TEXT_DATA = ['news20']
+TEXT_DATA = ['news20','cola_public','SST-2']
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
     dst : ( np.array(texts),np.array(label) )
     party 1 ~ k-1: Passive Party with data/label, no global model
     party k: Active Party with no data/label, but global model
-    '''
-    print('===== dataset_partition_llm =====')
+    '''    
     total_dim = len(dst[0])
+    passive_party_num = args.k - 1
 
-    if args.k == 1:
+    if passive_party_num == 1:
         return dst
 
     if args.dataset in TEXT_DATA: 
-
         dim_list=[0]
-        for ik in range(args.k-1):
-            dim_list.append( int(total_dim//(args.k))*(ik+1))
+        for ik in range(passive_party_num-1):
+            dim_list.append( int(total_dim//(passive_party_num))*(ik+1))
         dim_list.append(total_dim)
-        # print('dim:',total_dim, dim_list)
-        # print('dst[0]:',dst[0].shape,type(dst[0][0])) # 1600* str np array
-        # print('dst[1]:',dst[1].shape,type(dst[1][0])) # 1600* label int
 
-        
-        # dim_list=[]
-        # for ik in range(args.k):
-        #     dim_list.append(int(args.model_list[str(ik)]['input_dim']))
-        #     if len(dim_list)>1:
-        #         dim_list[-1]=dim_list[-1]+dim_list[-2]
-        # dim_list.insert(0,0)
-        
-
-        if args.k == 1:
+        if passive_party_num == 1:
             return (dst[0], dst[1])
         
-        elif args.k ==2:
-            if index == (args.k-1): # active party has label
-                print('Active Index:',index,'___',dim_list[index],':')
-                active_dst = []
-                for _i in range(dst[0].shape[0]):
-                    word_num = len(dst[0][_i]) //2
-                    active_dst.append( dst[0][_i][:word_num] )
-                active_dst = np.array(active_dst)
-                return  (active_dst, dst[1])#(dst[0][dim_list[index]:], dst[1])
-                # return (dst[0], dst[1])
-            else: # passive party does not have label
-                if index <= (args.k-1):  
-                    print('Passive Index:',index,'___',dim_list[index],':',dim_list[index+1])
-                    passive_dst = []
-                    for _i in range(dst[0].shape[0]):
-                        word_num = len(dst[0][_i]) //2
-                        passive_dst.append( dst[0][_i][word_num:] )
-                    passive_dst = np.array(passive_dst)
-                    return (passive_dst ,None) #(dst[0][dim_list[index]:dim_list[index+1]], None)
-                else:
-                    assert index <= (args.k-1), "invalide party index"
-                    return None
+        elif passive_party_num ==2:
+            # if index == (args.k-1): # active party has label
+            # print('Passive Party Index:',index,'___',dim_list[index],':')
+            active_dst = []
+            for _i in range(dst[0].shape[0]):
+                word_num = len(dst[0][_i]) //2
+                active_dst.append( dst[0][_i][:word_num] )
+            active_dst = np.array(active_dst)
+            return  (active_dst, dst[1])#(dst[0][dim_list[index]:], dst[1])
+            # else: # passive party does not have label
+            #     if index <= (args.k-1):  
+            #         print('Passive Index:',index,'___',dim_list[index],':',dim_list[index+1])
+            #         passive_dst = []
+            #         for _i in range(dst[0].shape[0]):
+            #             word_num = len(dst[0][_i]) //2
+            #             passive_dst.append( dst[0][_i][word_num:] )
+            #         passive_dst = np.array(passive_dst)
+            #         return (passive_dst ,None) #(dst[0][dim_list[index]:dim_list[index+1]], None)
+            #     else:
+            #         assert index <= (args.k-1), "invalide party index"
+            #         return None
         else:
             assert 1>2 , 'partition not available'
-
-
-        # if index == (args.k-1): # active party has label
-        #     print('Active:',dst[0][dim_list[index]:].shape, dst[1].shape)
-        #     return (dst[0][dim_list[index]:], dst[1])
-        #     # return (dst[0], dst[1])
-        # else: # passive party does not have label
-        #     if index <= (args.k-1):  
-        #         print('Passive:',dst[0][dim_list[index]:dim_list[index+1]].shape, ' None')
-        #         return (dst[0][dim_list[index]:dim_list[index+1]], None)
-        #     else:
-        #         assert index <= (args.k-1), "invalide party index"
-        #         return None
 
 
 def dataset_partition(args, index, dst, half_dim):
@@ -1322,20 +1295,33 @@ def load_dataset_per_party_llm(args, index):
         text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_train.tsv'
         df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
+        labels = df.index.values
+        X = np.array(sentences)
+        y = np.array(labels)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+        
+        # X_train = np.array(sentences)
+        # y_train = np.array(labels)
+        # text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_test.tsv'
+        # df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
+        # sentences = df.sentence.values 
+        # labels = df.label.values
+        # X_test = np.array(sentences)
+        # y_test = np.array(labels)
+
+        print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
+        print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'SST-2':
+        text_path = DATA_PATH + 'SST-2/train.tsv'
+        df = pd.read_csv(text_path , delimiter='\t', header=None, names=[ 'label', 'sentence'])
+        sentences = df.sentence.values 
         # sentences = ["[CLS] " + sentence +' [SEP]' for sentence in sentences]
         labels = df.label.values
-        # labels = torch.tensor(labels).view(-1,1)
        
-
-        # ids = args.tokenizer.batch_encode_plus(sentences, add_special_tokens=True, max_length=args.max_sequence, padding='max_length')
-        # ids['input_ids'] = torch.tensor(ids['input_ids'])
-        # ids['attention_mask'] = torch.tensor(ids['attention_mask'])
-        # input_ids = ids['input_ids']
-        # attention_mask = ids['attention_mask']
-
-        # X_train, X_test, y_train, y_test = train_test_split(input_ids, labels, test_size=0.2, random_state=args.current_seed)
-        # train_masks, test_masks, _, _ = train_test_split(attention_mask, labels, random_state=327, test_size=0.1)
-        
         X = np.array(sentences)
         y = np.array(labels)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
@@ -1345,7 +1331,7 @@ def load_dataset_per_party_llm(args, index):
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
-    
+
     elif args.dataset == 'jigsaw_toxic':
         print('== Load jigsaw ==')
         train_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/train.csv'

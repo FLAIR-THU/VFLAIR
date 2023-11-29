@@ -155,6 +155,7 @@ if __name__ == '__main__':
         args.main_acc_noattack = None
 
         args = load_attack_configs(args.configs, args, -1)
+
         args = load_parties_llm(args)
 
         commuinfo='== commu:'+args.communication_protocol
@@ -163,7 +164,6 @@ if __name__ == '__main__':
         if args.pretrained == 1:
             args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
         else:
-            print('Finetune')
             args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
 
 
