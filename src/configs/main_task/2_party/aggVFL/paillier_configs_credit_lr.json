@@ -1,6 +1,6 @@
 {
     "epochs": 40,
-    "lr": 0.6,
+    "lr": 0.5,
     "k": 2,
     "batch_size": 1024,
     "iteration_per_aggregation": 1,
