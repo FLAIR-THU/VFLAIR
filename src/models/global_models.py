@@ -105,3 +105,14 @@ class ClassificationModelHostTrainableHead3(nn.Module):
         x = F.relu(x)
         x = self.fc3_top(x)
         return x
+
+class ClassificationModelHostTrainableHeadGCN(nn.Module):
+
+    def __init__(self, hidden_dim, num_classes):
+        super().__init__()
+        self.gc = GraphConvolution(hidden_dim, num_classes)
+
+    def forward(self, z_list, data):
+        adj = data[0]
+        out = torch.cat(z_list, dim=1)
+        return self.gc(out,adj)

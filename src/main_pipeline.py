@@ -47,9 +47,10 @@ def evaluate_no_attack(args):
 
     vfl = MainTaskVFL(args)
     if args.dataset not in ['cora']:
-        main_acc , stopping_iter= vfl.train()
+        
+        main_acc , stopping_iter, stopping_time, stopping_commu_cost= vfl.train()
     else:
-        main_acc = vfl.train_graph()
+        main_acc, stopping_iter, stopping_time = vfl.train_graph()
 
     main_acc_noattack = main_acc
     attack_metric = main_acc_noattack - main_acc
@@ -59,7 +60,7 @@ def evaluate_no_attack(args):
         (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
-    append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}")
+    append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}==stopping_time:{stopping_time}==stopping_commu_cost:{stopping_commu_cost}")
     
     return vfl, main_acc_noattack
 
@@ -92,7 +93,7 @@ def evaluate_feature_inference(args):
             args = load_parties(args)
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc , stopping_iter= vfl.train()
+                main_acc , stopping_iter, stopping_time, stopping_commu_cost= vfl.train()
             else:
                 main_acc = vfl.train_graph()
 
@@ -219,7 +220,7 @@ def evaluate_attribute_inference(args):
 
             vfl = MainTaskVFL(args)
             if args.dataset not in ['cora']:
-                main_acc , stopping_iter= vfl.train()
+                main_acc , stopping_iter, stopping_time, stopping_commu_cost= vfl.train()
             else:
                 main_acc = vfl.train_graph()
             # vfl = args.basic_vfl
@@ -326,13 +327,14 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
     parser.add_argument('--seed', type=int, default=97, help='random seed')
-    parser.add_argument('--configs', type=str, default='test_attack_mnist_', help='configure json file path')
+    parser.add_argument('--configs', type=str, default='test', help='configure json file path')
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
     # for seed in range(97,102): # test 5 times 
-    # for seed in [97]:
-    for seed in [97,98,99,100,101]: # test 5 times 
+    # for seed in [60]:
+    # for seed in [97,98,99,100,101]: # test 5 times 
+    for seed in [97]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')
@@ -377,6 +379,8 @@ if __name__ == '__main__':
         print('label_inference:',args.label_inference_list,args.label_inference_index)
         print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
         print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
+        
+        
         # Save record for different defense method
         args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
         if not os.path.exists(args.exp_res_dir):
@@ -396,6 +400,10 @@ if __name__ == '__main__':
 
         args = load_attack_configs(args.configs, args, -1)
         args = load_parties(args)
+
+        commuinfo='== commu:'+args.communication_protocol
+        append_exp_res(args.exp_res_path, commuinfo)
+
         args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args)
         
         if args.label_inference_list != []:
