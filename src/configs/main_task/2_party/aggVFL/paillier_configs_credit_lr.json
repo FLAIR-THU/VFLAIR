@@ -3,7 +3,9 @@
     "lr": 0.5,
     "k": 2,
     "batch_size": 1024,
-    "iteration_per_aggregation": 1,
+    "communication":{
+        "iteration_per_aggregation": 1
+    },
     "dataset":{
         "dataset_name": "credit",
         "num_classes": 2

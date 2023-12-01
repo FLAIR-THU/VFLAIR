@@ -159,7 +159,7 @@ class MainTaskPaillierVFL(object):
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ============
         if (
-            self.args.BCD_type == "p" or self.Q == 1
+            self.Q == 1
         ):  # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0:

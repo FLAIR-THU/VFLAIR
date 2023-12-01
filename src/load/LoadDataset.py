@@ -614,8 +614,11 @@ def load_dataset_per_party(args, index):
                     "PAY_AMT6",
                 ]
             ].values
-            y = df["default payment next month"].values
+            y = df["default.payment.next.month"].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+            scaler = StandardScaler() # MinMaxScaler(feature_range=(0, 1))
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
 
         elif args.dataset == "nursery":
             df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
