@@ -46,6 +46,7 @@ class Party(object):
         self.attribute_iter = None
         self.local_batch_data = None
         self.local_batch_attention_mask = None
+        self.local_batch_token_type_ids = None
         # backdoor poison data and label and target images list
         self.train_poison_data = None
         self.train_poison_label = None
@@ -120,7 +121,8 @@ class Party(object):
         return
 
     def give_pred(self):
-        self.local_pred , input_shape = self.local_model(self.local_batch_data,attention_mask = self.local_batch_attention_mask)
+        self.local_pred , input_shape = self.local_model\
+            (self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
         # print('give pred self.local_pred:',self.local_pred.requires_grad)
         # ####### Missing Feature #######
         if (self.args.apply_mf == True):

@@ -11,7 +11,10 @@ import numpy as np
 import random
 import time
 import copy
+
 from sklearn.metrics import roc_auc_score,matthews_corrcoef
+import scipy.stats as stats
+
 import warnings
 
 # from models.vision import resnet18, MLP2
@@ -30,23 +33,18 @@ from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
 from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+from load.LoadModels import MODEL_PATH
+
 tf.compat.v1.enable_eager_execution() 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable =True
 torch.backends.cudnn.benchmark = True
 
-MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
-"bertweet-base-sentiment-analysis": "/home/DAIR/guzx/.cache/huggingface/hub/bertweet-base-sentiment-analysis",
-"Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
-"toxic-bert": "/home/DAIR/guzx/.cache/huggingface/hub/toxic-bert",
-"textattackbert-base-uncased-CoLA": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-CoLA",
-"geckosbert-base-uncased-finetuned-glue-cola": "/home/DAIR/guzx/.cache/huggingface/hub/geckosbert-base-uncased-finetuned-glue-cola",
-
-}
 
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,\
 'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,\
-'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82, 'news20':0.8, 'cola_public':0.8}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82, 'news20':0.8,\
+ 'cola_public':0.8,'SST-2':0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL_LLM(object):
@@ -116,14 +114,16 @@ class MainTaskVFL_LLM(object):
         self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
 
     def label_to_one_hot(self, target, num_classes=10):
-        # print('label_to_one_hot:', target, type(target))
+        target = target.long()
+        # print('label_to_one_hot:', target, type(target),type(target[0]))
         try:
             _ = target.size()[1]
             # print("use target itself", target.size())
             onehot_target = target.type(torch.float32).to(self.device)
         except:
             target = torch.unsqueeze(target, 1).to(self.device)
-            # print("use unsqueezed target", target.size())
+            # print("use unsqueezed target", target.size(),type(target))
+
             onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
             onehot_target.scatter_(1, target, 1)
         return onehot_target
@@ -179,13 +179,16 @@ class MainTaskVFL_LLM(object):
             # Party sends pred/attention_mask/input_shape for aggregation
             self.parties[self.k-1].input_shape = input_shape
             self.parties[self.k-1].receive_attention_mask(self.parties[ik].local_batch_attention_mask)
+            self.parties[self.k-1].receive_token_type_ids(self.parties[ik].local_batch_token_type_ids)
             self.parties[self.k-1].receive_pred(pred_clone, ik) 
             self.communication_cost += get_size_of(pred_clone)+get_size_of(self.parties[ik].local_batch_attention_mask)+\
-                get_size_of( torch.tensor(input_shape) ) #MB
+                get_size_of(self.parties[ik].local_batch_token_type_ids)+get_size_of( torch.tensor(input_shape) ) #MB
             
     def global_pred_transmit(self):
         # active party give global pred to passive party
-        final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received,self.parties[self.k-1].local_batch_attention_mask, test="True")
+        final_pred = self.parties[self.k-1].aggregate\
+            (self.parties[self.k-1].pred_received,self.parties[self.k-1].local_batch_attention_mask,\
+                self.parties[self.k-1].local_batch_token_type_ids, test="True")
         
         for ik in range(self.k-1):
             self.communication_cost += get_size_of(final_pred)
@@ -210,12 +213,15 @@ class MainTaskVFL_LLM(object):
                 
         suc_cnt = 0
         sample_cnt = 0
+        full_suc_cnt = 0
 
         test_preds = []
         test_targets = []
+        full_test_preds = []
+
         test_predict_labels = []
         test_actual_labels = []
-
+        test_full_predict_labels = []
 
         scores = []
         targets = []
@@ -225,102 +231,138 @@ class MainTaskVFL_LLM(object):
                 # parties_data[0]: (data, label, mask)
                 # parties_data[k-1]: (None,None,None)  no data for active party
 
-                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
+                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
 
-                if self.args.dataset == 'jigsaw_toxic':
+                if self.num_classes == 1: # regression
                     gt_val_one_hot_label = parties_data[0][1]
+                    # print('gt_val_one_hot_label:',type(gt_val_one_hot_label),gt_val_one_hot_label.shape)
                 else:
                     gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
-                # gt_val_one_hot_label = gt_val_one_hot_label.to(self.device)
-                # parties_data = [ [_data[0].to(self.device),_data[1].to(self.device)] for _data in parties_data]
-                
 
                 pred_list = []
                 for ik in range(self.k-1): # Passive data local predict
-                    # _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
-                    _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0],attention_mask=parties_data[ik][2])
+                    # print('input_ids:',parties_data[ik][0].shape)
+                    # print('attention_mask:',parties_data[ik][2].shape)
+                    # print('token_type_ids:',parties_data[ik][3].shape)
+
+                    _local_pred, input_shape = self.parties[ik].local_model(\
+                        parties_data[ik][0],attention_mask=parties_data[ik][2],token_type_ids = parties_data[ik][3])
+                    
                     self.parties[self.k-1].input_shape = input_shape
                     self.parties[self.k-1].local_batch_attention_mask = parties_data[0][2]
+                    self.parties[self.k-1].local_batch_token_type_ids = parties_data[0][3]
+
                     self.parties[ik].input_shape = input_shape
                     self.parties[ik].local_batch_attention_mask = parties_data[0][2]
+                    self.parties[ik].local_batch_token_type_ids = parties_data[0][3]
+
                     pred_list.append(_local_pred)
                 
-                test_logit = self.parties[self.k-1].aggregate(pred_list,self.parties[self.k-1].local_batch_attention_mask, test="True")
-                # print('test_logit:',type(test_logit),test_logit.shape)
+                test_logit = self.parties[self.k-1].aggregate\
+                    (pred_list,self.parties[self.k-1].local_batch_attention_mask,\
+                        self.parties[self.k-1].local_batch_token_type_ids, test="True")
+                # test_logit = test_logit.squeeze()
+                # print('test_logit:',type(test_logit),test_logit.shape) # [batchsize, num_classes]
                 
-                # val_pred = full_model(parties_data[0][0]) # ,return_dict = 'True'
-                # print('val_pred:',val_pred)
-                # print('test_logit:',test_logit)
+                # full_pred = full_model(parties_data[0][0],attention_mask=parties_data[0][2],return_dict=None).logits
+                # print('split_test_logit:',test_logit ) 
+                # print('full_pred:',full_pred) 
 
-                if self.args.dataset == 'jigsaw_toxic':
-                    sm = torch.sigmoid(test_logit).cpu().detach().numpy()
-                    print('sm:',type(sm),sm.shape)
-                    scores.extend(sm) 
-                    binary_scores = [s >= 0.5 for s in scores]
-                    binary_scores = np.stack(binary_scores)
-                    targets += gt_val_one_hot_label.cpu()
-                else:  
+
+                # if self.args.dataset == 'jigsaw_toxic':
+                #     sm = torch.sigmoid(test_logit).cpu().detach().numpy()
+                #     print('sm:',type(sm),sm.shape)
+                #     scores.extend(sm) 
+                #     binary_scores = [s >= 0.5 for s in scores]
+                #     binary_scores = np.stack(binary_scores)
+                #     targets += gt_val_one_hot_label.cpu()
+
+                if self.num_classes == 1: # regression
+                    predict_label = test_logit.detach().cpu()
+                    actual_label = gt_val_one_hot_label.detach().cpu()
+                    
+                    # full_predict_label = full_pred.detach().cpu()
+
+                    predict_label = torch.tensor( [ _.item() for _ in predict_label] )
+                    actual_label = torch.tensor( [ _.item() for _ in actual_label] )
+
+                    # full_predict_label = torch.tensor( [ _.item() for _ in full_predict_label] )
+
+                    # print('predict_label:',predict_label,' actual_label:',actual_label)
+
+                    # for item in predict_label:
+                    #     if np.isnan(item):
+                    #         print('predict_label yes')
+                    
+                    # for item in actual_label:
+                    #     if np.isnan(item):
+                    #         print('actual_label yes')
+
+                    test_predict_labels.extend( list(predict_label) )
+                    test_actual_labels.extend( list(actual_label) )
+
+                    # test_full_predict_labels.extend( list(full_predict_label) )
+
+                else:  # classification
                     enc_predict_prob = test_logit
-                    enc_predict_prob = F.softmax(test_logit, dim=-1)
+                    # full_enc_predict_prob = full_pred
+                    # enc_predict_prob = F.softmax(test_logit, dim=-1)
 
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)
                     actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
+                    # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
 
                     test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
                     test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
+                    # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
 
                     test_predict_labels.extend( list(predict_label.detach().cpu()) )
                     test_actual_labels.extend( list(actual_label.detach().cpu()) )
-        
+                    # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
+
                     sample_cnt += predict_label.shape[0]
                     suc_cnt += torch.sum(predict_label == actual_label).item()
+                    # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
 
                 del(parties_data) # remove from cuda
             
 
-            if self.args.dataset == 'jigsaw_toxic':
-                binary_scores = [s >= 0.5 for s in scores]
-                binary_scores = np.stack(binary_scores)
-                scores = np.stack(scores) #[instance_num,6]
-                targets = np.stack(targets) #[instance_num,6]
-                print('scores:',scores.shape)
-                print('targets:',targets.shape)
+            if self.num_classes == 1: # regression
+                
+                self.test_mse = torch.mean((torch.tensor(test_predict_labels)-torch.tensor(test_actual_labels))**2).item()
+                #torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
+                
+                # print('test_predict_labels:',test_predict_labels[:10])
+                # for item in test_predict_labels:
+                #     if np.isnan(item):
+                #         print('yes')
 
-                auc_scores = []
+                # print('test_actual_labels:',test_actual_labels[:10])
+                # for item in test_actual_labels:
+                #     if np.isnan(item):
+                #         print('yes')
 
-                for class_idx in range(scores.shape[1]): # 1-6
-                    mask = targets[:, class_idx] != -1
-                    print('===== class_idx:',class_idx)
-                    print('mask:',type(mask), mask.shape )
-                    target_binary = targets[mask, class_idx]
-                    class_scores = scores[mask, class_idx]
-                    try:
-                        # print('target_binary:',type(target_binary),target_binary.shape,target_binary[:5])
-                        # print('class_scores:',type(class_scores),class_scores.shape,class_scores[:5])
-                        auc = roc_auc_score(target_binary, class_scores)
-                        print('auc=',auc)
-                        auc_scores.append(auc)
-                    except Exception:
-                        warnings.warn(
-                            "Only one class present in y_true. ROC AUC score is not defined in that case. Set to nan for now."
-                        )
-                        auc_scores.append(np.nan)
-                mean_auc = np.mean(auc_scores)
-                self.test_auc = mean_auc
-
-                postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
-                exp_result = 'test_auc:{:.2f}'.format(self.test_auc)
-                return exp_result,self.test_auc
-
+                self.test_pearson_corr = stats.pearsonr( torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) )[0]
+                # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
+                self.test_spearmanr_corr = stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+                postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
+                postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
+                
+                exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr )
+                print(exp_result)
+                # print('Full pred pearson:',full_test_pearson_corr)
+                return exp_result , self.test_mse
+            
             else:
+                # print('test_predict_labels:',test_predict_labels[:20]) 
+                # print('test_actual_labels:',test_actual_labels[:20]) 
+
                 self.test_acc = suc_cnt / float(sample_cnt) # ACC
+                # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
 
                 test_preds = np.vstack(test_preds)
                 test_targets = np.vstack(test_targets)
                 self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
-
-                # print('test_predict_labels:',np.array(test_predict_labels).shape,np.array(test_predict_labels)[:5])
-                # print('test_actual_labels:',np.array(test_actual_labels).shape,np.array(test_actual_labels)[:5])
 
                 self.test_mcc = matthews_corrcoef(np.array(test_predict_labels),np.array(test_actual_labels) ) # MCC
 
@@ -330,7 +372,42 @@ class MainTaskVFL_LLM(object):
 
                 exp_result = 'test_acc:{:.2f} test_auc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_auc, self.test_mcc )
                 print(exp_result)
+                # print('Full acc:',full_test_acc)
                 return exp_result , self.test_acc
+
+                # if self.args.dataset == 'jigsaw_toxic':
+            #     binary_scores = [s >= 0.5 for s in scores]
+            #     binary_scores = np.stack(binary_scores)
+            #     scores = np.stack(scores) #[instance_num,6]
+            #     targets = np.stack(targets) #[instance_num,6]
+            #     print('scores:',scores.shape)
+            #     print('targets:',targets.shape)
+
+            #     auc_scores = []
+
+            #     for class_idx in range(scores.shape[1]): # 1-6
+            #         mask = targets[:, class_idx] != -1
+            #         print('===== class_idx:',class_idx)
+            #         print('mask:',type(mask), mask.shape )
+            #         target_binary = targets[mask, class_idx]
+            #         class_scores = scores[mask, class_idx]
+            #         try:
+            #             # print('target_binary:',type(target_binary),target_binary.shape,target_binary[:5])
+            #             # print('class_scores:',type(class_scores),class_scores.shape,class_scores[:5])
+            #             auc = roc_auc_score(target_binary, class_scores)
+            #             print('auc=',auc)
+            #             auc_scores.append(auc)
+            #         except Exception:
+            #             warnings.warn(
+            #                 "Only one class present in y_true. ROC AUC score is not defined in that case. Set to nan for now."
+            #             )
+            #             auc_scores.append(np.nan)
+            #     mean_auc = np.mean(auc_scores)
+            #     self.test_auc = mean_auc
+
+            #     postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+            #     exp_result = 'test_auc:{:.2f}'.format(self.test_auc)
+            #     return exp_result,self.test_auc
 
     def train_batch(self, parties_data, batch_label):
         '''
@@ -348,6 +425,8 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].obtain_local_data(parties_data[ik][0])
             self.parties[ik].gt_one_hot_label = self.gt_one_hot_label
             self.parties[ik].local_batch_attention_mask = parties_data[ik][2]
+            self.parties[ik].local_batch_token_type_ids = parties_data[ik][3]
+
 
         # ====== normal vertical federated learning ======
         torch.autograd.set_detect_anomaly(True)
@@ -417,9 +496,14 @@ class MainTaskVFL_LLM(object):
 
             self.current_step = 0
             for parties_data in zip(*data_loader_list):
-                self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
+                self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
 
-                self.gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
+                if self.num_classes == 1: # regression
+                    self.gt_one_hot_label = parties_data[0][1]
+                    # print('gt_val_one_hot_label:',type(gt_val_one_hot_label),gt_val_one_hot_label.shape)
+                else:
+                    self.gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
+                
                 # ###### Noisy Label Attack ######
                 if self.args.apply_nl==True:
                     # noisy label
@@ -486,19 +570,31 @@ class MainTaskVFL_LLM(object):
                     
                     for parties_data in zip(*data_loader_list):
                         parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device)] for _data in parties_data]
-                        gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
+                        
+                        if self.num_classes == 1: # regression
+                            gt_val_one_hot_label = parties_data[0][1]
+                            # print('gt_val_one_hot_label:',type(gt_val_one_hot_label),gt_val_one_hot_label.shape)
+                        else:
+                            gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                         
                         pred_list = []
                         for ik in range(self.k-1): # Passive data local predict
                             # _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
-                            _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0],attention_mask=parties_data[ik][2])
+                            _local_pred, input_shape = self.parties[ik].local_model(\
+                                parties_data[ik][0],attention_mask=parties_data[ik][2],token_type_ids = parties_data[ik][3])
                             self.parties[self.k-1].input_shape = input_shape
                             self.parties[self.k-1].local_batch_attention_mask = parties_data[0][2]
+                            self.parties[self.k-1].local_batch_token_type_ids = parties_data[0][3]
+
                             self.parties[ik].input_shape = input_shape
                             self.parties[ik].local_batch_attention_mask = parties_data[0][2]
+                            self.parties[ik].local_batch_token_type_ids = parties_data[0][3]
+
                             pred_list.append(_local_pred)
                         
-                        test_logit = self.parties[self.k-1].aggregate(pred_list,self.parties[self.k-1].local_batch_attention_mask, test="True")
+                        test_logit = self.parties[self.k-1].aggregate\
+                            (pred_list,self.parties[self.k-1].local_batch_attention_mask,\
+                                self.parties[self.k-1].local_batch_token_type_ids, test="True")
                         # print('test_logit:',type(test_logit),test_logit.shape)
                         
                         enc_predict_prob = F.softmax(test_logit, dim=-1)

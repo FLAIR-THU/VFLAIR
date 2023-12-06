@@ -20,52 +20,45 @@ class SimpleDataset(Dataset):
         data_i, target_i = self.data[item_idx], self.labels[item_idx]
         return torch.tensor(data_i.clone().detach(), dtype=torch.float32), torch.tensor(target_i.clone().detach(), dtype=torch.long)
 
-# class PassiveDataset_LLM(Dataset):
-#     def __init__(self, args, texts ,labels):
-#         '''
-#         texts: np.array
-#         '''
-#         self.texts = []
-#         self.masks = []
-
-#         for _text in texts:
-#             ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
-#             self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
-#             self.masks.append( torch.tensor(ids['attention_mask']) )
-
-#         self.texts=torch.tensor( [aa.tolist() for aa in self.texts] )#.to(args.device)
-
-#         self.masks=torch.tensor( [aa.tolist() for aa in self.masks] )#.to(args.device)
-
-#         self.labels = torch.tensor(labels) #.to(args.device)
-#         # print('PassiveDataset_LLM with data/label:', self.texts.shape,self.masks.shape, self.labels.shape)
-
-#     def __len__(self):
-#         return len(self.labels)
-
-
-#     def __getitem__(self, item_idx):
-#         data_i, target_i , mask_i= self.texts[item_idx], self.labels[item_idx], self.masks[item_idx]
-#         return torch.tensor(data_i.clone().detach(), dtype=torch.float32),torch.tensor(target_i.clone().detach(), dtype=torch.long)
-#     #torch.tensor(mask_i.clone().detach(), dtype=torch.float32), \
-
 
 class PassiveDataset_LLM(Dataset):
     def __init__(self, args, texts ,labels):
         '''
         texts: np.array
         '''
+        self.args = args
         self.texts = []
         self.masks = []
+        self.token_type_ids = []
 
-        for _text in texts:
-            ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
-            self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
-            self.masks.append( torch.tensor(ids['attention_mask']) )
+
+        if len( texts.shape) == 1: # input: single sentence
+            for _text in texts:
+                ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+                self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+                self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
+                self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+
+        elif len( texts.shape) == 2: # input: sentence pairs
+            for _text in texts:
+                try:
+                    ids = args.tokenizer(_text[0],_text[1], padding='max_length',  # Pad to max_length
+                                truncation='longest_first',  # Truncate to max_length
+                                max_length=args.max_sequence,  
+                                return_tensors='pt')
+                except:
+                    print(type(_text[0]),_text[0],type(_text[1]),_text[1])
+                    print( '_text:',type(_text),len(_text) )
+                    assert 1>2
+                self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+                self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
+                self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
 
         self.texts=torch.tensor( [aa.tolist() for aa in self.texts] )#.to(args.device)
 
         self.masks=torch.tensor( [aa.tolist() for aa in self.masks] )#.to(args.device)
+
+        self.token_type_ids=torch.tensor( [aa.tolist() for aa in self.token_type_ids] )#.to(args.device)
 
         self.labels = torch.tensor(labels) #.to(args.device)
         # print('PassiveDataset_LLM with data/label:', self.texts.shape,self.masks.shape, self.labels.shape)
@@ -75,69 +68,19 @@ class PassiveDataset_LLM(Dataset):
 
 
     def __getitem__(self, item_idx):
-        data_i, target_i , mask_i= self.texts[item_idx], self.labels[item_idx], self.masks[item_idx]
-        return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
-            torch.tensor(target_i.clone().detach(), dtype=torch.long),\
-            torch.tensor(mask_i.clone().detach(), dtype=torch.long) #torch.float32
+        data_i, target_i , mask_i, token_type_ids_i =\
+            self.texts[item_idx], self.labels[item_idx], self.masks[item_idx], self.token_type_ids[item_idx]
 
-
-# class PassiveDataset_LLM(Dataset):
-#     def __init__(self, args, texts):
-        
-#         self.texts = []
-#         for _text in texts:
-#             ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
-#             self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
-#         self.texts=torch.tensor( [aa.tolist() for aa in self.texts] )#.to(args.device)
-
-#         self.labels = None
-#         print('PassiveDataset_LLM texts:',self.texts.shape)
-
-
-#     def __len__(self):
-#         return len(self.texts)
-
-#     def get_batch_texts(self, idx):
-#         # Fetch a batch of inputs
-#         return self.texts[idx]
-
-#     def __getitem__(self, item_idx):
-#         data_i= self.texts[item_idx]
-#         return torch.tensor(data_i, dtype=torch.float32), torch.tensor([]*data_i.size()[0])
-
-#     # def __getitem__(self, idx):
-#     #     batch_texts = self.get_batch_texts(idx)
-#     #     return batch_texts
-
-
-# class ActiveDataset_LLM(Dataset):
-#     def __init__(self, args, texts ,labels):
-#         '''
-#         texts: np.array
-#         '''
-#         self.texts = []
-#         self.masks = []
-
-#         for _text in texts:
-#             ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
-#             self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
-#             self.masks.append( torch.tensor(ids['attention_mask']) )
-
-#         self.texts=torch.tensor( [aa.tolist() for aa in self.texts] )#.to(args.device)
-
-#         self.masks=torch.tensor( [aa.tolist() for aa in self.masks] )#.to(args.device)
-
-#         self.labels = torch.tensor(labels) #.to(args.device)
-#         print('ActiveDataset_LLM texts:', self.texts.shape,self.masks.shape, self.labels.shape)
-
-#     def __len__(self):
-#         return len(self.labels)
-
-
-#     def __getitem__(self, item_idx):
-#         data_i, target_i , mask_i= self.texts[item_idx], self.labels[item_idx], self.masks[item_idx]
-#         return torch.tensor(data_i.clone().detach(), dtype=torch.float32),torch.tensor(target_i.clone().detach(), dtype=torch.long)
-#     #torch.tensor(mask_i.clone().detach(), dtype=torch.float32), \
+        if self.args.num_classes == 1:
+            return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
+                torch.tensor(target_i.clone().detach(), dtype=torch.float32),\
+                torch.tensor(mask_i.clone().detach(), dtype=torch.long),\
+                torch.tensor(token_type_ids_i.clone().detach(), dtype=torch.long) #torch.float32
+        else:
+            return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
+                torch.tensor(target_i.clone().detach(), dtype=torch.long),\
+                torch.tensor(mask_i.clone().detach(), dtype=torch.long),\
+                torch.tensor(token_type_ids_i.clone().detach(), dtype=torch.long) #torch.float32
 
 
 class PassiveDataset(Dataset):

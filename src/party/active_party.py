@@ -191,14 +191,6 @@ class ActiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
-    # def prepare_model(self, args, index):
-    #     print(' ##  prepare_model Active ')
-    #     # prepare model and optimizer
-    #     (
-    #         args,
-    #         self.global_model,
-    #         self.global_model_optimizer
-    #     ) = load_models_per_party(args, index)
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
@@ -208,12 +200,20 @@ class ActiveParty_LLM(Party_LLM):
     
     def receive_attention_mask(self, attention_mask):
         self.local_batch_attention_mask = attention_mask
+    
+    def receive_token_type_ids(self, token_type_ids):
+        self.local_batch_token_type_ids = token_type_ids
 
-    def aggregate(self, pred_list, attention_mask, test=False):
-        pred = self.global_model(pred_list[0], self.input_shape, attention_mask)
+    def aggregate(self, pred_list, attention_mask,token_type_ids, test=False):
+        pred = self.global_model(pred_list[0], self.input_shape, attention_mask,token_type_ids)
         self.global_pred = pred
         return pred
-
+    
+    # def aggregate(self,  test=False):
+    #     pred = self.global_model(self.pred_received[0], self.input_shape, \
+    #         self.local_batch_attention_mask,self.local_batch_token_type_ids)
+    #     self.global_pred = pred
+    #     return pred
 
     def global_LR_decay(self,i_epoch):
         if self.global_model_optimizer != None: 

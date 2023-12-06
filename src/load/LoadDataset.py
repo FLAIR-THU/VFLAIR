@@ -38,7 +38,7 @@ DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','credit','nursery','avazu']
 GRAPH_DATA = ['cora']
-TEXT_DATA = ['news20','cola_public','SST-2']
+TEXT_DATA = ['news20','cola_public','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE']
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
@@ -1219,12 +1219,35 @@ def load_dataset_per_party_noisysample(args, index):
     return args, half_dim, train_dst, test_dst, train_poison_dst, test_poison_dst
 
 
+def load_mnli(file, header=True, multi_snli=False, is_train=True):
+    rows = []
+    cnt = 0
+    with open(file, encoding="utf8") as f:
+        for line in f:
+            if header:
+                header = False
+                continue
+            blocks = line.strip().split("\t")
+            assert len(blocks) > 9
+            if blocks[-1] == "-":
+                continue
+            lab = "contradiction"
+            if is_train:
+                lab = blocks[-1]
+            if lab is None:
+                import pdb
 
-def tokenize_and_truncate(text,tokenizer,max_length):
-    # clipping input to max_length
-    tokens = tokenizer.tokenize(tokenizer.decode(tokenizer.encode(text, max_length=max_length)))
-    return tokens[:max_length]
-    
+                pdb.set_trace()
+            sample = {
+                "uid": blocks[0],
+                "premise": blocks[8],
+                "hypothesis": blocks[9],
+                "label": lab,
+            }
+            rows.append(sample)
+            cnt += 1
+    return rows
+
 def load_dataset_per_party_llm(args, index):
     print('load_dataset_per_party_llm  args.need_auxiliary = ',args.need_auxiliary)
     args.classes = [None] * args.num_classes
@@ -1292,13 +1315,21 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test,y_test)
 
     elif args.dataset == 'cola_public':
-        text_path = DATA_PATH + 'NLP/cola_public/raw/in_domain_train.tsv'
+        text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
         df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
         labels = df.label.values
-        X = np.array(sentences)
-        y = np.array(labels)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+        X_train = np.array(sentences)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
+        df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
+        sentences = df.sentence.values 
+        labels = df.label.values
+        X_test = np.array(sentences)
+        y_test = np.array(labels)
+
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
 
         print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
         print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
@@ -1307,16 +1338,226 @@ def load_dataset_per_party_llm(args, index):
     
     elif args.dataset == 'SST-2':
         text_path = DATA_PATH + 'SST-2/train.tsv'
-        df = pd.read_csv(text_path , delimiter='\t', header=None)# names=[  'sentence','label']
+        df = pd.read_csv(text_path , delimiter='\t')# names=[  'sentence','label']
         sentences = df.sentence.values 
         labels = df.label.values
        
-        X = np.array(sentences)
-        y = np.array(labels)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+        X_train = np.array(sentences)
+        y_train = np.array(labels)
 
-        print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
-        print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
+        text_path = DATA_PATH + 'SST-2/dev.tsv'
+        df = pd.read_csv(text_path , delimiter='\t')# names=[  'sentence','label']
+        sentences = df.sentence.values 
+        labels = df.label.values
+       
+        X_test = np.array(sentences)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'STS-B':
+        text_path = DATA_PATH + 'STS-B/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = df.dropna()
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.score.values
+
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'STS-B/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = df.dropna()
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.score.values
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'MRPC':
+        text_path = DATA_PATH + 'MRPC/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)# names=[  'sentence','label']
+        df.columns = [  'Quality', 'id1', 'id2', 'sentence1','sentence2']
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.Quality.values
+        
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'MRPC/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df.columns = [  'Quality', 'id1', 'id2', 'sentence1','sentence2']
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.Quality.values
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+
+    elif args.dataset == 'MNLI':
+        label_dict={
+            'entailment': 1,
+            'neutral': 2,
+            'contradiction': 0
+        }
+
+        text_path = DATA_PATH + 'MNLI/train.tsv'
+        data = load_mnli(text_path)
+        print("Loaded {} MNLI train samples".format(len(data)))
+        # text_path = DATA_PATH + 'MNLI/train.tsv'
+        # df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)[:5000]# names=[  'sentence','label']
+        sentence_pairs = [ [ _data['premise'],_data['hypothesis'] ]for _data in data]
+        labels = [ _data['label'] for _data in data]
+        sentence_pairs = np.array(sentence_pairs )
+        labels = [ label_dict[_label] for _label in labels ]
+        
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'MNLI/dev_matched.tsv'
+        data = load_mnli(text_path)
+        print("Loaded {} MNLI dev samples".format(len(data)))
+        # text_path = DATA_PATH + 'MNLI/train.tsv'
+        # df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)[:5000]# names=[  'sentence','label']
+        sentence_pairs = [ [ _data['premise'],_data['hypothesis'] ] for _data in data]
+        labels = [ _data['label'] for _data in data]
+        sentence_pairs = np.array(sentence_pairs )
+        labels = [ label_dict[_label] for _label in labels ]
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape,type(y_train[0])) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'QNLI':
+        label_dict={
+            'entailment': 0,
+            'not_entailment': 1
+        }
+        text_path = DATA_PATH + 'QNLI/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.question.values,df.sentence.values)) )
+        labels = df.label.values
+        labels = [ label_dict[_label] for _label in labels ]
+
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'QNLI/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.question.values,df.sentence.values)) )
+        labels = df.label.values
+        labels = [ label_dict[_label] for _label in labels ]
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'QQP':
+        text_path = DATA_PATH + 'QQP/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.question1.values,df.question2.values)) )
+        labels = df.is_duplicate.values
+
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'QQP/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.question1.values,df.question2.values)) )
+        labels = df.is_duplicate.values
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'WNLI':
+        text_path = DATA_PATH + 'WNLI/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.label.values
+
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'WNLI/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.label.values
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
+        
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+    
+    elif args.dataset == 'RTE':
+        label_dict={
+            'entailment': 0,
+            'not_entailment': 1
+        }
+        text_path = DATA_PATH + 'RTE/train.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = df.dropna()
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.label.values
+        labels = [ label_dict[_label] for _label in labels ]
+
+        X_train = np.array(sentence_pairs)
+        y_train = np.array(labels)
+
+        text_path = DATA_PATH + 'RTE/dev.tsv'
+        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = df.dropna()
+        sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
+        labels = df.label.values
+        labels = [ label_dict[_label] for _label in labels ]
+       
+        X_test = np.array(sentence_pairs)
+        y_test = np.array(labels)
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape) # 
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)

@@ -127,9 +127,10 @@ class GlobalBertClassifier_pretrained(nn.Module):
         # torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         # torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id, input_shape,attention_mask):
+    def forward(self, input_id, input_shape,attention_mask,token_type_ids):
        # print('==== global model forward ====')
-        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
+        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,\
+            token_type_ids=token_type_ids,return_dict=False)#attention_mask=mask,return_dict=False)
         # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
         pooled_output = outputs[1]
