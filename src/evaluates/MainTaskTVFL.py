@@ -26,6 +26,7 @@ class MainTaskTVFL(object):
         self.seed = args.seed
         self.number_of_trees = args.number_of_trees
         self.depth = args.depth
+        self.is_hybrid = args.is_hybrid
 
         self.apply_defense = args.apply_defense
         self.defense_name = args.defense_name
@@ -51,6 +52,7 @@ class MainTaskTVFL(object):
                 depth=self.depth,
                 active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
+                is_hybrid=self.is_hybrid,
                 **self.advanced_params
             )
         elif self.model_type == "randomforest":

@@ -36,6 +36,7 @@ def load_tree_configs(config_file_name, args):
         if ("use_missing_value" in config_dict)
         else False
     )
+    args.is_hybrid = config_dict["is_hybrid"] if ("is_hybrid" in config_dict) else False
     args.use_encryption = (
         config_dict["use_encryption"] if ("use_encryption" in config_dict) else False
     )

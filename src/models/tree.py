@@ -27,6 +27,7 @@ class XGBoostTree(Tree):
         mi_bound: float,
         active_party_id: int = -1,
         use_only_active_party: bool = False,
+        is_hybrid: bool = False,
         n_job: int = 1,
         grad_encrypted=None,
         hess_encrypted=None,
@@ -56,7 +57,8 @@ class XGBoostTree(Tree):
             n_job,
             grad_encrypted,
             hess_encrypted,
-            y_onehot_encoded_encrypted
+            y_onehot_encoded_encrypted,
+            is_hybrid
         )
 
 
@@ -122,6 +124,7 @@ class XGBoostBase:
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
         use_encryption=False,
+        is_hybrid=False,
         n_job: int = 1,
         save_loss: bool = True,
     ):
@@ -139,6 +142,7 @@ class XGBoostBase:
         self.completelly_secure_round = completelly_secure_round
         self.init_value = init_value
         self.use_encryption = use_encryption
+        self.is_hybrid = is_hybrid
         self.n_job = n_job
         self.save_loss = save_loss
         if num_classes == 2:
@@ -217,6 +221,7 @@ class XGBoostBase:
                 self.mi_bound,
                 self.active_party_id,
                 (self.completelly_secure_round > i),
+                self.is_hybrid,
                 self.n_job,
                 grad_encrypted=grad_encrypted,
                 hess_encrypted=hess_encrypted,
