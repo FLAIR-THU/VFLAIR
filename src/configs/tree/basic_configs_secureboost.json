@@ -8,7 +8,7 @@
     "max_bin": 4,
     "use_missing_value": false,
     "use_encryption": true,
-    "key_length": 512,
+    "key_length": 256,
     "advanced_params":{"learning_rate":0.1, "lam":1.0, "gamma":0.0, "eps":1.0}
 }
 
