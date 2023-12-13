@@ -100,8 +100,10 @@ class XGBoostNode(Node):
         self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
         self.is_hybrid = is_hybrid
 
-        if self.is_hybrid and (self.depth != 1):
+        if self.is_hybrid and (self.depth > 1):
             self.use_only_active_party = True
+        else:
+            self.use_only_active_party = False
 
         self.best_entropy = None
         self.left = None
