@@ -97,6 +97,7 @@ class XGBoostParty(Party):
         subsample_cols,
         num_precentile_bin,
         use_missing_value=False,
+        use_encrypted_label=True,
         seed=0,
     ):
         super().__init__(
@@ -110,6 +111,7 @@ class XGBoostParty(Party):
             seed,
         )
         self.num_precentile_bin = num_precentile_bin
+        self.cum_num_addition = 0
 
     def get_threshold_candidates(self, x_col):
         if len(x_col) > self.num_precentile_bin:
@@ -164,11 +166,13 @@ class XGBoostParty(Party):
 
                 for r in range(current_min_idx, not_missing_values_count):
                     if x_col[r] <= percentiles[p]:
-                        for c in range(self.num_classes):
-                            temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
+                        if self.use_encrypted_label:
+                            for c in range(self.num_classes):
+                                temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                         for c in range(grad_dim):
                             temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                             temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
+                            self.cum_num_addition += 2
                         temp_left_size += 1
                         cumulative_left_size += 1
                     else:
@@ -195,11 +199,13 @@ class XGBoostParty(Party):
 
                     for r in range(current_max_idx, 0, -1):
                         if x_col[r] <= percentiles[p]:
-                            for c in range(self.num_classes):
-                                temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
+                            if self.use_encrypted_label:
+                                for c in range(self.num_classes):
+                                    temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                             for c in range(grad_dim):
                                 temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                                 temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
+                                self.cum_num_addition += 2
                             temp_left_size += 1
                             cumulative_right_size += 1
                         else:

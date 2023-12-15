@@ -51,12 +51,15 @@ class Party:
     def decrypt_1dlist(self, row):
         results = []
         for e in row:
-            try:
-                results.append(self.sk.decrypt(e))
-            except Exception as e:
-                results.append(0)
-                print(type(e), str(e))
-                continue
+            if (e == 0):
+                results.append(e)
+            else:
+                try:
+                    results.append(self.sk.decrypt(e))
+                except Exception as e:
+                    results.append(0)
+                    print(type(e), str(e))
+                    continue
         return results
 
     def decrypt_2dlist(self, mat):
