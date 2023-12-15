@@ -84,3 +84,8 @@ class MainTaskTVFL(object):
                 raise ValueError(f"defense_name should be `grafting-ldp`, `id-lmid`, or `lp-mst`")
         else:
             self.clf.fit(self.parties, self.y)
+
+        if self.model_type == "xgboost":
+            for i, p in enumerate(self.parties):
+                print(f" party-{i}: cum_num_addition={p.cum_num_addition}")
+            print(f" time spent for encryption: {self.clf.cum_time_encryption}")

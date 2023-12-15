@@ -1,3 +1,4 @@
+import time
 import random
 from typing import Callable, List
 
@@ -153,6 +154,8 @@ class XGBoostBase:
         self.estimators = []
         self.logging_loss = []
 
+        self.cum_time_encryption = 0
+
     def get_init_pred(self, y: np.ndarray) -> List[List[float]]:
         pass
 
@@ -178,7 +181,11 @@ class XGBoostBase:
             for i in range(len(y))
         ]
         y_onehot_encoded_encrypted = None
-        if self.use_encryption:
+
+        use_encrypted_label = True
+        for p in parties:
+            use_encrypted_label = use_encrypted_label and p.use_encrypted_label
+        if self.use_encryption and use_encrypted_label:
             y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
                 y_onehot_encoded
             )
@@ -198,11 +205,14 @@ class XGBoostBase:
                 base_pred, y
             ), self.lossfunc_obj.get_hess(base_pred, y)
 
+            tmp_time_start = time.time()
             grad_encrypted = None
             hess_encrypted = None
             if self.use_encryption:
                 grad_encrypted = parties[self.active_party_id].encrypt_2dlist(grad)
                 hess_encrypted = parties[self.active_party_id].encrypt_2dlist(hess)
+            tmp_time_end = time.time()
+            self.cum_time_encryption += tmp_time_end - tmp_time_start
 
             boosting_tree = XGBoostTree()
             boosting_tree.fit(

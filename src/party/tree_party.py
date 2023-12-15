@@ -17,7 +17,7 @@ class RandomForestParty(Party):
         seed: int = 0,
     ):
         super().__init__(
-            x, num_classes, feature_id, party_id, min_leaf, subsample_cols, False, seed
+            x, num_classes, feature_id, party_id, min_leaf, subsample_cols, False, True, seed
         )
 
     def get_threshold_candidates(self, x_col: List[float]) -> List[float]:
@@ -108,6 +108,7 @@ class XGBoostParty(Party):
             min_leaf,
             subsample_cols,
             use_missing_value,
+            use_encrypted_label,
             seed,
         )
         self.num_precentile_bin = num_precentile_bin

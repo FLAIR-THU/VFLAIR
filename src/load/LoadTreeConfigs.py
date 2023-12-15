@@ -40,6 +40,7 @@ def load_tree_configs(config_file_name, args):
     args.use_encryption = (
         config_dict["use_encryption"] if ("use_encryption" in config_dict) else False
     )
+    args.use_encrypted_label = (config_dict["use_encrypted_label"] if ("use_encrypted_label" in config_dict) else False)
 
     args.apply_defense = "defense" in config_dict
 

@@ -13,6 +13,7 @@ class Party:
         min_leaf,
         subsample_cols,
         use_missing_value=False,
+        use_encrypted_label=True,
         seed=0,
     ):
         self.x = x
@@ -22,6 +23,7 @@ class Party:
         self.min_leaf = min_leaf
         self.subsample_cols = subsample_cols
         self.use_missing_value = use_missing_value
+        self.use_encrypted_label = use_encrypted_label
         self.seed = seed
 
         self.col_count = len(x[0])
