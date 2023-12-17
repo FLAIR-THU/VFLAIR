@@ -88,4 +88,5 @@ class MainTaskTVFL(object):
         if self.model_type == "xgboost":
             for i, p in enumerate(self.parties):
                 print(f" party-{i}: cum_num_addition={p.cum_num_addition}")
+                print(f" party-{i}: cum_num_communicated_ciphertexts={p.cum_num_communicated_ciphertexts}")
             print(f" time spent for encryption: {self.clf.cum_time_encryption}")

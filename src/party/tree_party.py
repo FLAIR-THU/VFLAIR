@@ -113,6 +113,7 @@ class XGBoostParty(Party):
         )
         self.num_precentile_bin = num_precentile_bin
         self.cum_num_addition = 0
+        self.cum_num_communicated_ciphertexts = 0
 
     def get_threshold_candidates(self, x_col):
         if len(x_col) > self.num_precentile_bin:
@@ -187,6 +188,7 @@ class XGBoostParty(Party):
                         (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
                     )
                     self.temp_thresholds[i].append(percentiles[p])
+                    self.cum_num_communicated_ciphertexts += 2
 
             if self.use_missing_value:
                 current_max_idx = not_missing_values_count - 1
@@ -227,5 +229,6 @@ class XGBoostParty(Party):
                         self.temp_thresholds[i + self.subsample_col_count].append(
                             percentiles[p]
                         )
+                        self.cum_num_communicated_ciphertexts += 2
 
         return split_candidates_grad_hess

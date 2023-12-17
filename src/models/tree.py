@@ -214,6 +214,10 @@ class XGBoostBase:
             tmp_time_end = time.time()
             self.cum_time_encryption += tmp_time_end - tmp_time_start
 
+            for i, p in enumerate(parties):
+                p.cum_num_communicated_ciphertexts += len(grad) + len(hess)
+
+
             boosting_tree = XGBoostTree()
             boosting_tree.fit(
                 parties,
