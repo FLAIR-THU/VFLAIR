@@ -49,13 +49,13 @@ def set_seed(seed=0):
     torch.backends.cudnn.benchmark = True
 
 
-def evaluate_no_attack(args, debug=False):
+def evaluate_no_attack(args, pk, sk, debug=False):
     # No Attack
     set_seed(args.current_seed)
 
-    vfl = MainTaskPaillierVFL(args, debug)
+    vfl = MainTaskPaillierVFL(args, pk, sk, debug)
     if args.dataset not in ["cora"]:
-        main_acc = vfl.train()
+        main_acc, stopping_iter = vfl.train()
     else:
         main_acc = vfl.train_graph()
 
@@ -77,6 +77,8 @@ def evaluate_no_attack(args, debug=False):
     )
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
+    append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}")
+
     return vfl, main_acc_noattack
 
 
@@ -180,10 +182,10 @@ if __name__ == "__main__":
         args.basic_vfl = None
         args.main_acc_noattack = None
 
-        keypair = paillier.generate_paillier_keypair(n_length=128)
+        keypair = paillier.generate_paillier_keypair(n_length=256)
         pk, sk = keypair
 
         args = load_attack_configs(args.configs, args, -1)
-        args = load_paillier_parties(args, pk, sk)
+        args = load_paillier_parties(args, pk)
 
-        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args, args.debug)
+        args.basic_vfl, args.main_acc_noattack = evaluate_no_attack(args, pk, sk, args.debug)

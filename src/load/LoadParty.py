@@ -21,7 +21,7 @@ def load_parties(args):
     return args
 
 
-def load_paillier_parties(args, pk, sk):
+def load_paillier_parties(args, pk):
     # party 0,1,2,...,args.k-2||,args,k-1
     args.parties = [None] * args.k 
 
@@ -29,7 +29,7 @@ def load_paillier_parties(args, pk, sk):
     # for passive party 0,1,2,...,args.k-2
     for ik in range(args.k-1):
         args.parties[ik] = PaillierPassiveParty(args, ik)
-        args.parties[ik].set_keypairs(pk, sk)
+        args.parties[ik].set_pk(pk)
 
     # for active party args.k-1
     args.parties[args.k-1] = PaillierActiveParty(args, args.k-1)

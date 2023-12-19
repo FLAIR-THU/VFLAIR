@@ -37,6 +37,7 @@ class PaillierTensor(object):
             self._paillier_np_array = paillier_array
         else:
             raise TypeError(f"{type(paillier_array)} is not supported.")
+        self.device = torch.device("cpu")
 
     def __repr__(self):
         return "PaillierTensor"
@@ -60,6 +61,13 @@ class PaillierTensor(object):
 
     def cpu(self):
         return self
+
+    def size(self):
+        return torch.Size(self._paillier_np_array.shape)
+
+    @property
+    def T(self):
+        return PaillierTensor(self._paillier_np_array.T)
 
     @classmethod
     def __torch_function__(cls, func, types, args=(), kwargs=None):
@@ -114,6 +122,10 @@ class PaillierTensor(object):
             np.matmul(x._paillier_np_array, other.detach().cpu().numpy())
         )
 
+    @implements(torch.sum)
+    def sum(input, dim=None):
+        return PaillierTensor(np.array(np.sum(input._paillier_np_array, axis=dim)))
+
     @implements(torch.nn.functional.linear)
     def linear(x, w, bias):
         return torch.matmul(x, w.T) + bias
@@ -142,6 +154,8 @@ class PaillierTensor(object):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def __iter__(self):
+        yield from self._paillier_np_array
 
 class PaillierMSELoss(nn.Module):
     def __init__(self):

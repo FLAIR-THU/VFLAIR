@@ -1,0 +1,26 @@
+{
+    "epochs": 30,
+    "lr": 0.01,
+    "k": 2,
+    "batch_size": 2048,
+    "dataset":{
+        "dataset_name": "mnist",
+        "num_classes": 10
+    },
+    "model_list":{
+        "0": {
+            "type": "LogisticRegressionModel_Flatten",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "1": {
+            "type": "LogisticRegressionModel_Flatten",
+            "input_dim": 392,
+            "output_dim": 10,
+            "path": "random_14*28_10"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}
