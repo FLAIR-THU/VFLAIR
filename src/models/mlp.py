@@ -261,8 +261,6 @@ class MLP5(nn.Module):
     def forward(self, x):
         out = self.layer(x)
         return out
-<<<<<<< HEAD
-=======
 
 # For avazu and criteo dataset
 class MLP3_256_dense(nn.Module):
@@ -301,4 +299,3 @@ class MLP3_256_sparse(nn.Module):
         # x = x.view(x.size(0), -1)
         out = self.layer(x)
         return out
->>>>>>> 0a51fa38d26db375eda0cbe397a696d8251fe00d
