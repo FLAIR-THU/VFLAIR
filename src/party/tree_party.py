@@ -188,7 +188,7 @@ class XGBoostParty(Party):
                         (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
                     )
                     self.temp_thresholds[i].append(percentiles[p])
-                    self.cum_num_communicated_ciphertexts += 2 * grad_dim
+                    self.cum_num_communicated_ciphertexts += 2 * self.num_classes
 
             if self.use_missing_value:
                 current_max_idx = not_missing_values_count - 1
