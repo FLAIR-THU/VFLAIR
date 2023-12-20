@@ -5,7 +5,7 @@
     "depth": 6,
     "min_leaf": 1,
     "subsample_cols": 0.8,
-    "max_bin": 4,
+    "max_bin": 16,
     "use_missing_value": false,
     "use_encryption": true,
     "key_length": 512,
