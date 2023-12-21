@@ -114,6 +114,7 @@ class XGBoostParty(Party):
         self.num_precentile_bin = num_precentile_bin
         self.cum_num_addition = 0
         self.cum_num_communicated_ciphertexts = 0
+        self.num_gss_called = 0
 
     def get_threshold_candidates(self, x_col):
         if len(x_col) > self.num_precentile_bin:
@@ -137,6 +138,7 @@ class XGBoostParty(Party):
 
         split_candidates_grad_hess = [[] for _ in range(num_thresholds)]
         self.temp_thresholds = [[] for _ in range(num_thresholds)]
+        self.num_gss_called += 1
 
         row_count = len(idxs)
         grad_dim = len(gradient[0])
@@ -229,6 +231,5 @@ class XGBoostParty(Party):
                         self.temp_thresholds[i + self.subsample_col_count].append(
                             percentiles[p]
                         )
-                        self.cum_num_communicated_ciphertexts += 2 * grad_dim
 
         return split_candidates_grad_hess
