@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_breast_cancer, load_digits
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -115,6 +115,15 @@ if __name__ == "__main__":
         ]
         X = pd.concat([X_a, X_p], axis=1).values
         y = df[8].values
+
+    elif args.dataset == "digit":
+        data = load_digits()
+        X = data.data
+        y = data.target
+        featureid_lists = [
+            range(int(X.shape[1] / 2)),
+            range(int(X.shape[1] / 2), X.shape[1]),
+        ]
 
     else:
         data = load_breast_cancer()
