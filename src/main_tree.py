@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("tree")
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument("--dataset", type=str, default="breastcancer")
+    parser.add_argument("--bin", type=int, default=None)
     parser.add_argument(
         "--configs",
         type=str,
@@ -136,8 +137,12 @@ if __name__ == "__main__":
     args.y = y_train
     args.featureid_lists = featureid_lists
 
+    if args.bin is not None:
+        args.max_bin = args.bin
+    
     print(f"type of model: {args.model_type}, encryption:{args.use_encryption}")
     args = load_tree_parties(args)
+
 
     tvfl = MainTaskTVFL(args)
 
