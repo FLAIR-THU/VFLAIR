@@ -78,8 +78,13 @@ class Party(object):
         self.prev_batches = []
         self.num_local_updates = 0
 
+        ####### predict results ######
         self.input_shape = None
         self.global_pred = None
+
+        self.local_attention_mask = None # GPT2
+        self.local_sequence_lengths = None # GPT2 Classification
+        self.local_attention_mask = None # Llama
 
 
     def prepare_data(self, args, index):
@@ -121,26 +126,48 @@ class Party(object):
         return
 
     def give_pred(self):
-        self.local_pred , input_shape = self.local_model\
-            (self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
-        # print('give pred self.local_pred:',self.local_pred.requires_grad)
-        # ####### Missing Feature #######
-        if (self.args.apply_mf == True):
-            assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
-            assert 'party' in self.args.attack_configs, 'need parameter: party'
-            missing_rate = self.args.attack_configs['missing_rate']
-            
-            if (self.index in self.args.attack_configs['party']):
-                missing_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*missing_rate)))
-                # print(f"[debug] in party: party{self.index}, missing list:", missing_list, len(missing_list))
-                self.local_pred[missing_list] = torch.zeros(self.local_pred[missing_list].size()).to(self.args.device)
-        # ####### Missing Feature #######
 
-        self.local_pred_clone = self.local_pred.detach().clone()
+        if self.args.model_type == 'Bert':
+            self.local_pred, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
+            self.local_pred_clone = self.local_pred.detach().clone()
+            self.local_attention_mask = self.local_attention_mask.detach().clone()
+
+            return self.local_pred, self.local_pred_clone , self.local_attention_mask
         
-        
-        return self.local_pred, self.local_pred_clone, input_shape
-    
+        elif self.args.model_type == 'GPT2':
+            if self.args.task_type == 'SequenceClassification':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
+            elif self.args.task_type == 'CausalLM':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+            elif self.args.task_type == 'QuestionAnswering':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+
+
+        elif self.args.model_type == 'Llama':
+            if self.args.task_type == 'SequenceClassification':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
+            elif self.args.task_type == 'CausalLM':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+            elif self.args.task_type == 'QuestionAnswering':
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 

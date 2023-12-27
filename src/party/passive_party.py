@@ -40,13 +40,6 @@ class PassiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
-    # def prepare_model(self, args, index):
-    #     # prepare model and optimizer
-    #     (
-    #         args,
-    #         self.local_model,
-    #         self.local_model_optimizer
-    #     ) = load_models_per_party(args, index)
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index)

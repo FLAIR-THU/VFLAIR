@@ -72,9 +72,12 @@ def load_basic_configs(config_file_name, args):
     # # args.num_exp number of repeat experiments for main task
     # args.num_exp = config_dict['num_exp'] if ('num_exp' in config_dict) else 10
     
-    # args.dataset_split
+    # args.dataset_split  configuration for dataste
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
     args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
+    args.use_prompt = args.dataset_split['use_prompt'] if('use_prompt' in args.dataset_split) else 0
+    args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
+
     
     args.tokenizer = None # for LLM if needed
 
@@ -82,16 +85,30 @@ def load_basic_configs(config_file_name, args):
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
         #print('config_model_dict:',(len(config_model_dict)-2))
-        assert ((len(config_model_dict)-2)==args.k), 'please alter party number k, model number should be equal to party number'
+        # assert ((len(config_model_dict)-3)==args.k), 'please alter party number k, model number should be equal to party number'
         
         # for LLM
         args.max_sequence = config_model_dict['0']['max_sequence'] if ('max_sequence' in config_model_dict['0']) else -1
         
         model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10', 'input_dim': 392, 'output_dim': 10}
+        
+        # Task Description
+        args.task_dict = config_model_dict['task']
+        args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
+        
+        args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
+        args.max_query_length = args.task_dict['max_query_length'] if('max_query_length' in args.task_dict) else -1
+        args.max_seq_length = args.task_dict['max_seq_length'] if('max_seq_length' in args.task_dict) else -1
+        args.max_answer_length = args.task_dict['max_answer_length'] if('max_answer_length' in args.task_dict) else -1
+        args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
+
+
+        
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
+                    args.model_type = config_model_dict[str(ik)]['model_type']
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']

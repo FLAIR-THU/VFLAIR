@@ -3,6 +3,41 @@ from torch.utils.data import Dataset
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
+import string 
+
+from utils.squad_utils import normalize_answer
+
+choices = ["A", "B", "C", "D"]
+def format_subject(subject):
+    l = subject.split("_")
+    s = ""
+    for entry in l:
+        s += " " + entry
+    return s
+
+def format_example(df, idx, include_answer=True):
+    prompt = df.iloc[idx, 0]
+    k = len(choices)
+    for j in range(k):
+        prompt += "\n{}. {}".format(choices[j], df.iloc[idx][str(choices[j])])
+    prompt += "\nAnswer:"
+    if include_answer:
+        prompt += " {}\n\n".format(df.iloc[idx]['answer']) #df.iloc[idx, k + 1]
+    return prompt
+
+def gen_prompt(train_df, subject, k=-1):
+    prompt_list = []
+    if k == -1:
+        k = train_df.shape[0]
+    # print('k=',k)
+    
+    for i in range(k):
+        prompt = "The following are multiple choice questions (with answers) about {}.\n\n".format(format_subject(subject))
+        if train_df.iloc[i]['subject'] == subject:
+            prompt += format_example(train_df, i)
+
+    prompt_list.append(prompt)
+    return prompt_list
 
 
 class SimpleDataset(Dataset):
@@ -27,61 +62,121 @@ class PassiveDataset_LLM(Dataset):
         texts: np.array
         '''
         self.args = args
-        self.texts = []
-        self.masks = []
-        self.token_type_ids = []
+        self.texts = [] # input_ids
+        self.masks = [] # attention_mask
+        self.token_type_ids = [] # token_type_ids
+        self.labels = []
+        self.doc_tokens = []
+        self.features = []
 
+        ### special treatment str labels(word prediction)
+        if args.task_type == 'QuestionAnswering':
+            # labels : bs * [start_position, end_position]
+            # texts: bs * [feature]
+            for i in range(len(texts)): 
+                _feature = texts[i]
+                self.texts.append(_feature["input_ids"]) # input_ids
+                self.masks.append(_feature["input_mask"]) # input_mask
+                self.token_type_ids.append(_feature["segment_ids"]) # segment_ids
 
+                self.labels.append( labels[i] ) # [ [start_position, end_position] ]
+                self.doc_tokens.append(  _feature["tokens"] ) # [  _feature.tokens ]
+                self.features.append(_feature)
+            return
+
+        # print('label:',type(labels[0]),labels[0])
+        if type(labels[0]) == str:
+            labels = [ args.tokenizer.convert_tokens_to_ids(_label) for _label in labels] 
+
+        ### normal treatment ###
         if len( texts.shape) == 1: # input: single sentence
             for _text in texts:
-                ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+                # ids = args.tokenizer(_text, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
+
+                ids = args.tokenizer(_text, return_tensors="pt")                                        
                 self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
                 self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
-                self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+                if 'token_type_ids' in list(ids.keys()):
+                    self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
 
         elif len( texts.shape) == 2: # input: sentence pairs
+            
             for _text in texts:
                 try:
-                    ids = args.tokenizer(_text[0],_text[1], padding='max_length',  # Pad to max_length
+                    ids = args.tokenizer(_text[0],_text[1], padding='max_length', # Pad to max_length
                                 truncation='longest_first',  # Truncate to max_length
                                 max_length=args.max_sequence,  
                                 return_tensors='pt')
                 except:
-                    print(type(_text[0]),_text[0],type(_text[1]),_text[1])
-                    print( '_text:',type(_text),len(_text) )
                     assert 1>2
                 self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
                 self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
-                self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+                if 'token_type_ids' in list(ids.keys()):
+                    self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+        
+        elif len( texts.shape) == 3: # input: sentence pairs
+            for _text in texts:
+                try:
+                    ids = args.tokenizer( list(_text[0]), list(_text[1]), padding='max_length',  # Pad to max_length
+                                truncation='longest_first',  # Truncate to max_length
+                                max_length=args.max_sequence,  
+                                return_tensors='pt')
+                    # ids = args.tokenizer( list(_text[0]), list(_text[1]), truncation=False)
+                except:
+                    assert 1>2
+                self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+                self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
+                if 'token_type_ids' in list(ids.keys()):
+                    self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
 
-        self.texts=torch.tensor( [aa.tolist() for aa in self.texts] )#.to(args.device)
+        else:
+            print(texts.shape)
+            assert 1>2, 'text input shape not supported'
 
-        self.masks=torch.tensor( [aa.tolist() for aa in self.masks] )#.to(args.device)
+        self.labels = torch.tensor(labels) 
 
-        self.token_type_ids=torch.tensor( [aa.tolist() for aa in self.token_type_ids] )#.to(args.device)
+        self.texts=[aa.tolist() for aa in self.texts] 
 
-        self.labels = torch.tensor(labels) #.to(args.device)
-        # print('PassiveDataset_LLM with data/label:', self.texts.shape,self.masks.shape, self.labels.shape)
+        self.masks=[aa.tolist() for aa in self.masks] 
+
+        if self.token_type_ids != []:
+            self.token_type_ids=[aa.tolist() for aa in self.token_type_ids]
+
 
     def __len__(self):
         return len(self.labels)
 
 
     def __getitem__(self, item_idx):
-        data_i, target_i , mask_i, token_type_ids_i =\
-            self.texts[item_idx], self.labels[item_idx], self.masks[item_idx], self.token_type_ids[item_idx]
-
+        data_i, target_i , mask_i =\
+            self.texts[item_idx], self.labels[item_idx], self.masks[item_idx]
+        data_i = torch.tensor(data_i, dtype=torch.long).to(self.args.device)
+        mask_i = torch.tensor(mask_i, dtype=torch.long).to(self.args.device)
         if self.args.num_classes == 1:
-            return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
-                torch.tensor(target_i.clone().detach(), dtype=torch.float32),\
-                torch.tensor(mask_i.clone().detach(), dtype=torch.long),\
-                torch.tensor(token_type_ids_i.clone().detach(), dtype=torch.long) #torch.float32
+            target_i = torch.tensor(target_i, dtype=torch.float32).to(self.args.device)
         else:
-            return torch.tensor(data_i.clone().detach(), dtype=torch.long),\
-                torch.tensor(target_i.clone().detach(), dtype=torch.long),\
-                torch.tensor(mask_i.clone().detach(), dtype=torch.long),\
-                torch.tensor(token_type_ids_i.clone().detach(), dtype=torch.long) #torch.float32
+            target_i = torch.tensor(target_i, dtype=torch.long).to(self.args.device)
 
+
+        if self.token_type_ids == []:
+            token_type_ids_i = []
+        else:
+            token_type_ids_i = self.token_type_ids[item_idx]
+            token_type_ids_i = torch.tensor(token_type_ids_i, dtype=torch.long).to(self.args.device)
+
+        if self.doc_tokens == []:
+            doc_tokens_i = []
+        else:
+            doc_tokens_i = self.doc_tokens[item_idx]
+        
+        if self.features == []:
+            features_i = []
+        else:
+            features_i = self.features[item_idx]
+  
+        return data_i, target_i, mask_i,  token_type_ids_i, features_i #doc_tokens_i
+        
+          
 
 class PassiveDataset(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.

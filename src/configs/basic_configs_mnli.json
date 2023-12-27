@@ -9,22 +9,28 @@
     },
     "dataset":{
         "dataset_name": "MNLI",
-        "num_classes": 3
+        "num_classes": 3,
+        "use_prompt": 0
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-MNLI",
+            "type": "George-Ogdengpt2-medium-finetuned-mnli",
             "pretrained": 1,
             "output_dim": 3,
+            "model_type": "GPT2",
             "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "textattackbert-base-uncased-MNLI",
+            "type": "George-Ogdengpt2-medium-finetuned-mnli",
             "pretrained": 1,
             "output_dim": 3,
+            "model_type": "GPT2",
             "max_sequence": 512,
             "path": ""
+        },
+        "task":{
+            "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"

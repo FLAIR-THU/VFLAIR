@@ -1,0 +1,45 @@
+{
+    "epochs": 100,
+    "lr": 0.0005,
+    "k": 2,
+    "batch_size": 1,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "SQuAD",
+        "num_classes": 1,
+        "use_prompt": 1,
+        "n_shot": 1
+    },
+    "model_list":{
+        "0": {
+            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "pretrained": 1,
+            "output_dim": 1,
+            "model_type": "GPT2",
+            "max_sequence": 1024,
+            "path": ""
+        },
+        "1": {
+            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "pretrained": 1,
+            "output_dim": 1,
+            "model_type": "GPT2",
+            "max_sequence": 1024,
+            "path": ""
+        },
+        "task":{
+            "task_type": "QuestionAnswering",
+            "doc_stride" : 128,
+            "max_seq_length": 1024,
+            "max_query_length" : 64,
+            "max_answer_length": 30,
+            "n_best_size": 20
+
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}

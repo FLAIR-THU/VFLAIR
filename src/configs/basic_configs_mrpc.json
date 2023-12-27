@@ -17,6 +17,7 @@
             "pretrained": 1,
             "output_dim": 2,
             "max_sequence": 256,
+            "model_type": "Bert",
             "path": ""
         },
         "1": {
@@ -24,7 +25,11 @@
             "pretrained": 1,
             "output_dim": 2,
             "max_sequence": 256,
+            "model_type": "Bert",
             "path": ""
+        },
+        "task":{
+            "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"

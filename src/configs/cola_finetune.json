@@ -26,6 +26,9 @@
             "max_sequence": 256,
             "path": ""
         },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     }

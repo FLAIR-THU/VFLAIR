@@ -13,17 +13,19 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "benayasllama-2-7b-sst2_v0",
             "pretrained": 1,
             "output_dim": 2,
-            "max_sequence": 256,
+            "model_type": "Llama",
+            "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "benayasllama-2-7b-sst2_v0",
             "pretrained": 1,
             "output_dim": 2,
-            "max_sequence": 256,
+            "model_type": "Llama",
+            "max_sequence": 512,
             "path": ""
         },
         "apply_trainable_layer": 0,

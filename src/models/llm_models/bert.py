@@ -19,121 +19,28 @@ from transformers.models.bert.modeling_bert import (BertEmbeddings,BertPooler,Be
 '''
 Models with specific usage based on BERT
 '''
-class GlobalBertForSequenceClassification(BertPreTrainedModel):
-    def __init__(self, config, global_bert):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-        self.config = config
-
-        # global part of bert : freeze
-        self.global_bert = global_bert 
-        # global part of other layers : freeze
-        classifier_dropout = (
-            config.classifier_dropout if config.classifier_dropout is not None else config.hidden_dropout_prob
-        )
-        self.dropout = nn.Dropout(classifier_dropout)
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-
-        # Initialize weights and apply final processing
-        self.post_init()
-        
-    def forward(
-        self,
-        input_id, input_shape,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-    ):
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-            config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-            `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.global_bert(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
-
-        # outputs = self.bert(
-        #     input_ids,
-        #     attention_mask=attention_mask,
-        #     token_type_ids=token_type_ids,
-        #     position_ids=position_ids,
-        #     head_mask=head_mask,
-        #     inputs_embeds=inputs_embeds,
-        #     output_attentions=output_attentions,
-        #     output_hidden_states=output_hidden_states,
-        #     return_dict=return_dict,
-        # )
-
-        pooled_output = outputs[1]
-
-        pooled_output = self.dropout(pooled_output)
-        logits = self.classifier(pooled_output)
-
-        loss = None
-        if labels is not None:
-            if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                    self.config.problem_type = "single_label_classification"
-                else:
-                    self.config.problem_type = "multi_label_classification"
-
-            if self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                if self.num_labels == 1:
-                    loss = loss_fct(logits.squeeze(), labels.squeeze())
-                else:
-                    loss = loss_fct(logits, labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits, labels)
-        
-        # if not return_dict:
-        output = (logits,) + outputs[2:]
-        return ((loss,) + output) if loss is not None else output
-
-        # return SequenceClassifierOutput(
-        #     loss=loss,
-        #     logits=logits,
-        #     hidden_states=outputs.hidden_states,
-        #     attentions=outputs.attentions,
-        # )
-
 class GlobalBertClassifier_pretrained(nn.Module):
     def __init__(self, globalbert, classifier,dropout=0.5):
         super(GlobalBertClassifier_pretrained, self).__init__()
         self.backbone = globalbert #BertModel.from_pretrained('bert-base-cased')
-        
-        # self.trainable_layer = nn.Sequential(
-        #     nn.Dropout(dropout),
-        #     nn.Linear(768, output_dim, bias=True)
-        #     # nn.ReLU(inplace=True)
-        # )
+        self.model_type = globalbert.model_type
 
         self.classifier = classifier
 
         # torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         # torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id, input_shape,attention_mask,token_type_ids):
-       # print('==== global model forward ====')
-        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,\
-            token_type_ids=token_type_ids,return_dict=False)#attention_mask=mask,return_dict=False)
+    def forward(self, input_ids, attention_mask): # 
+        # print('==== global model forward ====')
+        outputs = self.backbone(input_ids,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
         # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
-        pooled_output = outputs[1]
+        if self.model_type == 'Bert':
+            pooled_output = outputs[1]
+        elif self.model_type == 'Roberta':
+            pooled_output = outputs[0]
+        elif self.model_type == 'Albert':
+            pooled_output = outputs[0]
 
         logits = self.classifier(pooled_output)
         # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
@@ -149,6 +56,7 @@ class GlobalBertClassifier(nn.Module):
     def __init__(self, globalbert, output_dim,dropout=0.5):
         super(GlobalBertClassifier, self).__init__()
         self.backbone = globalbert #BertModel.from_pretrained('bert-base-cased')
+        self.model_type = globalbert.model_type
 
         self.trainable_layer = nn.Sequential(
             nn.Dropout(dropout),
@@ -158,12 +66,17 @@ class GlobalBertClassifier(nn.Module):
         torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id, input_shape,attention_mask):
+    def forward(self, input_id,attention_mask):
         # print('==== global model forward ====')
-        outputs = self.backbone(input_id, input_shape,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
+        outputs = self.backbone(input_id,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
         # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
 
-        pooled_output = outputs[1]
+        if self.model_type == 'Bert':
+            pooled_output = outputs[1]
+        elif self.model_type == 'Roberta':
+            pooled_output = outputs[0]
+        elif self.model_type == 'Albert':
+            pooled_output = outputs[0]
 
         logits = self.trainable_layer(pooled_output)
         # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
@@ -266,8 +179,7 @@ class GlobalBertEncoder(nn.Module):
 
     def forward(
         self,
-        hidden_states,
-        attention_mask=None,
+        hidden_states,attention_mask=None,
         head_mask=None,
         encoder_hidden_states=None,
         encoder_attention_mask=None,
@@ -351,17 +263,22 @@ class GlobalBertEncoder(nn.Module):
 
 
 class LocalBertModel(BertPreTrainedModel):
-    def __init__(self, full_bert, num_encoders):
+    def __init__(self, full_bert, num_encoders, model_type='Bert'):
         super(LocalBertModel, self).__init__(full_bert.config)
+        self.model_type = model_type
         self.bert = full_bert
 
         self.config = full_bert.config
         self.embeddings = full_bert.embeddings #BertEmbeddings(config)
         self.pooler = full_bert.pooler  #BertPooler(config) if add_pooling_layer else None
 
-        self.num_encoders_all = len(full_bert.encoder.layer)
         self.num_encoders = num_encoders
-        self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
+        if self.model_type == 'Albert':
+            self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders)])
+        else:
+            self.num_encoders_all = len(full_bert.encoder.layer)
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
         self.encoder = LocalBertEncoder(self.config,self.encoder_layer) #full_bert.encoder #BertEncoder(config)
         
     def forward(
@@ -380,6 +297,7 @@ class LocalBertModel(BertPreTrainedModel):
         output_hidden_states=None,
         return_dict=None,
     ):
+        # print(' === Local Bert ===')
         # print('input:',type(input_ids),input_ids.shape) # [2048,1290]
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -400,10 +318,11 @@ class LocalBertModel(BertPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        # print('input_ids:',type(input_ids))
-        # print('input_ids.size()',input_ids.size())
+        # print('input_shape:', input_shape)
+        
+        batch_size, seq_length = input_shape[:2]
+        # print('batch_size:',batch_size,' seq_length',seq_length)
 
-        batch_size, seq_length = input_shape
         batch_size = int(batch_size)
         seq_length = int(seq_length)
 
@@ -415,6 +334,7 @@ class LocalBertModel(BertPreTrainedModel):
 
         if attention_mask is None:
             attention_mask = torch.ones(((batch_size, seq_length + past_key_values_length)), device=device)
+        # print('attention_mask:',attention_mask.shape,attention_mask)
 
         if token_type_ids is None:
             if hasattr(self.embeddings, "token_type_ids"):
@@ -428,6 +348,8 @@ class LocalBertModel(BertPreTrainedModel):
                 token_type_ids = buffered_token_type_ids_expanded
             else:
                 token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        # print('token_type_ids:',token_type_ids.shape,token_type_ids)
 
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
@@ -474,13 +396,19 @@ class LocalBertModel(BertPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        # print('Local Bert intermediate:',type(intermediate), len(intermediate) )
-        return intermediate, input_shape
-        
+
+        # print('## local output')
+        # print('intermediate:',type(intermediate), intermediate.shape )
+        # print('attention_mask:',type(attention_mask), attention_mask.shape )
+        # print('input_shape:',input_shape )
+
+
+        return intermediate , attention_mask 
 
 class GlobalBertModel(BertPreTrainedModel):
-    def __init__(self, full_bert, num_encoders):
+    def __init__(self, full_bert, num_encoders, model_type = 'Bert'):
         super(GlobalBertModel, self).__init__(full_bert.config)
+        self.model_type = model_type
         self.bert = full_bert
 
         self.config = full_bert.config
@@ -488,16 +416,18 @@ class GlobalBertModel(BertPreTrainedModel):
         self.pooler = full_bert.pooler  #BertPooler(config) if add_pooling_layer else None
         
         # 创建指定数量的encoder层
-        self.num_encoders_all = len(full_bert.encoder.layer)
         self.num_encoders = num_encoders
-        self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders,self.num_encoders_all)])
+        if self.model_type == 'Albert':
+            self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders,self.num_encoders_all)])
+        else:
+            self.num_encoders_all = len(full_bert.encoder.layer)
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders,self.num_encoders_all)])
         self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.num_encoders) #full_bert.encoder #BertEncoder(config)
         
     def forward(
         self,
-        intermediate,
-        input_shape,
-        attention_mask=None,
+        intermediate,attention_mask=None,
         token_type_ids=None,
         position_ids=None,
         head_mask=None,
@@ -510,6 +440,10 @@ class GlobalBertModel(BertPreTrainedModel):
         output_hidden_states=None,
         return_dict=None,
     ):
+        # print(' === Global Bert ===')
+        input_shape = intermediate.shape[:2]
+        # print('input_shape:',type(input_shape),input_shape)
+
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
@@ -518,15 +452,16 @@ class GlobalBertModel(BertPreTrainedModel):
         else:
             use_cache = False
 
-        # print('input_shape:',type(input_shape),input_shape)
-        batch_size, seq_length = input_shape
-        device = intermediate.device
+
+        batch_size, seq_length = input_shape[:2]
+        device = intermediate[0].device
 
         # past_key_values_length
         past_key_values_length = past_key_values[0][0].shape[2] if past_key_values is not None else 0
 
         if attention_mask is None:
             attention_mask = torch.ones(((batch_size, seq_length + past_key_values_length)), device=device)
+        # print('attention_mask:',attention_mask.shape,attention_mask)
 
         if token_type_ids is None:
             if hasattr(self.embeddings, "token_type_ids"):
@@ -537,6 +472,7 @@ class GlobalBertModel(BertPreTrainedModel):
                 token_type_ids = buffered_token_type_ids_expanded
             else:
                 token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+        # print('token_type_ids:',token_type_ids.shape,token_type_ids)
 
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.

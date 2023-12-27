@@ -11,11 +11,16 @@ import numpy as np
 import random
 import time
 import copy
+import collections
 
 from sklearn.metrics import roc_auc_score,matthews_corrcoef
 import scipy.stats as stats
-
+import torch.nn as nn
+import torch
 import warnings
+import collections
+
+from transformers import top_k_top_p_filtering
 
 # from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
@@ -30,8 +35,10 @@ from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
+from utils.squad_utils import normalize_answer
+
 from evaluates.attacks.attack_api import AttackerLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification,AutoModelForCausalLM
 
 from load.LoadModels import MODEL_PATH
 
@@ -159,36 +166,106 @@ class MainTaskVFL_LLM(object):
     def pred_transmit(self): 
         # Active party gets pred from passive parties
         for ik in range(self.k-1):
-            pred, pred_detach, input_shape = self.parties[ik].give_pred()
+            # Party sends attention_mask/input_shape for aggregation
+            input_shape = self.parties[ik].local_batch_data.size()
             self.parties[ik].input_shape = input_shape
 
-            # defense applied on pred
-            if self.args.apply_defense == True and self.args.apply_dp == True :
-                # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                    pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
-            
-            ########### communication_protocols ###########
-            if self.args.communication_protocol in ['Quantization','Topk']:
-                pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
-                                self.current_epoch, self.current_step).to(self.args.device)
-            ########### communication_protocols ###########
-            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-            self.parties[ik].update_local_pred(pred_clone)
-
-            # Party sends pred/attention_mask/input_shape for aggregation
             self.parties[self.k-1].input_shape = input_shape
             self.parties[self.k-1].receive_attention_mask(self.parties[ik].local_batch_attention_mask)
             self.parties[self.k-1].receive_token_type_ids(self.parties[ik].local_batch_token_type_ids)
-            self.parties[self.k-1].receive_pred(pred_clone, ik) 
-            self.communication_cost += get_size_of(pred_clone)+get_size_of(self.parties[ik].local_batch_attention_mask)+\
-                get_size_of(self.parties[ik].local_batch_token_type_ids)+get_size_of( torch.tensor(input_shape) ) #MB
+
+            # give pred
+            if self.args.model_type == 'Bert':
+                pred, pred_detach, attention_mask  = self.parties[ik].give_pred() # , _input_shape
+
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+
+                self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+
+                self.parties[ik].update_local_pred(pred_clone)
+
+                # print(' === transmit === ')
+                # print('pred_clone:',pred_clone.shape)
+                # print('local_batch_attention_mask:',local_batch_attention_mask.shape)
+                # print('local_batch_token_type_ids:',local_batch_token_type_ids.shape)
+                # print('torch.tensor(input_shape) :',torch.tensor(input_shape) .shape)
+
+                self.communication_cost += get_size_of(pred_clone)+\
+                    get_size_of(self.parties[ik].local_batch_attention_mask)+\
+                    get_size_of(self.parties[ik].local_batch_token_type_ids)+\
+                    get_size_of( torch.tensor(input_shape) ) #MB
+
+            elif self.args.model_type == 'Llama':
+                if self.args.task_type == 'SequenceClassification':
+                    pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred() # , _input_shape
+                elif self.args.task_type == 'CausalLM':
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() # , _input_shape
+                elif self.args.task_type == 'QuestionAnswering':
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() # , _input_shape
+
+                # defense applied on pred
+                if self.args.apply_defense == True and self.args.apply_dp == True :
+                    # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
+                    if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
+                        pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
+                ########### communication_protocols ###########
+                if self.args.communication_protocol in ['Quantization','Topk']:
+                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
+                                    self.current_epoch, self.current_step).to(self.args.device)
+                ########### communication_protocols ###########
+                
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                attention_mask = torch.autograd.Variable(decoder_attention_mask, requires_grad=True).to(self.args.device)
+
+                if self.args.task_type == 'SequenceClassification':
+                    self.parties[self.k-1].receive_pred([pred_clone,sequence_lengths,attention_mask], ik) 
+                elif self.args.task_type == 'CausalLM':
+                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+                elif self.args.task_type == 'QuestionAnswering':
+                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+
+
+                self.parties[ik].update_local_pred(pred_clone)
+
+                # TODO
+                self.communication_cost += get_size_of(pred_clone)+\
+                    get_size_of(self.parties[ik].local_batch_attention_mask)+\
+                    get_size_of( torch.tensor(input_shape) ) #MB
+
+            elif self.args.model_type == 'GPT2':
+                if self.args.task_type == 'SequenceClassification':
+                    pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred() # , _input_shape
+                elif self.args.task_type == 'CausalLM':
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() 
+                elif self.args.task_type == 'QuestionAnswering':
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() 
+
+                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                attention_mask = torch.autograd.Variable(attention_mask, requires_grad=True).to(self.args.device)
+
+                if self.args.task_type == 'SequenceClassification':
+                    self.parties[self.k-1].receive_pred([pred_clone,sequence_lengths,attention_mask], ik) 
+                elif self.args.task_type == 'CausalLM':
+                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik)
+                elif self.args.task_type == 'QuestionAnswering':
+                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+            
+                self.parties[ik].update_local_pred(pred_clone)
+
+                # print(' === transmit === ')
+                # print('pred_clone:',pred_clone.shape)
+                # print('local_batch_attention_mask:',local_batch_attention_mask.shape)
+                # print('local_batch_token_type_ids:',local_batch_token_type_ids.shape)
+                # print('torch.tensor(input_shape) :',torch.tensor(input_shape) .shape)
+
+                # TODO
+                self.communication_cost += get_size_of(pred_clone)+\
+                    get_size_of(self.parties[ik].local_batch_attention_mask)+\
+                    get_size_of( torch.tensor(input_shape) ) #MB
             
     def global_pred_transmit(self):
         # active party give global pred to passive party
-        final_pred = self.parties[self.k-1].aggregate\
-            (self.parties[self.k-1].pred_received,self.parties[self.k-1].local_batch_attention_mask,\
-                self.parties[self.k-1].local_batch_token_type_ids, test="True")
+        final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received, test="True")
         
         for ik in range(self.k-1):
             self.communication_cost += get_size_of(final_pred)
@@ -202,7 +279,7 @@ class MainTaskVFL_LLM(object):
     
     def inference(self, inference_data = 'test'):
         # current_model_type = self.args.model_list['0']['type']
-        # full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type]).to(self.args.device)
+        # full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type]).to(self.args.device)
 
         print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
@@ -214,6 +291,10 @@ class MainTaskVFL_LLM(object):
         suc_cnt = 0
         sample_cnt = 0
         full_suc_cnt = 0
+
+        # QA
+        exact_score_list = []
+        f1_list = []
 
         test_preds = []
         test_targets = []
@@ -228,186 +309,379 @@ class MainTaskVFL_LLM(object):
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)]
             for parties_data in zip(*data_loader_list):
-                # parties_data[0]: (data, label, mask)
+                # parties_data[0]: (data, label, mask, token_type_ids, doc_tokens(forQA) )
                 # parties_data[k-1]: (None,None,None)  no data for active party
+                parties_data = [ [_data[0],_data[1],_data[2],_data[3],_data[4]] for _data in parties_data]
 
-                parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
+                if parties_data[0][3] == []:
+                    parties_data[0][3] = None
+                if parties_data[0][4] == []:
+                    parties_data[0][4] = None
+                # if len(parties_data[0])==4:
+                #     # print('4 with token_type_ids')
+                #     parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
+                # elif len(parties_data[0])==3:
+                #     # print('3 without token_type_ids')
+                #     parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),None] for _data in parties_data]
 
-                if self.num_classes == 1: # regression
-                    gt_val_one_hot_label = parties_data[0][1]
-                    # print('gt_val_one_hot_label:',type(gt_val_one_hot_label),gt_val_one_hot_label.shape)
-                else:
+                if self.args.task_type == "SequenceClassification" and self.num_classes > 1: # regression
                     gt_val_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
-
+                else:
+                    gt_val_one_hot_label = parties_data[0][1]
+                
                 pred_list = []
                 for ik in range(self.k-1): # Passive data local predict
-                    # print('input_ids:',parties_data[ik][0].shape)
-                    # print('attention_mask:',parties_data[ik][2].shape)
-                    # print('token_type_ids:',parties_data[ik][3].shape)
-
-                    _local_pred, input_shape = self.parties[ik].local_model(\
-                        parties_data[ik][0],attention_mask=parties_data[ik][2],token_type_ids = parties_data[ik][3])
-                    
-                    self.parties[self.k-1].input_shape = input_shape
-                    self.parties[self.k-1].local_batch_attention_mask = parties_data[0][2]
-                    self.parties[self.k-1].local_batch_token_type_ids = parties_data[0][3]
+                    # allocate data (data/label/attention_mask/token_type_ids)
+                    input_shape = parties_data[ik][0].shape[:2]# parties_data[ik][0].size()
 
                     self.parties[ik].input_shape = input_shape
-                    self.parties[ik].local_batch_attention_mask = parties_data[0][2]
-                    self.parties[ik].local_batch_token_type_ids = parties_data[0][3]
+                    self.parties[ik].obtain_local_data(parties_data[ik][0])
+                    self.parties[ik].gt_one_hot_label = gt_val_one_hot_label
+                    self.parties[ik].local_batch_attention_mask = parties_data[ik][2]
+                    self.parties[ik].local_batch_token_type_ids = parties_data[ik][3]
+                        
 
-                    pred_list.append(_local_pred)
-                
-                test_logit = self.parties[self.k-1].aggregate\
-                    (pred_list,self.parties[self.k-1].local_batch_attention_mask,\
-                        self.parties[self.k-1].local_batch_token_type_ids, test="True")
-                # test_logit = test_logit.squeeze()
-                # print('test_logit:',type(test_logit),test_logit.shape) # [batchsize, num_classes]
-                
-                # full_pred = full_model(parties_data[0][0],attention_mask=parties_data[0][2],return_dict=None).logits
-                # print('split_test_logit:',test_logit ) 
-                # print('full_pred:',full_pred) 
-
-
-                # if self.args.dataset == 'jigsaw_toxic':
-                #     sm = torch.sigmoid(test_logit).cpu().detach().numpy()
-                #     print('sm:',type(sm),sm.shape)
-                #     scores.extend(sm) 
-                #     binary_scores = [s >= 0.5 for s in scores]
-                #     binary_scores = np.stack(binary_scores)
-                #     targets += gt_val_one_hot_label.cpu()
-
-                if self.num_classes == 1: # regression
-                    predict_label = test_logit.detach().cpu()
-                    actual_label = gt_val_one_hot_label.detach().cpu()
+                    if self.args.model_type == 'Bert':
+                        _local_pred, _local_pred_detach , _local_attention_mask = self.parties[ik].give_pred() # , _input_shape
+                        # print(' === transmit === ')
+                        # print('pred_clone:',_local_pred_detach[0].shape, type(_local_pred_detach[1]) )
+                        # print('local_batch_attention_mask:',parties_data[0][2].shape)
+                        # print('local_batch_token_type_ids:',self.parties[self.k-1].local_batch_token_type_ids.shape)
+                        # print('torch.tensor(input_shape) :',torch.tensor(input_shape) .shape)
+                        pred_list.append( [_local_pred, _local_attention_mask])
                     
-                    # full_predict_label = full_pred.detach().cpu()
+                    elif self.args.model_type == 'GPT2':
+                        if self.args.task_type == 'SequenceClassification':
+                            _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                        elif self.args.task_type == 'CausalLM':
+                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_attention_mask] )
+                        elif self.args.task_type == 'QuestionAnswering':
+                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_attention_mask] )
 
-                    predict_label = torch.tensor( [ _.item() for _ in predict_label] )
-                    actual_label = torch.tensor( [ _.item() for _ in actual_label] )
-
-                    # full_predict_label = torch.tensor( [ _.item() for _ in full_predict_label] )
-
-                    # print('predict_label:',predict_label,' actual_label:',actual_label)
-
-                    # for item in predict_label:
-                    #     if np.isnan(item):
-                    #         print('predict_label yes')
                     
-                    # for item in actual_label:
-                    #     if np.isnan(item):
-                    #         print('actual_label yes')
+                    elif self.args.model_type == 'Llama':
+                        # print(' === transmit === ')
+                        # print('pred_clone:',_local_pred_detach.shape)
+                        # print('_local_decoder_attention_mask:',_local_decoder_attention_mask.shape)
+                        # print('_local_sequence_lengths :',type(_local_sequence_lengths))
+                        # print(_local_sequence_lengths.shape)
+                        if self.args.task_type == 'SequenceClassification':
+                            _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                        elif self.args.task_type == 'CausalLM':
+                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_attention_mask] )
+                        elif self.args.task_type == 'QuestionAnswering':
+                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                            pred_list.append( [_local_pred,_local_attention_mask] )
+                     
+                test_logit = self.parties[self.k-1].aggregate(pred_list, test="True")
+                
+                # full_logit = full_model(self.parties[0].local_batch_data, \
+                # attention_mask = self.parties[0].local_batch_attention_mask, \
+                # token_type_ids=self.parties[0].local_batch_token_type_ids)
+                # full_logit = full_logit.logits
 
-                    test_predict_labels.extend( list(predict_label) )
-                    test_actual_labels.extend( list(actual_label) )
+                if self.args.task_type == "SequenceClassification":
+                    if self.num_classes == 1: # regression
+                        predict_label = test_logit.detach().cpu()
+                        actual_label = gt_val_one_hot_label.detach().cpu()
+                        
+                        # full_predict_label = full_pred.detach().cpu()
 
-                    # test_full_predict_labels.extend( list(full_predict_label) )
+                        predict_label = torch.tensor( [ _.item() for _ in predict_label] )
+                        actual_label = torch.tensor( [ _.item() for _ in actual_label] )
 
-                else:  # classification
-                    enc_predict_prob = test_logit
-                    # full_enc_predict_prob = full_pred
-                    # enc_predict_prob = F.softmax(test_logit, dim=-1)
+                        test_predict_labels.extend( list(predict_label) )
+                        test_actual_labels.extend( list(actual_label) )
 
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                    actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
-                    # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
+                        # test_full_predict_labels.extend( list(full_predict_label) )
+                    else: # Classification
+                        enc_predict_prob = test_logit
+                        # full_enc_predict_prob = full_pred
+                        # enc_predict_prob = F.softmax(test_logit, dim=-1)
 
-                    test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
-                    test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
+                        predict_label = torch.argmax(enc_predict_prob, dim=-1)
+                        actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
+                        # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
+
+                        test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
+                        test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
+                        # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
+
+                        test_predict_labels.extend( list(predict_label.detach().cpu()) )
+                        test_actual_labels.extend( list(actual_label.detach().cpu()) )
+                        # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
+
+                        sample_cnt += predict_label.shape[0]
+                        suc_cnt += torch.sum(predict_label == actual_label).item()
+                        # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
+
+                elif self.args.task_type == "CausalLM":
+                    # get logits of last hidden state
+                    # print('test_logit:',test_logit.shape) # [batchsize, maxlength512, vocab_size32000]
+                    # print('full_logit:',full_logit) # [batchsize, maxlength512, vocab_size32000]
+                    next_token_logits = test_logit[:,-1] #[bs, 32000]
+                    # print('next_token_logits:',next_token_logits.shape,next_token_logits)
+                    
+                    if self.args.dataset == "Lambada":
+                        print('Lambada gt_val_one_hot_label:',gt_val_one_hot_label)
+                        enc_predict_prob = nn.functional.softmax( next_token_logits,dim=-1)
+                        predict_label = torch.argmax(enc_predict_prob, dim=-1) #[bs]
+                        print('predict_label:',predict_label)
+                        actual_label = gt_val_one_hot_label
+
+                    else: # MMLU
+                        choice_id_list = []
+                        for choice in self.args.label_dict.keys():
+                            choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
+                            _id = self.args.tokenizer(choice).input_ids[-1]
+                        # print('choice_id_list:',choice_id_list)
+                        enc = next_token_logits[:,choice_id_list] # [bs, num_choice]
+                        # print('enc:',enc.shape,enc)
+                        enc_predict_prob = nn.functional.softmax( enc,dim=-1) # [bs, num_choice]
+                        # print('enc_predict_prob:',enc_predict_prob.shape,enc_predict_prob) # [bs, num_choice]
+
+
+                        predict_label = torch.argmax(enc_predict_prob, dim=-1) #[bs]
+                        actual_label = torch.argmax(gt_val_one_hot_label, dim=-1)
+                        # print('gt_val_one_hot_label:',type(gt_val_one_hot_label),gt_val_one_hot_label)
+
+
+                    # test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
+                    # test_targets.append(list(gt_val_one_hot_label.detach().cpu().numpy()))
                     # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
+                    # print('predict_label:',type(predict_label),predict_label)
+                    # print('actual_label:',type(actual_label),actual_label)
 
-                    test_predict_labels.extend( list(predict_label.detach().cpu()) )
-                    test_actual_labels.extend( list(actual_label.detach().cpu()) )
+                    test_predict_labels.extend( predict_label.detach().cpu().tolist() )
+                    test_actual_labels.extend( actual_label.detach().cpu().tolist() )
                     # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
 
                     sample_cnt += predict_label.shape[0]
                     suc_cnt += torch.sum(predict_label == actual_label).item()
-                    # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
+                
+                elif self.args.task_type == "QuestionAnswering":
+                    
+                    def _get_best_indexes(logits, n_best_size=20):
+                        """Get the n-best logits from a list."""
+                        index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+                        best_indexes = []
+                        for i in range(len(index_and_score)):
+                            if i >= n_best_size:
+                                break
+                            best_indexes.append(index_and_score[i][0])
+                        return best_indexes
+                    
+                    def get_tokens(s):
+                        if not s: return []
+                        return normalize_answer(s).split()
 
+                    def compute_exact(a_gold, a_pred):
+                        return int(normalize_answer(a_gold) == normalize_answer(a_pred))
+
+                    def compute_f1(a_gold, a_pred):
+                        gold_toks = get_tokens(a_gold)
+                        pred_toks = get_tokens(a_pred)
+                        common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
+                        num_same = sum(common.values())
+                        if len(gold_toks) == 0 or len(pred_toks) == 0:
+                            # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
+                            return int(gold_toks == pred_toks)
+                        if num_same == 0:
+                            return 0
+                        precision = 1.0 * num_same / len(pred_toks)
+                        recall = 1.0 * num_same / len(gold_toks)
+                        f1 = (2 * precision * recall) / (precision + recall)
+                        return f1
+                    
+                    start_logits = test_logit.start_logits
+                    end_logits = test_logit.end_logits
+
+                    n_best_size = self.args.n_best_size
+                    start_indexes =[ _get_best_indexes(_logits, n_best_size) for _logits in start_logits ]
+                    end_indexes =[ _get_best_indexes(_logits, n_best_size) for _logits in end_logits ]
+
+                    for i in range(start_logits.shape[0]):
+                        # for each sample in this batch
+                        _start_logits = start_logits[i]
+                        _end_logits = end_logits[i]
+                        _start_indexes = start_indexes[i]
+                        _end_indexes = end_indexes[i]
+
+                        ############ Gold ################
+                        feature = parties_data[0][4]
+                        feature_tokens = [_token[0] for _token in feature["tokens"]]
+
+                        gold_start_indexs, gold_end_indexs = gt_val_one_hot_label[0] 
+                        gold_ans = []
+                        for _i in range(len(gold_start_indexs)):
+                            gold_start_index = int(gold_start_indexs[_i])
+                            gold_end_index = int(gold_end_indexs[_i])
+
+                            gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
+                            gold_ans_text = normalize_answer(gold_ans_text)
+                            gold_ans.append(gold_ans_text)
+
+                        # print('gold_ans:',gold_ans,feature["orig_answer_text"])
+
+                        ############ Pred ################
+                        _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
+                            "PrelimPrediction",
+                            ["start_index", "end_index", "start_logit", "end_logit"])
+                        _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
+                            "NbestPrediction", ["text", "start_logit", "end_logit"])
+                        
+                        # iterate through all possible start-end pairs
+                        prelim_predictions = []
+                        for start_index in _start_indexes:
+                            for end_index in _end_indexes:
+                                # We could hypothetically create invalid predictions, e.g., predict
+                                # that the start of the span is in the question. We throw out all
+                                # invalid predictions.
+                                if start_index >= len(feature["tokens"]):
+                                    continue
+                                if end_index >= len(feature["tokens"]):
+                                    continue
+                                if start_index not in feature["token_to_orig_map"]:
+                                    continue
+                                if end_index not in feature["token_to_orig_map"]:
+                                    continue
+                                if not feature["token_is_max_context"].get(start_index, False):
+                                    continue
+                                if end_index < start_index:
+                                    continue
+                                length = end_index - start_index + 1
+                                if length > self.args.max_answer_length:
+                                    continue
+
+                                prelim_predictions.append(
+                                    _PrelimPrediction(
+                                        start_index=start_index,
+                                        end_index=end_index,
+                                        start_logit=_start_logits[start_index],
+                                        end_logit=_end_logits[end_index]))
+
+                                
+                        # Iterate through Sorted Predictions
+                        prelim_predictions = sorted(
+                                prelim_predictions,
+                                key=lambda x: (x.start_logit + x.end_logit),
+                                reverse=True)
+                        _exact_score_list = []
+                        _f1_list = []
+                        exact_score = 0
+                        f1 = 0
+                        # Get n best prediction text
+                        nbest = []       
+                        n_best_size = min(n_best_size,len(prelim_predictions))
+                        for _id in range(n_best_size):
+                            start_index = prelim_predictions[_id].start_index
+                            end_index = prelim_predictions[_id].end_index
+
+                            pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
+                            pred_ans_text = normalize_answer(pred_ans_text)
+
+                            nbest.append(
+                                _NbestPrediction(
+                                    text=pred_ans_text,
+                                    start_logit=prelim_predictions[_id].start_logit,
+                                    end_logit=prelim_predictions[_id].end_logit))
+
+                        # Get best predicted answer
+                        total_scores = []
+                        best_non_null_entry = None
+                        for entry in nbest:
+                            total_scores.append(entry.start_logit + entry.end_logit)
+                            if not best_non_null_entry:
+                                if entry.text:
+                                    best_non_null_entry = entry
+                            
+                            # pred_ans_text = best_non_null_entry.text
+                            pred_ans_text = entry.text
+                            # Calculate exact_score/f1
+                            # print('best pred:',pred_ans_text)
+                            exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans) )
+                            f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans) )
+                            # exact_score = compute_exact(gold_ans_text, pred_ans_text)
+                            # f1 = compute_f1(gold_ans_text, pred_ans_text)
+                        print('this batch:',exact_score,f1)
+                        exact_score_list.append(exact_score)
+                        f1_list.append(f1)
+                else:
+                    assert 1>2, "task_type not supported"
+                
                 del(parties_data) # remove from cuda
             
-
-            if self.num_classes == 1: # regression
-                
-                self.test_mse = torch.mean((torch.tensor(test_predict_labels)-torch.tensor(test_actual_labels))**2).item()
-                #torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
-                
-                # print('test_predict_labels:',test_predict_labels[:10])
-                # for item in test_predict_labels:
-                #     if np.isnan(item):
-                #         print('yes')
-
-                # print('test_actual_labels:',test_actual_labels[:10])
-                # for item in test_actual_labels:
-                #     if np.isnan(item):
-                #         print('yes')
-
-                self.test_pearson_corr = stats.pearsonr( torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) )[0]
-                # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
-                self.test_spearmanr_corr = stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-                postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
-                postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-                
-                exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr )
+            if self.args.task_type == "QuestionAnswering":
+                self.exact_score = np.mean(exact_score_list)
+                self.f1 = np.mean(f1_list)
+                exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(self.exact_score, self.f1)
                 print(exp_result)
-                # print('Full pred pearson:',full_test_pearson_corr)
-                return exp_result , self.test_mse
-            
-            else:
-                # print('test_predict_labels:',test_predict_labels[:20]) 
-                # print('test_actual_labels:',test_actual_labels[:20]) 
+                return exp_result , self.exact_score
+
+            if self.args.task_type == "SequenceClassification":
+                if self.num_classes == 1:
+                    self.test_mse = torch.mean((torch.tensor(test_predict_labels)-torch.tensor(test_actual_labels))**2).item()
+                    #torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
+
+                    self.test_pearson_corr = stats.pearsonr( torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) )[0]
+                    # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
+                    self.test_spearmanr_corr = stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+                    postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
+                    postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
+                    
+                    exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr )
+                    print(exp_result)
+                    # print('Full pred pearson:',full_test_pearson_corr)
+                    return exp_result , self.test_mse
+                else:
+                    print('test_predict_labels:',test_predict_labels[:20]) 
+                    print('test_actual_labels:',test_actual_labels[:20]) 
+
+                    self.test_acc = suc_cnt / float(sample_cnt) # ACC
+                    # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
+
+                    # test_preds = np.vstack(test_preds)
+                    # test_targets = np.vstack(test_targets)
+                    # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
+
+                    self.test_mcc = matthews_corrcoef(np.array(test_predict_labels),np.array(test_actual_labels) ) # MCC
+
+                    postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+                    # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+                    postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
+
+                    exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc )
+                    print(exp_result)
+                    # print('Full acc:',full_test_acc)
+                    return exp_result , self.test_acc
+
+            if self.args.task_type == "CausalLM":
+                print('test_predict_labels:',test_predict_labels[:20]) 
+                print('test_actual_labels:',test_actual_labels[:20]) 
 
                 self.test_acc = suc_cnt / float(sample_cnt) # ACC
                 # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
 
-                test_preds = np.vstack(test_preds)
-                test_targets = np.vstack(test_targets)
-                self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
+                # test_preds = np.vstack(test_preds)
+                # test_targets = np.vstack(test_targets)
+                # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
 
                 self.test_mcc = matthews_corrcoef(np.array(test_predict_labels),np.array(test_actual_labels) ) # MCC
 
                 postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-                postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+                # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
                 postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
 
-                exp_result = 'test_acc:{:.2f} test_auc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_auc, self.test_mcc )
+                exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc )
                 print(exp_result)
                 # print('Full acc:',full_test_acc)
                 return exp_result , self.test_acc
 
-                # if self.args.dataset == 'jigsaw_toxic':
-            #     binary_scores = [s >= 0.5 for s in scores]
-            #     binary_scores = np.stack(binary_scores)
-            #     scores = np.stack(scores) #[instance_num,6]
-            #     targets = np.stack(targets) #[instance_num,6]
-            #     print('scores:',scores.shape)
-            #     print('targets:',targets.shape)
-
-            #     auc_scores = []
-
-            #     for class_idx in range(scores.shape[1]): # 1-6
-            #         mask = targets[:, class_idx] != -1
-            #         print('===== class_idx:',class_idx)
-            #         print('mask:',type(mask), mask.shape )
-            #         target_binary = targets[mask, class_idx]
-            #         class_scores = scores[mask, class_idx]
-            #         try:
-            #             # print('target_binary:',type(target_binary),target_binary.shape,target_binary[:5])
-            #             # print('class_scores:',type(class_scores),class_scores.shape,class_scores[:5])
-            #             auc = roc_auc_score(target_binary, class_scores)
-            #             print('auc=',auc)
-            #             auc_scores.append(auc)
-            #         except Exception:
-            #             warnings.warn(
-            #                 "Only one class present in y_true. ROC AUC score is not defined in that case. Set to nan for now."
-            #             )
-            #             auc_scores.append(np.nan)
-            #     mean_auc = np.mean(auc_scores)
-            #     self.test_auc = mean_auc
-
-            #     postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
-            #     exp_result = 'test_auc:{:.2f}'.format(self.test_auc)
-            #     return exp_result,self.test_auc
 
     def train_batch(self, parties_data, batch_label):
         '''
@@ -496,7 +770,17 @@ class MainTaskVFL_LLM(object):
 
             self.current_step = 0
             for parties_data in zip(*data_loader_list):
-                self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
+                if len(parties_data[0])==4:
+                    # print('4 with token_type_ids')
+                    self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
+                elif len(parties_data[0])==3:
+                    # print('3 without token_type_ids')
+                    self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),None] for _data in parties_data]
+                # self.parties_data = [ [_data[0].to(self.device),_data[1].to(self.device),_data[2].to(self.device),_data[3].to(self.device)] for _data in parties_data]
+
+                # print('self.parties_data[0][0].shape:',self.parties_data[0][0].shape)
+                # print('self.parties_data[0][1].shape:',self.parties_data[0][1].shape)
+                # print('self.parties_data[0][2].shape:',self.parties_data[0][2].shape)
 
                 if self.num_classes == 1: # regression
                     self.gt_one_hot_label = parties_data[0][1]
@@ -579,22 +863,43 @@ class MainTaskVFL_LLM(object):
                         
                         pred_list = []
                         for ik in range(self.k-1): # Passive data local predict
-                            # _local_pred, input_shape = self.parties[ik].local_model(parties_data[ik][0])
-                            _local_pred, input_shape = self.parties[ik].local_model(\
+                            input_shape = parties_data[ik][0].shape[:2]
+                            _local_pred = self.parties[ik].local_model(\
                                 parties_data[ik][0],attention_mask=parties_data[ik][2],token_type_ids = parties_data[ik][3])
-                            self.parties[self.k-1].input_shape = input_shape
-                            self.parties[self.k-1].local_batch_attention_mask = parties_data[0][2]
-                            self.parties[self.k-1].local_batch_token_type_ids = parties_data[0][3]
 
                             self.parties[ik].input_shape = input_shape
-                            self.parties[ik].local_batch_attention_mask = parties_data[0][2]
-                            self.parties[ik].local_batch_token_type_ids = parties_data[0][3]
+                            self.parties[ik].obtain_local_data(parties_data[ik][0])
+                            self.parties[ik].gt_one_hot_label = gt_val_one_hot_label
+                            self.parties[ik].local_batch_attention_mask = parties_data[ik][2]
+                            self.parties[ik].local_batch_token_type_ids = parties_data[ik][3]
+                                
+                            self.parties[self.k-1].input_shape = input_shape
+                            # self.parties[self.k-1].local_batch_attention_mask = parties_data[0][2]
+                            self.parties[self.k-1].local_batch_token_type_ids = parties_data[0][3]
+
+                            if self.args.model_type == 'Bert':
+                                _local_pred, _local_pred_detach, _local_attention_mask  = self.parties[ik].give_pred() # , _input_shape
+                                pred_list.append( [_local_pred, _local_attention_mask])
+                            
+                            elif self.args.model_type == 'GPT2':
+                                if self.args.task_type == 'SequenceClassification':
+                                    _local_pred, _local_pred_detach,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                                    pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                                elif self.args.task_type == 'CausalLM':
+                                    _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                                    pred_list.append( [_local_pred,_local_attention_mask] )
+
+                            elif self.args.model_type == 'Llama':
+                                if self.args.task_type == 'SequenceClassification':
+                                    _local_pred, _local_pred_detach , _local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                                    pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                                elif self.args.task_type == 'CausalLM':
+                                    _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                                    pred_list.append( [_local_pred,_local_attention_mask] )
 
                             pred_list.append(_local_pred)
                         
-                        test_logit = self.parties[self.k-1].aggregate\
-                            (pred_list,self.parties[self.k-1].local_batch_attention_mask,\
-                                self.parties[self.k-1].local_batch_token_type_ids, test="True")
+                        test_logit = self.parties[self.k-1].aggregate(pred_list, test="True")
                         # print('test_logit:',type(test_logit),test_logit.shape)
                         
                         enc_predict_prob = F.softmax(test_logit, dim=-1)

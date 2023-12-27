@@ -7,7 +7,6 @@ import random
 import logging
 import argparse
 import torch
-import tensorflow as tf
 # import torch.nn as nn
 # import torchvision.transforms as transforms
 # from torchvision import datasets
@@ -134,7 +133,7 @@ if __name__ == '__main__':
         
         
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/{str(mode)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}_1/Q{str(args.Q)}/{str(mode)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
@@ -156,11 +155,41 @@ if __name__ == '__main__':
 
         args = load_attack_configs(args.configs, args, -1)
 
+        # subject_list = ['abstract_algebra', 'anatomy', 'astronomy', 'business_ethics', 'clinical_knowledge', \
+        # 'college_biology', 'college_chemistry', 'college_computer_science','college_mathematics','college_medicine',\
+        # 'college_physics', 'computer_security', 'conceptual_physics', 'econometrics', 'electrical_engineering', \
+        #  'elementary_mathematics', 'formal_logic', 'global_facts', 'high_school_biology', 'high_school_chemistry',\
+        # 'high_school_computer_science', 'high_school_european_history',
+        # subject_list = ['high_school_geography', 'high_school_government_and_politics', \
+        # 'high_school_macroeconomics', 'high_school_mathematics', 'high_school_microeconomics', 'high_school_physics', 'high_school_psychology',\
+        # 'high_school_statistics', 'high_school_us_history', 'high_school_world_history', 'human_aging', 'human_sexuality', 'international_law',\
+        # 'jurisprudence', 'logical_fallacies', 'machine_learning', 'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', \
+        # 'moral_scenarios', 'nutrition', 'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', \
+        # 'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology', 'world_religions']
+    
+        
+        # acc_list = []
+        # for _subject in subject_list:
+        #     print(' ===== Subject ',_subject,' ===== ')
+        #     args.subject = _subject
+
+        #     args = load_parties_llm(args)
+        #     args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
+
+        #     result = f'{_subject}_acc:{args.main_acc_noattack}'
+        #     append_exp_res(args.exp_res_path, result)
+        #     acc_list.append(args.main_acc_noattack)
+        #     torch.cuda.empty_cache ()
+        
+        # avg_acc = np.mean(acc_list)
+        # final_result = f'Average_acc:{avg_acc}'
+        # append_exp_res(args.exp_res_path, final_result)
+        # print(final_result)
+
+
         args = load_parties_llm(args)
-
-        commuinfo='== commu:'+args.communication_protocol
-        append_exp_res(args.exp_res_path, commuinfo)
-
+        # commuinfo='== commu:'+args.communication_protocol
+        # append_exp_res(args.exp_res_path, commuinfo)
         if args.pretrained == 1:
             args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
         else:

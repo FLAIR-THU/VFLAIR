@@ -1,8 +1,8 @@
 {
     "epochs": 100,
-    "lr": 0.0005,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 4,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -13,16 +13,18 @@
     },
     "model_list":{
         "0": {
-            "type": "bert-base-uncased",
+            "type": "llama-2-7b",
             "pretrained": 0,
             "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 256,
             "path": ""
         },
         "1": {
-            "type": "bert-base-uncased",
+            "type": "llama-2-7b",
             "pretrained": 0,
             "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 256,
             "path": ""
         },

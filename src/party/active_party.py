@@ -204,16 +204,30 @@ class ActiveParty_LLM(Party_LLM):
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
 
-    def aggregate(self, pred_list, attention_mask,token_type_ids, test=False):
-        pred = self.global_model(pred_list[0], self.input_shape, attention_mask,token_type_ids)
+    def aggregate(self, pred_list, test=False):
+        if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
+            pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1])
+        
+        elif self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
+            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+            elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
+            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+            else:
+                assert 1>2 , 'Task type no supported'
+
+        elif self.args.model_type == 'Llama': 
+            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+            elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
+            else:
+                assert 1>2 , 'Task type no supported'
+
         self.global_pred = pred
         return pred
-    
-    # def aggregate(self,  test=False):
-    #     pred = self.global_model(self.pred_received[0], self.input_shape, \
-    #         self.local_batch_attention_mask,self.local_batch_token_type_ids)
-    #     self.global_pred = pred
-    #     return pred
 
     def global_LR_decay(self,i_epoch):
         if self.global_model_optimizer != None: 

@@ -29,7 +29,7 @@
   * Multiple datasets are provided along with VFLAIR.
   * Defense Capability Score ——a comprehensive metric for assessing defense ability is also introduced.
   * Tree-based VFL is also proved in the code with XGBoost and RandomForest supported. See `./src/configs/README_TREE.md` for detailed description.
-
+  * VFL for LLM implementation is also provided with Bert, GPT2 and Llama supported. See `./src/configs/README_LLM.md` for detailed description.
 
 ## Code Structure
 
@@ -47,6 +47,7 @@ VFLAIR
 │   |   ├── MainTaskVFLwithBackdoor    # Pipeline for VFL with TB     
 │   |   ├── MainTaskVFLwithNoisySample # Pipeline for VFL with NTB-NSB    
 │   |   ├── MainTaskTVFL               # Pipeline for Tree-based VFL
+│   |   ├── MainTaskVFL_LLM            # Pipeline for LLM-based VFL
 │   ├── load                           # Load Configurations into training pipeline
 │   |   ├── LoadConfigs.py             # Load basic parameters   
 │   |   ├── LoadDataset.py             # Load dataset and do data partition

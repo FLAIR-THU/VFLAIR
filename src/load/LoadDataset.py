@@ -12,13 +12,17 @@ from sklearn.metrics import roc_auc_score,accuracy_score,recall_score,f1_score,p
 from copy import deepcopy, copy
 from collections import Counter
 
+from datasets import load_dataset
+import string
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
+
 from utils.noisy_sample_functions import noisy_sample
+from utils.squad_utils import *
 
 tp = transforms.ToTensor()
 transform = transforms.Compose(
@@ -38,7 +42,7 @@ DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','credit','nursery','avazu']
 GRAPH_DATA = ['cora']
-TEXT_DATA = ['news20','cola_public','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE']
+TEXT_DATA = ['news20','cola_public','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE','MMLU']
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
@@ -1248,6 +1252,42 @@ def load_mnli(file, header=True, multi_snli=False, is_train=True):
             cnt += 1
     return rows
 
+
+def format_subject(subject):
+    l = subject.split("_")
+    s = ""
+    for entry in l:
+        s += " " + entry
+    return s
+
+def format_example(df, idx, choices, include_answer=True):
+    prompt = df.iloc[idx, 0]
+    k = len(choices)
+    for j in range(k):
+        prompt += "\n{}. {}".format(choices[j], df.iloc[idx][str(choices[j])])
+    prompt += "\nAnswer:"
+    if include_answer:
+        prompt += " {}\n\n".format(df.iloc[idx]['answer']) #df.iloc[idx, k + 1]
+    answer = df.iloc[idx]['answer']
+    return prompt, answer
+
+def gen_prompt(train_df, choices, subject, k=-1):
+    prompt_list = []
+    if k == -1:
+        k = train_df.shape[0]
+    
+    _num = 0
+
+    for i in range(len(train_df)):
+        if train_df.iloc[i]['subject'] == subject:
+            prompt, answer= format_example(train_df, i, choices)
+            prompt_list.append(prompt)
+            _num += 1
+            if _num >=k:
+                break
+        
+    return prompt_list
+
 def load_dataset_per_party_llm(args, index):
     print('load_dataset_per_party_llm  args.need_auxiliary = ',args.need_auxiliary)
     args.classes = [None] * args.num_classes
@@ -1388,7 +1428,7 @@ def load_dataset_per_party_llm(args, index):
     
     elif args.dataset == 'MRPC':
         text_path = DATA_PATH + 'MRPC/train.tsv'
-        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)# names=[  'sentence','label']
+        df = pd.read_csv(text_path , sep='\t')#,error_bad_lines=False)# names=[  'sentence','label']
         df.columns = [  'Quality', 'id1', 'id2', 'sentence1','sentence2']
         sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
         labels = df.Quality.values
@@ -1397,7 +1437,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'MRPC/dev.tsv'
-        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = pd.read_csv(text_path , sep='\t')#,error_bad_lines=False)
         df.columns = [  'Quality', 'id1', 'id2', 'sentence1','sentence2']
         sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
         labels = df.Quality.values
@@ -1413,10 +1453,15 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test,y_test)
 
     elif args.dataset == 'MNLI':
+        # label_dict={
+        #     'entailment': 1,
+        #     'neutral': 2,
+        #     'contradiction': 0
+        # }
         label_dict={
-            'entailment': 1,
-            'neutral': 2,
-            'contradiction': 0
+            'entailment': 0,
+            'neutral': 1,
+            'contradiction': 2
         }
 
         text_path = DATA_PATH + 'MNLI/train.tsv'
@@ -1508,7 +1553,7 @@ def load_dataset_per_party_llm(args, index):
     
     elif args.dataset == 'WNLI':
         text_path = DATA_PATH + 'WNLI/train.tsv'
-        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = pd.read_csv(text_path , sep='\t')#,error_bad_lines=False)
         sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
         labels = df.label.values
 
@@ -1516,7 +1561,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'WNLI/dev.tsv'
-        df = pd.read_csv(text_path , sep='\t',error_bad_lines=False)
+        df = pd.read_csv(text_path , sep='\t')#,error_bad_lines=False)
         sentence_pairs = np.array( list(zip(df.sentence1.values,df.sentence2.values)) )
         labels = df.label.values
        
@@ -1561,70 +1606,206 @@ def load_dataset_per_party_llm(args, index):
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
-
-    elif args.dataset == 'jigsaw_toxic':
-        print('== Load jigsaw ==')
-        train_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/train.csv'
-        test_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/test.csv'
-        test_label_file = DATA_PATH + '/jigsaw-toxic-comment-classification-challenge/test_labels.csv'
-        change_names = {
-            "target": "toxicity",
-            "toxic": "toxicity",
-            "identity_hate": "identity_attack",
-            "severe_toxic": "severe_toxicity",
-        }
-        classes=["toxicity","severe_toxicity", "obscene",
-                "threat","insult","identity_attack"]
+    
+    elif args.dataset == 'MMLU':
+        subject_list = []
+        choices = ["A", "B", "C", "D"]
+        option_dict = {option: idx for idx, option in enumerate('ABCD')}
+        args.label_dict = option_dict
         
-        test_labels_df = pd.read_csv(test_label_file)
+        ### train ###
+        text_path =  DATA_PATH + 'MMLU/dev/'
+        df_train = pd.DataFrame()
+        for name in sorted(os.listdir(text_path)):
+            # print(name[:-4])
+            _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
+            _name_list = name.split('_')[:-1]
+            subject_name = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
+            _df['subject'] = subject_name
+            subject_list.append(subject_name)
+            df_train = pd.concat([df_train,_df])
 
-        train_df = pd.read_csv(train_file)
-        filtered_change_names = {k: v for k, v in change_names.items() if k in train_df.columns}
-        if len(filtered_change_names) > 0:
-            train_df.rename(columns=filtered_change_names, inplace=True)
 
-        test_df = pd.read_csv(test_file)
-        filtered_change_names = {k: v for k, v in change_names.items() if k in test_df.columns}
-        if len(filtered_change_names) > 0:
-            test_df.rename(columns=filtered_change_names, inplace=True)
+        prompt_list = []
+        answer_list = []
+        for i in range(len(df_train)):
+            if df_train.iloc[i]['subject'] == args.subject:#in subject_list:
+                subject = df_train.iloc[i]['subject']
+                prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(format_subject(subject))
+                prompt_end , answer = format_example(df_train ,i,choices, include_answer=False)
+                prompt = prompt_head + prompt_end
+                if len(prompt) < args.max_sequence:
+                    prompt_list.append(prompt)
+                    answer_list.append(answer)
 
+        labels = [ option_dict[choice] for  choice in answer_list]
+        X_train = np.array(prompt_list)
+        y_train = np.array(labels)
+        # else:
+        #     prompt = [ [_p,_p,_p,_p] for _p in df_train['prompt'] ] 
+        #     option = [ [row['A'],row['B'],row['C'],row['D'] ] for idx, row in df_train.iterrows() ]
+        #     sentence_pairs = [ [_p, _o] for _p,_o in zip(prompt,option)]
+        #     sentence_pairs = np.array(sentence_pairs )
+            
+        #     X_train = np.array(sentence_pairs)
+        #     y_train = np.array(labels)
 
-        X_train = train_df.comment_text.values
-        labels_meta = []
-        for index in range(len(train_df)):
-            meta = {}
-            entry = train_df.iloc[index]
-            text_id = entry["id"]
-            target_dict = {label: value for label, value in entry.items() if label in classes}
+        ### test ###
+        text_path =  DATA_PATH + 'MMLU/test/'
+        df_test = pd.DataFrame()
+        for name in sorted(os.listdir(text_path)):
+            # print(name[:-4])
+            _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
+            _name_list = name.split('_')[:-1]
+            _df['subject'] = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
+            df_test = pd.concat([df_test,_df])
 
-            # meta["multi_target"] = torch.tensor(list( target_dict.values() ), dtype=torch.int32)
-            # meta["text_id"] = text_id
-
-            # labels_meta.append(torch.tensor(list( target_dict.values() ), dtype=torch.int32))
-            labels_meta.append( list(target_dict.values()) )
-        y_train = labels_meta
-
-        X_test = test_df.comment_text.values
-        labels_meta = []
-        # for category in test_labels.columns[1:]:
-        #     val_set[category] = data_labels[category]
-        for index in range(len(test_labels_df)):
-            meta = {}
-            entry = train_df.iloc[index]
-            text_id = entry["id"]
-            target_dict = {label: value for label, value in entry.items() if label in classes}
-            # meta["multi_target"] = torch.tensor(list( target_dict.values() ), dtype=torch.int32)
-            # meta["text_id"] = text_id
-            labels_meta.append( list( target_dict.values()) )
+        labels = [ option_dict[choice] for  choice in df_test['answer']]
         
-        y_test = labels_meta
-        print('y_test[0]:',y_test[0])
+        num_train = args.n_shot
+        print('num_train=',num_train)
+        prompt_list = []
+        answer_list = []
+        for i in range(len(df_test)):
+            if df_test.iloc[i]['subject']  == args.subject:# in subject_list:
+                subject = df_test.iloc[i]['subject']
+                # if df_test.iloc[i]['subject'] == subject:
+                prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(format_subject(subject))
+                train_prompt_list = gen_prompt(df_train, choices, subject, num_train) # shot from train
+                prompt_end , answer = format_example(df_test ,i,choices, include_answer=False)
 
-        print(type(X_train),X_train.shape,X_test.shape) # (6840,512) (1711,512)
-        print(type(y_train)) # (6840,1) (1711,1)
+                for _prompt in train_prompt_list:
+                    prompt_head = prompt_head + _prompt
+                prompt = prompt_head + prompt_end
+                if len(prompt) < args.max_sequence:    
+                    prompt_list.append(prompt)
+                    answer_list.append(answer)
+        labels = [ option_dict[choice] for  choice in answer_list]
+        X_test = np.array(prompt_list)
+        y_test = np.array(labels)
+        # else:
+        #     prompt = [ [_p,_p,_p,_p] for _p in df['prompt'] ] 
+        #     option = [ [row['A'],row['B'],row['C'],row['D'] ] for idx, row in df_test.iterrows() ]
+
+        #     sentence_pairs = [ [_p, _o] for _p,_o in zip(prompt,option)]
+        #     sentence_pairs = np.array(sentence_pairs )
+            
+        #     X_test = np.array(sentence_pairs)
+        #     y_test = np.array(labels)
+        print('Data:')
+        print(type(X_train),X_train.shape,X_test.shape) # 
+        print(type(y_train), y_train.shape,y_test.shape)# 
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
+
+    elif args.dataset == 'Lambada':
+        data_file = DATA_PATH + 'Lambada'
+        print(data_file)
+        dataset = load_dataset(data_file)
+
+        ## train
+        train_all_texts = dataset['train'][:]['text']
+        train_domain = dataset['train'][:]['domain']
+
+        texts = []
+        target_word = []
+
+        for _all_text in train_all_texts[:100]:
+            _all_text = _all_text.rstrip(string.punctuation)
+            _all_text = _all_text.split()
+            last_word = _all_text[-1]
+            if len(_all_text) > args.max_sequence:
+                text = _all_text[-args.max_sequence-1 :-1]
+            else:
+                text = _all_text[:-1]
+            text = " ".join(text)
+            
+            target_word.append(last_word) 
+            texts.append(text)
+
+        X_train = np.array(texts)
+        y_train = target_word
+
+        ## test
+        test_all_texts = dataset['test'][:]['text']
+        test_domain = dataset['test'][:]['domain']
+
+        texts = []
+        target_word = []
+        for _all_text in train_all_texts[:20]:
+            _all_text = _all_text.rstrip(string.punctuation)
+            _all_text = _all_text.split()
+            last_word = _all_text[-1]
+            if len(_all_text) > args.max_sequence:
+                text = _all_text[-args.max_sequence-1 :-1]
+            else:
+                text = _all_text[:-1]
+            text = " ".join(text)
+
+            target_word.append(last_word) 
+            texts.append(text)
+
+        X_test = np.array(texts)
+        y_test = target_word #np.array(target_word) 
+
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+
+    elif args.dataset == 'SQuAD':
+        print(' === SQuAD === ')
+        # data_path = DATA_PATH + '/SQuAD'
+        # squad_dataset = load_dataset(data_path)
+
+        max_seq_length = args.max_seq_length
+        doc_stride = args.doc_stride
+        max_query_length = args.max_query_length
+
+        ## train
+        data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
+        # dst = squad_dataset['train']
+        # train_examples = read_squad_examples(dst, is_training=True)[:10]
+        train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)[:10]
+ 
+        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, max_seq_length=max_seq_length,
+                                 doc_stride=doc_stride, max_query_length=max_query_length, is_training=True)
+        print('train_features:',len(train_features),train_features[0].keys())
+
+        
+        inputs = [] 
+        labels = []
+        for feature in train_features:
+            inputs.append(feature)
+            labels.append([feature["start_position"],feature["end_position"]])
+        
+        X_train = inputs
+        y_train = labels
+
+
+        ## test
+        # dst = squad_dataset['validation']
+        # test_examples = read_squad_examples(dst, is_training=True)[:10]
+        data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
+        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)[:100]
+
+        test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, max_seq_length=max_seq_length,
+                                 doc_stride=doc_stride, max_query_length=max_query_length, is_training=False)
+        print('test_features:',len(test_features),test_features[0].keys())
+
+        inputs = [] 
+        labels = []
+        for feature in test_features:
+            inputs.append(feature)
+            labels.append([feature["start_position"],feature["end_position"]])
+        
+        X_test = inputs
+        y_test = labels
+
+        train_dst = (X_train,y_train)
+        test_dst = (X_test,y_test)
+
+        print(type(X_train),len(X_train),len(X_test),type(X_train[0])) # 
+        print(type(y_train), len(y_train),len(y_test),y_train[0])# 
 
     elif args.dataset == 'semeval':
         label_dict={
@@ -1690,3 +1871,5 @@ def load_dataset_per_party_llm(args, index):
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
+
+
