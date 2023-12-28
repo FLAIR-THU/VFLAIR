@@ -441,7 +441,7 @@ class MainTaskVFL_LLM(object):
                         print('predict_label:',predict_label, predict_word)
                         actual_label = gt_val_one_hot_label
 
-                        assert 1>2
+                        assert 1>2, "Lambada dataset not completed"
 
                     else: # MMLU
                         choice_id_list = []
