@@ -6,7 +6,7 @@
 
 In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluation as **a variant** of our traditional Federated Learning procedure. Here we provide the following functions: 
 
- ![Overview](usage_guidance/figures/LLM_overview.png)
+ ![LLM_overview](../../usage_guidance/figures/LLM_overview.png)
 
 - **Model Split for LLM**: Defaultly we split the LLM between the first and second layer(encoder or decoder), which can be user-defined through config files.
   - Local Model: Embedding Layer + the first encoder
@@ -27,8 +27,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
     - Note: Currently Fintune procedure is only supported for SequenceClassification tasks.【To be completed】
 
 ## Structure
-
- ![Pipeline](usage_guidance/figures/pipeline.png)
+ ![Pipeline](../../usage_guidance/figures/pipeline.png)
 
 - **Config Module**
 
