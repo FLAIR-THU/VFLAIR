@@ -185,7 +185,7 @@ if __name__ == '__main__':
             append_exp_res(args.exp_res_path, final_result)
             print(final_result)
 
-        else"
+        else:
             args = load_parties_llm(args)
             # commuinfo='== commu:'+args.communication_protocol
             # append_exp_res(args.exp_res_path, commuinfo)
