@@ -428,11 +428,20 @@ class MainTaskVFL_LLM(object):
                     # print('next_token_logits:',next_token_logits.shape,next_token_logits)
                     
                     if self.args.dataset == "Lambada":
-                        print('Lambada gt_val_one_hot_label:',gt_val_one_hot_label)
+                        generated, generate_text = self.parties[self.k-1].generate(pred_list, test="True")
+                        
+                        target_word = self.args.tokenizer.decode(gt_val_one_hot_label.tolist())
+                        print('gt_val_one_hot_label:',gt_val_one_hot_label,target_word)
+
                         enc_predict_prob = nn.functional.softmax( next_token_logits,dim=-1)
+                        
                         predict_label = torch.argmax(enc_predict_prob, dim=-1) #[bs]
-                        print('predict_label:',predict_label)
+                        predict_word = self.args.tokenizer.decode(predict_label.tolist())
+
+                        print('predict_label:',predict_label, predict_word)
                         actual_label = gt_val_one_hot_label
+
+                        assert 1>2
 
                     else: # MMLU
                         choice_id_list = []
@@ -594,23 +603,36 @@ class MainTaskVFL_LLM(object):
                         # Get best predicted answer
                         total_scores = []
                         best_non_null_entry = None
-                        for entry in nbest:
-                            total_scores.append(entry.start_logit + entry.end_logit)
-                            if not best_non_null_entry:
-                                if entry.text:
-                                    best_non_null_entry = entry
-                            
-                            # pred_ans_text = best_non_null_entry.text
-                            pred_ans_text = entry.text
+
+                        if self.args.metric_type == "best_bred":
+                            for entry in nbest:
+                                total_scores.append(entry.start_logit + entry.end_logit)
+                                if not best_non_null_entry:
+                                    if entry.text:
+                                        best_non_null_entry = entry
+                                pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
                             # Calculate exact_score/f1
                             # print('best pred:',pred_ans_text)
                             exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans) )
                             f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans) )
-                            # exact_score = compute_exact(gold_ans_text, pred_ans_text)
-                            # f1 = compute_f1(gold_ans_text, pred_ans_text)
-                        print('this batch:',exact_score,f1)
-                        exact_score_list.append(exact_score)
-                        f1_list.append(f1)
+                            print('this batch:',exact_score,f1)
+                            exact_score_list.append(exact_score)
+                            f1_list.append(f1)
+                        elif self.args.metric_type == "n_best":
+                            for entry in nbest:
+                                total_scores.append(entry.start_logit + entry.end_logit)
+                                if not best_non_null_entry:
+                                    if entry.text:
+                                        best_non_null_entry = entry
+                                pred_ans_text = entry.text
+                                # Calculate exact_score/f1
+                                # print('best pred:',pred_ans_text)
+                                exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans) )
+                                f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans) )
+                                print('this batch:',exact_score,f1)
+                                exact_score_list.append(exact_score)
+                                f1_list.append(f1)
+                     
                 else:
                     assert 1>2, "task_type not supported"
                 

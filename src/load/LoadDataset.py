@@ -1786,11 +1786,11 @@ def load_dataset_per_party_llm(args, index):
         # dst = squad_dataset['validation']
         # test_examples = read_squad_examples(dst, is_training=True)[:10]
         data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)[:100]
+        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)
 
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, max_seq_length=max_seq_length,
                                  doc_stride=doc_stride, max_query_length=max_query_length, is_training=False)
-        print('test_features:',len(test_features),test_features[0].keys())
+        # print('test_features:',len(test_features),test_features[0].keys())
 
         inputs = [] 
         labels = []
@@ -1807,51 +1807,7 @@ def load_dataset_per_party_llm(args, index):
         print(type(X_train),len(X_train),len(X_test),type(X_train[0])) # 
         print(type(y_train), len(y_train),len(y_test),y_train[0])# 
 
-    elif args.dataset == 'semeval':
-        label_dict={
-            'negative': 0,
-            'neutral': 1,
-            'positive': 2
-        }
-        
-        path = DATA_PATH + '/SemEval2017_en/GOLD/Subtask_A/twitter-2016train-A.txt'
-        texts = []
-        labels = []
-        with open(path) as file:
-            for item in file:
-                content = item.split('\t')
-                _id = content[0]
-                label = content[1]
-                text = " ".join(content[2:])
-                label = label_dict[label]
-                texts.append(text)
-                labels.append(label)
-        X_train = texts
-        y_train = labels
-
-        path = DATA_PATH + '/SemEval2017_en/GOLD/Subtask_A/twitter-2016test-A.txt'
-        texts = []
-        labels = []
-        with open(path) as file:
-            for item in file:
-                content = item.split('\t')
-                _id = content[0]
-                label = content[1]
-                if content[1] not in ['positive','negative','neutral']:
-                    continue
-                text = " ".join(content[2:])
-                label = label_dict[label]
-                texts.append(text)
-                labels.append(label)
-        X_test = texts
-        y_test = labels
-
-        print(type(X_train),len(X_train),len(X_test)) # (6840,512) (1711,512)
-        print(type(y_train),len(y_train),len(y_test)) # (6840,1) (1711,1)
-        
-        train_dst = (X_train,y_train)
-        test_dst = (X_test,y_test)
-
+   
     else:
         assert args.dataset == 'news20', "dataset not supported yet"
 

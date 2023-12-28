@@ -373,15 +373,23 @@ def load_basic_models_llm_bert(args,index):
             global_bert = GlobalBertModel(full_bert,1,model_type = args.model_type)
             
             # add Classification Layer(untrainable)
-            global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+            if args.task_type == "QuestionAnswering":
+                global_model = BertForQuestionAnswering_pretrained(global_bert, classifier)
+            else:
+                global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+            
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
             
             # Freeze Backbone
             for param in global_model.backbone.parameters():
                 param.requires_grad = False
             # Classifier already pretrained
-            for param in global_model.classifier.parameters():
-                param.requires_grad = False
+            if args.task_type == "QuestionAnswering":
+                for param in global_model.qa_outputs.parameters():
+                    param.requires_grad = False
+            else:
+                for param in global_model.classifier.parameters():
+                    param.requires_grad = False
             global_model = global_model.to(args.device)
             global_model_optimizer = None
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer

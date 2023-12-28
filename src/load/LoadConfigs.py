@@ -96,7 +96,7 @@ def load_basic_configs(config_file_name, args):
         # Task Description
         args.task_dict = config_model_dict['task']
         args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
-        
+        args.metric_type = args.task_dict['metric_type'] if('metric_type' in args.task_dict) else "n_best"
         args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
         args.max_query_length = args.task_dict['max_query_length'] if('max_query_length' in args.task_dict) else -1
         args.max_seq_length = args.task_dict['max_seq_length'] if('max_seq_length' in args.task_dict) else -1

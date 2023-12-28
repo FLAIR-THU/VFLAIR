@@ -228,6 +228,27 @@ class ActiveParty_LLM(Party_LLM):
 
         self.global_pred = pred
         return pred
+    
+    def generate(self, pred_list, test=False):
+        # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
+        #     pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1])
+        
+        if self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
+            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
+                generated = self.global_model.transformer.greedy_search(intermediate = pred_list[0][0],  attention_mask=pred_list[0][1])
+                print('generated:',generated)
+                generate_text = self.args.tokenizer.decode(generated.tolist())
+                print('generate_text:',generate_text)
+
+        # elif self.args.model_type == 'Llama': 
+        #     if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
+        #         pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+        #     elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+        #         pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
+        #     else:
+        #         assert 1>2 , 'Task type no supported'
+
+        return generated, generate_text
 
     def global_LR_decay(self,i_epoch):
         if self.global_model_optimizer != None: 

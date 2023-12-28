@@ -133,7 +133,7 @@ if __name__ == '__main__':
         
         
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}_1/Q{str(args.Q)}/{str(mode)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}_1best/Q{str(args.Q)}/{str(mode)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')

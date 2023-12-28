@@ -10,30 +10,31 @@
     "dataset":{
         "dataset_name": "SQuAD",
         "num_classes": 1,
+        "use_prompt": 1,
         "n_shot": 1
     },
     "model_list":{
         "0": {
-            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "type": "rsvp-aibertserini-bert-base-squad",
             "pretrained": 1,
             "output_dim": 1,
-            "model_type": "GPT2",
-            "max_sequence": 1024,
+            "model_type": "Bert",
+            "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "type": "rsvp-aibertserini-bert-base-squad",
             "pretrained": 1,
             "output_dim": 1,
-            "model_type": "GPT2",
-            "max_sequence": 1024,
+            "model_type": "Bert",
+            "max_sequence": 512,
             "path": ""
         },
         "task":{
             "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
+            "metric_type": "n_best",
             "doc_stride" : 128,
-            "max_seq_length": 1024,
+            "max_seq_length": 512,
             "max_query_length" : 64,
             "max_answer_length": 30,
             "n_best_size": 20
