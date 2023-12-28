@@ -51,7 +51,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
   - **Attack&Defense**: currently not available # TODO
   - **Communication**: currently we only provide FedSGD for VFL_LLM communication.
 
-- **Metrics Module **: we provide the following metris for each task type
+- **Metrics Module**: we provide the following metris for each task type
 
   - Classification: acc / mcc / aux
   - Regression: mse / pearson corr 
