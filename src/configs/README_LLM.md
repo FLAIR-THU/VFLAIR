@@ -11,7 +11,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 - **Model Split for LLM**: Defaultly we split the LLM between the first and second layer(encoder or decoder), which can be user-defined through config files.
   - Local Model: Embedding Layer + the first encoder
   - Global Model: the rest encoders + Head Layers for down-stream tasks
-- **Three Task Pipeline **: Currently VFLAIR supported the following model&task types
+- **Three Task Pipeline**: Currently VFLAIR supported the following model&task types
 
 | Pipeline                   | Corresponding Transformer Class | Task Type                          | Dataset |
 | -------------------------- | ------------------------------- | ---------------------------------- | ------- |
