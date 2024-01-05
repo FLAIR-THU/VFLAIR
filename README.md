@@ -4,11 +4,10 @@
 
 ## Basic Introduction
 
-  VFLAIR is a general, extensible and light-weight VFL framework that provides vanilar VFL training and evaluation process simulation alonging with several effective communication improvement methods as well as attack and defense evaluations considering data safety and privacy. Aside from NN serving as local models for VFL systems, tree-based VFL is also supported.
+  VFLAIR is a general, extensible and light-weight VFL framework that provides vanilla VFL training and evaluation process simulation alonging with several effective communication improvement methods as well as attack and defense evaluations considering data safety and privacy. Aside from NN serving as local models for VFL systems, tree-based VFL is also supported.
 
-VFLAIR provides simulation of the vanilar VFL process containing forward local model prediction transmits, backward gradient transmits as well as local and global model updates.
+VFLAIR provides simulation of the vanilla VFL process containing forward local model prediction transmits, backward gradient transmits as well as local and global model updates.
 
- ![Framework Structure](usage_guidance/figures/pipeline.png)
 
   * **Communication Library**: multiple communication protocols is provided for improving the effectiveness of VFL training process.
     * **FedBCD** ([paper](https://ieeexplore.ieee.org/abstract/document/9855231/)) 
@@ -50,8 +49,14 @@ VFLAIR provides simulation of the vanilar VFL process containing forward local m
 
 ## Code Structure
 
- ![Overview](usage_guidance/figures/overview.png)
+ ![Framework Structure](usage_guidance/figures/pipeline.png)
 
+The VFLAIR framework mainly consists of 4 functional modules: Config Module, Load Module, Train & Evaluate Module and Metrics Module. 
+- **Config Module** is used to enter configuration parameters defining a VFL task
+- **Load Module** serves as a converter to load configurations into actual code behaviour, and is responsible for the initialization of datasets and parties(basic units of VFL task). 
+- **Train & Evaluation Module** carries out the final VFL training and model evaluation, along with user-defined attack/defense methods and communication protocols. 
+- **Metrics Module** finally convert the raw experiment results into higher-level metrcis like DCS for benchmark.
+<!-- 
 ```
 VFLAIR
 ├── src
@@ -105,7 +110,7 @@ VFLAIR
 │   ├── Dataset_Usage.md               # Guidance on how to achieve dataset for experiments
 ├── README.md
 ├── requirements.txt                   # installation requirement, we mainly use pytorch3.8 for experiments
-```
+``` -->
 
 
 ## Quick Start
@@ -138,7 +143,7 @@ VFLAIR
    * `/src/configs/basic_configs.json` is a sample configuration file. You can copy it and modify the contents for your own purpose.
    * For detail information about configuration parameters, see `/src/configs/README.md` for detail information.
 
-2. Use `cd src` and `python main_pipeline.py --gpu 0 --configs <your_config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilar VFL training and testing process is launched). For more detail descriptions, see Section Two.
+2. Use `cd src` and `python main_pipeline.py --gpu 0 --configs <your_config_file_name>` to start the evaluation process. A quick example can be launched by simplying using `cd src` and `python main_pipeline.py` (a vanilla VFL training and testing process is launched). For more detail descriptions, see Section Two.
 
 ### Two. Advanced Usage: Implement Your Own Algorithm
 
