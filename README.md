@@ -51,11 +51,13 @@ VFLAIR provides simulation of the vanilla VFL process containing forward local m
 
  ![Framework Structure](usage_guidance/figures/pipeline.png)
 
-The VFLAIR framework mainly consists of 4 functional modules: Config Module, Load Module, Train & Evaluate Module and Metrics Module. 
-- **Config Module** is used to enter configuration parameters defining a VFL task
-- **Load Module** serves as a converter to load configurations into actual code behaviour, and is responsible for the initialization of datasets and parties(basic units of VFL task). 
-- **Train & Evaluation Module** carries out the final VFL training and model evaluation, along with user-defined attack/defense methods and communication protocols. 
-- **Metrics Module** finally convert the raw experiment results into higher-level metrcis like DCS for benchmark.
+The VFLAIR framework is structured around four key functional modules:
+
+- **Config Module:** Used for entering configuration parameters that define a VFL task.
+- **Load Module:** Serves as a converter to translate configurations into actual code behavior. It is responsible for initializing datasets and parties (basic units of a VFL task).
+- **Train & Evaluation Module:** Executes the final VFL training and model evaluation. It also incorporates user-defined attack/defense methods and communication protocols.
+- **Metrics Module:** Converts raw experiment results into higher-level metrics such as DCS for benchmarking.
+
 <!-- 
 ```
 VFLAIR
