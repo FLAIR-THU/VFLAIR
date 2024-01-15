@@ -26,6 +26,38 @@ def normalize_answer(s):
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
+def _get_best_indexes(logits, n_best_size=20):
+    """Get the n-best logits from a list."""
+    index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+    best_indexes = []
+    for i in range(len(index_and_score)):
+        if i >= n_best_size:
+            break
+        best_indexes.append(index_and_score[i][0])
+    return best_indexes
+
+def get_tokens(s):
+    if not s: return []
+    return normalize_answer(s).split()
+
+def compute_exact(a_gold, a_pred):
+    return int(normalize_answer(a_gold) == normalize_answer(a_pred))
+
+def compute_f1(a_gold, a_pred):
+    gold_toks = get_tokens(a_gold)
+    pred_toks = get_tokens(a_pred)
+    common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
+    num_same = sum(common.values())
+    if len(gold_toks) == 0 or len(pred_toks) == 0:
+        # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
+        return int(gold_toks == pred_toks)
+    if num_same == 0:
+        return 0
+    precision = 1.0 * num_same / len(pred_toks)
+    recall = 1.0 * num_same / len(gold_toks)
+    f1 = (2 * precision * recall) / (precision + recall)
+    return f1
+
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -320,7 +352,7 @@ def read_squad_examples(dst, is_training, version_2_with_negative=True):
         examples.append(example)
     return examples
 
-def convert_examples_to_features(examples, tokenizer, max_seq_length,
+def convert_examples_to_features( examples, tokenizer, max_seq_length,
                                  doc_stride, max_query_length, is_training):
                                 #  output_fn):
     """Loads a data file into a list of `InputBatch`s."""
@@ -336,8 +368,11 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
         # print('example.orig_answer_text:',example.orig_answer_text) #["ans","ans","ans","ans"]
         # print('example.start_position:',example.start_position) #[28,28,28,28]
         # print('example.doc_tokens:',type(example.doc_tokens))
-
+        
         query_tokens = tokenizer.tokenize(example.question_text)
+        # tokenizer(example.question_text,padding='max_length', # Pad to max_length
+        #                             truncation='longest_first',  # Truncate to max_length
+        #                             max_length=int(max_query_length),padding_side="left", return_tensors="pt")   
         max_query_length = int(max_query_length)
         if len(query_tokens) > max_query_length:
             query_tokens = query_tokens[0:max_query_length]

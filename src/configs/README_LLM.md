@@ -23,7 +23,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
 - **Finetune/Pretrained**: Currently we support the following pipelines for LLM usage
   - Inference with pretrained LLM: In this pipeline, user can load their own/third-party pretrained LLMs into the framework and do direct inference.
-  - LLM fintune: In this pipeline, user can finetune their own LLM on a Bert/GPT2/Llama backbone
+  - LLM finetune: In this pipeline, user can finetune their own LLM on a Bert/GPT2/Llama backbone
     - Note: Currently Fintune procedure is only supported for SequenceClassification tasks.【To be completed】
 
 ## Structure
@@ -42,7 +42,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
     - **Load Dataset** - `./src/dataset/party_dataset`
       - Generate input(text) into input_ids/attention_mask and token_type_ids with tokenizer
     - **Load Model** - `./src/models/llm_model`
-      - In thie file , we rewrite the model classes from transformer to implement model split for LLMs. Defaultly we split the model between the 1st and 2ed layer(encoder or decoder), which can be user-defined through config files.
+      - In this file , we rewrite the model classes from transformer to implement model split for LLMs. Defaultly we split the model between the 1st and 2ed layer(encoder or decoder), which can be user-defined through config files.
 
 - **Train & Evaluate Module**
 

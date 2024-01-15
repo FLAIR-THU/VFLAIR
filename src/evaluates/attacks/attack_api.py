@@ -13,6 +13,9 @@ from evaluates.attacks.GenerativeRegressionNetwork import GenerativeRegressionNe
 from evaluates.attacks.ResSFL import ResSFL
 from evaluates.attacks.ASB import ASB
 
+# LLM attacks
+from evaluates.attacks.VanillaModelInversion import VanillaModelInversion
+
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name
     if 'ModelCompletion' in attacker_name:

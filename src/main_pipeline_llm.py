@@ -31,6 +31,8 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
 
+INVERSION = ["VanillaModelInversion"]
+
 def set_seed(seed=0):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -75,6 +77,42 @@ def evaluate_no_attack_finetune(args):
     
     return vfl, metric_val
 
+def evaluate_inversion_attack(args):
+    for index in args.inversion_index:
+        torch.cuda.empty_cache()
+        set_seed(args.current_seed)
+
+        args = load_attack_configs(args.configs, args, index)
+        print('======= Test Attack',index,': ',args.attack_name,' =======')
+        print('attack configs:',args.attack_configs)
+
+        # args.need_auxiliary = 1
+        args = load_parties_llm(args)
+        
+        if args.basic_vfl != None:
+            vfl = args.basic_vfl
+        else:
+            vfl = MainTaskVFL_LLM(args)
+        
+        if args.pretrained == 0: # finetune
+            _exp_result, metric_val= vfl.train()
+        else:
+            _exp_result, metric_val = vfl.inference()
+        
+        print(_exp_result)
+
+
+        print('=== Begin Attack ===')
+        recover_rate = vfl.evaluate_attack()
+        attack_metric_name = 'recover_rate'
+        
+        # Save record for different defense method
+        exp_result = f"{args.attack_name}:{attack_metric_name}={recover_rate}"
+        print(exp_result)
+        append_exp_res(args.exp_res_path, exp_result)
+        return exp_result
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
     parser.add_argument('--device', type=str, default='cuda', help='use gpu or cpu')
@@ -104,19 +142,6 @@ if __name__ == '__main__':
         
         ####### load configs from *.json files #######
         ############ Basic Configs ############
-        
-        # for mode in [0]:
-            
-        #     if mode == 0:
-        #         args.global_model = 'ClassificationModelHostHead'
-        #     else:
-        #         args.global_model = 'ClassificationModelHostTrainableHead'
-        #     args.apply_trainable_layer = mode
-
-        mode = args.apply_trainable_layer 
-        print('============ apply_trainable_layer=',args.apply_trainable_layer,'============')
-        #print('================================')
-    
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
@@ -125,15 +150,15 @@ if __name__ == '__main__':
         print('Defense_Name:',args.defense_name)
         print('Defense_Config:',str(args.defense_configs))
         print('===== Total Attack Tested:',args.attack_num,' ======')
-        print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
-        print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
-        print('label_inference:',args.label_inference_list,args.label_inference_index)
-        print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
-        print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
-        
-        
+        # print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
+        # print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
+        # print('label_inference:',args.label_inference_list,args.label_inference_index)
+        # print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
+        # print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
+        print('inversion:',args.inversion_list,args.inversion_index)
+
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}_1best/Q{str(args.Q)}/{str(mode)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
@@ -166,7 +191,7 @@ if __name__ == '__main__':
             'jurisprudence', 'logical_fallacies', 'machine_learning', 'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', \
             'moral_scenarios', 'nutrition', 'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', \
             'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology', 'world_religions']
-    
+            
             acc_list = []
             for _subject in subject_list:
                 print(' ===== Subject ',_subject,' ===== ')
@@ -187,15 +212,20 @@ if __name__ == '__main__':
 
         else:
             args = load_parties_llm(args)
-            # commuinfo='== commu:'+args.communication_protocol
-            # append_exp_res(args.exp_res_path, commuinfo)
+            commuinfo='== metrics:'+args.metric_type
+            append_exp_res(args.exp_res_path, commuinfo)
+
+            
+            # vanilla
             if args.pretrained == 1:
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
             else:
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
-
-
-
+      
+            # with attack
+            if args.inversion_list != []:
+                torch.cuda.empty_cache()
+                evaluate_inversion_attack(args)
 
 
 

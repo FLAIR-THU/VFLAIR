@@ -33,49 +33,50 @@ from models.global_models import *
 from models.autoencoder import *
 from utils.optimizers import MaliciousSGD, MaliciousAdam
 
-MODEL_PATH = {'bert-base-uncased': "/home/DAIR/guzx/.cache/huggingface/hub/bert-base-uncased",
-"Bert-sequence-classification": "/home/DAIR/guzx/.cache/huggingface/hub/Bert-sequence-classification",
-"toxic-bert": "/home/DAIR/guzx/.cache/huggingface/hub/toxic-bert",
-"textattackbert-base-uncased-CoLA": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-CoLA",
-"textattackbert-base-uncased-SST-2": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-SST-2",
-"textattackbert-base-uncased-STS-B": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-cased-STS-B",
-"textattackbert-base-uncased-MRPC": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-MRPC",
-"textattackbert-base-uncased-MNLI": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-MNLI",
-"textattackbert-base-uncased-QNLI": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-QNLI",
-"textattackbert-base-uncased-QQP": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-QQP",
-"textattackbert-base-uncased-WNLI": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-WNLI",
-"textattackbert-base-uncased-RTE": "/home/DAIR/guzx/.cache/huggingface/hub/textattackbert-base-uncased-RTE",
-"textattackroberta-base-CoLA":"/home/DAIR/guzx/.cache/huggingface/hub/textattackroberta-base-CoLA",
-"textattackroberta-base-SST-2":"/home/DAIR/guzx/.cache/huggingface/hub/textattackroberta-base-SST-2",
-"textattackalbert-base-v2-CoLA":"/home/DAIR/guzx/.cache/huggingface/hub/textattackalbert-base-v2-CoLA",
-"textattackroberta-base-MNLI":"/home/DAIR/guzx/.cache/huggingface/hub/textattackroberta-base-MNLI",
-"George-Ogdengpt2-medium-finetuned-mnli" : "/home/DAIR/guzx/.cache/huggingface/hub/George-Ogdengpt2-medium-finetuned-mnli",
-"gpt2":"/home/DAIR/guzx/.cache/huggingface/hub/gpt2",
-"gpt2-medium":"/home/DAIR/guzx/.cache/huggingface/hub/gpt2-medium",
-"gpt2-large":"/home/DAIR/guzx/.cache/huggingface/hub/gpt2-large",
-"michelecafagna26gpt2-medium-finetuned-sst2-sentiment":"/home/DAIR/guzx/.cache/huggingface/hub/michelecafagna26gpt2-medium-finetuned-sst2-sentiment",
-'llama-2-7b': "/home/DAIR/guzx/.cache/huggingface/hub/llama-2-7b",
-"HuggingFaceM4tiny-random-LlamaForCausalLM":"/home/DAIR/guzx/.cache/huggingface/hub/HuggingFaceM4tiny-random-LlamaForCausalLM",
-"Shitaollama2-mnli":"/home/DAIR/guzx/.cache/huggingface/hub/Shitaollama2-mnli",
-"benayasllama-2-7b-sst2_v0":"/home/DAIR/guzx/.cache/huggingface/hub/benayasllama-2-7b-sst2_v0",
-"AudreyTrungNguyenllama-qnli-p-tuning":"/home/DAIR/guzx/.cache/huggingface/hub/AudreyTrungNguyenllama-qnli-p-tuning",
-"rsvp-aibertserini-bert-base-squad": "/home/DAIR/guzx/.cache/huggingface/hub/rsvp-aibertserini-bert-base-squad",
-"tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA": "/home/DAIR/guzx/.cache/huggingface/hub/tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
+MODEL_PATH = {
+'bert-base-uncased': YOUR_MODEL_PATH+"bert-base-uncased",
+"textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+"textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
+"textattackbert-base-uncased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
+"textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
+"textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-MNLI",
+"textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-QNLI",
+"textattackbert-base-uncased-QQP": YOUR_MODEL_PATH+"textattackbert-base-uncased-QQP",
+"textattackbert-base-uncased-WNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-WNLI",
+"textattackbert-base-uncased-RTE": YOUR_MODEL_PATH+"textattackbert-base-uncased-RTE",
+"textattackroberta-base-CoLA":YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+"textattackroberta-base-SST-2":YOUR_MODEL_PATH+"textattackroberta-base-SST-2",
+"textattackalbert-base-v2-CoLA":YOUR_MODEL_PATH+"textattackalbert-base-v2-CoLA",
+"textattackroberta-base-MNLI":YOUR_MODEL_PATH+"textattackroberta-base-MNLI",
+"rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH+"rsvp-aibertserini-bert-base-squad",
 
+"gpt2":YOUR_MODEL_PATH+"gpt2",
+"gpt2-medium":YOUR_MODEL_PATH+"gpt2-medium",
+"gpt2-large":YOUR_MODEL_PATH+"gpt2-large",
+"George-Ogdengpt2-medium-finetuned-mnli" : YOUR_MODEL_PATH+"George-Ogdengpt2-medium-finetuned-mnli",
+"michelecafagna26gpt2-medium-finetuned-sst2-sentiment":YOUR_MODEL_PATH+"michelecafagna26gpt2-medium-finetuned-sst2-sentiment",
+"tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA": YOUR_MODEL_PATH+"tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+
+'llama-2-7b': YOUR_MODEL_PATH+"llama-2-7b",
+"HuggingFaceM4tiny-random-LlamaForCausalLM":YOUR_MODEL_PATH+"HuggingFaceM4tiny-random-LlamaForCausalLM",
+"Shitaollama2-mnli":YOUR_MODEL_PATH+"Shitaollama2-mnli",
+"benayasllama-2-7b-sst2_v0":YOUR_MODEL_PATH+"benayasllama-2-7b-sst2_v0",
+"AudreyTrungNguyenllama-qnli-p-tuning":YOUR_MODEL_PATH+"AudreyTrungNguyenllama-qnli-p-tuning",
 }
 ROBERTA = ["textattackroberta-base-CoLA","textattackroberta-base-SST-2"]
 
-LLM_supported = ['bert-base-uncased','Bert-sequence-classification',"toxic-bert",\
-"textattackbert-base-uncased-CoLA","textattackbert-base-uncased-SST-2","textattackbert-base-uncased-STS-B",\
-"textattackbert-base-uncased-MRPC","textattackbert-base-uncased-MNLI","textattackbert-base-uncased-QNLI",\
-"textattackbert-base-uncased-QQP","textattackbert-base-uncased-WNLI","textattackbert-base-uncased-RTE",\
-"textattackroberta-base-CoLA","textattackroberta-base-SST-2","textattackalbert-base-v2-CoLA","textattackroberta-base-MNLI",\
-"michelecafagna26gpt2-medium-finetuned-sst2-sentiment","gpt2","gpt2-medium","gpt2-large",\
-"George-Ogdengpt2-medium-finetuned-mnli","Shitaollama2-mnli","llama-2-7b","benayasllama-2-7b-sst2_v0",\
-"AudreyTrungNguyenllama-qnli-p-tuning","HuggingFaceM4tiny-random-LlamaForCausalLM","rsvp-aibertserini-bert-base-squad",\
-"tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA"]
+LLM_supported = MODEL_PATH.keys()
+# ['bert-base-uncased','Bert-sequence-classification',"toxic-bert",\
+# "textattackbert-base-uncased-CoLA","textattackbert-base-uncased-SST-2","textattackbert-base-uncased-STS-B",\
+# "textattackbert-base-uncased-MRPC","textattackbert-base-uncased-MNLI","textattackbert-base-uncased-QNLI",\
+# "textattackbert-base-uncased-QQP","textattackbert-base-uncased-WNLI","textattackbert-base-uncased-RTE",\
+# "textattackroberta-base-CoLA","textattackroberta-base-SST-2","textattackalbert-base-v2-CoLA","textattackroberta-base-MNLI",\
+# "michelecafagna26gpt2-medium-finetuned-sst2-sentiment","gpt2","gpt2-medium","gpt2-large",\
+# "George-Ogdengpt2-medium-finetuned-mnli","Shitaollama2-mnli","llama-2-7b","benayasllama-2-7b-sst2_v0",\
+# "AudreyTrungNguyenllama-qnli-p-tuning","HuggingFaceM4tiny-random-LlamaForCausalLM","rsvp-aibertserini-bert-base-squad",\
+# "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA"]
 
-CausalLM = ["benayasllama-2-7b-sst2_v0"]
 
 def create_model(bottom_model, ema=False, size_bottom_out=10, num_classes=10):
     model = BottomModelPlus(bottom_model,size_bottom_out, num_classes,
@@ -104,7 +105,7 @@ def load_models(args):
 def load_basic_models(args,index):
     current_model_type = args.model_list[str(index)]['type']
     print(f"current_model_type={current_model_type}")
-    current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else args.half_dim[index]
+    current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else -1
     current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
     current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
@@ -292,13 +293,18 @@ def load_basic_models_llm_bert(args,index):
 
     if args.pretrained == 0:
         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
         full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
+        if args.tokenizer.pad_token is None:
+            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+            full_bert.config.pad_token_id = pad_id
         config = full_bert.config #print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
         local_model = None
         local_model_optimizer = None
-        if index < args.k-1:
+        if index < args.k-1: # passive
             local_model = LocalBertModel(full_bert,1, model_type = args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
@@ -313,23 +319,33 @@ def load_basic_models_llm_bert(args,index):
         if index == args.k-1:
             # global part of bert(frozen)
             global_bert = GlobalBertModel(full_bert,1, model_type = args.model_type)
+            
             # add Classification Layer(trainable)
-            global_model = GlobalBertClassifier(global_bert, current_output_dim)
+            if args.task_type == "SequenceClassification":
+                global_model = BertForSequenceClassification_forfinetune(global_bert, current_output_dim)
+            elif args.task_type == "QuestionAnswering":
+                global_model = BertForQuestionAnswering_forfinetune(global_bert)
+            # elif args.task_type == "CausalLM":
+            #     global_model = BertForQuestionAnswering_forfinetune(global_bert)
+            else:
+                assert 1>2, f"task type {args.task_type} not supported for finetune"
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+            
             # Freeze Backbone
-            for param in global_model.backbone.parameters():
+            for param in global_model.bert.parameters():
                 param.requires_grad = False
             # Trainable Part for finetuning
-            print(args.model_path)
             if args.model_path != "":
                 global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
             for param in global_model.trainable_layer.parameters():
                 param.requires_grad = True
+            
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type],do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
 
         if args.task_type == 'QuestionAnswering':
             full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
@@ -347,9 +363,14 @@ def load_basic_models_llm_bert(args,index):
             full_bert = full_model.bert
         
         if args.task_type == 'QuestionAnswering':
-            classifier = full_model.qa_outputs
+            head_layer = full_model.qa_outputs
+        elif args.task_type == "SequenceClassification":
+            head_layer = full_model.classifier
+        elif args.task_type == "CausalLM":
+            head_layer = full_model.lm_head
         else:
-            classifier = full_model.classifier
+                assert 1>2,"task type not supported"
+
         config = full_model.config
 
 
@@ -374,24 +395,33 @@ def load_basic_models_llm_bert(args,index):
             
             # add Classification Layer(untrainable)
             if args.task_type == "QuestionAnswering":
-                global_model = BertForQuestionAnswering_pretrained(global_bert, classifier)
+                global_model = BertForQuestionAnswering_pretrained(global_bert, head_layer)
+            elif args.task_type == "SequenceClassification":
+                global_model = BertForSequenceClassification_pretrained(global_bert, head_layer)
             else:
-                global_model = GlobalBertClassifier_pretrained(global_bert, classifier)
+                assert 1>2,"task type not supported"
             
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
             
             # Freeze Backbone
-            for param in global_model.backbone.parameters():
+            for param in global_model.bert.parameters():
                 param.requires_grad = False
             # Classifier already pretrained
             if args.task_type == "QuestionAnswering":
                 for param in global_model.qa_outputs.parameters():
                     param.requires_grad = False
-            else:
+            elif args.task_type == "SequenceClassification":
                 for param in global_model.classifier.parameters():
                     param.requires_grad = False
+            elif args.task_type == "CausalLM":
+                for param in global_model.lm_head.parameters():
+                    param.requires_grad = False
+            else:
+                assert 1>2,"task type not supported"
+            
             global_model = global_model.to(args.device)
             global_model_optimizer = None
+    
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 def load_basic_models_llm_gpt2(args,index):
@@ -399,8 +429,15 @@ def load_basic_models_llm_gpt2(args,index):
     current_output_dim = args.model_list[str(index)]['output_dim']
 
     if args.pretrained == 0:
+        print('finetune gpt path:',MODEL_PATH[current_model_type])
         args.tokenizer = GPT2Tokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
+
         full_gpt = GPT2Model.from_pretrained(MODEL_PATH[current_model_type])
+        if args.tokenizer.pad_token is None:
+            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+            full_gpt.config.pad_token_id = pad_id
         config = full_gpt.config #print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
@@ -420,32 +457,42 @@ def load_basic_models_llm_gpt2(args,index):
         global_model_optimizer = None
         if index == args.k-1:
             # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt,1, generation_config = full_gpt.generation_config, model_type = args.model_type)
+            global_gpt = GlobalGPT2Model(full_gpt,1, model_type = args.model_type) # generation_config = full_gpt.generation_config, 
             # add Classification Layer(trainable)
-            global_model = GlobalGPT2Classifier(global_gpt, current_output_dim)
+            if args.task_type == "SequenceClassification":
+                global_model = GPT2ForSequenceClassification_forfinetune(global_gpt, current_output_dim)
+            elif args.task_type == "CausalLM":
+                global_model = GPT2LMHeadModel_forfinetune(global_gpt)
+            # elif args.task_type == "QuestionAnswering":
+            #     global_model = GPT2ForQuestionAnswering_forfinetune
+            else:
+                assert 1>2 , "task type not supported for finetune"
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+            
             # Freeze Backbone
             for param in global_model.transformer.parameters():
                 param.requires_grad = False
             # Trainable Part for finetuning
-            print(args.model_path)
             if args.model_path != "":
-                global_model.score.load_state_dict(torch.load(args.model_path))
-            for param in global_model.score.parameters():
+                global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
+            for param in global_model.trainable_layer.parameters():
                 param.requires_grad = True
             global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.score.parameters()), lr=args.main_lr)
+            global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
         
         if args.task_type == 'CausalLM':
             full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
         elif args.task_type == 'QuestionAnswering':
             full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
-        else: # args.task_type = 'SequenceClassification':
+        elif args.task_type == 'SequenceClassification':
             full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
-
+        else:
+            assert 1>2 , "task type not supported"
+        
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
@@ -453,11 +500,11 @@ def load_basic_models_llm_gpt2(args,index):
 
         full_gpt = full_model.transformer
         if args.task_type == 'CausalLM':
-            classifier = full_model.lm_head
+            head_layer = full_model.lm_head
         elif args.task_type == 'QuestionAnswering':
-            classifier = full_model.qa_outputs
+            head_layer = full_model.qa_outputs
         else:
-            classifier = full_model.score
+            head_layer = full_model.score
         config = full_model.config
 
 
@@ -482,11 +529,13 @@ def load_basic_models_llm_gpt2(args,index):
             
             # add Classification Layer(untrainable)
             if args.task_type == "CausalLM":
-                global_model = GPT2LMHeadModel_pretrained(global_gpt, classifier)
+                global_model = GPT2LMHeadModel_pretrained(global_gpt, head_layer)
             elif args.task_type == "QuestionAnswering":
-                global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, classifier)
+                global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, head_layer)
+            elif args.task_type == "SequenceClassification":
+                global_model = GPT2ForSequenceClassification_pretrained(global_gpt, head_layer)
             else:
-                global_model = GPT2ForSequenceClassification_pretrained(global_gpt, classifier)
+                assert 1>2 , "task type not supported"
             
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
             
@@ -504,14 +553,17 @@ def load_basic_models_llm_gpt2(args,index):
                     global_model.lm_head.load_state_dict(torch.load(args.model_path))
                 for param in global_model.qa_outputs.parameters():
                     param.requires_grad = False
-            else:
+            elif args.task_type == "SequenceClassification":
                 if args.model_path != "":
                     global_model.score.load_state_dict(torch.load(args.model_path))
                 for param in global_model.score.parameters():
                     param.requires_grad = False
+            else:
+                assert 1>2, "task type not supported"
 
             global_model = global_model.to(args.device)
             global_model_optimizer = None
+    
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 def load_basic_models_llm_llama(args,index):
@@ -520,10 +572,12 @@ def load_basic_models_llm_llama(args,index):
 
     if args.pretrained == 0:
         args.tokenizer = LlamaTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
+
         full_llama = LlamaModel.from_pretrained(MODEL_PATH[current_model_type])
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
             full_llama.config.pad_token_id = pad_id
             
         config = full_llama.config #print(full_bert.encoder.layer[0])
@@ -546,20 +600,32 @@ def load_basic_models_llm_llama(args,index):
         if index == args.k-1:
             # global part of llama(frozen)
             global_llama = GlobalLlamaModel(full_llama,1, model_type = args.model_type)
+
             # add Classification Layer(trainable)
+            # if args.task_type == "CausalLM":
+            #     global_model = LlamaForCausalLM_forfinetune(global_llama, head_layer)
+            # elif args.task_type == "QuestionAnswering":
+            #     global_model = LlamaForQuestionAnswering_forfinetune(global_llama, head_layer)
+            if args.task_type == "SequenceClassification":
+                global_model = LlamaForSequenceClassification_forfinetune(global_llama, current_output_dim)
+            else:
+                assert 1>2 , "task type not supported"
+
             global_model = GlobalLlamaClassifier(global_llama, current_output_dim)
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+            
+            
             # Freeze Backbone
             for param in global_model.model.parameters():
                 param.requires_grad = False
+
             # Trainable Part for finetuning
-            print(args.model_path)
             if args.task_type == "CausalLM":
                 if args.model_path != "":
                     global_model.lm_head.load_state_dict(torch.load(args.model_path))
                 for param in global_model.lm_head.parameters():
                     param.requires_grad = True
-            else:
+            elif args.task_type == "SequenceClassification":
                 if args.model_path != "":
                     global_model.score.load_state_dict(torch.load(args.model_path))
                 for param in global_model.score.parameters():
@@ -570,6 +636,8 @@ def load_basic_models_llm_llama(args,index):
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer.padding_side = args.padding_side
+
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token#{'pad_token': '[PAD]'})
           
@@ -577,8 +645,10 @@ def load_basic_models_llm_llama(args,index):
             full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
         elif args.task_type == 'QuestionAnswering':
             full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
-        else: # args.task_type = 'SequenceClassification':
+        elif args.task_type == 'SequenceClassification':
             full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+        else:
+            assert 1>2, "task type not supported"
 
         # for name, param in full_model.named_parameters():
         #     print("-----full_model--{}:{}".format(name, param.shape))
@@ -586,14 +656,15 @@ def load_basic_models_llm_llama(args,index):
         full_llama = full_model.model
 
         if args.task_type == 'CausalLM':
-            classifier = full_model.lm_head
+            head_layer = full_model.lm_head
         elif args.task_type == 'QuestionAnswering':
-            classifier = full_model.qa_outputs
+            head_layer = full_model.qa_outputs
+        elif args.task_type == 'SequenceClassification':
+            head_layer = full_model.score
         else:
-            classifier = full_model.score
+            assert 1>2, "task type not supported"
 
         config = full_model.config
-
 
         ########### Local Model ###########
         local_model = None
@@ -616,26 +687,33 @@ def load_basic_models_llm_llama(args,index):
             
             # add Classification Layer(untrainable)
             if args.task_type == "CausalLM":
-                global_model = LlamaForCausalLM_pretrained(global_llama, classifier)
+                global_model = LlamaForCausalLM_pretrained(global_llama, head_layer)
+            elif args.task_type == "SequenceClassification":
+                global_model = LlamaForSequenceClassification_pretrained(global_llama, head_layer)
             else:
-                global_model = LlamaForSequenceClassification_pretrained(global_llama, classifier)
+                assert 1>2 , "task type not supported"
             
             print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
             
             # Freeze Backbone
             for param in global_model.model.parameters():
                 param.requires_grad = False
+            
             # Classifier already pretrained
             if args.task_type == "CausalLM":
                 for param in global_model.lm_head.parameters():
                     param.requires_grad = False
-            else:
+            elif args.task_type == "SequenceClassification":
                 for param in global_model.score.parameters():
                     param.requires_grad = False
+            else:
+                assert 1>2 , "task type not supported"
 
             global_model = global_model.to(args.device)
             global_model_optimizer = None
+    
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 def load_basic_models_llm(args,index):
     if args.model_type in ['Bert','Albert','Roberta']:
@@ -645,7 +723,7 @@ def load_basic_models_llm(args,index):
     elif args.model_type in ['Llama']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args,index)
     else:
-        assert 1>2, 'llm not supported'
+        assert 1>2, f'{args.model_type} not supported'
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 

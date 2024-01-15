@@ -19,8 +19,8 @@ import logging
 import copy
 from sklearn.metrics import roc_auc_score
 from utils.noisy_sample_functions import noisy_sample
-tp = transforms.ToTensor()
 
+tp = transforms.ToTensor()
 
 def multiclass_auc(targets, scores):
     aucs = []

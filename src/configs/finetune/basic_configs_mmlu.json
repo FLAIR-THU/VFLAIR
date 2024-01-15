@@ -13,21 +13,27 @@
         "use_prompt": 1,
         "n_shot": 0
     },
+    "tokenizer":{
+        "padding": "max_length",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left"
+    },
     "model_list":{
         "0": {
-            "type": "gpt2-large",
-            "pretrained": 1,
+            "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
+            "pretrained": 0,
             "output_dim": 4,
-            "model_type": "GPT2",
+            "model_type": "Llama",
             "max_sequence": 1024,
             "path": ""
         },
         "1": {
-            "type": "gpt2-large",
-            "pretrained": 1,
+            "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
+            "pretrained": 0,
             "output_dim": 4,
-            "model_type": "GPT2",
-            "max_sequence": 1024,
+            "model_type": "Llama",
+            "max_sequence": 2048,
             "path": ""
         },
         "task":{

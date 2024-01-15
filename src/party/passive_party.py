@@ -1,6 +1,9 @@
 import sys, os
 sys.path.append(os.pardir)
+import torch
 from torch.utils.data import DataLoader
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from party.party import Party
 from party.llm_party import Party as Party_LLM
@@ -40,9 +43,12 @@ class PassiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
+        self.num_labels = args.num_classes
+        self.weights_grad_a = None # no gradient for model in passive party(no model update)
+
 
     def prepare_data(self, args, index):
-        super().prepare_data(args, index)
+        super().prepare_data(args, index) # Party_llm's prepare_data
  
         self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)
         self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label)
@@ -57,33 +63,115 @@ class PassiveParty_LLM(Party_LLM):
         self.pred_received[giver_index] = pred
 
     def cal_loss(self, test=False):
-        gt_one_hot_label = self.gt_one_hot_label
-        pred =  self.global_pred
-        # print('== In cal_loss ==')
-        # print('gt_one_hot_label:',gt_one_hot_label)
-        # print('pred:',pred)
+        gt_one_hot_label = self.gt_one_hot_label # label
+        pred =  self.global_pred # logits
 
-        if self.train_index != None: # for graph data
-            if test == False:
-                loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
+        # print('== In cal_loss ==')
+        # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label )
+        # print('pred:',type(pred),pred.shape )
+
+        if self.args.task_type == 'SequenceClassification':
+            # loss = self.criterion(pred, gt_one_hot_label)
+            pooled_logits = pred
+            labels = gt_one_hot_label
+            # GPT2
+            if self.num_labels == 1:
+                self.problem_type = "regression"
+            elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+                self.problem_type = "single_label_classification"
             else:
-                loss = self.criterion(pred[self.test_index], gt_one_hot_label[self.test_index])
+                self.problem_type = "multi_label_classification"
+
+            if self.problem_type == "regression":
+                loss_fct = MSELoss()
+                if self.num_labels == 1:
+                    loss = loss_fct(pooled_logits.squeeze(), labels.squeeze())
+                else:
+                    loss = loss_fct(pooled_logits, labels)
+            elif self.problem_type == "single_label_classification":
+                loss_fct = CrossEntropyLoss()
+                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels.view(-1))
+            elif self.problem_type == "multi_label_classification":
+                loss_fct = BCEWithLogitsLoss()
+                loss = loss_fct(pooled_logits, labels)
+
+        elif self.args.task_type == 'CausalLM':
+            #  GPT2
+            labels = gt_one_hot_label
+            # print('labels:',type(labels),labels)  # list of target_tokens
+            label_id = [ self.args.tokenizer.convert_tokens_to_ids( label_text ) for label_text in labels ]
+            label_id = torch.tensor(label_id).to(self.args.device)
+            # print('label_id:', label_id.shape ) # torch.size([bs])
+            
+            lm_logits = pred # # [bs, seq_len, vocab_size]
+            next_token_logits = lm_logits[:,-1,:]
+            # print('next_token_logits:',next_token_logits.shape) # [bs, vocab_size]
+            
+            # Shift so that tokens < n predict n
+            # shift_logits = lm_logits[..., :-1, :].contiguous()
+            # print('shift_logits:',shift_logits.shape)
+            # shift_labels = label_id #labels[..., 1:].contiguous()
+
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            loss = loss_fct(next_token_logits, label_id)
+            # print('loss:', loss)
+
+        elif self.args.task_type == 'QuestionAnswering':
+            # GPT2
+            # print('gt_one_hot_label:',gt_one_hot_label)
+            start_logits = pred.start_logits
+            end_logits = pred.end_logits
+            golden_start_positions, golden_end_positions = gt_one_hot_label[0] # bs *[start_id, end_id]  bs=1
+            golden_start_positions = golden_start_positions.unsqueeze(0).long()
+            golden_end_positions = golden_end_positions.unsqueeze(0).long()
+
+            # print('logits:',start_logits.shape, end_logits.shape)
+            # print('golden:',golden_start_positions, golden_end_positions)
+
+            loss = None
+
+            if len(golden_start_positions.size()) > 1:
+                golden_start_positions = golden_start_positions.squeeze(-1).to(start_logits.device)
+            if len(golden_end_positions.size()) > 1:
+                golden_end_positions = golden_end_positions.squeeze(-1).to(end_logits.device)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            # print('ignored_index:',ignored_index)
+            golden_start_positions = golden_start_positions.clamp(0, ignored_index)
+            golden_end_positions = golden_end_positions.clamp(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+
+            # print('loss logits:',start_logits.shape, end_logits.shape)
+            # print('loss golden:',golden_start_positions, golden_end_positions)
+
+            start_loss = loss_fct(start_logits, golden_start_positions)
+            end_loss = loss_fct(end_logits, golden_end_positions)
+            loss = (start_loss + end_loss) / 2
+
         else:
-            loss = self.criterion(pred, gt_one_hot_label)
-        # ########## for active mid model loss (start) ##########
+            assert 1>2 , 'Task type not supported'
+        
+
+        # ########### Defense on Loss ###############
+        # active mid model loss
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
             assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
             for mid_loss in self.global_model.mid_loss_list:
                 loss = loss + mid_loss
             self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
-        # ########## for active mid model loss (end) ##########
+        # active dcor loss
         elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
             # print('dcor active defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
             # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
             for ik in range(self.args.k-1):
                 loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
+        # ########### Defense on Loss ###############
+        # print('cal loss:',loss)
         return loss
 
     def gradient_calculation(self, pred_list, loss):

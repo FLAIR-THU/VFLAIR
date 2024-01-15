@@ -11,6 +11,8 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
+# LLM attacks
+INVERSION = ["VanillaModelInversion"]
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
@@ -51,17 +53,12 @@ def load_basic_configs(config_file_name, args):
     args.num_update_per_batch = communication_protocol_dict['num_update_per_batch'] if ('num_update_per_batch' in communication_protocol_dict) else 5
     args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if ('num_batch_per_workset' in communication_protocol_dict) else 5
     args.smi_thresh = communication_protocol_dict['smi_thresh'] if ('smi_thresh' in communication_protocol_dict) else 0.5
-    
     if args.quant_level > 0:
         args.ratio = math.log(args.quant_level,2)/32
     args.ratio = communication_protocol_dict['ratio'] if ('ratio' in communication_protocol_dict) else 0.5
-    print('Topk Ratio:',args.ratio)
-    
-
-
+    # print('Topk Ratio:',args.ratio)
     if args.communication_protocol == 'FedSGD':
         args.Q = 1
-    
     print('communication_protocol:',args.communication_protocol)
 
     
@@ -78,8 +75,33 @@ def load_basic_configs(config_file_name, args):
     args.use_prompt = args.dataset_split['use_prompt'] if('use_prompt' in args.dataset_split) else 0
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
 
-    
+    ############## for LLM ###############
+    # Tokenizer
     args.tokenizer = None # for LLM if needed
+    args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None
+    if args.tokenizer_dict != None:
+        args.padding = args.tokenizer_dict['padding'] if('padding' in args.tokenizer_dict) else 0
+        # "longest"  "max_length"  "do_not_pad"
+        # if args.padding == 0:
+        #     args.padding = None
+        # elif args.padding == 1:
+        #     args.padding = True
+        args.truncation = args.tokenizer_dict['truncation'] if('truncation' in args.tokenizer_dict) else "do_not_truncate"
+        # "only first"  "only_second"  "longest_first"  "do_not_truncate"
+
+        args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
+        args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
+
+    else:
+        args.padding = None
+    
+    if args.padding:
+        print('args.padding:',args.padding,type(args.padding))
+    else:
+        print('None args.padding:',args.padding,type(args.padding))
+
+    ############## for LLM ###############
+
 
     # args.model_list, specify the types of models
     if 'model_list' in config_dict:
@@ -87,7 +109,7 @@ def load_basic_configs(config_file_name, args):
         #print('config_model_dict:',(len(config_model_dict)-2))
         # assert ((len(config_model_dict)-3)==args.k), 'please alter party number k, model number should be equal to party number'
         
-        # for LLM
+        ############## for LLM ###############
         args.max_sequence = config_model_dict['0']['max_sequence'] if ('max_sequence' in config_model_dict['0']) else -1
         
         model_dict = {}
@@ -103,18 +125,17 @@ def load_basic_configs(config_file_name, args):
         args.max_answer_length = args.task_dict['max_answer_length'] if('max_answer_length' in args.task_dict) else -1
         args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
 
-
         
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    args.model_type = config_model_dict[str(ik)]['model_type']
+                    args.model_type = config_model_dict[str(ik)]['model_type'] # Overall Model Type
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']
                         args.pretrained = config_model_dict[str(ik)]['pretrained']
                     else:
-                        model_type_name = config_model_dict[str(ik)]['type']
+                        model_type_name = config_model_dict[str(ik)]['type'] # specific model type
                         temp = {'type':model_type_name, 'path':'../models/'+model_type_name+'/random'}
                         model_dict[str(ik)] = temp
                         args.model_path = ""
@@ -235,6 +256,8 @@ def load_basic_configs(config_file_name, args):
     args.attribute_inference_index = []
     args.feature_inference_list = []
     args.feature_inference_index = []
+    args.inversion_list = []
+    args.inversion_index = []
     args.apply_attack = False
     if 'attack_list' in config_dict:
         if len(config_dict['attack_list'])>0:
@@ -263,6 +286,11 @@ def load_basic_configs(config_file_name, args):
                     elif _name in FEATURE_INFERENCE:
                         args.feature_inference_list.append(_name)
                         args.feature_inference_index.append(ik)
+                    
+                    # LLM attacks
+                    elif _name in INVERSION:
+                        args.inversion_list.append(_name)
+                        args.inversion_index.append(ik)
                 else:
                     assert 'name' in attack_config_dict[str(ik)], 'missing attack name'
         else:
@@ -327,6 +355,9 @@ def load_attack_configs(config_file_name, args, index):
 
         elif args.attack_name in FEATURE_INFERENCE:
             args.attack_type = 'feature_inference'
+        
+        elif args.attack_name in INVERSION:
+            args.attack_type = 'inversion'
 
         else:
             assert 0 , 'attack type not supported'

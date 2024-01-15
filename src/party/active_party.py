@@ -191,6 +191,7 @@ class ActiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
 
+        self.weights_grad_a = None
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
@@ -206,23 +207,26 @@ class ActiveParty_LLM(Party_LLM):
 
     def aggregate(self, pred_list, test=False):
         if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
-            pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1])
+            if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1],return_dict=True).logits
+            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1], return_dict=True).logits
         
         elif self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
             if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
             elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
+                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
             elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
             if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
             elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
+                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
             else:
                 assert 1>2 , 'Task type no supported'
 
@@ -261,44 +265,68 @@ class ActiveParty_LLM(Party_LLM):
     def global_backward(self):
 
         if self.global_model_optimizer != None: 
-            # server with trainable global layer
-            _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
-            _gradients_clone = _gradients[0].detach().clone()
-
-            # print('global_gradients_clone:',_gradients_clone)
+            if self.args.task_type == 'QuestionAnswering':
+                # server with trainable global layer
+                # print('self.global_loss:',type(self.global_loss), self.global_loss)
+                # print('self.global_pred:',type(self.global_pred), self.global_pred) # .start_logits  end_logits
+                
+                _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
+                _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
+                _gradients = _gradients_end+_gradients_start
+                _gradients_clone = _gradients[0].detach().clone()
+                _gradients_clone = _gradients_clone/2
+                # print('global_gradients_clone:',_gradients_clone)
+                
+                # update global model
+                self.global_model_optimizer.zero_grad()
+                parameters = []          
             
-            # update global model
-            self.global_model_optimizer.zero_grad()
-            parameters = []          
-            if (self.args.apply_mid == True) and (self.index in self.args.defense_configs['party']): 
-                # mid parameters
-                for mid_model in self.global_model.mid_model_list:
-                    parameters += list(mid_model.parameters())
-                parameters += list(self.global_model.trainable_layer.parameters())
+                # trainable layer parameters
                 # load grads into parameters
-                weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(parameters, weights_grad_a):
+                weights_grad_a_start = torch.autograd.grad(self.global_pred.start_logits, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                weights_grad_a_end = torch.autograd.grad(self.global_pred.end_logits, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                
+                # print('weights_grad_a_start:',len(weights_grad_a_start),type(weights_grad_a_start)) # 2 tuple
+                # print('weights_grad_a_end:',len(weights_grad_a_end),type(weights_grad_a_end))
+                
+                self.weights_grad_a = []
+                for _i in range( len(weights_grad_a_start) ):
+                    self.weights_grad_a.append(weights_grad_a_start[_i]+weights_grad_a_end[_i])
+                self.weights_grad_a = tuple( self.weights_grad_a )
+                # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
+                    
+                # self.weights_grad_a = weights_grad_a_start+weights_grad_a_end
+                # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
+
+                # self.weights_grad_a = self.weights_grad_a/2
+                for w, g in zip(self.global_model.trainable_layer.parameters(), self.weights_grad_a):
                     if w.requires_grad:
                         w.grad = g.detach()
+                # print('weights_grad_a:',weights_grad_a)
+               
+                self.global_model_optimizer.step()
             else:
+                # server with trainable global layer
+                _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
+                _gradients_clone = _gradients[0].detach().clone()
+
+                # print('global_gradients_clone:',_gradients_clone)
+                
+                # update global model
+                self.global_model_optimizer.zero_grad()
+                parameters = []          
+            
                 # trainable layer parameters
                 # load grads into parameters
                 weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                self.weights_grad_a = weights_grad_a
                 for w, g in zip(self.global_model.trainable_layer.parameters(), weights_grad_a):
                     if w.requires_grad:
                         w.grad = g.detach()
                 # print('weights_grad_a:',weights_grad_a)
-                # non-trainabel layer: no need to update
-
-            # for p in self.global_model.trainable_layer.parameters():#打印出每一层的参数的大小
-            #     print(p)
-            #     continue
-            self.global_model_optimizer.step()
-            # print('after==========')
-            # for p in self.global_model.trainable_layer.parameters():#打印出每一层的参数的大小
-            #     print(p)
-            #     continue
-            # assert 1>2
+               
+                self.global_model_optimizer.step()
+          
 
 
 class ActiveParty(Party):

@@ -42,7 +42,7 @@ DATA_PATH ='../../../share_dataset/'
 IMAGE_DATA = ['mnist', 'cifar10', 'cifar100', 'cifar20', 'utkface', 'facescrub', 'places365']
 TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','credit','nursery','avazu']
 GRAPH_DATA = ['cora']
-TEXT_DATA = ['news20','cola_public','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE','MMLU']
+TEXT_DATA = ['news20','CoLA','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE','MMLU']
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
@@ -1291,7 +1291,6 @@ def gen_prompt(train_df, choices, subject, k=-1):
 def load_dataset_per_party_llm(args, index):
     print('load_dataset_per_party_llm  args.need_auxiliary = ',args.need_auxiliary)
     args.classes = [None] * args.num_classes
-
     half_dim = -1
     args.idx_train = None
     args.idx_test = None
@@ -1354,7 +1353,7 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
 
-    elif args.dataset == 'cola_public':
+    elif args.dataset == 'CoLA':
         text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
         df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
@@ -1612,19 +1611,26 @@ def load_dataset_per_party_llm(args, index):
         choices = ["A", "B", "C", "D"]
         option_dict = {option: idx for idx, option in enumerate('ABCD')}
         args.label_dict = option_dict
+        num_train = args.n_shot
         
         ### train ###
         text_path =  DATA_PATH + 'MMLU/dev/'
-        df_train = pd.DataFrame()
-        for name in sorted(os.listdir(text_path)):
-            # print(name[:-4])
-            _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
-            _name_list = name.split('_')[:-1]
-            subject_name = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
-            _df['subject'] = subject_name
-            subject_list.append(subject_name)
-            df_train = pd.concat([df_train,_df])
+        csv_path = text_path + args.subject+"_dev.csv"
+        df_train = pd.read_csv( csv_path ,names=[  'prompt','A','B','C','D','answer'] )#  
+        df_train['subject'] = args.subject
+        # df_train = pd.DataFrame()
+        # for name in sorted(os.listdir(text_path)):
+        #     # print(name[:-4])
+        #     print('dev csv:',text_path+name)
+        #     _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
+        #     print(len(_df))
+        #     print(_df.head())
 
+        #     _name_list = name.split('_')[:-1]
+        #     subject_name = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
+        #     _df['subject'] = subject_name
+        #     subject_list.append(subject_name)
+        #     df_train = pd.concat([df_train,_df])
 
         prompt_list = []
         answer_list = []
@@ -1634,36 +1640,32 @@ def load_dataset_per_party_llm(args, index):
                 prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(format_subject(subject))
                 prompt_end , answer = format_example(df_train ,i,choices, include_answer=False)
                 prompt = prompt_head + prompt_end
-                if len(prompt) < args.max_sequence:
-                    prompt_list.append(prompt)
-                    answer_list.append(answer)
+                # if len(prompt) >= args.max_sequence:
+                prompt_list.append(prompt)
+                answer_list.append(answer)
 
         labels = [ option_dict[choice] for  choice in answer_list]
         X_train = np.array(prompt_list)
         y_train = np.array(labels)
-        # else:
-        #     prompt = [ [_p,_p,_p,_p] for _p in df_train['prompt'] ] 
-        #     option = [ [row['A'],row['B'],row['C'],row['D'] ] for idx, row in df_train.iterrows() ]
-        #     sentence_pairs = [ [_p, _o] for _p,_o in zip(prompt,option)]
-        #     sentence_pairs = np.array(sentence_pairs )
-            
-        #     X_train = np.array(sentence_pairs)
-        #     y_train = np.array(labels)
 
         ### test ###
         text_path =  DATA_PATH + 'MMLU/test/'
-        df_test = pd.DataFrame()
-        for name in sorted(os.listdir(text_path)):
-            # print(name[:-4])
-            _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
-            _name_list = name.split('_')[:-1]
-            _df['subject'] = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
-            df_test = pd.concat([df_test,_df])
+        csv_path = text_path + args.subject+"_test.csv"
+        df_test = pd.read_csv( csv_path ,names=[  'prompt','A','B','C','D','answer'] )#  
+        df_test['subject'] = args.subject
+        print('Test:',len(df_test))
+        # df_test = pd.DataFrame()
+        # for name in sorted(os.listdir(text_path)):
+        #     # print(name[:-4])
+        #     print('dev csv:',text_path+name)
+        #     _df = pd.read_csv(text_path+name,names=[  'prompt','A','B','C','D','answer'] )#  
+        #     print(len(_df))
+        #     print(_df.head())
 
-        labels = [ option_dict[choice] for  choice in df_test['answer']]
+        #     _name_list = name.split('_')[:-1]
+        #     _df['subject'] = ('_').join(_name_list) if len(_name_list)>1 else _name_list[0]
+        #     df_test = pd.concat([df_test,_df])
         
-        num_train = args.n_shot
-        print('num_train=',num_train)
         prompt_list = []
         answer_list = []
         for i in range(len(df_test)):
@@ -1677,24 +1679,20 @@ def load_dataset_per_party_llm(args, index):
                 for _prompt in train_prompt_list:
                     prompt_head = prompt_head + _prompt
                 prompt = prompt_head + prompt_end
-                if len(prompt) < args.max_sequence:    
+
+                # if len(prompt) < args.max_sequence: 
+                if len(prompt) < args.max_sequence: 
                     prompt_list.append(prompt)
                     answer_list.append(answer)
         labels = [ option_dict[choice] for  choice in answer_list]
         X_test = np.array(prompt_list)
         y_test = np.array(labels)
-        # else:
-        #     prompt = [ [_p,_p,_p,_p] for _p in df['prompt'] ] 
-        #     option = [ [row['A'],row['B'],row['C'],row['D'] ] for idx, row in df_test.iterrows() ]
 
-        #     sentence_pairs = [ [_p, _o] for _p,_o in zip(prompt,option)]
-        #     sentence_pairs = np.array(sentence_pairs )
-            
-        #     X_test = np.array(sentence_pairs)
-        #     y_test = np.array(labels)
-        print('Data:')
-        print(type(X_train),X_train.shape,X_test.shape) # 
-        print(type(y_train), y_train.shape,y_test.shape)# 
+
+        print(args.subject,'Train Data:',X_train.shape,y_train.shape)
+        print(args.subject,' Test Data:',X_test.shape,y_test.shape)
+        # print(type(X_train),X_train.shape,X_test.shape) # 
+        # print(type(y_train), y_train.shape,y_test.shape)# 
         
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
@@ -1704,6 +1702,7 @@ def load_dataset_per_party_llm(args, index):
         print(data_file)
         dataset = load_dataset(data_file)
 
+        system_prompt = "Please complete the passages with the correct next word.\n"
         ## train
         train_all_texts = dataset['train'][:]['text']
         train_domain = dataset['train'][:]['domain']
@@ -1711,18 +1710,47 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
 
-        for _all_text in train_all_texts[:100]:
+        for _all_text in train_all_texts:
             _all_text = _all_text.rstrip(string.punctuation)
-            _all_text = _all_text.split()
-            last_word = _all_text[-1]
-            if len(_all_text) > args.max_sequence:
-                text = _all_text[-args.max_sequence-1 :-1]
-            else:
-                text = _all_text[:-1]
-            text = " ".join(text)
+            _all_text = _all_text.split(" ")
+            if len(_all_text) <=1:
+                break
+
+            while _all_text[-1] == "" or (_all_text[-1] in string.punctuation):
+                _all_text = _all_text[:-1]
             
-            target_word.append(last_word) 
-            texts.append(text)
+            
+            if len(_all_text) > args.max_seq_length:
+                # using slide window
+                start_id = 0 
+                end_id = args.max_seq_length
+                while end_id < len(_all_text):
+                    text = _all_text[start_id:end_id]
+                    start_id += args.doc_stride
+                    end_id = min(len(_all_text)-1,end_id+args.max_seq_length )
+
+                    if len(text) < args.doc_stride:
+                        break 
+
+                    last_word = text[-1]
+                    text = text[:-1]
+                    
+                    text = " ".join(text)
+                    text = system_prompt + text
+                    target_word.append(last_word) 
+                    texts.append(text)
+
+            else:
+                last_word = _all_text[-1]
+                text = _all_text[:-1]
+            
+                # print('_all_text:',len(_all_text))
+                # print('text:',text[-5:],'  last_word:',last_word)
+                
+                text = " ".join(text)
+                text = system_prompt + text
+                target_word.append(last_word) 
+                texts.append(text)
 
         X_train = np.array(texts)
         y_train = target_word
@@ -1733,18 +1761,45 @@ def load_dataset_per_party_llm(args, index):
 
         texts = []
         target_word = []
-        for _all_text in train_all_texts[:20]:
+        for _all_text in train_all_texts:
             _all_text = _all_text.rstrip(string.punctuation)
-            _all_text = _all_text.split()
-            last_word = _all_text[-1]
-            if len(_all_text) > args.max_sequence:
-                text = _all_text[-args.max_sequence-1 :-1]
-            else:
-                text = _all_text[:-1]
-            text = " ".join(text)
+            _all_text = _all_text.split(" ")
+            if len(_all_text) <=1:
+                break
+            while _all_text[-1] == "" or (_all_text[-1] in string.punctuation):
+                _all_text = _all_text[:-1]
 
-            target_word.append(last_word) 
-            texts.append(text)
+            if len(_all_text) > args.max_seq_length:
+                # using slide window
+                start_id = 0 
+                end_id = args.max_seq_length
+                while end_id < len(_all_text):
+                    text = _all_text[start_id:end_id]
+                    start_id += args.doc_stride
+                    end_id = min(len(_all_text)-1,end_id+args.max_seq_length )
+
+                    if len(text) < args.doc_stride:
+                        break 
+                        
+                    last_word = text[-1]
+                    text = text[:-1]
+                    
+                    text = " ".join(text)
+                    text = system_prompt + text
+                    target_word.append(last_word) 
+                    texts.append(text)
+
+            else:
+                last_word = _all_text[-1]
+                text = _all_text[:-1]
+            
+                # print('_all_text:',len(_all_text))
+                # print('text:',text[-5:],'  last_word:',last_word)
+                
+                text = " ".join(text)
+                text = system_prompt + text
+                target_word.append(last_word) 
+                texts.append(text)
 
         X_test = np.array(texts)
         y_test = target_word #np.array(target_word) 
@@ -1753,25 +1808,14 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test,y_test)
 
     elif args.dataset == 'SQuAD':
-        print(' === SQuAD === ')
-        # data_path = DATA_PATH + '/SQuAD'
-        # squad_dataset = load_dataset(data_path)
-
-        max_seq_length = args.max_seq_length
-        doc_stride = args.doc_stride
-        max_query_length = args.max_query_length
-
         ## train
         data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
-        # dst = squad_dataset['train']
-        # train_examples = read_squad_examples(dst, is_training=True)[:10]
         train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)[:10]
- 
-        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, max_seq_length=max_seq_length,
-                                 doc_stride=doc_stride, max_query_length=max_query_length, is_training=True)
-        print('train_features:',len(train_features),train_features[0].keys())
+        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
+                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                            max_query_length=args.max_query_length, is_training=True)
+        # print('train_features:',len(train_features),train_features[0].keys())
 
-        
         inputs = [] 
         labels = []
         for feature in train_features:
@@ -1783,14 +1827,15 @@ def load_dataset_per_party_llm(args, index):
 
 
         ## test
-        # dst = squad_dataset['validation']
-        # test_examples = read_squad_examples(dst, is_training=True)[:10]
         data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)
+        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)[:10]
+        test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
+                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                            max_query_length=args.max_query_length, is_training=False)
+        print('test_features:',len(test_features),test_features[0].keys())
 
-        test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, max_seq_length=max_seq_length,
-                                 doc_stride=doc_stride, max_query_length=max_query_length, is_training=False)
-        # print('test_features:',len(test_features),test_features[0].keys())
+        # for _feature in test_features:
+        #     print( len(_feature['input_ids']) )
 
         inputs = [] 
         labels = []
@@ -1807,7 +1852,6 @@ def load_dataset_per_party_llm(args, index):
         print(type(X_train),len(X_train),len(X_test),type(X_train[0])) # 
         print(type(y_train), len(y_train),len(y_test),y_train[0])# 
 
-   
     else:
         assert args.dataset == 'news20', "dataset not supported yet"
 

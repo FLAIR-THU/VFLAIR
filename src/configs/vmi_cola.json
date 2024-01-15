@@ -1,0 +1,48 @@
+{
+    "epochs": 1,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 1,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "cola_public",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "bert-base-uncased",
+            "model_type": "Bert",
+            "pretrained": 0,
+            "output_dim": 2,
+            "max_sequence": 256,
+            "path": ""
+        },
+        "1": {
+            "type": "bert-base-uncased",
+            "model_type": "Bert",
+            "pretrained": 0,
+            "output_dim": 2,
+            "max_sequence": 256,
+            "path": ""
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion",
+            "parameters": {
+                "party": [1],
+                "lr": 1e-3,
+                "epochs": 2,
+                "batch_size": 32
+            }
+        }
+    }
+}

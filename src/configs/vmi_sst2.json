@@ -8,39 +8,41 @@
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SQuAD",
-        "num_classes": 1,
-        "use_prompt": 1,
-        "n_shot": 1
+        "dataset_name": "SST-2",
+        "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "output_dim": 1,
+            "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "output_dim": 1,
+            "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": ""
         },
         "task":{
-            "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
-            "doc_stride" : 128,
-            "max_seq_length": 512,
-            "max_query_length" : 64,
-            "max_answer_length": 30,
-            "n_best_size": 20
-
+            "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
     }
 }

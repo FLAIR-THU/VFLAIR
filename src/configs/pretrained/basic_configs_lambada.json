@@ -2,42 +2,45 @@
     "epochs": 100,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 1,
+    "batch_size": 32,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SQuAD",
+        "dataset_name": "Lambada",
         "num_classes": 1,
-        "n_shot": 1
+        "use_prompt": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "truncation": "longest_first",
+        "max_length": 256,
+        "padding_side": "left"
     },
     "model_list":{
         "0": {
-            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "type": "gpt2",
             "pretrained": 1,
             "output_dim": 1,
             "model_type": "GPT2",
-            "max_sequence": 1024,
+            "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
+            "type": "gpt2",
             "pretrained": 1,
             "output_dim": 1,
             "model_type": "GPT2",
-            "max_sequence": 1024,
+            "max_sequence": 512,
             "path": ""
         },
         "task":{
-            "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
-            "doc_stride" : 128,
-            "max_seq_length": 1024,
-            "max_query_length" : 64,
-            "max_answer_length": 30,
-            "n_best_size": 20
-
+            "task_type": "CausalLM",
+            "doc_stride" : 256,
+            "max_seq_length": 256,
+            "metric_type": "n_best",
+            "n_best_size": 8
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"

@@ -21,12 +21,12 @@ from transformers.models.bert.modeling_bert import (BertEmbeddings,BertPooler,Be
 '''
 Models with specific usage based on BERT
 '''
-
+##### Evaluation with pretrained models ######
 class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
     def __init__(self, global_bert, qa_outputs):
         super().__init__(global_bert.config)
         self.num_labels = global_bert.config.num_labels
-        self.backbone = global_bert # BertModel(config, add_pooling_layer=False) bert
+        self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
         self.qa_outputs = qa_outputs #nn.Linear(config.hidden_size, config.num_labels)
 
         # Initialize weights and apply final processing
@@ -58,7 +58,7 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        outputs = self.backbone(
+        outputs = self.bert(
             input_ids, attention_mask=attention_mask,
             
             token_type_ids=token_type_ids,
@@ -106,83 +106,262 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-
-class GlobalBertClassifier_pretrained(nn.Module):
+class BertForSequenceClassification_pretrained(nn.Module):
     def __init__(self, globalbert, classifier,dropout=0.5):
-        super(GlobalBertClassifier_pretrained, self).__init__()
-        self.backbone = globalbert #BertModel.from_pretrained('bert-base-cased')
+        super(BertForSequenceClassification_pretrained, self).__init__()
+        self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 
         self.classifier = classifier
 
+        classifier_dropout = (
+            globalbert.config.classifier_dropout if globalbert.config.classifier_dropout is not None else globalbert.config.hidden_dropout_prob
+        )
+        self.dropout = nn.Dropout(classifier_dropout)
+
         # torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         # torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_ids, attention_mask): # 
-        # print('==== global model forward ====')
-        outputs = self.backbone(input_ids,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
-        # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
+    def forward(self, input_ids, attention_mask,
+        token_type_ids: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = True): # 
+
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
 
         if self.model_type == 'Bert':
             pooled_output = outputs[1]
+            pooled_output = self.dropout(pooled_output)
+            logits = self.classifier(pooled_output)
         elif self.model_type == 'Roberta':
-            pooled_output = outputs[0]
+            sequence_output = outputs[0]
+            logits = self.classifier(sequence_output)
         elif self.model_type == 'Albert':
-            pooled_output = outputs[0]
+            pooled_output = outputs[1]
+            pooled_output = self.dropout(pooled_output)
+            logits = self.classifier(pooled_output)
+            
+        loss = None
+        if labels is not None:
+            if self.config.problem_type is None:
+                if self.num_labels == 1:
+                    self.config.problem_type = "regression"
+                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+                    self.config.problem_type = "single_label_classification"
+                else:
+                    self.config.problem_type = "multi_label_classification"
 
-        logits = self.classifier(pooled_output)
-        # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
-        # print('==== global model forward ====')
+            if self.config.problem_type == "regression":
+                loss_fct = MSELoss()
+                if self.num_labels == 1:
+                    loss = loss_fct(logits.squeeze(), labels.squeeze())
+                else:
+                    loss = loss_fct(logits, labels)
+            elif self.config.problem_type == "single_label_classification":
+                loss_fct = CrossEntropyLoss()
+                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            elif self.config.problem_type == "multi_label_classification":
+                loss_fct = BCEWithLogitsLoss()
+                loss = loss_fct(logits, labels)
+        
+        if not return_dict:
+            output = (logits,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
 
-        # print('logits:',type(logits),logits.shape) #[128,num_classes]
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
  
 
-        return logits
+##### Finetune #####
+class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
+    def __init__(self, global_bert):
+        super().__init__(global_bert.config)
+        self.num_labels = global_bert.config.num_labels
+        self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
+        self.trainable_layer = nn.Linear(global_bert.config.hidden_size, 2) # qa_outputs
 
+        torch.nn.init.xavier_uniform_(self.trainable_layer.weight)
+        torch.nn.init.zeros_(self.trainable_layer.bias)
+        # # Initialize weights and apply final processing
+        # self.post_init()
 
-class GlobalBertClassifier(nn.Module):
+    def forward(
+        self,
+        input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None,
+
+        token_type_ids: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        start_positions: Optional[torch.Tensor] = None,
+        end_positions: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[Tuple[torch.Tensor], QuestionAnsweringModelOutput]:
+        r"""
+        start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+            are not taken into account for computing the loss.
+        end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
+            Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+            are not taken into account for computing the loss.
+        """
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        outputs = self.bert(
+            input_ids, attention_mask=attention_mask,
+            
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        sequence_output = outputs[0]
+
+        logits = self.trainable_layer(sequence_output)
+        start_logits, end_logits = logits.split(1, dim=-1)
+        start_logits = start_logits.squeeze(-1).contiguous()
+        end_logits = end_logits.squeeze(-1).contiguous()
+
+        total_loss = None
+        if start_positions is not None and end_positions is not None:
+            # If we are on multi-GPU, split add a dimension
+            if len(start_positions.size()) > 1:
+                start_positions = start_positions.squeeze(-1)
+            if len(end_positions.size()) > 1:
+                end_positions = end_positions.squeeze(-1)
+            # sometimes the start/end positions are outside our model inputs, we ignore these terms
+            ignored_index = start_logits.size(1)
+            start_positions = start_positions.clamp(0, ignored_index)
+            end_positions = end_positions.clamp(0, ignored_index)
+
+            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+            start_loss = loss_fct(start_logits, start_positions)
+            end_loss = loss_fct(end_logits, end_positions)
+            total_loss = (start_loss + end_loss) / 2
+
+        if not return_dict:
+            output = (start_logits, end_logits) + outputs[2:]
+            return ((total_loss,) + output) if total_loss is not None else output
+
+        return QuestionAnsweringModelOutput(
+            loss=total_loss,
+            start_logits=start_logits,
+            end_logits=end_logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+class BertForSequenceClassification_forfinetune(nn.Module):
     def __init__(self, globalbert, output_dim,dropout=0.5):
-        super(GlobalBertClassifier, self).__init__()
-        self.backbone = globalbert #BertModel.from_pretrained('bert-base-cased')
+        super(BertForSequenceClassification_forfinetune, self).__init__()
+        self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 
         self.trainable_layer = nn.Sequential(
             nn.Dropout(dropout),
             nn.Linear(768, output_dim)
-        )
+        ) # Classifier in a SequenceClassification case
 
         torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
         torch.nn.init.zeros_(self.trainable_layer[1].bias)
 
-    def forward(self, input_id,attention_mask):
-        # print('==== global model forward ====')
-        outputs = self.backbone(input_id,attention_mask=attention_mask,return_dict=False)#attention_mask=mask,return_dict=False)
-        # print('outputs:',type(outputs),len(outputs)) #([128,256,768], [128,768])
+    def forward(self, input_ids, attention_mask,
+        token_type_ids: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = True): # 
 
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
         if self.model_type == 'Bert':
             pooled_output = outputs[1]
+            logits = self.trainable_layer(pooled_output)
         elif self.model_type == 'Roberta':
-            pooled_output = outputs[0]
+            sequence_output = outputs[0]
+            logits = self.trainable_layer(sequence_output)
         elif self.model_type == 'Albert':
-            pooled_output = outputs[0]
+            pooled_output = outputs[1]
+            logits = self.trainable_layer(pooled_output)
 
-        logits = self.trainable_layer(pooled_output)
-        # print('final_layer:',type(final_layer), final_layer.shape,final_layer[0])
-        # print('==== global model forward ====')
-
-        # print('logits:',type(logits),logits.shape) #[128,num_classes]
+        # logits = self.trainable_layer(pooled_output)
  
-        return logits
+        loss = None
+        if labels is not None:
+            if self.config.problem_type is None:
+                if self.num_labels == 1:
+                    self.config.problem_type = "regression"
+                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+                    self.config.problem_type = "single_label_classification"
+                else:
+                    self.config.problem_type = "multi_label_classification"
 
-        # return SequenceClassifierOutput(
-        #     loss=loss,
-        #     logits=logits,
-        #     hidden_states=outputs.hidden_states,
-        #     attentions=outputs.attentions,
-        # )
+            if self.config.problem_type == "regression":
+                loss_fct = MSELoss()
+                if self.num_labels == 1:
+                    loss = loss_fct(logits.squeeze(), labels.squeeze())
+                else:
+                    loss = loss_fct(logits, labels)
+            elif self.config.problem_type == "single_label_classification":
+                loss_fct = CrossEntropyLoss()
+                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            elif self.config.problem_type == "multi_label_classification":
+                loss_fct = BCEWithLogitsLoss()
+                loss = loss_fct(logits, labels)
+        if not return_dict:
+            output = (logits,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
+
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
 
 ##################### Functional Global Models ######################
-
 
 ############## Split for Basic BERT ###############
 class LocalBertEncoder(nn.Module):
@@ -384,6 +563,7 @@ class LocalBertModel(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        embedding_output = None
     ):
         # print(' === Local Bert ===')
         # print('input:',type(input_ids),input_ids.shape) # [2048,1290]
@@ -396,7 +576,7 @@ class LocalBertModel(BertPreTrainedModel):
             use_cache = use_cache if use_cache is not None else self.config.use_cache
         else:
             use_cache = False
-
+        
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
@@ -461,16 +641,18 @@ class LocalBertModel(BertPreTrainedModel):
         # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
 
-        input_ids = input_ids.long()
+        if embedding_output == None:
+            input_ids = input_ids.long()
 
-        embedding_output = self.embeddings(
-            input_ids=input_ids,
-            position_ids=position_ids,
-            token_type_ids=token_type_ids,
-            inputs_embeds=inputs_embeds,
-            past_key_values_length=past_key_values_length,
-        )
-
+            embedding_output = self.embeddings(
+                input_ids=input_ids,
+                position_ids=position_ids,
+                token_type_ids=token_type_ids,
+                inputs_embeds=inputs_embeds,
+                past_key_values_length=past_key_values_length,
+            )
+        # else:
+        #     print('embedding_output:',embedding_output.shape)
         
         intermediate =self.encoder(
             embedding_output,

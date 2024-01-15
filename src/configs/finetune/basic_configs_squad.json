@@ -13,26 +13,32 @@
         "use_prompt": 1,
         "n_shot": 1
     },
+    "tokenizer":{
+        "padding": "max_length",
+        "truncation": "longest_first",
+        "max_length": 256,
+        "padding_side": "left"
+    },
     "model_list":{
         "0": {
-            "type": "rsvp-aibertserini-bert-base-squad",
-            "pretrained": 1,
-            "output_dim": 1,
+            "type": "bert-base-uncased",
+            "pretrained": 0,
+            "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "rsvp-aibertserini-bert-base-squad",
-            "pretrained": 1,
-            "output_dim": 1,
+            "type": "bert-base-uncased",
+            "pretrained": 0,
+            "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": ""
         },
         "task":{
             "task_type": "QuestionAnswering",
-            "metric_type": "n_best",
+            "metric_type": "best_pred",
             "doc_stride" : 128,
             "max_seq_length": 512,
             "max_query_length" : 64,

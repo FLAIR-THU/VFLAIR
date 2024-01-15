@@ -8,23 +8,30 @@
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "cola_public",
-        "num_classes": 2
+        "dataset_name": "MNLI",
+        "num_classes": 3,
+        "use_prompt": 0
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left"
     },
     "model_list":{
         "0": {
-            "type": "textattackroberta-base-CoLA",
+            "type": "George-Ogdengpt2-medium-finetuned-mnli",
             "pretrained": 1,
-            "output_dim": 2,
-            "model_type": "Roberta",
+            "output_dim": 3,
+            "model_type": "GPT2",
             "max_sequence": 512,
             "path": ""
         },
         "1": {
-            "type": "textattackroberta-base-CoLA",
+            "type": "George-Ogdengpt2-medium-finetuned-mnli",
             "pretrained": 1,
-            "output_dim": 2,
-            "model_type": "Roberta",
+            "output_dim": 3,
+            "model_type": "GPT2",
             "max_sequence": 512,
             "path": ""
         },
