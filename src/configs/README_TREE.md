@@ -48,3 +48,8 @@ We provide support for Tree-based Vertical Federated Learning (T-VFL), implement
  }
 ```
 
+### 3. Communication Efficiency
+
+- "is_hybrid": if true, use hybridtree for communication-efficient training.
+
+<img src="../../usage_guidance/figures/comparison_bin_com.png">
