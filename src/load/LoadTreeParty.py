@@ -24,6 +24,7 @@ def load_tree_parties(args):
                 args.subsample_cols,
                 args.max_bin,
                 args.use_missing_value,
+                args.use_encrypted_label,
                 args.seed,
             )
     elif args.model_type == "randomforest":

@@ -1,3 +1,4 @@
+from joblib import Parallel, delayed
 import random
 
 import numpy as np
@@ -13,6 +14,7 @@ class Party:
         min_leaf,
         subsample_cols,
         use_missing_value=False,
+        use_encrypted_label=True,
         seed=0,
     ):
         self.x = x
@@ -22,6 +24,7 @@ class Party:
         self.min_leaf = min_leaf
         self.subsample_cols = subsample_cols
         self.use_missing_value = use_missing_value
+        self.use_encrypted_label = use_encrypted_label
         self.seed = seed
 
         self.col_count = len(x[0])
@@ -40,29 +43,29 @@ class Party:
         self.pk = pk
         self.sk = sk
 
+    def encrypt_row(self, row):
+        return [self.pk.encrypt(e) for e in row]
+
     def encrypt_2dlist(self, x):
-        results = []
-        for row in x:
-            results.append([])
-            for e in row:
-                results[-1].append(self.pk.encrypt(e))
+        results = Parallel(n_jobs=-1)(delayed(self.encrypt_row)(row) for row in x)
         return results
 
     def decrypt_1dlist(self, row):
         results = []
         for e in row:
-            try:
-                results.append(self.sk.decrypt(e))
-            except Exception as e:
-                results.append(0)
-                print(type(e), str(e))
-                continue
+            if e == 0:
+                results.append(e)
+            else:
+                try:
+                    results.append(self.sk.decrypt(e))
+                except Exception as e:
+                    results.append(0)
+                    print(type(e), str(e))
+                    continue
         return results
 
     def decrypt_2dlist(self, mat):
-        results = []
-        for row in mat:
-            results.append(self.decrypt_1dlist(row))
+        results = Parallel(n_jobs=-1)(delayed(self.decrypt_1dlist)(row) for row in mat)
         return results
 
     def get_lookup_table(self):

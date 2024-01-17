@@ -1,3 +1,4 @@
+import time
 import random
 from typing import Callable, List
 
@@ -27,6 +28,7 @@ class XGBoostTree(Tree):
         mi_bound: float,
         active_party_id: int = -1,
         use_only_active_party: bool = False,
+        is_hybrid: bool = False,
         n_job: int = 1,
         grad_encrypted=None,
         hess_encrypted=None,
@@ -56,7 +58,8 @@ class XGBoostTree(Tree):
             n_job,
             grad_encrypted,
             hess_encrypted,
-            y_onehot_encoded_encrypted
+            y_onehot_encoded_encrypted,
+            is_hybrid
         )
 
 
@@ -122,6 +125,7 @@ class XGBoostBase:
         completelly_secure_round: int = 0,
         init_value: float = 1.0,
         use_encryption=False,
+        is_hybrid=False,
         n_job: int = 1,
         save_loss: bool = True,
     ):
@@ -139,6 +143,7 @@ class XGBoostBase:
         self.completelly_secure_round = completelly_secure_round
         self.init_value = init_value
         self.use_encryption = use_encryption
+        self.is_hybrid = is_hybrid
         self.n_job = n_job
         self.save_loss = save_loss
         if num_classes == 2:
@@ -148,6 +153,8 @@ class XGBoostBase:
         self.init_pred = None
         self.estimators = []
         self.logging_loss = []
+
+        self.cum_time_encryption = 0
 
     def get_init_pred(self, y: np.ndarray) -> List[List[float]]:
         pass
@@ -174,7 +181,11 @@ class XGBoostBase:
             for i in range(len(y))
         ]
         y_onehot_encoded_encrypted = None
-        if self.use_encryption:
+
+        use_encrypted_label = True
+        for p in parties:
+            use_encrypted_label = use_encrypted_label and p.use_encrypted_label
+        if self.use_encryption and use_encrypted_label:
             y_onehot_encoded_encrypted = parties[self.active_party_id].encrypt_2dlist(
                 y_onehot_encoded
             )
@@ -194,11 +205,18 @@ class XGBoostBase:
                 base_pred, y
             ), self.lossfunc_obj.get_hess(base_pred, y)
 
+            tmp_time_start = time.time()
             grad_encrypted = None
             hess_encrypted = None
             if self.use_encryption:
                 grad_encrypted = parties[self.active_party_id].encrypt_2dlist(grad)
                 hess_encrypted = parties[self.active_party_id].encrypt_2dlist(hess)
+            tmp_time_end = time.time()
+            self.cum_time_encryption += tmp_time_end - tmp_time_start
+
+            for i, p in enumerate(parties):
+                p.cum_num_communicated_ciphertexts += (len(grad) * len(grad[0]) + len(hess) * len(hess[0]))
+
 
             boosting_tree = XGBoostTree()
             boosting_tree.fit(
@@ -217,6 +235,7 @@ class XGBoostBase:
                 self.mi_bound,
                 self.active_party_id,
                 (self.completelly_secure_round > i),
+                self.is_hybrid,
                 self.n_job,
                 grad_encrypted=grad_encrypted,
                 hess_encrypted=hess_encrypted,

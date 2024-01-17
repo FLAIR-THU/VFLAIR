@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_breast_cancer, load_digits
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -47,6 +47,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("tree")
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument("--dataset", type=str, default="breastcancer")
+    parser.add_argument("--bin", type=int, default=None)
     parser.add_argument(
         "--configs",
         type=str,
@@ -115,6 +116,15 @@ if __name__ == "__main__":
         X = pd.concat([X_a, X_p], axis=1).values
         y = df[8].values
 
+    elif args.dataset == "digit":
+        data = load_digits()
+        X = data.data
+        y = data.target
+        featureid_lists = [
+            range(int(X.shape[1] / 2)),
+            range(int(X.shape[1] / 2), X.shape[1]),
+        ]
+
     else:
         data = load_breast_cancer()
         X = data.data
@@ -136,8 +146,12 @@ if __name__ == "__main__":
     args.y = y_train
     args.featureid_lists = featureid_lists
 
+    if args.bin is not None:
+        args.max_bin = args.bin
+    
     print(f"type of model: {args.model_type}, encryption:{args.use_encryption}")
     args = load_tree_parties(args)
+
 
     tvfl = MainTaskTVFL(args)
 
