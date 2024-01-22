@@ -1,5 +1,5 @@
 import framework.common.logger_util as logger_util
-from framework.ml.passive_party import PassiveParty_LLM
+from party.passive_party import PassiveParty_LLM
 import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu

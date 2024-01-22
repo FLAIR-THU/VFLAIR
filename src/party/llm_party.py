@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
 from load.LoadDataset import load_dataset_per_party,load_dataset_per_party_llm, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
-from load.LoadModels import load_models_per_party
+from load.LoadModels import load_models_per_party_new
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
@@ -72,9 +72,7 @@ def my_collate(batch):
     raise TypeError(my_collate_err_msg_format.format(elem_type))
 
 class Party(object):
-    def __init__(self, args, index):
-        self.name = "party#" + str(index + 1)
-        self.index = index
+    def __init__(self, args):
         self.args = args
         # data for training and testing
         self.half_dim = -1
@@ -116,8 +114,8 @@ class Party(object):
         # self.attacker = None
         self.defender = None
 
-        self.prepare_model(args, index)
-        self.prepare_data(args, index)
+        # self.prepare_model(args)
+        # self.prepare_data(args)
         # self.prepare_attacker(args, index)
         # self.prepare_defender(args, index)
 
@@ -138,18 +136,18 @@ class Party(object):
         self.local_attention_mask = None # Llama
 
 
-    def prepare_data(self, args, index):
+    def prepare_data(self, args):
         (
             args,
             self.half_dim,
             train_dst,
             test_dst,
-        ) = load_dataset_per_party_llm(args, index)
+        ) = load_dataset_per_party_llm(args)
 
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size):
+    def prepare_data_loader(self, batch_size, need_auxiliary):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
@@ -157,10 +155,10 @@ class Party(object):
 
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # , 
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
-        if self.args.need_auxiliary == 1 and self.aux_dst != None:
+        if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
 
-    def prepare_model(self, args, index):
+    def prepare_model(self, args):
         # prepare model and optimizer
         (
             args,
@@ -168,8 +166,22 @@ class Party(object):
             self.local_model_optimizer,
             self.global_model,
             self.global_model_optimizer
-        ) = load_models_per_party(args, index)
+        ) = load_models_per_party_new(args)
 
+    def label_to_one_hot(self, target, num_classes=10):
+        target = target.long()
+        # print('label_to_one_hot:', target, type(target),type(target[0]))
+        try:
+            _ = target.size()[1]
+            # print("use target itself", target.size())
+            onehot_target = target.type(torch.float32).to(self.device)
+        except:
+            target = torch.unsqueeze(target, 1).to(self.device)
+            # print("use unsqueezed target", target.size(),type(target))
+
+            onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
+            onehot_target.scatter_(1, target, 1)
+        return onehot_target
 
     def receive_gradient(self, gradient):
         self.local_gradient = gradient

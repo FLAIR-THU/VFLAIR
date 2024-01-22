@@ -63,7 +63,7 @@ class MessageService:
 
     def _init_task(self):
         task = Task.Task()
-        task.run = "aggregate"
+        task.run = "aggregate_remote"
         task.party = 'active'
         return task
 

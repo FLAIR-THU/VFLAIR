@@ -1,7 +1,7 @@
 import threading
 
 import framework.common.logger_util as logger_util
-from framework.ml.active_party import ActiveParty_LLM
+from party.active_party import ActiveParty_LLM
 
 from argparse import Namespace
 
