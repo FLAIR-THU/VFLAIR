@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package framework.protos;
+
+import "framework/protos/node.proto";
+
+enum Code {
+  OK = 0;
+  ERROR = 1;
+}
+
+message RequestMessage{
+  Node node = 1;
+  AggregationValue data = 2;
+  int32  type = 3;
+}
+
+message ResponseMessage{
+  Node node = 1;
+  Code code = 2;
+  string message = 3;
+  AggregationValue data = 4;
+}
+
+message Message{
+  Node node = 1;
+  Code code = 2;
+  string message = 3;
+  AggregationValue data = 4;
+  int32  type = 5;
+}
+
+message Value {
+  oneof value {
+    // Single element
+    double double = 1;
+    sint64 sint64 = 2;
+    bool bool = 3;
+    string string = 4;
+    bytes bytes = 5;
+  }
+}
+
+message AggregationValue { map<string, Value> named_values = 1; }

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package framework.protos;
+
+import "framework/protos/message.proto";
+
+service MessageService {
+   rpc send(Message) returns (Message);
+   rpc register(Message) returns (stream Message);
+   rpc send_stream(stream Message) returns (stream Message);
+}

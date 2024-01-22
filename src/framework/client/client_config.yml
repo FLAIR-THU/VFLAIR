@@ -1,0 +1,6 @@
+server:
+  host: localhost
+  port: 3333
+
+client:
+  id: c1

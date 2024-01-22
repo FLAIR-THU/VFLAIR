@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package framework.protos;
+
+message Node {
+  string node_id = 1;
+}

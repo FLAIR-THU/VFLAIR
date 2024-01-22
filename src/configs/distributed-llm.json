@@ -1,0 +1,66 @@
+{
+  "epochs": 100,
+  "lr": 0.0005,
+  "k": 2,
+  "batch_size": 1,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "SQuAD",
+    "num_classes": 1,
+    "n_shot": 1
+  },
+  "device": "cpu",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "tasks": [{
+      "id": 1,
+      "party": "active",
+      "run": "prepare_data_loader"
+    }, {
+      "id": 2,
+      "party": "c1",
+      "run": "prepare_data_loader"
+    }, {
+        "id": 3,
+        "party": "active",
+        "run": "eval"
+    }, {
+       "id": 4,
+        "party": "c1",
+        "run": "predict"
+    }, {
+       "id": 5,
+        "party": "active",
+        "run": "mean"
+    }],
+  "model_list": {
+    "0": {
+      "type": "rsvp-aibertserini-bert-base-squad",
+      "pretrained": 1,
+      "output_dim": 1,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": ""
+    },
+    "1": {
+      "type": "rsvp-aibertserini-bert-base-squad",
+      "pretrained": 1,
+      "output_dim": 1,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": ""
+    },
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "n_best",
+      "doc_stride": 128,
+      "max_seq_length": 512,
+      "max_query_length": 64,
+      "max_answer_length": 30,
+      "n_best_size": 20
+    }
+  }
+}
