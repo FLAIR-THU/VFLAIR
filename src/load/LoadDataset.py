@@ -44,7 +44,7 @@ TABULAR_DATA = ['breast_cancer_diagnose','diabetes','adult_income','criteo','cre
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20','CoLA','SST-2','STS-B','MRPC','MNLI','QNLI','QQP','WNLI','RTE','MMLU']
 
-def dataset_partition_llm(args, index, dst, half_dim):
+def dataset_partition_llm(args, dst, half_dim):
     '''
     dst : ( np.array(texts),np.array(label) )
     party 1 ~ k-1: Passive Party with data/label, no global model
@@ -1288,7 +1288,7 @@ def gen_prompt(train_df, choices, subject, k=-1):
         
     return prompt_list
 
-def load_dataset_per_party_llm(args, index):
+def load_dataset_per_party_llm(args):
     print('load_dataset_per_party_llm  args.need_auxiliary = ',args.need_auxiliary)
     args.classes = [None] * args.num_classes
     half_dim = -1
@@ -1296,62 +1296,7 @@ def load_dataset_per_party_llm(args, index):
     args.idx_test = None
 
     if args.dataset == 'news20':
-        texts, labels, labels_index = [], {}, []
-        Text_dir = DATA_PATH+'news20/'
-        for name in sorted(os.listdir(Text_dir)[:2]):
-            #  every file_folder under the root_file_folder should be labels with a unique number
-            labels[name] = len(labels) # 
-            path = join(Text_dir, name)
-            for fname in sorted(os.listdir(path)):
-                if fname.isdigit():# The training set we want is all have a digit name
-                    fpath = join(path,fname)
-                    # labels_index.append(labels[name])
-                    # skip header
-                    f = open(fpath, encoding='latin-1')
-                    t = f.read()
-
-                    # tokenized_text = args.tokenizer(t,padding='max_length', 
-                    #    max_length = args.max_sequence, 
-                    #    truncation=True,
-                    #    return_tensors="pt") 
-                    
-                    texts.append( t)
-
-                    # ids = args.tokenizer(t, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")                                        
-                    # texts.append( torch.tensor(ids['input_ids']).squeeze() )
-
-                    # # input_ids.append( tokenized_text['input_ids'] ) 
-                    # # token_type_ids.append( tokenized_text['token_type_ids'] )
-                    # # attention_mask.append( tokenized_text['attention_mask'] )
-
-                    labels_index.append(labels[name])
-                    f.close()
-
-        # texts=[aa.tolist() for aa in texts]#列表中元素由tensor变成列表。
-        # X = torch.tensor( texts)
-        X = np.array(texts)
-        y = np.array(labels_index)
-       
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
-        # token_type_ids_train, token_type_ids_test, y_train, y_test = train_test_split(token_type_ids, y, test_size=0.2, random_state=args.current_seed)
-        # attention_mask_train, attention_mask_test, y_train, y_test = train_test_split(attention_mask, y, test_size=0.2, random_state=args.current_seed)
-
-        print('X:',X_train.shape,X_test.shape) # (1600,3) (400,3)
-        print('y:',y_train.shape,y_test.shape) # (1600,) (400,)
-
-        # if args.need_auxiliary == 1:
-        #     X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
-        #     X_aux = torch.tensor(X_aux)
-        #     y_aux = torch.tensor(y_aux)
-        #     aux_dst = (X_aux,y_aux)
-
-        # X_train = torch.tensor(X_train)
-        # X_test = torch.tensor(X_test)
-        # y_train = torch.tensor(y_train)
-        # y_test = torch.tensor(y_test)
-        
-        train_dst = (X_train,y_train)
-        test_dst = (X_test,y_test)
+        test_dst, train_dst = load_dataset_news20(args)
 
     elif args.dataset == 'CoLA':
         text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
@@ -1808,49 +1753,7 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test,y_test)
 
     elif args.dataset == 'SQuAD':
-        ## train
-        data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
-        train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)[:10]
-        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
-                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
-                            max_query_length=args.max_query_length, is_training=True)
-        # print('train_features:',len(train_features),train_features[0].keys())
-
-        inputs = [] 
-        labels = []
-        for feature in train_features:
-            inputs.append(feature)
-            labels.append([feature["start_position"],feature["end_position"]])
-        
-        X_train = inputs
-        y_train = labels
-
-
-        ## test
-        data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)[:10]
-        test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
-                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
-                            max_query_length=args.max_query_length, is_training=False)
-        print('test_features:',len(test_features),test_features[0].keys())
-
-        # for _feature in test_features:
-        #     print( len(_feature['input_ids']) )
-
-        inputs = [] 
-        labels = []
-        for feature in test_features:
-            inputs.append(feature)
-            labels.append([feature["start_position"],feature["end_position"]])
-        
-        X_test = inputs
-        y_test = labels
-
-        train_dst = (X_train,y_train)
-        test_dst = (X_test,y_test)
-
-        print(type(X_train),len(X_train),len(X_test),type(X_train[0])) # 
-        print(type(y_train), len(y_train),len(y_test),y_train[0])# 
+        test_dst, train_dst = load_dataset_squad(args)
 
     else:
         assert args.dataset == 'news20', "dataset not supported yet"
@@ -1861,15 +1764,112 @@ def load_dataset_per_party_llm(args, index):
     # if args.need_auxiliary == 1:
     #     aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
     
-    train_dst = dataset_partition_llm(args,index,train_dst,half_dim)
-    test_dst = dataset_partition_llm(args,index,test_dst,half_dim)
+    train_dst = dataset_partition_llm(args,train_dst,half_dim)
+    test_dst = dataset_partition_llm(args,test_dst,half_dim)
     if args.need_auxiliary == 1:
-        aux_dst = dataset_partition_llm(args,index,aux_dst,half_dim)
+        aux_dst = dataset_partition_llm(args,aux_dst,half_dim)
 
     # important
     if args.need_auxiliary == 1:
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
+
+
+def load_dataset_squad(args):
+    if args.dataset_split['train_set_file'] is not None and args.dataset_split['test_set_file'] is not None:
+        train_set_file = args.dataset_split['train_set_file']
+        test_set_file = args.dataset_split['test_set_file']
+    else:
+        train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
+        test_set_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
+
+    ## train
+    train_examples = standard_read_squad_examples(input_file=train_set_file, is_training=True)[:10]
+    train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
+                                                  max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                                                  max_query_length=args.max_query_length, is_training=True)
+    # print('train_features:',len(train_features),train_features[0].keys())
+    inputs = []
+    labels = []
+    for feature in train_features:
+        inputs.append(feature)
+        labels.append([feature["start_position"], feature["end_position"]])
+    X_train = inputs
+    y_train = labels
+    ## test
+    test_examples = standard_read_squad_examples(input_file=test_set_file, is_training=False)[:10]
+    test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
+                                                 max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                                                 max_query_length=args.max_query_length, is_training=False)
+    print('test_features:', len(test_features), test_features[0].keys())
+    # for _feature in test_features:
+    #     print( len(_feature['input_ids']) )
+    inputs = []
+    labels = []
+    for feature in test_features:
+        inputs.append(feature)
+        labels.append([feature["start_position"], feature["end_position"]])
+    X_test = inputs
+    y_test = labels
+    train_dst = (X_train, y_train)
+    test_dst = (X_test, y_test)
+    print(type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
+    print(type(y_train), len(y_train), len(y_test), y_train[0])  #
+    return test_dst, train_dst
+
+
+def load_dataset_news20(args):
+    texts, labels, labels_index = [], {}, []
+    Text_dir = DATA_PATH + 'news20/'
+    for name in sorted(os.listdir(Text_dir)[:2]):
+        #  every file_folder under the root_file_folder should be labels with a unique number
+        labels[name] = len(labels)  #
+        path = join(Text_dir, name)
+        for fname in sorted(os.listdir(path)):
+            if fname.isdigit():  # The training set we want is all have a digit name
+                fpath = join(path, fname)
+                # labels_index.append(labels[name])
+                # skip header
+                f = open(fpath, encoding='latin-1')
+                t = f.read()
+
+                # tokenized_text = args.tokenizer(t,padding='max_length',
+                #    max_length = args.max_sequence,
+                #    truncation=True,
+                #    return_tensors="pt")
+
+                texts.append(t)
+
+                # ids = args.tokenizer(t, truncation=True, max_length=args.max_sequence, padding='max_length',return_tensors="pt")
+                # texts.append( torch.tensor(ids['input_ids']).squeeze() )
+
+                # # input_ids.append( tokenized_text['input_ids'] )
+                # # token_type_ids.append( tokenized_text['token_type_ids'] )
+                # # attention_mask.append( tokenized_text['attention_mask'] )
+
+                labels_index.append(labels[name])
+                f.close()
+    # texts=[aa.tolist() for aa in texts]#列表中元素由tensor变成列表。
+    # X = torch.tensor( texts)
+    X = np.array(texts)
+    y = np.array(labels_index)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
+    # token_type_ids_train, token_type_ids_test, y_train, y_test = train_test_split(token_type_ids, y, test_size=0.2, random_state=args.current_seed)
+    # attention_mask_train, attention_mask_test, y_train, y_test = train_test_split(attention_mask, y, test_size=0.2, random_state=args.current_seed)
+    print('X:', X_train.shape, X_test.shape)  # (1600,3) (400,3)
+    print('y:', y_train.shape, y_test.shape)  # (1600,) (400,)
+    # if args.need_auxiliary == 1:
+    #     X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
+    #     X_aux = torch.tensor(X_aux)
+    #     y_aux = torch.tensor(y_aux)
+    #     aux_dst = (X_aux,y_aux)
+    # X_train = torch.tensor(X_train)
+    # X_test = torch.tensor(X_test)
+    # y_train = torch.tensor(y_train)
+    # y_test = torch.tensor(y_test)
+    train_dst = (X_train, y_train)
+    test_dst = (X_test, y_test)
+    return test_dst, train_dst
 
 

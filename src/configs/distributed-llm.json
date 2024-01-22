@@ -9,6 +9,8 @@
   },
   "dataset": {
     "dataset_name": "SQuAD",
+    "train_set_file": "D:\\work\\projects\\PlatForm\\src\\dataset\\train-v1.1.json",
+    "test_set_file": "D:\\work\\projects\\PlatForm\\src\\dataset\\dev-v1.1.json",
     "num_classes": 1,
     "use_prompt": 1,
     "n_shot": 1
