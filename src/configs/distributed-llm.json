@@ -10,7 +10,14 @@
   "dataset": {
     "dataset_name": "SQuAD",
     "num_classes": 1,
+    "use_prompt": 1,
     "n_shot": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "truncation": "longest_first",
+    "max_length": 256,
+    "padding_side": "left"
   },
   "device": "cpu",
   "gpu": 0,

@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
-from framework.ml.LoadDataset import load_dataset_per_party,load_dataset_per_party_llm, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
-from framework.ml.LoadModels import load_models_per_party
+from load.LoadDataset import load_dataset_per_party,load_dataset_per_party_llm, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
+from load.LoadModels import load_models_per_party_new
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
@@ -113,7 +113,7 @@ class Party(object):
             self.local_model_optimizer,
             self.global_model,
             self.global_model_optimizer
-        ) = load_models_per_party(args)
+        ) = load_models_per_party_new(args)
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()

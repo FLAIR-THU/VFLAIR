@@ -4,12 +4,11 @@ sys.path.append(os.pardir)
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from framework.ml.llm_party import Party as Party_LLM
 from dataset.party_dataset import PassiveDataset_LLM
-from framework.ml.LoadModels import load_models_per_party
-from framework.ml.LoadDataset import load_dataset_per_party_llm
+from load.LoadModels import load_models_per_party_new, QuestionAnsweringModelOutput
+from load.LoadDataset import load_dataset_per_party_llm
 import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu
-from framework.ml.LoadModels import QuestionAnsweringModelOutput
 import json
 import collections
 from utils.squad_utils import normalize_answer
@@ -52,6 +51,9 @@ class PassiveParty_LLM(Party_LLM):
         current_output_dim = args.model_list['0']['output_dim']
         is_local = True
         device = args.device
+        padding_side = args.padding_side
+        model_path = args.model_path
+        main_lr = args.main_lr
         # prepare model and optimizer
         (
             self.local_model,
@@ -60,7 +62,7 @@ class PassiveParty_LLM(Party_LLM):
             self.global_model_optimizer,
             args.tokenizer,
             self.encoder
-        ) = load_models_per_party(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device)
+        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr)
 
     def prepare_data(self, args):
         (
