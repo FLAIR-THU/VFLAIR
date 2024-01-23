@@ -1777,7 +1777,7 @@ def load_dataset_per_party_llm(args):
 
 
 def load_dataset_squad(args):
-    if args.dataset_split['train_set_file'] is not None and args.dataset_split['test_set_file'] is not None:
+    if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
         train_set_file = args.dataset_split['train_set_file']
         test_set_file = args.dataset_split['test_set_file']
     else:

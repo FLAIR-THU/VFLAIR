@@ -70,6 +70,8 @@
       "max_query_length": 64,
       "max_answer_length": 30,
       "n_best_size": 20
-    }
+    },
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
   }
 }
