@@ -26,6 +26,9 @@ class PassiveMessageService:
 
 
     def parse_message(self, message):
+        if message.type == 0:
+            logger.info("received data: {}".format(message.data))
+            return {}
         if message.type == 1:
             # start task
             return self._run_task(message.data)

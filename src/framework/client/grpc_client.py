@@ -14,17 +14,17 @@ os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 class GrpcClient():
     _message_service = None
+    _node = None
 
     def __init__(self, client_id, host, port):
         self.id = client_id
         self.host = host
         self.port = port
+        self._node = fpn.Node(node_id=f"{self.id}")
 
     def send_stream(self, stub):
         def request_messages():
-            value = fpm.Value()
-            value.sint64 = 123
-            msg = mu.MessageUtil.create({"id": value})
+            msg = mu.MessageUtil.create(self._node, {})
             yield msg
 
         response_iterator = stub.send_stream(request_messages())
@@ -44,7 +44,7 @@ class GrpcClient():
 
 
     def register(self, stub):
-        msg = mu.MessageUtil.create(fpn.Node(node_id=f"{self.id}"), {})
+        msg = mu.MessageUtil.create(self._node, {})
         response_iterator = stub.register(msg)
         if self._message_service is None:
             self._message_service = fcp.PassiveMessageService(self)

@@ -2,7 +2,7 @@ import logging
 import os
 
 
-LOG_PATH = 'D:\\work\\projects\\PlatForm\\src\\framework\\logs'
+LOG_PATH = 'D:\\work\\projects\\VFLAIR\\src\\framework\\logs'
 os.makedirs(LOG_PATH, exist_ok=True)
 
 def get_logger(name="root"):

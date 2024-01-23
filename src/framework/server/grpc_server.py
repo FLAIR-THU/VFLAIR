@@ -38,8 +38,9 @@ class GrpcServer(fps.MessageServiceServicer):
             response = {}
             the_queue.put(response)
         else:
-            logger.warning("Node {} already registered".format(node_id))
-            return
+            msg = "Node {} already registered".format(node_id)
+            logger.warning(msg)
+            yield mu.MessageUtil.error(self._node, msg)
 
         try:
             while self._clients.__contains__(node_id):
@@ -103,7 +104,7 @@ def main(main_args):
         host = config["server"]["host"]
         port = config["server"]["port"]
     else:
-        raise ValueError("Please specify either --config or --host and --port")
+        raise ValueError("Please specify --config")
 
     MAX_MESSAGE_LENGTH = 100 * 1024 * 1000
     server = grpc.server(futures.ThreadPoolExecutor(),  options=[
