@@ -49,7 +49,10 @@ class GrpcClient():
         if self._message_service is None:
             self._message_service = fcp.PassiveMessageService(self)
         for response in response_iterator:
-            self._message_service.parse_message(response)
+            try:
+                self._message_service.parse_message(response)
+            except (grpc.RpcError, Exception) as e:
+                logger.error(e)
 
     def open_and_send(self, msg):
         with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:

@@ -41,30 +41,40 @@ class GrpcServer(fps.MessageServiceServicer):
             logger.warning("Node {} already registered".format(node_id))
             return
 
-        while self._clients.__contains__(node_id):
-            the_queue = self._queues[node_id]
-            task = the_queue.get(True)
-            logger.info("sending message: {}".format(task))
-            value = fpm.Value()
-            config = fpm.Value()
-            msg_type = 0
-            if not isinstance(task, dict):
-                value.string = json.dumps(task.to_dict())
-                job = job_repository.get_by_id(task.job_id)
-                config.string = job.params
-                msg_type = 1
-            yield mu.MessageUtil.create(self._node, {"task": value, "config": config}, msg_type)
+        try:
+            while self._clients.__contains__(node_id):
+                the_queue = self._queues[node_id]
+                task = the_queue.get(True)
+                logger.info("sending message: {}".format(task))
+                value = fpm.Value()
+                config = fpm.Value()
+                msg_type = 0
+                if not isinstance(task, dict):
+                    value.string = json.dumps(task.to_dict())
+                    job = job_repository.get_by_id(task.job_id)
+                    config.string = job.params
+                    msg_type = 1
+                yield mu.MessageUtil.create(self._node, {"task": value, "config": config}, msg_type)
+        except GeneratorExit as e:
+            logger.error("generator exception: {}".format(e))
+        finally:
+            logger.info("finished register")
 
     def send(self, request, context):
         if self._message_service is None:
             self._message_service = fsm.MessageService(self._queues)
 
-        result = self._message_service.parse_message(request)
-        if result is None:
-            response = mu.MessageUtil.create(self._node, {})
+        try:
+            result = self._message_service.parse_message(request)
+            if result is None:
+                response = mu.MessageUtil.create(self._node, {})
+                return response
+            response = mu.MessageUtil.create(self._node, result)
             return response
-        response = mu.MessageUtil.create(self._node, result)
-        return response
+        except Exception as e:
+            logger.exception(f"Exception occurred: {e}")
+            response = mu.MessageUtil.error(self._node, e.__str__())
+            return response
 
     def send_stream(self, request_iterator, context):
         # 开启一个子线程去接收数据
