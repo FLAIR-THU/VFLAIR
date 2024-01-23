@@ -12,7 +12,7 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 # LLM attacks
-INVERSION = ["VanillaModelInversion"]
+INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","WhiteBoxInversion"]
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
@@ -82,24 +82,19 @@ def load_basic_configs(config_file_name, args):
     if args.tokenizer_dict != None:
         args.padding = args.tokenizer_dict['padding'] if('padding' in args.tokenizer_dict) else 0
         # "longest"  "max_length"  "do_not_pad"
-        # if args.padding == 0:
-        #     args.padding = None
-        # elif args.padding == 1:
-        #     args.padding = True
         args.truncation = args.tokenizer_dict['truncation'] if('truncation' in args.tokenizer_dict) else "do_not_truncate"
         # "only first"  "only_second"  "longest_first"  "do_not_truncate"
-
         args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
         args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
-
     else:
-        args.padding = None
+        args.padding = 'do_not_pad'
     
-    if args.padding:
-        print('args.padding:',args.padding,type(args.padding))
+    if args.padding == 'do_not_pad':
+        args.pad_info = 'donotpad'
+    elif args.padding == 'longest':
+        args.pad_info = f'longest-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}'
     else:
-        print('None args.padding:',args.padding,type(args.padding))
-
+        args.pad_info = f'max-length-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}'
     ############## for LLM ###############
 
 

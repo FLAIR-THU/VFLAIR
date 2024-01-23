@@ -1355,14 +1355,16 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'CoLA':
         text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
-        df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
+        df = pd.read_csv(text_path , delimiter='\t', header=None, \
+        names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
-        df = pd.read_csv(text_path , delimiter='\t', header=None, names=['sentence_source', 'label', 'label_notes', 'sentence'])
+        df = pd.read_csv(text_path , delimiter='\t', header=None, \
+        names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values 
         labels = df.label.values
         X_test = np.array(sentences)
@@ -1374,6 +1376,7 @@ def load_dataset_per_party_llm(args, index):
         print(type(y_train), y_train.shape,y_test.shape) # (6840,1) (1711,1)
         train_dst = (X_train,y_train)
         test_dst = (X_test,y_test)
+        # tokenize
     
     elif args.dataset == 'SST-2':
         text_path = DATA_PATH + 'SST-2/train.tsv'
@@ -1810,7 +1813,7 @@ def load_dataset_per_party_llm(args, index):
     elif args.dataset == 'SQuAD':
         ## train
         data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
-        train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)[:10]
+        train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
@@ -1828,7 +1831,7 @@ def load_dataset_per_party_llm(args, index):
 
         ## test
         data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)[:10]
+        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=False)

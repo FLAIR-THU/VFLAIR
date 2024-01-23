@@ -652,7 +652,7 @@ class LocalBertModel(BertPreTrainedModel):
                 past_key_values_length=past_key_values_length,
             )
         # else:
-        #     print('embedding_output:',embedding_output.shape)
+        # print('embedding_output:',embedding_output.shape) # [bs, seq_length, 768(embed_dim)]
         
         intermediate =self.encoder(
             embedding_output,

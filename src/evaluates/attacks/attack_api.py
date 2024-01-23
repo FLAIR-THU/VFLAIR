@@ -14,7 +14,11 @@ from evaluates.attacks.ResSFL import ResSFL
 from evaluates.attacks.ASB import ASB
 
 # LLM attacks
-from evaluates.attacks.VanillaModelInversion import VanillaModelInversion
+from evaluates.attacks.VanillaModelInversion_WhiteBox import VanillaModelInversion_WhiteBox
+from evaluates.attacks.VanillaModelInversion_BlackBox import VanillaModelInversion_BlackBox
+from evaluates.attacks.WhiteBoxInversion import WhiteBoxInversion
+
+
 
 def AttackerLoader(vfl, args):
     attacker_name = args.attack_name

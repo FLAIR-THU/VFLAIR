@@ -21,17 +21,11 @@ from evaluates.MainTaskVFL_LLM import *
 from evaluates.MainTaskVFLwithBackdoor import *
 from evaluates.MainTaskVFLwithNoisySample import *
 from utils.basic_functions import append_exp_res
+
+from load.LoadConfigs import INVERSION
+
 import warnings
 warnings.filterwarnings("ignore")
-
-TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB'] # main_acc  backdoor_acc
-UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
-LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
-'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
-ATTRIBUTE_INFERENCE = ['AttributeInference']
-FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
-
-INVERSION = ["VanillaModelInversion"]
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -103,11 +97,11 @@ def evaluate_inversion_attack(args):
 
 
         print('=== Begin Attack ===')
-        recover_rate = vfl.evaluate_attack()
+        precision, recall = vfl.evaluate_attack()
         attack_metric_name = 'recover_rate'
         
         # Save record for different defense method
-        exp_result = f"{args.attack_name}:{attack_metric_name}={recover_rate}"
+        exp_result = f"{args.attack_name}_{args.pad_info}:precision={precision},recall={recall}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
         return exp_result
@@ -145,16 +139,10 @@ if __name__ == '__main__':
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
-        
         print('======= Defense ========')
         print('Defense_Name:',args.defense_name)
         print('Defense_Config:',str(args.defense_configs))
         print('===== Total Attack Tested:',args.attack_num,' ======')
-        # print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
-        # print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
-        # print('label_inference:',args.label_inference_list,args.label_inference_index)
-        # print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
-        # print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
         print('inversion:',args.inversion_list,args.inversion_index)
 
         # Save record for different defense method
@@ -163,9 +151,9 @@ if __name__ == '__main__':
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
         if args.pretrained==1:
-            filename = f'pretrained_model={model_name}.txt'
+            filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
-            filename = f'finetuned_model={model_name}.txt'
+            filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
         args.exp_res_path = args.exp_res_dir + filename
         print(args.exp_res_path)
         print('=================================\n')

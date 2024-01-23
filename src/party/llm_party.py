@@ -179,7 +179,7 @@ class Party(object):
 
         if self.args.model_type == 'Bert':
             # SequenceClassification & QuestionAnswering
-            self.local_pred, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
+            self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
             self.local_pred_clone = self.local_pred.detach().clone()
             self.local_attention_mask = self.local_attention_mask.detach().clone()
 

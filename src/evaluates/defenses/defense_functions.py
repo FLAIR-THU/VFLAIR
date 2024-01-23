@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import random
 
-DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 8,'cifar100': 8, 'nuswide': 3}
+DP_CLIP_THRESHOLD_PRED = {'mnist': 40, 'cifar10': 8,'cifar100': 8, 'nuswide': 3, 'CoLA':8}
 
 # Privacy Preserving Deep Learning
 def bound(grad, gamma):
@@ -217,7 +217,7 @@ def LaplaceDP_for_pred(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)] if args.dataset in DP_CLIP_THRESHOLD_PRED.keys() else 8
         with torch.no_grad():
             scale = dp_strength
             
@@ -249,7 +249,7 @@ def LaplaceDP_for_pred_grn(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]
+        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)] if args.dataset in DP_CLIP_THRESHOLD_PRED.keys() else 8
         scale = dp_strength
         
         # abs_factor_a = torch.max(torch.abs(original_object))
@@ -309,7 +309,7 @@ def GaussianDP_for_pred(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
+        threshold =  DP_CLIP_THRESHOLD_PRED[str(args.dataset)] if args.dataset in DP_CLIP_THRESHOLD_PRED.keys() else 8
         with torch.no_grad():
             scale = dp_strength
 
@@ -340,7 +340,7 @@ def GaussianDP_for_pred_grn(args, original_object):
 
     if dp_strength > 0.0:
         location = 0.0
-        threshold = DP_CLIP_THRESHOLD_PRED[str(args.dataset)]  # 1e9
+        threshold =  DP_CLIP_THRESHOLD_PRED[str(args.dataset)] if args.dataset in DP_CLIP_THRESHOLD_PRED.keys() else 8
         scale = dp_strength
 
         # abs_factor_a = torch.max(torch.abs(original_object[0]))

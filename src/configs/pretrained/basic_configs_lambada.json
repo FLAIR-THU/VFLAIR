@@ -2,7 +2,7 @@
     "epochs": 100,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 1,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -13,7 +13,7 @@
         "use_prompt": 1
     },
     "tokenizer":{
-        "padding": "max_length",
+        "padding": "do_not_pad",
         "truncation": "longest_first",
         "max_length": 256,
         "padding_side": "left"
@@ -37,8 +37,8 @@
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 256,
-            "max_seq_length": 256,
+            "doc_stride" : 128,
+            "max_seq_length": 128,
             "metric_type": "n_best",
             "n_best_size": 8
         },

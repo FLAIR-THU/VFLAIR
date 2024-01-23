@@ -210,7 +210,7 @@ class ActiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1],return_dict=True).logits
             elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1], return_dict=True).logits
+                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1], return_dict=True)
         
         elif self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
             if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
@@ -218,7 +218,7 @@ class ActiveParty_LLM(Party_LLM):
             elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
             elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True)
             else:
                 assert 1>2 , 'Task type no supported'
 
@@ -227,6 +227,8 @@ class ActiveParty_LLM(Party_LLM):
                 pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
             elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
+            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True)
             else:
                 assert 1>2 , 'Task type no supported'
 

@@ -141,14 +141,27 @@ class MainTaskVFL_LLM(object):
         #     self.parties[ik].LR_decay(i_epoch)
         self.parties[self.k-1].global_LR_decay(i_epoch)
 
+    def apply_defense_on_transmission(self, pred_detach):
+        ########### Defense applied on pred transmit ###########
+        if self.args.apply_defense == True and self.args.apply_dp == True :
+            pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
+        
+        return pred_detach
+    
+    def apply_communication_protocol_on_transmission(self, pred_detach):
+        ########### communication_protocols ###########
+        if self.args.communication_protocol in ['Quantization','Topk']:
+            pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
+                            self.current_epoch, self.current_step).to(self.args.device)
+        return pred_detach
+
 
     def pred_transmit(self): 
-        # Active party gets pred from passive parties
+        '''
+        Active party gets pred from passive parties
+        '''
+        all_pred_list = []
         for ik in range(self.k-1):
-            # Party sends input_shape/attention_mask/ for aggregation
-            # self.parties[self.k-1].receive_input_shape(self.parties[ik].input_shape)
-            # self.parties[self.k-1].receive_attention_mask(self.parties[ik].local_batch_attention_mask)
-
             # give pred
             if self.args.model_type == 'Bert':
                 if self.args.task_type == 'SequenceClassification':
@@ -157,31 +170,6 @@ class MainTaskVFL_LLM(object):
                     pred, pred_detach, attention_mask  = self.parties[ik].give_pred() # , _input_shape
                 else:
                     assert 1>2, "task type not supported for finetune"
-
-                # defense applied on pred
-                if self.args.apply_defense == True and self.args.apply_dp == True :
-                    # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                    if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                        pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                ########### communication_protocols ###########
-                if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
-                                    self.current_epoch, self.current_step).to(self.args.device)
-                ########### communication_protocols ###########
-
-                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
-
-                if self.args.task_type == 'SequenceClassification':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
-                    self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                        get_size_of(attention_mask) #MB
-                elif self.args.task_type == 'QuestionAnswering':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
-                    self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
-
             elif self.args.model_type == 'Llama':
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred() # , _input_shape
@@ -192,36 +180,17 @@ class MainTaskVFL_LLM(object):
                 else:
                     assert 1>2, "task type not supported for finetune"
 
-                # defense applied on pred
-                if self.args.apply_defense == True and self.args.apply_dp == True :
-                    # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                    if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                        pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                ########### communication_protocols ###########
-                if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
-                                    self.current_epoch, self.current_step).to(self.args.device)
-                ########### communication_protocols ###########
+                # ########### Defense applied on pred transmit ###########
+                # if self.args.apply_defense == True and self.args.apply_dp == True :
+                #     if (ik in self.args.defense_configs['party']):
+                #         pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
+                # ########### communication_protocols ###########
+                # if self.args.communication_protocol in ['Quantization','Topk']:
+                #     pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
+                #                     self.current_epoch, self.current_step).to(self.args.device)
                 
-                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
-
-                if self.args.task_type == 'SequenceClassification':
-                    self.parties[self.k-1].receive_pred([pred_clone,sequence_lengths,attention_mask], ik) 
-                    self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of(sequence_lengths)+\
-                    get_size_of( attention_mask ) #MB
-                elif self.args.task_type == 'CausalLM':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
-                    self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of( attention_mask ) #MB
-                elif self.args.task_type == 'QuestionAnswering':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
-                    self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of( attention_mask ) #MB
-                
+                # pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                # attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
             elif self.args.model_type == 'GPT2':
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred()
@@ -232,32 +201,68 @@ class MainTaskVFL_LLM(object):
                 else:
                     assert 1>2, "task type not supported for finetune"
 
-                # defense applied on pred
-                if self.args.apply_defense == True and self.args.apply_dp == True :
-                    # Only add noise to pred when launching FR attack(attaker_id=self.k-1)
-                    if (ik in self.args.defense_configs['party']) and (ik != self.k-1): # attaker won't defend its own attack
-                        pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
-                ########### communication_protocols ###########
-                if self.args.communication_protocol in ['Quantization','Topk']:
-                    pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
-                                    self.current_epoch, self.current_step).to(self.args.device)
-                ########### communication_protocols ###########
-                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
+            # Defense
+            if self.args.apply_defense:
+                if (ik in self.args.defense_configs['party']):
+                    pred_detach = self.apply_defense_on_transmission(pred_detach)
+            # Communication Process
+            pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)
+            
+            pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+            attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
+            # receive pred
+            if self.args.model_type == 'Bert':
                 if self.args.task_type == 'SequenceClassification':
-                    self.parties[self.k-1].receive_pred([pred_clone,sequence_lengths,attention_mask], ik) 
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone)+\
+                        get_size_of(attention_mask) #MB
+                elif self.args.task_type == 'QuestionAnswering':
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
+            elif self.args.model_type == 'Llama':
+                if self.args.task_type == 'SequenceClassification':
+                    pred_list = [pred_clone,sequence_lengths,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik) 
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone)+\
+                    get_size_of(sequence_lengths)+\
+                    get_size_of( attention_mask ) #MB
+                elif self.args.task_type == 'CausalLM':
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone)+\
+                    get_size_of( attention_mask ) #MB
+                elif self.args.task_type == 'QuestionAnswering':
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone)+get_size_of( attention_mask ) #MB
+            elif self.args.model_type == 'GPT2':
+                if self.args.task_type == 'SequenceClassification':
+                    pred_list = [pred_clone,sequence_lengths,attention_mask]
+                    self.parties[self.k-1].receive_pred(pred_list, ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask)+get_size_of(sequence_lengths)  #MB
                 elif self.args.task_type == 'CausalLM':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred( pred_list, ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
                 elif self.args.task_type == 'QuestionAnswering':
-                    self.parties[self.k-1].receive_pred([pred_clone,attention_mask], ik) 
+                    pred_list = [pred_clone,attention_mask]
+                    self.parties[self.k-1].receive_pred( pred_list , ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
             
+            all_pred_list.append( pred_list )
+        return all_pred_list
+
     def global_pred_transmit(self):
         # active party give global pred to passive party
         final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received, test="True")
@@ -373,7 +378,7 @@ class MainTaskVFL_LLM(object):
                 else:
                     gt_one_hot_label = parties_data[0][1]
 
-                pred_list = []
+                # pred_list = []
                 for ik in range(self.k-1): # Passive data local predict
                     # allocate data (data/label/attention_mask/token_type_ids)
                     input_shape = parties_data[ik][0].shape[:2]# batchsize, seq_length
@@ -381,33 +386,33 @@ class MainTaskVFL_LLM(object):
                     self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
                     self.parties[ik].gt_one_hot_label = gt_one_hot_label
 
-                        
-                    if self.args.model_type == 'Bert':
-                        _local_pred, _local_pred_detach , _local_attention_mask = self.parties[ik].give_pred() # , _input_shape
-                        pred_list.append( [_local_pred, _local_attention_mask])
+                pred_list = self.pred_transmit()
+                #     if self.args.model_type == 'Bert':
+                #         _local_pred, _local_pred_detach , _local_attention_mask = self.parties[ik].give_pred() # , _input_shape
+                #         pred_list.append( [_local_pred, _local_attention_mask])
                     
-                    elif self.args.model_type == 'GPT2':
-                        if self.args.task_type == 'SequenceClassification':
-                            _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
-                        elif self.args.task_type == 'CausalLM':
-                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_attention_mask] )
-                        elif self.args.task_type == 'QuestionAnswering':
-                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_attention_mask] )
+                #     elif self.args.model_type == 'GPT2':
+                #         if self.args.task_type == 'SequenceClassification':
+                #             _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                #         elif self.args.task_type == 'CausalLM':
+                #             _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_attention_mask] )
+                #         elif self.args.task_type == 'QuestionAnswering':
+                #             _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_attention_mask] )
                 
-                    elif self.args.model_type == 'Llama':
-                        # print(' === transmit === ')
-                        if self.args.task_type == 'SequenceClassification':
-                            _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
-                        elif self.args.task_type == 'CausalLM':
-                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_attention_mask] )
-                        elif self.args.task_type == 'QuestionAnswering':
-                            _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
-                            pred_list.append( [_local_pred,_local_attention_mask] )
+                #     elif self.args.model_type == 'Llama':
+                #         # print(' === transmit === ')
+                #         if self.args.task_type == 'SequenceClassification':
+                #             _local_pred, _local_pred_detach ,_local_sequence_lengths, _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_sequence_lengths,_local_attention_mask] )
+                #         elif self.args.task_type == 'CausalLM':
+                #             _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_attention_mask] )
+                #         elif self.args.task_type == 'QuestionAnswering':
+                #             _local_pred, _local_pred_detach , _local_attention_mask= self.parties[ik].give_pred() # , _input_shape
+                #             pred_list.append( [_local_pred,_local_attention_mask] )
                      
                 test_logit = self.parties[self.k-1].aggregate(pred_list, test="True")
                 # print('test_logit:',test_logit.shape)
@@ -1141,12 +1146,12 @@ class MainTaskVFL_LLM(object):
         exp_result = 'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         self.loss, self.train_acc, self.test_acc)
                     
-        save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/' 
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        torch.save(self.parties[self.k-1].global_model.trainable_layer.state_dict(),\
-            save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
-        print(save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
+        # save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/' 
+        # if not os.path.exists(save_path):
+        #     os.makedirs(save_path)
+        # torch.save(self.parties[self.k-1].global_model.trainable_layer.state_dict(),\
+        #     save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
+        # print(save_path + f'/model={self.args.model_list[str(0)]["type"]}_lr{self.args.main_lr}_bs{self.args.batch_size}_acc{str(self.test_acc)}.pth')
         
         # self.final_state = self.save_state() 
         # self.final_state.update(self.save_state(False)) 

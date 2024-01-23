@@ -72,9 +72,35 @@ class PassiveDataset_LLM(Dataset):
                 for _text in texts:
                     # flag+=1
                     # print('_text:', len(_text), _text)
+                    print('origin text:',_text)
+                    text_tokens = args.tokenizer.tokenize(_text)
+                    print(text_tokens)
+
+                    print('pad_token:', args.tokenizer.pad_token)
+
+
+                    pad_length = args.max_length - len(text_tokens)
+                    for _pad in rage(pad_length):
+                        if args.padding_side == 'right':
+                            text_tokens.append( args.tokenizer.pad_token )
+                        else:
+                            text_tokens.insert(0, args.tokenizer.pad_token )
+
+                    _text = text_tokens.join(" ")
+                    print('after pad:', _text)
+
                     ids = args.tokenizer(_text, \
                     padding=args.padding,truncation=args.truncation ,\
                     max_length=args.max_length,return_tensors='pt')
+                    
+                    begin = ids
+                    print(torch.tensor(ids['input_ids']).squeeze().shape)
+                    pad_text = [ args.tokenizer.decode([token_id]) for token_id in torch.tensor(ids['input_ids']).squeeze().tolist() ]
+                    print('pad_text:',pad_text)
+
+                    assert 1>2
+                    
+                    
                     # print(torch.tensor(ids['input_ids']).shape)
                     # print(torch.tensor(ids['input_ids']))
 
