@@ -61,6 +61,7 @@ class ActiveTaskService(threading.Thread):
         party = task.party
         if party in self._queues:
             self._queues[party].put(task)
+            task_repository.change_start_time(task.id)
             return True
         return False
 

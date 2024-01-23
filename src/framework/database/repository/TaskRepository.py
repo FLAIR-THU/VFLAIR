@@ -1,4 +1,5 @@
 import json
+import time
 
 import framework.database.model.Task as Task
 from sqlmodel import Session, select
@@ -28,11 +29,20 @@ class TaskRepository:
             else:
                 return None
 
+    def change_start_time(self, task_id):
+        with Session(engine) as session:
+            statement = select(Task.Task).where(Task.Task.id == task_id)
+            task = session.exec(statement).one()
+            task.start_time = time.time()
+            session.add(task)
+            session.commit()
+
     def change_status(self, task_id, status, result):
         with Session(engine) as session:
             statement = select(Task.Task).where(Task.Task.id == task_id)
             task = session.exec(statement).one()
             task.status = status
+            task.end_time = time.time()
             if isinstance(result, str):
                 task.result = result
             elif isinstance(result, object):
