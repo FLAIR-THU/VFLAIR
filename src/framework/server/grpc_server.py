@@ -102,9 +102,6 @@ def main(main_args):
         logger.info("config: %s", config)
         host = config["server"]["host"]
         port = config["server"]["port"]
-    elif main_args.port is not None and main_args.host is not None:
-        host = main_args.host
-        port = main_args.port
     else:
         raise ValueError("Please specify either --config or --host and --port")
 
@@ -123,8 +120,6 @@ def main(main_args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("GrpcServer")
-    parser.add_argument('--host', default='localhost')
-    parser.add_argument('--port', default='3333', type=int)
     parser.add_argument('--config', default='./server_config.yml')
     args = parser.parse_args()
     main(args)

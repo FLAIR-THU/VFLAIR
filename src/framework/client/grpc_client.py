@@ -67,35 +67,23 @@ class GrpcClient():
 def main(main_args):
     if main_args.config is not None:
         config = yaml.safe_load(open(main_args.config))
-        logger.info("config: %s", config)
         host = config["server"]["host"]
         port = config["server"]["port"]
-    elif main_args.port is not None and main_args.host is not None:
-        host = main_args.host
-        port = main_args.port
-    else:
-        raise ValueError("Please specify either --config or --host and --port")
-
-    if main_args.config is not None:
         client_id = config["client"]["id"]
     else:
-        client_id = main_args.clientId
+        raise ValueError("Please specify --config")
 
     MAX_MESSAGE_LENGTH = 100*1024*1000
     with grpc.insecure_channel(f"{host}:{port}",  options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ]) as channel:
-        grpc.max_send_message_length = 1024 * 1024
         stub = fps.MessageServiceStub(channel)
         GrpcClient(client_id, host, port).register(stub)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("GrpcClient")
-    parser.add_argument('--clientId', default='1')
-    parser.add_argument('--host', default='localhost')
-    parser.add_argument('--port', default='3333', type=int)
     parser.add_argument('--config', default='./client_config.yml')
     args = parser.parse_args()
     main(args)
