@@ -1,5 +1,5 @@
 import json
-import time
+from datetime import datetime
 
 import framework.database.model.Task as Task
 from sqlmodel import Session, select
@@ -33,7 +33,7 @@ class TaskRepository:
         with Session(engine) as session:
             statement = select(Task.Task).where(Task.Task.id == task_id)
             task = session.exec(statement).one()
-            task.start_time = time.time()
+            task.start_time = datetime.now()
             session.add(task)
             session.commit()
 
@@ -42,7 +42,7 @@ class TaskRepository:
             statement = select(Task.Task).where(Task.Task.id == task_id)
             task = session.exec(statement).one()
             task.status = status
-            task.end_time = time.time()
+            task.end_time = datetime.now()
             if isinstance(result, str):
                 task.result = result
             elif isinstance(result, object):

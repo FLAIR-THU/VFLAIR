@@ -35,13 +35,16 @@ class MessageService:
             self._task_service = fst.ActiveTaskService(self._queues, data, job_id)
             self._task_service.run_next()
             self._task_service.start()
+        return job_id
 
 
     def parse_message(self, message):
         if message.type == 1:
             # start job
-            self._run_task(message.data)
-            return None
+            job_id = self._run_task(message.data)
+            value = fpm.Value()
+            value.sint64 = job_id
+            return {"job_id": value}
         elif message.type == 2:
             # query job detail
             return {}

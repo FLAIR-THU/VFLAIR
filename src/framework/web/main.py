@@ -21,7 +21,6 @@ async def lifespan(app: FastAPI):
     print(args)
     init_grpc_client(args)
     yield
-    # Clean up the ML models and release the resources
     service.clear()
 
 app = FastAPI(lifespan=lifespan)
@@ -39,13 +38,12 @@ def read_root():
 @app.post("/job")
 def create_job(config: Annotated[str, Form()]):
     data = load_llm_configs(config, argparse.Namespace())
-    if (data.fl_type == 'VFL'):
-        value = fpm.Value()
-        value.string = json.dumps(vars(data))
-        msg = mu.MessageUtil.create(node, {"config": value}, 1)
-        service['grpc_client'].open_and_send(msg)
-
-    return {"result": "success"}
+    value = fpm.Value()
+    value.string = json.dumps(vars(data))
+    msg = mu.MessageUtil.create(node, {"config": value}, 1)
+    result = service['grpc_client'].open_and_send(msg)
+    job_id = result.named_values['job_id'].sint64
+    return {"result": "success", "job_id": job_id}
 
 
 @app.get("/job")
@@ -69,14 +67,9 @@ def parse_args():
     config = yaml.safe_load(open(args.config))
     args.grpc_host = config["grpc_server"]["host"]
     args.grpc_port = config["grpc_server"]["port"]
-    # args.port = config["port"]
     return args
 
 
 if __name__ == "__main__":
-    # args = parse_args()
-    # app.args = args
-    # init_grpc_client(args)
-
     uvicorn.run("main:app", port=5000, log_level="info")
 

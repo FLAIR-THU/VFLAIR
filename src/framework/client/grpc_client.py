@@ -1,5 +1,4 @@
 import framework.protos.service_pb2_grpc as fps
-import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.client.PassiveMessageService as fcp
 import grpc
