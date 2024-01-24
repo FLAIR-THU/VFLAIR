@@ -51,8 +51,9 @@ def show_job(id: int):
     value = fpm.Value()
     value.sint64 = id
     msg = mu.MessageUtil.create(node, {"id": value}, 2)
-    job = service['grpc_client'].open_and_send(msg)
-    return {"item_id": id, "title": job.name}
+    result = service['grpc_client'].open_and_send(msg)
+    job = result.named_values['job'].string
+    return job
 
 
 def init_grpc_client(args):

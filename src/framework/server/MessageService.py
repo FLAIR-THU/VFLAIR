@@ -47,7 +47,7 @@ class MessageService:
             return {"job_id": value}
         elif message.type == 2:
             # query job detail
-            return {}
+            return self.show_job(message)
         elif message.type == 3:
             # client finish tasks
             self._task_service.save_and_next(message.data.named_values)
@@ -63,6 +63,18 @@ class MessageService:
                 result = {}
             value.string = json.dumps(result)
             return {"test_logit": value}
+
+    def show_job(self, message):
+        job_id = message.data.named_values['id'].sint64
+        job = job_repository.get_by_id(job_id)
+        tasks = task_repository.get_tasks_by_job(job_id)
+
+        job_dict = job.to_dict()
+        job_dict['tasks'] = [task.to_dict() for task in tasks]
+
+        job_value = fpm.Value()
+        job_value.string = json.dumps(job_dict)
+        return {"job": job_value}
 
     def _init_task(self):
         task = Task.Task()

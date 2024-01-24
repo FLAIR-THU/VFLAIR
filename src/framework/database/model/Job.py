@@ -8,3 +8,7 @@ class Job(SQLModel, table=True):
     fl_type: str
     params: str
     create_time: datetime
+
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+

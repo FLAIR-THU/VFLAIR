@@ -14,6 +14,12 @@ class TaskRepository:
             return task.id
 
 
+    def get_tasks_by_job(self, job_id):
+        with Session(engine) as session:
+            statement = select(Task.Task).where(Task.Task.job_id == job_id)
+            tasks = session.exec(statement).all()
+            return tasks
+
     def get_task(self, id):
         with Session(engine) as session:
             statement = select(Task.Task).where(Task.Task.id == id)
