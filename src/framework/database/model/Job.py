@@ -10,5 +10,11 @@ class Job(SQLModel, table=True):
     create_time: datetime
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return {c.name: self._getattr(c.name) for c in self.__table__.columns}
+
+    def _getattr(self, name):
+        value = getattr(self, name)
+        if isinstance(value, datetime):
+            return value.timestamp()
+        return value
 

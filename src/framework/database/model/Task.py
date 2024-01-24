@@ -15,13 +15,12 @@ class Task(SQLModel, table=True):
     end_time: Optional[datetime]
 
     def to_dict(self):
-        return {
-            "id": self.id,
-            "task_id": self.task_id,
-            "job_id": self.job_id,
-            "status": self.status,
-            "party": self.party,
-            "run": self.run
-        }
+        return {c.name: self._getattr(c.name) for c in self.__table__.columns}
+
+    def _getattr(self, name):
+        value = getattr(self, name)
+        if isinstance(value, datetime):
+            return value.timestamp()
+        return value
 
 

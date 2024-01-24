@@ -52,7 +52,8 @@ def show_job(id: int):
     value.sint64 = id
     msg = mu.MessageUtil.create(node, {"id": value}, 2)
     result = service['grpc_client'].open_and_send(msg)
-    job = result.named_values['job'].string
+    job_str = result.named_values['job'].string
+    job = json.loads(job_str)
     return job
 
 
