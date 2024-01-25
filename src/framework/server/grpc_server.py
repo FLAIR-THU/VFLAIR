@@ -5,7 +5,7 @@ import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import grpc
 from concurrent import futures
-from threading import Thread, Timer
+from threading import Thread
 import framework.common.MessageQueue as mq
 import framework.common.logger_util as logger_util
 import yaml
@@ -22,6 +22,7 @@ logger = logger_util.get_logger("grpc_server")
 
 ACTIVE_PARTY = 'active'
 
+
 class GrpcServer(fps.MessageServiceServicer):
     _clients = set()
     _queues = {}
@@ -30,12 +31,6 @@ class GrpcServer(fps.MessageServiceServicer):
 
     def __init__(self):
         self._queues[ACTIVE_PARTY] = queue.Queue(0)
-
-    def heartbeat(self):
-        for key,value in self._queues.items():
-            if key is not ACTIVE_PARTY:
-                logger.info("sending ping")
-                value.put(mu.MessageUtil.create(self._node, {}, fpm.HEARTBEAT))
 
     def register(self, request, context):
         node_id = request.node.node_id
@@ -46,9 +41,8 @@ class GrpcServer(fps.MessageServiceServicer):
             response = {}
             the_queue.put(response)
         else:
-            msg = "Node {} already registered".format(node_id)
-            logger.warning(msg)
-            yield mu.MessageUtil.error(self._node, msg)
+            logger.info("Node {} already registered".format(node_id))
+            return
 
         try:
             while self._clients.__contains__(node_id):
@@ -66,6 +60,10 @@ class GrpcServer(fps.MessageServiceServicer):
                 yield mu.MessageUtil.create(self._node, {"task": value, "config": config}, msg_type)
         except GeneratorExit as e:
             logger.error("generator exception: {}".format(e))
+        finally:
+            logger.info("stream closed for {}".format(node_id))
+            self._clients.remove(node_id)
+            self._queues.pop(node_id)
 
     def send(self, request, context):
         if self._message_service is None:
@@ -113,11 +111,12 @@ def main(main_args):
         raise ValueError("Please specify --config")
 
     MAX_MESSAGE_LENGTH = 100 * 1024 * 1000
-    server = grpc.server(futures.ThreadPoolExecutor(),  options=[
+    server = grpc.server(futures.ThreadPoolExecutor(), options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ])
-    fps.add_MessageServiceServicer_to_server(GrpcServer(), server)
+    grpc_server = GrpcServer()
+    fps.add_MessageServiceServicer_to_server(grpc_server, server)
     server.add_insecure_port("{}:{}".format(host, port))
 
     server.start()
