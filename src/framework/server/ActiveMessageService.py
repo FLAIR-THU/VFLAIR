@@ -39,20 +39,20 @@ class MessageService:
 
 
     def parse_message(self, message):
-        if message.type == 1:
+        if message.type == fpm.CREATE_JOB:
             # start job
             job_id = self._run_task(message.data)
             value = fpm.Value()
             value.sint64 = job_id
             return {"job_id": value}
-        elif message.type == 2:
+        elif message.type == fpm.QUERY_JOB:
             # query job detail
             return self.show_job(message)
-        elif message.type == 3:
+        elif message.type == fpm.FINISH_TASK:
             # client finish tasks
             self._task_service.save_and_next(message.data.named_values)
             return {}
-        elif message.type == 4:
+        elif message.type == fpm.START_TASK:
             # client sending task to active
             params = message.data.named_values['pred_list']
             data = json.loads(params.string)

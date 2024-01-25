@@ -1,6 +1,7 @@
 import framework.common.logger_util as logger_util
 import json
 import framework.client.PassiveTaskService as fcp
+import framework.protos.message_pb2 as fpm
 
 logger = logger_util.get_logger()
 
@@ -26,9 +27,9 @@ class PassiveMessageService:
 
 
     def parse_message(self, message):
-        if message.type == 0:
+        if message.type == fpm.PLAIN:
             logger.info("received data: {}".format(message.data))
             return {}
-        if message.type == 1:
+        if message.type == fpm.START_TASK:
             # start task
             return self._run_task(message.data)

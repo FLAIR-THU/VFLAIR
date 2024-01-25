@@ -4,4 +4,4 @@ Content-Type: application/x-www-form-urlencoded
 config=D:\work\projects\VFLAIR\src\configs\distributed-llm.json
 
 ### 获取详情
-GET http://localhost:5000/job?id=16
+GET http://localhost:5000/job?id=25

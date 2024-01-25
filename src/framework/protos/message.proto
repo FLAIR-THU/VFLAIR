@@ -9,17 +9,13 @@ enum Code {
   ERROR = 1;
 }
 
-message RequestMessage{
-  Node node = 1;
-  AggregationValue data = 2;
-  int32  type = 3;
-}
-
-message ResponseMessage{
-  Node node = 1;
-  Code code = 2;
-  string message = 3;
-  AggregationValue data = 4;
+enum MessageType {
+  PLAIN = 0;
+  CREATE_JOB = 1;
+  QUERY_JOB = 2;
+  FINISH_TASK = 3;
+  START_TASK = 4;
+  HEARTBEAT = 5;
 }
 
 message Message{
@@ -27,7 +23,7 @@ message Message{
   Code code = 2;
   string message = 3;
   AggregationValue data = 4;
-  int32  type = 5;
+  MessageType type = 5;
 }
 
 message Value {

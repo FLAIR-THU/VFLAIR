@@ -5,21 +5,23 @@ import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import grpc
 from concurrent import futures
-from threading import Thread
+from threading import Thread, Timer
 import framework.common.MessageQueue as mq
 import framework.common.logger_util as logger_util
 import yaml
 import argparse
 import json
 import queue
-
 from framework.common import MessageUtil as mu
-import framework.server.MessageService as fsm
+import framework.server.ActiveMessageService as fsm
 from framework.database.repository.JobRepository import job_repository
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 logger = logger_util.get_logger("grpc_server")
+
+ACTIVE_PARTY = 'active'
+
 class GrpcServer(fps.MessageServiceServicer):
     _clients = set()
     _queues = {}
@@ -27,7 +29,13 @@ class GrpcServer(fps.MessageServiceServicer):
     _message_service = None
 
     def __init__(self):
-        self._queues['active'] = queue.Queue(0)
+        self._queues[ACTIVE_PARTY] = queue.Queue(0)
+
+    def heartbeat(self):
+        for key,value in self._queues.items():
+            if key is not ACTIVE_PARTY:
+                logger.info("sending ping")
+                value.put(mu.MessageUtil.create(self._node, {}, fpm.HEARTBEAT))
 
     def register(self, request, context):
         node_id = request.node.node_id
@@ -49,17 +57,15 @@ class GrpcServer(fps.MessageServiceServicer):
                 logger.info("sending message: {}".format(task))
                 value = fpm.Value()
                 config = fpm.Value()
-                msg_type = 0
+                msg_type = fpm.PLAIN
                 if not isinstance(task, dict):
                     value.string = json.dumps(task.to_dict())
                     job = job_repository.get_by_id(task.job_id)
                     config.string = job.params
-                    msg_type = 1
+                    msg_type = fpm.START_TASK
                 yield mu.MessageUtil.create(self._node, {"task": value, "config": config}, msg_type)
         except GeneratorExit as e:
             logger.error("generator exception: {}".format(e))
-        finally:
-            logger.info("finished register")
 
     def send(self, request, context):
         if self._message_service is None:

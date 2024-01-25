@@ -11,30 +11,23 @@ class Code(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     OK: _ClassVar[Code]
     ERROR: _ClassVar[Code]
+
+class MessageType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    PLAIN: _ClassVar[MessageType]
+    CREATE_JOB: _ClassVar[MessageType]
+    QUERY_JOB: _ClassVar[MessageType]
+    FINISH_TASK: _ClassVar[MessageType]
+    START_TASK: _ClassVar[MessageType]
+    HEARTBEAT: _ClassVar[MessageType]
 OK: Code
 ERROR: Code
-
-class RequestMessage(_message.Message):
-    __slots__ = ("node", "data", "type")
-    NODE_FIELD_NUMBER: _ClassVar[int]
-    DATA_FIELD_NUMBER: _ClassVar[int]
-    TYPE_FIELD_NUMBER: _ClassVar[int]
-    node: _node_pb2.Node
-    data: AggregationValue
-    type: int
-    def __init__(self, node: _Optional[_Union[_node_pb2.Node, _Mapping]] = ..., data: _Optional[_Union[AggregationValue, _Mapping]] = ..., type: _Optional[int] = ...) -> None: ...
-
-class ResponseMessage(_message.Message):
-    __slots__ = ("node", "code", "message", "data")
-    NODE_FIELD_NUMBER: _ClassVar[int]
-    CODE_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    DATA_FIELD_NUMBER: _ClassVar[int]
-    node: _node_pb2.Node
-    code: Code
-    message: str
-    data: AggregationValue
-    def __init__(self, node: _Optional[_Union[_node_pb2.Node, _Mapping]] = ..., code: _Optional[_Union[Code, str]] = ..., message: _Optional[str] = ..., data: _Optional[_Union[AggregationValue, _Mapping]] = ...) -> None: ...
+PLAIN: MessageType
+CREATE_JOB: MessageType
+QUERY_JOB: MessageType
+FINISH_TASK: MessageType
+START_TASK: MessageType
+HEARTBEAT: MessageType
 
 class Message(_message.Message):
     __slots__ = ("node", "code", "message", "data", "type")
@@ -47,8 +40,8 @@ class Message(_message.Message):
     code: Code
     message: str
     data: AggregationValue
-    type: int
-    def __init__(self, node: _Optional[_Union[_node_pb2.Node, _Mapping]] = ..., code: _Optional[_Union[Code, str]] = ..., message: _Optional[str] = ..., data: _Optional[_Union[AggregationValue, _Mapping]] = ..., type: _Optional[int] = ...) -> None: ...
+    type: MessageType
+    def __init__(self, node: _Optional[_Union[_node_pb2.Node, _Mapping]] = ..., code: _Optional[_Union[Code, str]] = ..., message: _Optional[str] = ..., data: _Optional[_Union[AggregationValue, _Mapping]] = ..., type: _Optional[_Union[MessageType, str]] = ...) -> None: ...
 
 class Value(_message.Message):
     __slots__ = ("double", "sint64", "bool", "string", "bytes")
