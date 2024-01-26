@@ -5,6 +5,7 @@ import pandas as pd
 from torch.utils.data import DataLoader
 import string 
 from utils.squad_utils import normalize_answer
+from random import randrange 
 
 class SimpleDataset(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.
@@ -71,55 +72,94 @@ class PassiveDataset_LLM(Dataset):
             if len( texts.shape) == 1: # input: single sentence
                 for _text in texts:
                     # flag+=1
-                    # print('_text:', len(_text), _text)
-                    print('origin text:',_text)
-                    text_tokens = args.tokenizer.tokenize(_text)
-                    print(text_tokens)
+                    # ids = args.tokenizer(_text, \
+                    #     padding=args.padding,truncation=args.truncation ,\
+                    #     max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
+                    # print('std attention_mask:',torch.tensor(ids['attention_mask']).squeeze().shape, torch.tensor(ids['attention_mask']).squeeze())
+                    # print('std token_type_ids:',torch.tensor(ids['token_type_ids']).squeeze().shape, torch.tensor(ids['token_type_ids']).squeeze())
+                    # decode_text = [args.tokenizer.decode([_tok]) for _tok in torch.tensor(ids['input_ids']).squeeze().tolist() ]
+                    # decode_text = " ".join(decode_text)
+                    # print('decode_text:',decode_text)
 
-                    print('pad_token:', args.tokenizer.pad_token)
+                    if args.padding != "do_not_pad" and args.padding_type == "inside": # [PAD] between [CLS][SEP]
+                        text_tokens = args.tokenizer.tokenize(_text)
 
+                        pad_length = max( args.max_length - len(text_tokens), 0 )
+                        for _pad in range(pad_length):
+                            if args.padding_side == 'right':
+                                text_tokens.append( args.tokenizer.pad_token )
+                            elif args.padding_side == 'left':
+                                text_tokens.insert(0, args.tokenizer.pad_token )
+                            elif args.padding_side == 'random':
+                                text_tokens.insert(randrange(len(text_tokens)+1), args.tokenizer.pad_token )
 
-                    pad_length = args.max_length - len(text_tokens)
-                    for _pad in rage(pad_length):
-                        if args.padding_side == 'right':
-                            text_tokens.append( args.tokenizer.pad_token )
-                        else:
-                            text_tokens.insert(0, args.tokenizer.pad_token )
+                        _text = " ".join(text_tokens)
+                        # print('after pad:', _text)
 
-                    _text = text_tokens.join(" ")
-                    print('after pad:', _text)
+                        ids = args.tokenizer(_text, truncation=args.truncation ,max_length=args.max_length,\
+                        return_tensors='pt',add_special_tokens=args.add_special_tokens)
 
-                    ids = args.tokenizer(_text, \
-                    padding=args.padding,truncation=args.truncation ,\
-                    max_length=args.max_length,return_tensors='pt')
-                    
-                    begin = ids
-                    print(torch.tensor(ids['input_ids']).squeeze().shape)
-                    pad_text = [ args.tokenizer.decode([token_id]) for token_id in torch.tensor(ids['input_ids']).squeeze().tolist() ]
-                    print('pad_text:',pad_text)
+                        # for _pos in range(ids['attention_mask'].shape[1]):
+                        #     if ids['input_ids'][0][_pos] == args.tokenizer.pad_token_id:
+                        #         ids['attention_mask'][0][_pos] = 0
 
-                    assert 1>2
-                    
-                    
-                    # print(torch.tensor(ids['input_ids']).shape)
-                    # print(torch.tensor(ids['input_ids']))
-
-                    # ids = args.tokenizer(_text, return_tensors='pt')
+                    else: # [PAD] outside [CLS][SEP]
+                        ids = args.tokenizer(_text, \
+                        padding=args.padding,truncation=args.truncation ,\
+                        max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
+                   
+                    # decode_text = [args.tokenizer.decode([_tok]) for _tok in torch.tensor(ids['input_ids']).squeeze().tolist() ]
+                    # decode_text = " ".join(decode_text)
+                    # print('decode_text:',decode_text)
+                    # print('attention_mask:',torch.tensor(ids['attention_mask']).squeeze().shape, torch.tensor(ids['attention_mask']).squeeze())
+                    # print('token_type_ids:',torch.tensor(ids['token_type_ids']).squeeze().shape, torch.tensor(ids['token_type_ids']).squeeze())
 
                     self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
+                    # avoid performing attention on padding token indices.
                     self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
+                    # Segment token indices to indicate first and second portions of the inputs.
                     if 'token_type_ids' in list(ids.keys()):
                         self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
                     
             elif len( texts.shape) == 2: # input: sentence pairs
                 for _text in texts:
+
+                    # if args.padding != "do_not_pad" and args.padding_type == "inside": # [PAD] between [CLS][SEP]
+                    #     text_tokens_0 = args.tokenizer.tokenize(_text[0])
+                    #     text_tokens_1 = args.tokenizer.tokenize(_text[1])
+
+
+                    #     pad_length = max( args.max_length - len(text_tokens), 0 )
+                    #     for _pad in range(pad_length):
+                    #         if args.padding_side == 'right':
+                    #             text_tokens.append( args.tokenizer.pad_token )
+                    #         elif args.padding_side == 'left':
+                    #             text_tokens.insert(0, args.tokenizer.pad_token )
+                    #         elif args.padding_side == 'random':
+                    #             text_tokens.insert(randrange(len(text_tokens)+1), args.tokenizer.pad_token )
+
+                    #     _text = " ".join(text_tokens)
+                    #     # print('after pad:', _text)
+
+                    #     ids = args.tokenizer(_text, truncation=args.truncation ,max_length=args.max_length,\
+                    #     return_tensors='pt',add_special_tokens=args.add_special_tokens)
+
+                    #     # for _pos in range(ids['attention_mask'].shape[1]):
+                    #     #     if ids['input_ids'][0][_pos] == args.tokenizer.pad_token_id:
+                    #     #         ids['attention_mask'][0][_pos] = 0
+
+                    # else: # [PAD] outside [CLS][SEP]
+                    #     ids = args.tokenizer(_text[0],_text[1], \
+                    #     padding=args.padding,truncation=args.truncation ,\
+                    #     max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
+                   
                     try:
                         ids = args.tokenizer(_text[0],_text[1], \
                         padding=args.padding,truncation=args.truncation ,\
                         max_length=args.max_length,return_tensors='pt')
-                    
                     except:
                         assert 1>2
+
                     self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
                     self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
                     if 'token_type_ids' in list(ids.keys()):

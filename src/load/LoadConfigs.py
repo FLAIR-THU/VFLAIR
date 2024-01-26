@@ -80,21 +80,32 @@ def load_basic_configs(config_file_name, args):
     args.tokenizer = None # for LLM if needed
     args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None
     if args.tokenizer_dict != None:
+        
         args.padding = args.tokenizer_dict['padding'] if('padding' in args.tokenizer_dict) else 0
         # "longest"  "max_length"  "do_not_pad"
+        args.padding_type = args.tokenizer_dict['padding_type'] if('padding_type' in args.tokenizer_dict) else 'outside'
+        # "inside" "outside"
+        args.pad_token = args.tokenizer_dict['pad_token'] if('pad_token' in args.tokenizer_dict) else 'default'
+        # default
         args.truncation = args.tokenizer_dict['truncation'] if('truncation' in args.tokenizer_dict) else "do_not_truncate"
         # "only first"  "only_second"  "longest_first"  "do_not_truncate"
         args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
         args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
+        args.add_special_tokens = args.tokenizer_dict['add_special_tokens'] if('add_special_tokens' in args.tokenizer_dict) else 0
+        if args.add_special_tokens == 0:
+            args.add_special_tokens = False
+        else:
+            args.add_special_tokens = True
+
     else:
         args.padding = 'do_not_pad'
     
     if args.padding == 'do_not_pad':
-        args.pad_info = 'donotpad'
+        args.pad_info = f'donotpad-{str(args.add_special_tokens)}'
     elif args.padding == 'longest':
-        args.pad_info = f'longest-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}'
+        args.pad_info = f'longest-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     else:
-        args.pad_info = f'max-length-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}'
+        args.pad_info = f'maxlength-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     ############## for LLM ###############
 
 

@@ -138,6 +138,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
             attack_result = pd.DataFrame(columns = ['Pad_Length','Length','Precision', 'Recall'])
 
             test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
+            flag = 0
             for origin_input in test_data_loader:
                 batch_input_ids = []
                 batch_label = []
@@ -181,30 +182,34 @@ class VanillaModelInversion_WhiteBox(Attacker):
                 if origin_feature == []:
                     origin_feature = None
                 
-                # real result
+                # real received intermediate result
                 input_shape = origin_data.shape[:2]
                 self.top_vfl.parties[0].input_shape = input_shape
                 self.top_vfl.parties[0].obtain_local_data(origin_data, origin_attention_mask, origin_token_type_ids)
                 self.top_vfl.parties[0].gt_one_hot_label = origin_label
 
-                real_results = self.top_vfl.parties[0].give_pred()
+                # real_results = self.top_vfl.parties[0].give_pred()
+                all_pred_list = self.top_vfl.pred_transmit()
+                real_results = all_pred_list[0]
+
                 batch_received_intermediate = real_results[0].type(torch.float32).to(self.device)
-                batch_received_attention_mask = real_results[2].to(self.device)
+                batch_received_attention_mask = real_results[1].to(self.device)
 
                 # each sample in a batch
                 for _id in range(origin_data.shape[0]):
                     sample_origin_data = origin_data[_id].unsqueeze(0) # [1,sequence length]
-                    # print('sample_origin_data:',sample_origin_data.shape)
-
                     received_intermediate = batch_received_intermediate[_id].unsqueeze(0) # [1,256,768]
                     received_attention_mask = batch_received_attention_mask[_id].unsqueeze(0) # [1,256]
-                    # print('received_intermediate:',received_intermediate.shape)
-                    # print('received_attention_mask:',received_attention_mask.shape)
-
                     # initial guess
                     dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
                     dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
+
+                    if flag == 0:
+                        print('dummy_attention_mask:',dummy_attention_mask.shape,dummy_attention_mask)
+                        print('dummy_local_batch_token_type_ids:',dummy_local_batch_token_type_ids.shape,dummy_local_batch_token_type_ids)
+
+
 
                     bs, seq_length = sample_origin_data.shape
                     if self.args.model_type == "Bert":
@@ -236,11 +241,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                                                             token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)    
                         else:
                             assert 1>2, 'model type not supported'
-                        # def EuclideanDistances(a,b):
-                        #     a = a.reshape(-1) 
-                        #     b = b.reshape(-1) 
-                        #     return F.pairwise_distance(a, b, p=2)#.item()
-                        # _cost = EuclideanDistances(received_intermediate, dummy_intermediate)
+                      
                         crit = nn.CrossEntropyLoss()
                         _cost = crit(dummy_intermediate, received_intermediate)
                         return _cost
@@ -285,7 +286,9 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         predicted_indexs.append(predicted_index)
                     
                     sample_origin_id = sample_origin_data.squeeze().tolist()
-                    clean_sample_origin_id = sample_origin_id
+                    origin_text = self.args.tokenizer.decode(sample_origin_id)
+
+                    clean_sample_origin_id = sample_origin_id.copy()
                     while self.args.tokenizer.pad_token_id in clean_sample_origin_id:
                         clean_sample_origin_id.remove(self.args.tokenizer.pad_token_id) # with no pad
                     
@@ -301,14 +304,22 @@ class VanillaModelInversion_WhiteBox(Attacker):
                             suc_cnt+=1
                     precision = suc_cnt / len(predicted_indexs)
 
-                    print('len:',len(clean_sample_origin_id),'  precision:',precision, ' recall:',recall)
 
                     attack_result.loc[len(attack_result)] = [len(sample_origin_id), len(clean_sample_origin_id), precision,recall ]
 
-                    origin_text = self.args.tokenizer.decode(sample_origin_id)
+                    
                     pred_text = self.args.tokenizer.decode(predicted_indexs)
-                    print('origin_text:',origin_text)
-                    print('pred_text:',pred_text)
+
+                    if flag == 0:
+                        print('len:',len(clean_sample_origin_id),'  precision:',precision, ' recall:',recall)
+                        print('origin_text:',origin_text)
+                        print('pred_text:',pred_text)
+
+                        append_exp_res(self.args.exp_res_path, origin_text)
+                        append_exp_res(self.args.exp_res_path, pred_text)
+                    flag += 1
+                    
+
 
         Precision = attack_result['Precision'].mean()
         Recall = attack_result['Recall'].mean()

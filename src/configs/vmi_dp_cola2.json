@@ -47,7 +47,7 @@
         "name": "GaussianDP",
         "parameters": {
             "party": [0],
-            "dp_strength": 0.001
+            "dp_strength": 0.01
         }
     },
     "attack_list": {

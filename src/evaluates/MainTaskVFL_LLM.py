@@ -204,6 +204,7 @@ class MainTaskVFL_LLM(object):
             # Defense
             if self.args.apply_defense:
                 if (ik in self.args.defense_configs['party']):
+                    # print('Apply DP')
                     pred_detach = self.apply_defense_on_transmission(pred_detach)
             # Communication Process
             pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)

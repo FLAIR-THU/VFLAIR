@@ -9,9 +9,12 @@
     },
     "tokenizer":{
         "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 30,
-        "padding_side": "left"
+        "max_length": 50,
+        "padding_side": "left",
+        "add_special_tokens": 1
     },
     "dataset":{
         "dataset_name": "CoLA",

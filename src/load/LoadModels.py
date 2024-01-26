@@ -293,12 +293,20 @@ def load_basic_models_llm_bert(args,index):
 
     if args.pretrained == 0:
         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
         full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+
+        if args.pad_token == "default":
+            if args.tokenizer.pad_token is None:
+                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                full_bert.config.pad_token_id = pad_id
+            args.pad_token = "default_"+args.tokenizer.pad_token
+        else:
+            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
             full_bert.config.pad_token_id = pad_id
+
         config = full_bert.config #print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
@@ -345,7 +353,7 @@ def load_basic_models_llm_bert(args,index):
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type],do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         if args.task_type == 'QuestionAnswering':
             full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
@@ -431,7 +439,7 @@ def load_basic_models_llm_gpt2(args,index):
     if args.pretrained == 0:
         print('finetune gpt path:',MODEL_PATH[current_model_type])
         args.tokenizer = GPT2Tokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         full_gpt = GPT2Model.from_pretrained(MODEL_PATH[current_model_type])
         if args.tokenizer.pad_token is None:
@@ -482,7 +490,7 @@ def load_basic_models_llm_gpt2(args,index):
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
         
         if args.task_type == 'CausalLM':
             full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
@@ -572,7 +580,7 @@ def load_basic_models_llm_llama(args,index):
 
     if args.pretrained == 0:
         args.tokenizer = LlamaTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         full_llama = LlamaModel.from_pretrained(MODEL_PATH[current_model_type])
         if args.tokenizer.pad_token is None:
@@ -636,7 +644,7 @@ def load_basic_models_llm_llama(args,index):
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side
+        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token#{'pad_token': '[PAD]'})

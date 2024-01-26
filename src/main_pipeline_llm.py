@@ -92,16 +92,17 @@ def evaluate_inversion_attack(args):
             _exp_result, metric_val= vfl.train()
         else:
             _exp_result, metric_val = vfl.inference()
-        
+        main_tack_acc = metric_val
         print(_exp_result)
 
 
         print('=== Begin Attack ===')
         precision, recall = vfl.evaluate_attack()
-        attack_metric_name = 'recover_rate'
-        
+    
         # Save record for different defense method
-        exp_result = f"{args.attack_name}_{args.pad_info}:precision={precision},recall={recall}\n"
+        # exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+        #     (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        exp_result = f"{args.attack_name}|{args.pad_info}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
         return exp_result
