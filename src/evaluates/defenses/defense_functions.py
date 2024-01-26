@@ -518,3 +518,28 @@ def GradPerturb(args, original_object):
     # ######################## defense end ############################
 
     # return gradients
+
+
+DELTAF = {'Bert':81.82, 'GPT2':110.2}
+############ LLM defense ##############
+def LaplaceDP_for_llm(args, original_object):
+    original_object = original_object[0]
+    assert ('epsilon' in args.defense_configs) , "missing defense parameter: 'epsilon'"
+    delta_f = DELTAF[args.model_type]
+    epsilon = args.defense_configs['epsilon']
+    scale = delta_f/epsilon
+    location = 0.0
+
+    new_object = []
+    with torch.no_grad():
+        for ik in range(len(original_object)):
+            if ik == args.k-1:
+                new_object.append(original_object[ik])
+            else:
+                # norm_factor_a = torch.div(torch.max(torch.norm(original_object[ik], dim=1)),
+                #                             threshold + 1e-6).clamp(min=1.0)
+                # add laplace noise
+                dist_a = torch.distributions.laplace.Laplace(location, scale)
+                new_object.append(original_object[ik] + dist_a.sample(original_object[ik].shape).to(args.device))
+        # print("norm of gradients after laplace:", torch.norm(original_object, dim=1), torch.max(torch.norm(original_object, dim=1)))
+    return new_object
