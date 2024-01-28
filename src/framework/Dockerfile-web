@@ -1,0 +1,6 @@
+FROM python:3.8.18
+ADD ./web /web
+WORKDIR /web
+RUN pip install -r requirements.txt
+
+CMD ["python", "--config=./web_config.yml", "/web/main.py"]
