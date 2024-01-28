@@ -1,3 +1,4 @@
+import json
 import sys, os
 sys.path.append(os.pardir)
 import numpy as np
@@ -7,7 +8,7 @@ from party.party import Party
 from party.llm_party import Party as Party_LLM
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
-from load.LoadModels import load_models_per_party
+from load.LoadModels import load_models_per_party, load_models_per_party_new
 
 # class ActiveParty_LLM(Party_LLM):
 #     def __init__(self, args, index):
@@ -193,6 +194,34 @@ class ActiveParty_LLM(Party_LLM):
 
         self.weights_grad_a = None
 
+
+    def prepare_data_loader(self, **kwargs):
+        super().prepare_data_loader(self.args.batch_size, self.need_auxiliary)
+
+    def eval(self, **kwargs):
+        self.global_model.eval()
+
+    def prepare_model(self, args):
+        current_model_type = args.model_list['1']['type']
+        pretrained = args.pretrained
+        task_type = args.task_type
+        model_type = args.model_type
+        current_output_dim = args.model_list['1']['output_dim']
+        is_local = False
+        device = args.device
+        padding_side = args.padding_side
+        model_path = args.model_path
+        main_lr = args.main_lr
+        # prepare model and optimizer
+        (
+            self.local_model,
+            self.local_model_optimizer,
+            self.global_model,
+            self.global_model_optimizer,
+            args.tokenizer,
+            self.encoder
+        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr)
+
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
 
@@ -204,6 +233,46 @@ class ActiveParty_LLM(Party_LLM):
     
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
+
+    def mean(self, last_task_result):
+        result = json.loads(last_task_result)
+        exact_score_list, f1_list = result
+        if self.args.task_type == "QuestionAnswering":
+            exact_score = np.mean(exact_score_list)
+            f1 = np.mean(f1_list)
+            exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
+            return exp_result, exact_score
+        elif self.args.task_type == "SequenceClassification":
+            pass
+            # if self.num_classes == 1:
+            #     self.test_mse = torch.mean(
+            #         (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
+            #
+            #     self.test_pearson_corr = \
+            #     stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            #     self.test_spearmanr_corr = \
+            #     stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            #
+            #     exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
+            #                                                                                               self.test_pearson_corr,
+            #                                                                                               self.test_spearmanr_corr)
+            #     return exp_result, self.test_mse
+            # else:
+            #     self.test_acc = suc_cnt / float(sample_cnt)  # ACC
+            #
+            #     self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
+            #
+            #     exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
+            #     return exp_result, self.test_acc
+
+    def aggregate_remote(self, pred_list):
+        self.global_model.eval()
+        with torch.no_grad():
+            t1 = torch.Tensor(pred_list[0])
+            t2 = torch.Tensor(pred_list[1])
+            t1 = t1.to(self.args.device)
+            t2 = t2.to(self.args.device)
+            return self.aggregate([[t1, t2]])
 
     def aggregate(self, pred_list, test=False):
         if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]

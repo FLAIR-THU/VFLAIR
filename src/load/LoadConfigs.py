@@ -16,8 +16,20 @@ INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
+def load_llm_configs(config_file, args):
+    args, config_dict = do_load_basic_configs(config_file, args)
+    args.tasks = config_dict['tasks']
+    args.device = config_dict['device']
+    args.gpu = config_dict['gpu']
+    args.fl_type = config_dict['fl_type']
+    return args
+
 def load_basic_configs(config_file_name, args):
-    config_file_path = './configs/'+config_file_name+'.json'
+    config_file_path = './configs/' + config_file_name + '.json'
+    args, _ = do_load_basic_configs(config_file_path, args)
+    return args
+
+def do_load_basic_configs(config_file_path, args):
     config_file = open(config_file_path,"r")
     config_dict = json.load(config_file)
     # print(config_dict)
@@ -304,7 +316,7 @@ def load_basic_configs(config_file_name, args):
     else:
         print('===== No Attack ======')
     
-    return args   
+    return args, config_dict
 
 def load_attack_configs(config_file_name, args, index):
     '''

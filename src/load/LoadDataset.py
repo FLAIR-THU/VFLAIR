@@ -48,6 +48,8 @@ TABULAR_DATA = ['breast_cancer_diagnose', 'diabetes', 'adult_income', 'criteo', 
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20', 'cola_public', 'SST-2', 'STS-B', 'MRPC', 'MNLI', 'QNLI', 'QQP', 'WNLI', 'RTE', 'MMLU']
 
+def dataset_partition_llm_new(args, dst, half_dim):
+    return dataset_partition_llm(args, -1, dst, half_dim)
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
@@ -1918,16 +1920,19 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'SQuAD':
         print(' === SQuAD === ')
-        # data_path = DATA_PATH + '/SQuAD'
-        # squad_dataset = load_dataset(data_path)
+        if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
+            train_set_file = args.dataset_split['train_set_file']
+            test_set_file = args.dataset_split['test_set_file']
+        else:
+            train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
+            test_set_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
 
         max_seq_length = args.max_seq_length
         doc_stride = args.doc_stride
         max_query_length = args.max_query_length
 
         ## train
-        data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
-        train_examples = standard_read_squad_examples(input_file = data_file, is_training=True)
+        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
@@ -1943,10 +1948,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = labels
 
         ## test
-        # dst = squad_dataset['validation']
-        # test_examples = read_squad_examples(dst, is_training=True)[:10]
-        data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file = data_file, is_training=False)
+        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=False)

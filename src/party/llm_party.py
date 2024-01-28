@@ -170,6 +170,20 @@ class Party(object):
             self.global_model_optimizer
         ) = load_models_per_party(args, index)
 
+    def label_to_one_hot(self, target, num_classes=10):
+        target = target.long()
+        # print('label_to_one_hot:', target, type(target),type(target[0]))
+        try:
+            _ = target.size()[1]
+            # print("use target itself", target.size())
+            onehot_target = target.type(torch.float32).to(self.device)
+        except:
+            target = torch.unsqueeze(target, 1).to(self.device)
+            # print("use unsqueezed target", target.size(),type(target))
+
+            onehot_target = torch.zeros(target.size(0), num_classes, device=self.device)
+            onehot_target.scatter_(1, target, 1)
+        return onehot_target
 
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
