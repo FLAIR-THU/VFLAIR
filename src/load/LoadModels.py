@@ -238,7 +238,9 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                             [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                             {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
 
-        if 'adversarial' in args.defense_name.lower(): # for adversarial training
+        # for adversarial training 
+        adversarial_model = None
+        if 'adversarial' in args.defense_name.lower(): 
             # add adversarial model for local model
             if not 'party' in args.defense_configs:
                 args.defense_configs['party'] = [0]
@@ -252,7 +254,8 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 model_name = 'Adversarial_MLP2'
             else:
                 model_name = args.defense_configs['model']
-            print(model_name)
+            print(model_name)  
+
             if index in args.defense_configs['party']:
                 # assert args.parties[index].train_attribute != None, "[Error] no attribute for adversarial"
                 # add adversarial model to the the defense party=index
@@ -267,6 +270,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                             [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
                             {'params': local_model.adversarial_model.parameters(), 'lr': adversarial_lr}])
             
+
         if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
             # print("CAE in defense_name,", args.defense_name)
             if index == args.k-1:
@@ -284,14 +288,77 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
                 encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
                 args.encoder = encoder
-    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer, None, None
+
+
+
+def load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer):
+    print('Load Defense models')
+    # no defense at all, set some variables as None
+    args.encoder = None
+    adversarial_model = None
+    adversarial_model_optimizer = None
+
+    # some defense need model, add here
+    if args.apply_defense == True:
+        # for adversarial training 
+        if 'adversarial' in args.defense_name.lower(): 
+            # add adversarial model for local model
+            if not 'party' in args.defense_configs:
+                args.defense_configs['party'] = [0]
+                print('[warning] default passive party selected for applying adversarial training')
+            
+            if not ('adversarial_model_lr' in args.defense_configs):
+                adversarial_model_lr = args.main_lr  
+                print('[warning] default hyper-parameter mid_lr selected for applying MID')
+            else :
+                adversarial_model_lr = args.defense_configs['adversarial_model_lr']
+            
+            if not ('adversarial_model' in args.defense_configs):
+                model_name = 'Adversarial_Mapping'
+            else:
+                model_name = args.defense_configs['adversarial_model']
+            print(model_name)  
+
+            if index in args.defense_configs['party']:
+                seq_length = args.defense_configs['seq_length']
+                embed_dim = args.defense_configs['embed_dim']
+                adversarial_model = globals()[model_name](seq_length, embed_dim).to(args.device)
+                # local_model = Local_Adversarial_combined_model_LLM(local_model,adversarial_model)
+                # local_model = local_model.to(args.device)
+                # update optimizer
+                adversarial_model_optimizer = torch.optim.Adam(
+                            [{'params': adversarial_model.parameters(), 'lr': adversarial_model_lr}])
+
+
+        if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
+            # print("CAE in defense_name,", args.defense_name)
+            if index == args.k-1:
+                # only active party can have encoder and decoder for CAE
+                assert 'model_path' in args.defense_configs, "[error] no CAE model path given"
+                if not 'input_dim' in args.defense_configs:
+                    args.defense_configs['input_dim'] = args.num_classes
+                    print('[warning] default input_dim selected as num_classes for applying CAE')
+                if not 'encode_dim' in args.defense_configs:
+                    args.defense_configs['encode_dim'] = 2 + 6 * args.defense_configs['input_dim']
+                    print('[warning] default encode_dim selected as 2+6*input_dim for applying CAE')
+                if args.num_classes > 20:
+                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20, encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                else:
+                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
+                args.encoder = encoder
+    
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
+ 
 
 
 def load_basic_models_llm_bert(args,index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
 
-    if args.pretrained == 0:
+    if args.pretrained == 0: # finetune your own LLM based on base models(bert-base-uncased)
         args.tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
         full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
@@ -328,6 +395,7 @@ def load_basic_models_llm_bert(args,index):
             # global part of bert(frozen)
             global_bert = GlobalBertModel(full_bert,1, model_type = args.model_type)
             
+            # finetune from checkpoint / base models
             # add Classification Layer(trainable)
             if args.task_type == "SequenceClassification":
                 global_model = BertForSequenceClassification_forfinetune(global_bert, current_output_dim)
@@ -342,15 +410,17 @@ def load_basic_models_llm_bert(args,index):
             # Freeze Backbone
             for param in global_model.bert.parameters():
                 param.requires_grad = False
-            # Trainable Part for finetuning
-            if args.model_path != "":
-                global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
-            for param in global_model.trainable_layer.parameters():
+            
+            # # Trainable Part for finetuning
+            # if args.model_path != "":
+            #     global_model.head_layer.load_state_dict(torch.load(args.model_path))
+            for param in global_model.head_layer.parameters():
                 param.requires_grad = True
             
             global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
-    else:
+            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+    
+    else: # load third party pretrained LLM
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type],do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
@@ -414,22 +484,27 @@ def load_basic_models_llm_bert(args,index):
             # Freeze Backbone
             for param in global_model.bert.parameters():
                 param.requires_grad = False
-            # Classifier already pretrained
-            if args.task_type == "QuestionAnswering":
-                for param in global_model.qa_outputs.parameters():
-                    param.requires_grad = False
-            elif args.task_type == "SequenceClassification":
-                for param in global_model.classifier.parameters():
-                    param.requires_grad = False
-            elif args.task_type == "CausalLM":
-                for param in global_model.lm_head.parameters():
-                    param.requires_grad = False
-            else:
-                assert 1>2,"task type not supported"
+            
+            # Head Layer Trainable/Freeze
+            print('args.head_layer_trainable:',args.head_layer_trainable)
+            for param in global_model.head_layer.parameters():
+                param.requires_grad = args.head_layer_trainable
+            # if args.task_type == "QuestionAnswering":
+            #     for param in global_model.head_layer.parameters():
+            #         param.requires_grad = args.head_layer_trainable
+            # elif args.task_type == "SequenceClassification":
+            #     for param in global_model.classifier.parameters():
+            #         param.requires_grad = args.head_layer_trainable
+            # elif args.task_type == "CausalLM":
+            #     for param in global_model.lm_head.parameters():
+            #         param.requires_grad = args.head_layer_trainable
+            # else:
+            #     assert 1>2,"task type not supported"
+            
             
             global_model = global_model.to(args.device)
             global_model_optimizer = None
-    
+
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 def load_basic_models_llm_gpt2(args,index):
@@ -482,11 +557,11 @@ def load_basic_models_llm_gpt2(args,index):
                 param.requires_grad = False
             # Trainable Part for finetuning
             if args.model_path != "":
-                global_model.trainable_layer.load_state_dict(torch.load(args.model_path))
-            for param in global_model.trainable_layer.parameters():
+                global_model.head_layer.load_state_dict(torch.load(args.model_path))
+            for param in global_model.head_layer.parameters():
                 param.requires_grad = True
             global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.trainable_layer.parameters()), lr=args.main_lr)
+            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
@@ -550,24 +625,27 @@ def load_basic_models_llm_gpt2(args,index):
             # Freeze Backbone
             for param in global_model.transformer.parameters():
                 param.requires_grad = False
+            
             # Classifier already pretrained
-            if args.task_type == "CausalLM":
-                if args.model_path != "":
-                    global_model.lm_head.load_state_dict(torch.load(args.model_path))
-                for param in global_model.lm_head.parameters():
-                    param.requires_grad = False
-            elif args.task_type == "QuestionAnswering":
-                if args.model_path != "":
-                    global_model.lm_head.load_state_dict(torch.load(args.model_path))
-                for param in global_model.qa_outputs.parameters():
-                    param.requires_grad = False
-            elif args.task_type == "SequenceClassification":
-                if args.model_path != "":
-                    global_model.score.load_state_dict(torch.load(args.model_path))
-                for param in global_model.score.parameters():
-                    param.requires_grad = False
-            else:
-                assert 1>2, "task type not supported"
+            for param in global_model.head_layer.parameters():
+                param.requires_grad = args.head_layer_trainable
+            # if args.task_type == "CausalLM":
+            #     if args.model_path != "":
+            #         global_model.lm_head.load_state_dict(torch.load(args.model_path))
+            #     for param in global_model.lm_head.parameters():
+            #         param.requires_grad = False
+            # elif args.task_type == "QuestionAnswering":
+            #     if args.model_path != "":
+            #         global_model.lm_head.load_state_dict(torch.load(args.model_path))
+            #     for param in global_model.qa_outputs.parameters():
+            #         param.requires_grad = False
+            # elif args.task_type == "SequenceClassification":
+            #     if args.model_path != "":
+            #         global_model.score.load_state_dict(torch.load(args.model_path))
+            #     for param in global_model.score.parameters():
+            #         param.requires_grad = False
+            # else:
+            #     assert 1>2, "task type not supported"
 
             global_model = global_model.to(args.device)
             global_model_optimizer = None
@@ -628,16 +706,18 @@ def load_basic_models_llm_llama(args,index):
                 param.requires_grad = False
 
             # Trainable Part for finetuning
-            if args.task_type == "CausalLM":
-                if args.model_path != "":
-                    global_model.lm_head.load_state_dict(torch.load(args.model_path))
-                for param in global_model.lm_head.parameters():
-                    param.requires_grad = True
-            elif args.task_type == "SequenceClassification":
-                if args.model_path != "":
-                    global_model.score.load_state_dict(torch.load(args.model_path))
-                for param in global_model.score.parameters():
-                    param.requires_grad = True
+            for param in global_model.head_layer.parameters():
+                param.requires_grad = True
+            # if args.task_type == "CausalLM":
+            #     if args.model_path != "":
+            #         global_model.lm_head.load_state_dict(torch.load(args.model_path))
+            #     for param in global_model.lm_head.parameters():
+            #         param.requires_grad = True
+            # elif args.task_type == "SequenceClassification":
+            #     if args.model_path != "":
+            #         global_model.score.load_state_dict(torch.load(args.model_path))
+            #     for param in global_model.score.parameters():
+            #         param.requires_grad = True
             
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.score.parameters()), lr=args.main_lr)
@@ -740,12 +820,13 @@ def load_models_per_party(args, index):
     val_model = None
     if current_model_type in LLM_supported:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer 
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
         # important
-    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
 if __name__ == '__main__':

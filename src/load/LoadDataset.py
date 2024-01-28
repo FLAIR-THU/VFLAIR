@@ -1447,7 +1447,7 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-    elif args.dataset == 'cola_public':
+    elif args.dataset == 'CoLA':
         text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
         df = pd.read_csv(text_path, delimiter='\t', header=None,
                          names=['sentence_source', 'label', 'label_notes', 'sentence'])

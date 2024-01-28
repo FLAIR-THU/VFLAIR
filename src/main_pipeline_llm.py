@@ -16,10 +16,7 @@ import torch
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
-from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFL_LLM import *
-from evaluates.MainTaskVFLwithBackdoor import *
-from evaluates.MainTaskVFLwithNoisySample import *
 from utils.basic_functions import append_exp_res
 
 from load.LoadConfigs import INVERSION
@@ -85,15 +82,22 @@ def evaluate_inversion_attack(args):
         
         if args.basic_vfl != None:
             vfl = args.basic_vfl
+            main_tack_acc = args.main_acc_noattack
         else:
             vfl = MainTaskVFL_LLM(args)
+            if args.pipeline == 'pretrained':
+                _exp_result, metric_val= vfl.train()
+            elif args.pipeline == 'finetune':
+                _exp_result, metric_val = vfl.inference()
+            main_tack_acc = metric_val
+            print(_exp_result)
+            
+
+        # if args.pretrained == 0: # finetune
+        #     _exp_result, metric_val= vfl.train()
+        # else:
+        #     _exp_result, metric_val = vfl.inference()
         
-        if args.pretrained == 0: # finetune
-            _exp_result, metric_val= vfl.train()
-        else:
-            _exp_result, metric_val = vfl.inference()
-        main_tack_acc = metric_val
-        print(_exp_result)
 
 
         print('=== Begin Attack ===')
@@ -206,10 +210,16 @@ if __name__ == '__main__':
 
             
             # vanilla
-            if args.pretrained == 1:
+            # if args.pretrained == 1:
+            #     args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
+            # else:
+            #     args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
+            
+            if args.pipeline == 'pretrained':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
-            else:
+            elif args.pipeline == 'finetune':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
+
       
             # with attack
             if args.inversion_list != []:

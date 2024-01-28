@@ -205,9 +205,9 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     dummy_attention_mask = received_attention_mask.to(self.device)
                     dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
 
-                    if flag == 0:
-                        print('dummy_attention_mask:',dummy_attention_mask.shape,dummy_attention_mask)
-                        print('dummy_local_batch_token_type_ids:',dummy_local_batch_token_type_ids.shape,dummy_local_batch_token_type_ids)
+                    # if flag == 0:
+                    #     print('dummy_attention_mask:',dummy_attention_mask.shape,dummy_attention_mask)
+                    #     print('dummy_local_batch_token_type_ids:',dummy_local_batch_token_type_ids.shape,dummy_local_batch_token_type_ids)
 
 
 
@@ -318,8 +318,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         append_exp_res(self.args.exp_res_path, origin_text)
                         append_exp_res(self.args.exp_res_path, pred_text)
                     flag += 1
-                    
-
 
         Precision = attack_result['Precision'].mean()
         Recall = attack_result['Recall'].mean()
