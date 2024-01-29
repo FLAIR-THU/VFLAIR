@@ -175,10 +175,10 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 args.defense_configs['lambda'] = 0.001
                 print('[warning] default hyper-parameter lambda selected for applying MID')
             if not ('lr' in args.defense_configs):
-                mid_lr = args.main_lr  
+                mid_lr = args.main_lr
                 print('[warning] default hyper-parameter mid_lr selected for applying MID')
             else :
-                mid_lr = args.defense_configs['lr'] 
+                mid_lr = args.defense_configs['lr']
             
             print(f"mid defense parties: {args.defense_configs['party']}")
             if index in args.defense_configs['party']:
@@ -235,7 +235,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                         # assert 1>2
                     else:
                         local_model_optimizer = torch.optim.Adam(
-                            [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},              
+                            [{'params': local_model.local_model.parameters(), 'lr': args.main_lr},
                             {'params': local_model.mid_model.parameters(), 'lr': mid_lr}])
 
         if 'adversarial' in args.defense_name.lower(): # for adversarial training
@@ -738,10 +738,10 @@ def load_basic_models_llm_llama(args,index):
     
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr):
+def load_basic_models_llm_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token):
     if model_type in ['Bert', 'Albert', 'Roberta']:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr
+            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token
         )
     elif model_type in ['GPT2']:
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
@@ -765,12 +765,12 @@ def load_basic_models_llm(args,index):
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
-def load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr):
+def load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token):
     if current_model_type in LLM_supported:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_new(
-            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr
+            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token
         )
-        #local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        #args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
 
     encoder = None
     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer, encoder

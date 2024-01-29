@@ -149,7 +149,7 @@ class Party(object):
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size):
+    def prepare_data_loader(self, batch_size, need_auxiliary):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
@@ -157,7 +157,7 @@ class Party(object):
 
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # , 
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
-        if self.args.need_auxiliary == 1 and self.aux_dst != None:
+        if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
 
     def prepare_model(self, args, index):

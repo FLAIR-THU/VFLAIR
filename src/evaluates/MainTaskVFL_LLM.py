@@ -277,6 +277,27 @@ class MainTaskVFL_LLM(object):
         global_loss = self.parties[0].cal_loss() 
         self.communication_cost += get_size_of(global_loss)
         self.parties[self.k-1].global_loss = global_loss
+
+    def qa_inference(self):
+        # QA
+        exact_score_list = []
+        f1_list = []
+
+        for ik in range(self.k - 1):
+            # Passive data local predict
+            exact_scores, f1s = self.parties[ik].predict()
+            exact_score_list.extend(exact_scores)
+            f1_list.extend(f1s)
+
+        exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
+
+        self.test_acc = exact_score
+
+        self.final_state = self.save_state(False)
+        self.final_state.update(self.save_party_data())
+
+        return exp_result, self.test_acc
+
     
     def inference(self, inference_data = 'test'):
         # current_model_type = self.args.model_list['0']['type']
@@ -310,6 +331,9 @@ class MainTaskVFL_LLM(object):
 
         scores = []
         targets = []
+
+        if self.args.task_type == "QuestionAnswering":
+            return self.qa_inference()
 
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)] # passive party's loaders
@@ -509,154 +533,12 @@ class MainTaskVFL_LLM(object):
 
                         sample_cnt += predict_label.shape[0]
                         suc_cnt += torch.sum(predict_label == actual_label).item()
-                    
-                elif self.args.task_type == "QuestionAnswering":
-                    start_logits = test_logit.start_logits
-                    end_logits = test_logit.end_logits
 
-                    n_best_size = self.args.n_best_size
-                    start_indexes =[ _get_best_indexes(_logits, n_best_size) for _logits in start_logits ]
-                    end_indexes =[ _get_best_indexes(_logits, n_best_size) for _logits in end_logits ]
-
-                    for i in range(start_logits.shape[0]):
-                        # for each sample in this batch
-                        _start_logits = start_logits[i]
-                        _end_logits = end_logits[i]
-                        _start_indexes = start_indexes[i]
-                        _end_indexes = end_indexes[i]
-
-                        ############ Gold ################                        
-                        feature = parties_data[0][4][i]
-                        # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
-                        feature_tokens = [_token[0] for _token in feature["tokens"]]
-
-                        gold_start_indexs,gold_end_indexs = gt_one_hot_label[i] # the i'th sample in a batch
-                        if len(gold_start_indexs.shape) == 0:
-                            gold_start_indexs = gold_start_indexs.unsqueeze(0)
-                        if len(gold_end_indexs.shape) == 0:
-                            gold_end_indexs = gold_end_indexs.unsqueeze(0)
-
-                        gold_ans = [] # gold answers for this sample
-                        for _i in range(len(gold_start_indexs)):
-                            gold_start_index = int(gold_start_indexs[_i])
-                            gold_end_index = int(gold_end_indexs[_i])
-                            gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
-                            gold_ans_text = normalize_answer(gold_ans_text)
-                            gold_ans.append(gold_ans_text)
-                        # print('gold_ans:',gold_ans,feature["orig_answer_text"])
-
-                        ############ Pred ################
-                        _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                            "PrelimPrediction",
-                            ["start_index", "end_index", "start_logit", "end_logit"])
-                        _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                            "NbestPrediction", ["text", "start_logit", "end_logit"])
-                        
-                        # iterate through all possible start-end pairs
-                        prelim_predictions = []
-                        for start_index in _start_indexes:
-                            for end_index in _end_indexes:
-                                # We could hypothetically create invalid predictions, e.g., predict
-                                # that the start of the span is in the question. We throw out all
-                                # invalid predictions.
-                                if start_index >= len(feature["tokens"]):
-                                    continue
-                                if end_index >= len(feature["tokens"]):
-                                    continue
-                                if start_index not in feature["token_to_orig_map"]:
-                                    continue
-                                if end_index not in feature["token_to_orig_map"]:
-                                    continue
-                                if not feature["token_is_max_context"].get(start_index, False):
-                                    continue
-                                if end_index < start_index:
-                                    continue
-                                length = end_index - start_index + 1
-                                if length > self.args.max_answer_length:
-                                    continue
-
-                                prelim_predictions.append(
-                                    _PrelimPrediction(
-                                        start_index=start_index,
-                                        end_index=end_index,
-                                        start_logit=_start_logits[start_index],
-                                        end_logit=_end_logits[end_index]))
-
-                        # Iterate through Sorted Predictions
-                        prelim_predictions = sorted(
-                                prelim_predictions,
-                                key=lambda x: (x.start_logit + x.end_logit),
-                                reverse=True)
-                        exact_score = 0
-                        f1 = 0
-                        # Get n best prediction text
-                        nbest = []       
-                        n_best_size = min(n_best_size,len(prelim_predictions))
-                        for _id in range(n_best_size):
-                            start_index = prelim_predictions[_id].start_index
-                            end_index = prelim_predictions[_id].end_index
-
-                            pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
-                            pred_ans_text = normalize_answer(pred_ans_text)
-
-                            nbest.append(
-                                _NbestPrediction(
-                                    text=pred_ans_text,
-                                    start_logit=prelim_predictions[_id].start_logit,
-                                    end_logit=prelim_predictions[_id].end_logit))
-
-                        # Get best predicted answer
-                        total_scores = []
-                        best_non_null_entry = None
-
-                        if self.args.metric_type == "best_pred":
-                            for entry in nbest:
-                                total_scores.append(entry.start_logit + entry.end_logit)
-                                if not best_non_null_entry:
-                                    if entry.text:
-                                        best_non_null_entry = entry
-                            pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                            # Calculate exact_score/f1
-                            # print('best pred:',pred_ans_text)
-                            exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans) 
-                            f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans) 
-                            # print('this batch:',exact_score,f1)
-                            exact_score_list.append(exact_score)
-                            f1_list.append(f1)
-                        elif self.args.metric_type == "n_best":
-                            for entry in nbest:
-                                total_scores.append(entry.start_logit + entry.end_logit)
-                                if not best_non_null_entry:
-                                    if entry.text:
-                                        best_non_null_entry = entry
-                                pred_ans_text = entry.text # print('best pred:',pred_ans_text)
-                                # Calculate exact_score/f1
-                                exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans) )
-                                f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans) )
-                            # print('this batch:',exact_score,f1)
-                            exact_score_list.append(exact_score)
-                            f1_list.append(f1)
-                        else:
-                            assert 1>2, f"{self.args.metric_type} not provided!"
-                     
                 else:
                     assert 1>2, "task_type not supported"
                 
                 del(parties_data) # remove from cuda
                 # break
-            
-            if self.args.task_type == "QuestionAnswering":
-                self.exact_score = np.mean(exact_score_list)
-                self.f1 = np.mean(f1_list)
-                exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(self.exact_score, self.f1)
-                print(exp_result)
-
-                self.test_acc = self.exact_score
-
-                self.final_state = self.save_state(False) 
-                self.final_state.update(self.save_party_data()) 
-                
-                return exp_result , self.test_acc
 
             if self.args.task_type == "SequenceClassification":
                 if self.num_classes == 1:

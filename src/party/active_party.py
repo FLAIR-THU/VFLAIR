@@ -175,11 +175,16 @@ from load.LoadModels import load_models_per_party, load_models_per_party_new
 class ActiveParty_LLM(Party_LLM):
     def __init__(self, args, index):
         print('==== ActiveParty_LLM ======')
+        if args.device == 'cuda':
+            cuda_id = args.gpu
+            torch.cuda.set_device(cuda_id)
+            print(f'running on cuda{torch.cuda.current_device()}')
+
         super().__init__(args, index)
         self.name = "server#" + str(index + 1)
         self.criterion = cross_entropy_for_onehot
-        self.encoder = args.encoder
-        
+        # self.encoder = args.encoder
+
         self.train_index = None  #args.idx_train
         self.test_index = None #args.idx_test
         
@@ -196,12 +201,12 @@ class ActiveParty_LLM(Party_LLM):
 
 
     def prepare_data_loader(self, **kwargs):
-        super().prepare_data_loader(self.args.batch_size, self.need_auxiliary)
+        super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
 
     def eval(self, **kwargs):
         self.global_model.eval()
 
-    def prepare_model(self, args):
+    def prepare_model(self, args, index):
         current_model_type = args.model_list['1']['type']
         pretrained = args.pretrained
         task_type = args.task_type
@@ -212,6 +217,7 @@ class ActiveParty_LLM(Party_LLM):
         padding_side = args.padding_side
         model_path = args.model_path
         main_lr = args.main_lr
+        pad_token = args.pad_token
         # prepare model and optimizer
         (
             self.local_model,
@@ -220,7 +226,7 @@ class ActiveParty_LLM(Party_LLM):
             self.global_model_optimizer,
             args.tokenizer,
             self.encoder
-        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr)
+        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token)
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
@@ -236,6 +242,9 @@ class ActiveParty_LLM(Party_LLM):
 
     def mean(self, last_task_result):
         result = json.loads(last_task_result)
+        self.mean_local(result)
+
+    def mean_local(self, result):
         exact_score_list, f1_list = result
         if self.args.task_type == "QuestionAnswering":
             exact_score = np.mean(exact_score_list)
