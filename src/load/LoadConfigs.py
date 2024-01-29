@@ -88,6 +88,9 @@ def do_load_basic_configs(config_file_path, args):
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
 
     ############## for LLM ###############
+    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else "pretrained"
+    # pretrained finetune
+
     # Tokenizer
     args.tokenizer = None # for LLM if needed
     args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None
@@ -147,7 +150,14 @@ def do_load_basic_configs(config_file_path, args):
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    args.model_type = config_model_dict[str(ik)]['model_type'] # Overall Model Type
+                    args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
+                    args.head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
+                    
+                    if args.head_layer_trainable == 1:
+                        args.head_layer_trainable = True
+                    else:
+                        args.head_layer_trainable = False
+                    
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']
@@ -159,12 +169,6 @@ def do_load_basic_configs(config_file_path, args):
                         args.model_path = ""
                         args.pretrained = 0
                 else:
-                    # if 'path' in config_model_dict[str(ik)]:
-                    #     model_type_name = config_model_dict[str(ik)]['path'].split('/')[-2]
-                    #     temp = {'type':model_type_name, 'path':config_model_dict[str(ik)]['path']}
-                    #     model_dict[str(ik)] = temp
-                    # else:
-                    #     model_dict[str(ik)] = default_dict_element
                     model_dict[str(ik)] = default_dict_element
             else:
                 model_dict[str(ik)] = default_dict_element
@@ -239,8 +243,12 @@ def do_load_basic_configs(config_file_path, args):
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
-            args.defense_param = args.defense_configs['dp_strength']
-            args.defense_param_name = 'dp_strength'
+            if 'dp_strength' in args.defense_configs:
+                args.defense_param = args.defense_configs['dp_strength']
+                args.defense_param_name = 'dp_strength'
+            else:
+                args.defense_param = args.defense_configs['epsilon']
+                args.defense_param_name = 'epsilon'
         elif args.defense_name == "GradientSparsification":
             args.defense_param = args.defense_configs['gradient_sparse_rate']
             args.defense_param_name = 'gradient_sparse_rate'

@@ -18,6 +18,56 @@ from evaluates.defenses.defense_api import apply_defense
 from dataset.party_dataset import ActiveDataset
 from utils.communication_protocol_funcs import compress_pred
 
+from models.imagined_adversary_models import *
+
+# Imagined Adversary
+class Adversary(nn.Module):
+    '''
+    input --- intermediate : bs, seq_length, 768(embed_dim)
+    output --- embedding : bs, seq_length, 768(embed_dim)
+    '''
+    def __init__(self, seq_length, embed_dim):
+        super(Adversary,self).__init__()
+        # print('Adversary init:',seq_length, embed_dim)
+        self.seq_length = seq_length
+        self.embed_dim = embed_dim
+
+        self.net1 = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(seq_length*embed_dim, 80),
+            nn.LayerNorm(80),
+            nn.ReLU(),
+        )
+
+        self.net2 = nn.Sequential(
+            nn.Linear(80, 80),
+            nn.LayerNorm(80),
+            nn.ReLU()
+        )
+
+        self.net3 = nn.Sequential(
+            nn.Linear(80, seq_length*embed_dim),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        origin_shape = x.shape
+        # print('x:',x.shape,origin_shape)
+
+        x = torch.tensor(x,dtype=torch.float32)
+        x1 = self.net1(x)
+        # print('x1:',x1.shape)
+
+        x2 = self.net2(x1)
+        # print('x2:',x2.shape)
+
+        x3 = self.net3(x2)
+        # print('x3:',x3.shape)
+
+        x3 = x3.reshape(origin_shape)
+        return x3
+
+
 class PassiveParty(Party):
     def __init__(self, args, index):
         super().__init__(args, index)
@@ -71,6 +121,7 @@ class PassiveParty_LLM(Party_LLM):
         model_path = args.model_path
         main_lr = args.main_lr
         pad_token = args.pad_token
+        head_layer_trainable = args.head_layer_trainable
         # prepare model and optimizer
         (
             self.local_model,
@@ -80,7 +131,25 @@ class PassiveParty_LLM(Party_LLM):
             args.tokenizer,
             self.encoder
         ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim,
-                                      is_local, device, padding_side, model_path, main_lr, pad_token)
+                                      is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
+
+        # prepare imagined adversary --  for adversarial training
+        if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
+            print('imagined_adversary init')
+            seq_length = self.args.defense_configs['seq_length']
+            embed_dim = self.args.defense_configs['embed_dim']
+
+            imagined_adversary_model_name = self.args.defense_configs['imagined_adversary']
+            self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(self.args.device)
+            #Adversary(seq_length, embed_dim).to(self.args.device)
+            #
+
+            self.imagined_adversary_lr = self.args.defense_configs['imagined_adversary_lr']
+            self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
+
+            self.adversary_crit = nn.CrossEntropyLoss()
+            self.adversary_lambda = self.args.defense_configs['lambda']
+
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index) # Party_llm's prepare_data
@@ -97,14 +166,25 @@ class PassiveParty_LLM(Party_LLM):
     def receive_pred(self, pred, giver_index):
         self.pred_received[giver_index] = pred
 
+    def cal_global_gradient(self):
+        if self.args.task_type == 'QuestionAnswering':
+            _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
+            _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
+            global_gradients = _gradients_end+_gradients_start
+            global_gradients_clone = global_gradients[0].detach().clone()
+            global_gradients_clone = global_gradients_clone/2
+            self.global_gradients = global_gradients_clone
+        else:
+            global_gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
+            global_gradients_clone = global_gradients[0].detach().clone()
+            self.global_gradients = global_gradients_clone
+        return global_gradients_clone
+
     def cal_loss(self, test=False):
         gt_one_hot_label = self.gt_one_hot_label # label
         pred =  self.global_pred # logits
 
-        # print('== In cal_loss ==')
-        # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label )
-        # print('pred:',type(pred),pred.shape )
-
+        # ########### Normal Loss ###############
         if self.args.task_type == 'SequenceClassification':
             # loss = self.criterion(pred, gt_one_hot_label)
             pooled_logits = pred
@@ -185,29 +265,46 @@ class PassiveParty_LLM(Party_LLM):
             start_loss = loss_fct(start_logits, golden_start_positions)
             end_loss = loss_fct(end_logits, golden_end_positions)
             loss = (start_loss + end_loss) / 2
-
         else:
             assert 1>2 , 'Task type not supported'
         
+        self.global_loss = loss
 
         # ########### Defense on Loss ###############
-        # active mid model loss
-        if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
-            # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
-            assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
-            for mid_loss in self.global_model.mid_loss_list:
-                loss = loss + mid_loss
-            self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
-        # active dcor loss
-        elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
-            # print('dcor active defense')
-            self.distance_correlation_lambda = self.args.defense_configs['lambda']
-            # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
-            for ik in range(self.args.k-1):
-                loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
+        if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
+
+            intermediate = self.local_pred # pred after adversarial model: bs, seq, embed_dim768
+            adversary_recovered_embedding = self.imagined_adversary(intermediate)
+            real_embedding =  self.local_model.embedding_output
+
+            self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / intermediate.shape[0]
+            mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2)
+
+
+
+            # renew global loss function
+            self.global_loss = self.global_loss + self.adversary_lambda * mapping_distance - self.adversary_attack_loss
+
+            # loss used to update adversarial model mapping
+            self.adversarial_model_loss =   self.adversary_lambda * mapping_distance  - self.adversary_attack_loss
+        # # active mid model loss
+        # if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+        #     # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
+        #     assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
+        #     for mid_loss in self.global_model.mid_loss_list:
+        #         loss = loss + mid_loss
+        #     self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+        # # active dcor loss
+        # elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
+        #     # print('dcor active defense')
+        #     self.distance_correlation_lambda = self.args.defense_configs['lambda']
+        #     # loss = criterion(pred, gt_one_hot_label) + self.distance_correlation_lambda * torch.mean(torch.cdist(pred_a, gt_one_hot_label, p=2))
+        #     for ik in range(self.args.k-1):
+        #         loss += self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(pred_list[ik], gt_one_hot_label)) # passive party's loss
+
         # ########### Defense on Loss ###############
-        # print('cal loss:',loss)
-        return loss
+
+        return self.global_loss
 
     def gradient_calculation(self, pred_list, loss):
         pred_gradients_list = []
@@ -245,45 +342,83 @@ class PassiveParty_LLM(Party_LLM):
             eta_t = eta_0/(np.sqrt(i_epoch+1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
-        
-                
-    def global_backward(self):
 
-        if self.global_model_optimizer != None: 
-            # active party with trainable global layer
-            _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
-            _gradients_clone = _gradients[0].detach().clone()
-            
-            # if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
-            #     return # no need to update
+    def local_backward(self):
+        print('passive local backward')
 
-            # update global model
-            self.global_model_optimizer.zero_grad()
-            parameters = []          
-            if (self.args.apply_mid == True) and (self.index in self.args.defense_configs['party']): 
-                # mid parameters
-                for mid_model in self.global_model.mid_model_list:
-                    parameters += list(mid_model.parameters())
-                # trainable layer parameters
-                if self.args.apply_trainable_layer == True:
-                    parameters += list(self.global_model.global_model.parameters())
-                
-                # load grads into parameters
-                weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
-                for w, g in zip(parameters, weights_grad_a):
-                    if w.requires_grad:
-                        w.grad = g.detach()
-                        
-            else:
-                # trainable layer parameters
-                if self.args.apply_trainable_layer == True:
-                    # load grads into parameters
-                    weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
-                    for w, g in zip(self.global_model.parameters(), weights_grad_a):
-                        if w.requires_grad:
-                            w.grad = g.detach()
-                # non-trainabel layer: no need to update
-            self.global_model_optimizer.step()
+        self.num_local_updates += 1 # another update
+
+        # if self.local_model_optimizer != None:  # update local model
+
+        # adversarial training : update adversarial model
+        if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+            self.imagined_adversary_optimizer.zero_grad()
+
+            self.adversarial_model_optimizer.zero_grad()
+
+            self.adversarial_model_loss.backward(retain_graph=True)
+            print('adversarial_model_loss:',self.adversarial_model_loss)
+
+            self.adversary_attack_loss.backward(retain_graph = True)
+            print('adversary_attack_loss:',self.adversary_attack_loss)
+
+            # self.weights_grad_a = torch.autograd.grad(
+            #     self.local_pred,
+            #     self.local_model.adversarial_model.parameters(),
+            #     # self.local_model.parameters(),
+            #     grad_outputs=self.local_gradient,
+            #     retain_graph=True,
+            # )
+            # for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+            #     if w.requires_grad:
+            #         if w.grad != None:
+            #             w.grad += g.detach()
+            #         else:
+            #             w.grad = g.detach()
+
+            self.adversarial_model_optimizer.step()
+
+            self.imagined_adversary_optimizer.step()
+
+
+
+    # def global_backward(self):
+
+    #     if self.global_model_optimizer != None:
+    #         # active party with trainable global layer
+    #         _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
+    #         _gradients_clone = _gradients[0].detach().clone()
+
+    #         # if self.args.apply_mid == False and self.args.apply_trainable_layer == False:
+    #         #     return # no need to update
+
+    #         # update global model
+    #         self.global_model_optimizer.zero_grad()
+    #         parameters = []
+    #         if (self.args.apply_mid == True) and (self.index in self.args.defense_configs['party']):
+    #             # mid parameters
+    #             for mid_model in self.global_model.mid_model_list:
+    #                 parameters += list(mid_model.parameters())
+    #             # trainable layer parameters
+    #             if self.args.apply_trainable_layer == True:
+    #                 parameters += list(self.global_model.global_model.parameters())
+
+    #             # load grads into parameters
+    #             weights_grad_a = torch.autograd.grad(self.global_pred, parameters, grad_outputs=_gradients_clone, retain_graph=True)
+    #             for w, g in zip(parameters, weights_grad_a):
+    #                 if w.requires_grad:
+    #                     w.grad = g.detach()
+
+    #         else:
+    #             # trainable layer parameters
+    #             if self.args.apply_trainable_layer == True:
+    #                 # load grads into parameters
+    #                 weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+    #                 for w, g in zip(self.global_model.parameters(), weights_grad_a):
+    #                     if w.requires_grad:
+    #                         w.grad = g.detach()
+    #             # non-trainabel layer: no need to update
+    #         self.global_model_optimizer.step()
 
     def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
         # print(f"global_pred.shape={global_pred.size()}") # (batch_size, num_classes)

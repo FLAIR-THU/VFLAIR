@@ -27,7 +27,7 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
         super().__init__(global_bert.config)
         self.num_labels = global_bert.config.num_labels
         self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
-        self.qa_outputs = qa_outputs #nn.Linear(config.hidden_size, config.num_labels)
+        self.head_layer = qa_outputs #nn.Linear(config.hidden_size, config.num_labels)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -72,7 +72,7 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        logits = self.qa_outputs(sequence_output)
+        logits = self.head_layer(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1).contiguous()
         end_logits = end_logits.squeeze(-1).contiguous()
@@ -112,15 +112,17 @@ class BertForSequenceClassification_pretrained(nn.Module):
         self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 
-        self.classifier = classifier
+        self.head_layer = classifier
+        # self.head_layer = classifier
+
 
         classifier_dropout = (
             globalbert.config.classifier_dropout if globalbert.config.classifier_dropout is not None else globalbert.config.hidden_dropout_prob
         )
         self.dropout = nn.Dropout(classifier_dropout)
 
-        # torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
-        # torch.nn.init.zeros_(self.trainable_layer[1].bias)
+        # torch.nn.init.xavier_uniform_(self.head_layer[1].weight)
+        # torch.nn.init.zeros_(self.head_layer[1].bias)
 
     def forward(self, input_ids, attention_mask,
         token_type_ids: Optional[torch.Tensor] = None,
@@ -148,14 +150,14 @@ class BertForSequenceClassification_pretrained(nn.Module):
         if self.model_type == 'Bert':
             pooled_output = outputs[1]
             pooled_output = self.dropout(pooled_output)
-            logits = self.classifier(pooled_output)
+            logits = self.head_layer(pooled_output)
         elif self.model_type == 'Roberta':
             sequence_output = outputs[0]
-            logits = self.classifier(sequence_output)
+            logits = self.head_layer(sequence_output)
         elif self.model_type == 'Albert':
             pooled_output = outputs[1]
             pooled_output = self.dropout(pooled_output)
-            logits = self.classifier(pooled_output)
+            logits = self.head_layer(pooled_output)
             
         loss = None
         if labels is not None:
@@ -198,10 +200,10 @@ class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
         super().__init__(global_bert.config)
         self.num_labels = global_bert.config.num_labels
         self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
-        self.trainable_layer = nn.Linear(global_bert.config.hidden_size, 2) # qa_outputs
+        self.head_layer = nn.Linear(global_bert.config.hidden_size, 2) # qa_outputs
 
-        torch.nn.init.xavier_uniform_(self.trainable_layer.weight)
-        torch.nn.init.zeros_(self.trainable_layer.bias)
+        torch.nn.init.xavier_uniform_(self.head_layer.weight)
+        torch.nn.init.zeros_(self.head_layer.bias)
         # # Initialize weights and apply final processing
         # self.post_init()
 
@@ -245,7 +247,7 @@ class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        logits = self.trainable_layer(sequence_output)
+        logits = self.head_layer(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1).contiguous()
         end_logits = end_logits.squeeze(-1).contiguous()
@@ -285,13 +287,13 @@ class BertForSequenceClassification_forfinetune(nn.Module):
         self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 
-        self.trainable_layer = nn.Sequential(
+        self.head_layer = nn.Sequential(
             nn.Dropout(dropout),
             nn.Linear(768, output_dim)
         ) # Classifier in a SequenceClassification case
 
-        torch.nn.init.xavier_uniform_(self.trainable_layer[1].weight)
-        torch.nn.init.zeros_(self.trainable_layer[1].bias)
+        torch.nn.init.xavier_uniform_(self.head_layer[1].weight)
+        torch.nn.init.zeros_(self.head_layer[1].bias)
 
     def forward(self, input_ids, attention_mask,
         token_type_ids: Optional[torch.Tensor] = None,
@@ -317,15 +319,15 @@ class BertForSequenceClassification_forfinetune(nn.Module):
         )
         if self.model_type == 'Bert':
             pooled_output = outputs[1]
-            logits = self.trainable_layer(pooled_output)
+            logits = self.head_layer(pooled_output)
         elif self.model_type == 'Roberta':
             sequence_output = outputs[0]
-            logits = self.trainable_layer(sequence_output)
+            logits = self.head_layer(sequence_output)
         elif self.model_type == 'Albert':
             pooled_output = outputs[1]
-            logits = self.trainable_layer(pooled_output)
+            logits = self.head_layer(pooled_output)
 
-        # logits = self.trainable_layer(pooled_output)
+        # logits = self.head_layer(pooled_output)
  
         loss = None
         if labels is not None:
@@ -539,6 +541,8 @@ class LocalBertModel(BertPreTrainedModel):
         self.embeddings = full_bert.embeddings #BertEmbeddings(config)
         self.pooler = full_bert.pooler  #BertPooler(config) if add_pooling_layer else None
 
+        self.embedding_output = None
+
         self.num_encoders = num_encoders
         if self.model_type == 'Albert':
             self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
@@ -548,6 +552,9 @@ class LocalBertModel(BertPreTrainedModel):
             self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
         self.encoder = LocalBertEncoder(self.config,self.encoder_layer) #full_bert.encoder #BertEncoder(config)
         
+        # for adversarial model
+        # self.adversarial_model = None
+
     def forward(
         self,
         input_ids=None,
@@ -651,6 +658,7 @@ class LocalBertModel(BertPreTrainedModel):
                 inputs_embeds=inputs_embeds,
                 past_key_values_length=past_key_values_length,
             )
+            self.embedding_output = embedding_output
         # else:
         # print('embedding_output:',embedding_output.shape) # [bs, seq_length, 768(embed_dim)]
         
@@ -672,6 +680,9 @@ class LocalBertModel(BertPreTrainedModel):
         # print('attention_mask:',type(attention_mask), attention_mask.shape )
         # print('input_shape:',input_shape )
 
+        # if self.adversarial_model != None:
+        #     self.adversarial_output = self.adversarial_model(intermediate)
+        #     self.origin_output = intermediate
 
         return intermediate , attention_mask 
 

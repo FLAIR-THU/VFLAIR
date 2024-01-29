@@ -1,18 +1,19 @@
 {
-    "epochs": 1,
+    "epochs": 2,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 1,
+    "batch_size": 32,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "tokenizer":{
-        "padding": "do_not_pad",
+        "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 50,
+        "max_length": 30,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -24,6 +25,7 @@
         "0": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -32,6 +34,7 @@
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -44,10 +47,16 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "LaplaceDP",
+        "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
-            "epsilon": 80
+            "adversarial_model": "Adversarial_Mapping",
+            "adversarial_model_lr": 0.05,
+            "imagined_adversary": "ImaginedAdversary",
+            "imagined_adversary_lr": 0.05,
+            "lambda": 0.05,
+            "seq_length": 30,
+            "embed_dim": 768
         }
     },
     "attack_list": {

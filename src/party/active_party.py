@@ -194,8 +194,9 @@ class ActiveParty_LLM(Party_LLM):
         for _ in range(args.k):
             self.pred_received.append([])
         
-        self.global_pred = None
-        self.global_loss = None
+        self.global_pred = None # transmitted to passive party
+        self.global_loss = None # transmitted from passive party
+        self.global_gradient = None # transmitted from passive party
 
         self.weights_grad_a = None
 
@@ -218,6 +219,7 @@ class ActiveParty_LLM(Party_LLM):
         model_path = args.model_path
         main_lr = args.main_lr
         pad_token = args.pad_token
+        head_layer_trainable = args.head_layer_trainable
         # prepare model and optimizer
         (
             self.local_model,
@@ -226,7 +228,7 @@ class ActiveParty_LLM(Party_LLM):
             self.global_model_optimizer,
             args.tokenizer,
             self.encoder
-        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token)
+        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
@@ -284,33 +286,39 @@ class ActiveParty_LLM(Party_LLM):
             return self.aggregate([[t1, t2]])
 
     def aggregate(self, pred_list, test=False):
-        if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
+        self.passive_pred_list = pred_list
+        self.passive_pred_list[0][0].requires_grad = True
+
+        if self.args.model_type == 'Bert': # passive_pred_list[0] = [intermediate, attention_mask]
             if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1],return_dict=True).logits
-            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1], return_dict=True)
+                pred = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],return_dict=True).logits
+            elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1], return_dict=True)
         
-        elif self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
-            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
-            elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
-            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True)
+        elif self.args.model_type == 'GPT2': # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
+            if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True).logits
+            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True).logits
+            elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
-            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True).logits
-            elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2], return_dict=True).logits
-            elif self.args.task_type == 'QuestionAnswering':# pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1], return_dict=True)
+            if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True).logits
+            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True).logits
+            elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
             else:
                 assert 1>2 , 'Task type no supported'
 
         self.global_pred = pred
+
+        # passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[0][0] , \
+        #     retain_graph=True).detach().clone()
         return pred
     
     def generate(self, pred_list, test=False):
@@ -340,8 +348,12 @@ class ActiveParty_LLM(Party_LLM):
             eta_t = eta_0/(np.sqrt(i_epoch+1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
-        
-                
+
+    def cal_passive_local_gradient(self, passive_party_id):
+        passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[passive_party_id][0] , \
+            grad_outputs=self.global_gradient, retain_graph=True).detach().clone()
+        return passive_local_gradient
+
     def global_backward(self):
 
         if self.global_model_optimizer != None: 
@@ -386,18 +398,17 @@ class ActiveParty_LLM(Party_LLM):
                
                 self.global_model_optimizer.step()
             else:
-                # server with trainable global layer
-                _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
-                _gradients_clone = _gradients[0].detach().clone()
+                # # server with trainable global layer
+                # _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
+                # _gradients_clone = _gradients[0].detach().clone()
 
-                # print('global_gradients_clone:',_gradients_clone)
+                _gradients_clone = self.global_gradient
                 
                 # update global model
                 self.global_model_optimizer.zero_grad()
                 parameters = []          
             
                 # trainable layer parameters
-                # load grads into parameters
                 weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                 self.weights_grad_a = weights_grad_a
                 for w, g in zip(self.global_model.trainable_layer.parameters(), weights_grad_a):

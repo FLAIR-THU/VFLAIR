@@ -3,6 +3,7 @@
     "lr": 0.0005,
     "k": 2,
     "batch_size": 12,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

@@ -523,7 +523,8 @@ def GradPerturb(args, original_object):
 DELTAF = {'Bert':81.82, 'GPT2':110.2}
 ############ LLM defense ##############
 def LaplaceDP_for_llm(args, original_object):
-    original_object = original_object[0]
+    # print('LaplaceDP_for_llm:',type(original_object),original_object[0].shape)
+    original_object = original_object[0] # bs, 12, 768
     assert ('epsilon' in args.defense_configs) , "missing defense parameter: 'epsilon'"
     delta_f = DELTAF[args.model_type]
     epsilon = args.defense_configs['epsilon']

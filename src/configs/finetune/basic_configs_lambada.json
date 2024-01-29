@@ -2,6 +2,7 @@
     "epochs": 30,
     "lr": 0.001,
     "k": 2,
+    "pipeline": "finetune",
     "batch_size": 16,
     "communication":{
         "communication_protocol": "FedSGD",
