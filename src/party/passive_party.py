@@ -372,7 +372,7 @@ class PassiveParty_LLM(Party_LLM):
                 param_group['lr'] = eta_t
 
     def local_backward(self):
-        print('passive local backward')
+        # print('passive local backward')
 
         self.num_local_updates += 1 # another update
 
