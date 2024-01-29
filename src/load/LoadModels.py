@@ -325,30 +325,19 @@ def load_defense_models_llm(args, index, local_model, local_model_optimizer, glo
                 seq_length = args.defense_configs['seq_length']
                 embed_dim = args.defense_configs['embed_dim']
                 adversarial_model = globals()[model_name](seq_length, embed_dim).to(args.device)
-                # local_model = Local_Adversarial_combined_model_LLM(local_model,adversarial_model)
-                # local_model = local_model.to(args.device)
+                # if args.model_type == 'Bert':
+                #     local_model = Local_Adversarial_combined_model_Bert(local_model,adversarial_model)
+                # elif args.model_type == 'GPT2':
+                #     local_model = Local_Adversarial_combined_model_GPT2(local_model,adversarial_model)
+                # elif args.model_type == 'Llama':
+                #     local_model = Local_Adversarial_combined_model_Llama(local_model,adversarial_model)
+                # else:
+                #     assert 1>2, 'model type not supported'
+                local_model = local_model.to(args.device)
                 # update optimizer
                 adversarial_model_optimizer = torch.optim.Adam(
                             [{'params': adversarial_model.parameters(), 'lr': adversarial_model_lr}])
 
-
-        if 'CAE' in args.defense_name.upper(): # for CAE and DCAE
-            # print("CAE in defense_name,", args.defense_name)
-            if index == args.k-1:
-                # only active party can have encoder and decoder for CAE
-                assert 'model_path' in args.defense_configs, "[error] no CAE model path given"
-                if not 'input_dim' in args.defense_configs:
-                    args.defense_configs['input_dim'] = args.num_classes
-                    print('[warning] default input_dim selected as num_classes for applying CAE')
-                if not 'encode_dim' in args.defense_configs:
-                    args.defense_configs['encode_dim'] = 2 + 6 * args.defense_configs['input_dim']
-                    print('[warning] default encode_dim selected as 2+6*input_dim for applying CAE')
-                if args.num_classes > 20:
-                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20, encode_dim=args.defense_configs['encode_dim']).to(args.device)
-                else:
-                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
-                encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
-                args.encoder = encoder
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
 
@@ -852,7 +841,8 @@ def load_models_per_party_new(pretrained, task_type, model_type, current_model_t
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_new(
             pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
         )
-        #args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        #args, local_model, local_model_optimizer, global_model, global_model_optimizer =
+        #  load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
 
     encoder = None
     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer, encoder
@@ -862,8 +852,8 @@ def load_models_per_party(args, index):
     val_model = None
     if current_model_type in LLM_supported:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
-        return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
+        # args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args,index)
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)

@@ -88,7 +88,7 @@ def do_load_basic_configs(config_file_path, args):
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
 
     ############## for LLM ###############
-    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else "pretrained"
+    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None
     # pretrained finetune
 
     # Tokenizer

@@ -29,7 +29,7 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
@@ -38,7 +38,7 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -54,7 +54,7 @@
             "adversarial_model_lr": 0.05,
             "imagined_adversary": "ImaginedAdversary",
             "imagined_adversary_lr": 0.05,
-            "lambda": 0.05,
+            "lambda": 0.5,
             "seq_length": 30,
             "embed_dim": 768
         }

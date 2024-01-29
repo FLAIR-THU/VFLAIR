@@ -155,7 +155,7 @@ class Party(object):
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size, need_auxiliary):
+    def prepare_data_loader(self, batch_size, need_auxiliary=0):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
@@ -173,10 +173,7 @@ class Party(object):
             self.local_model,
             self.local_model_optimizer,
             self.global_model,
-            self.global_model_optimizer,
-
-            self.adversarial_model, 
-            self.adversarial_model_optimizer
+            self.global_model_optimizer
         ) = load_models_per_party(args, index)
 
     def label_to_one_hot(self, target, num_classes=10):
@@ -203,6 +200,8 @@ class Party(object):
         if self.args.model_type == 'Bert':
             # SequenceClassification & QuestionAnswering
             self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
+            # print('self.local_model.origin_output:',self.local_model.origin_output.shape)
+            # print('self.local_model.adversarial_output:',self.local_model.adversarial_output.shape) # local_pred
             if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
                 self.origin_pred = self.local_pred
                 self.local_pred = self.adversarial_model(self.origin_pred)

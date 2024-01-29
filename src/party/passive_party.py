@@ -110,45 +110,73 @@ class PassiveParty_LLM(Party_LLM):
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
     def prepare_model(self, args, index):
-        current_model_type = args.model_list['0']['type']
-        pretrained = args.pretrained
-        task_type = args.task_type
-        model_type = args.model_type
-        current_output_dim = args.model_list['0']['output_dim']
-        is_local = True
-        device = args.device
-        padding_side = args.padding_side
-        model_path = args.model_path
-        main_lr = args.main_lr
-        pad_token = args.pad_token
-        head_layer_trainable = args.head_layer_trainable
+    #     current_model_type = args.model_list['0']['type']
+    #     pretrained = args.pretrained
+    #     task_type = args.task_type
+    #     model_type = args.model_type
+    #     current_output_dim = args.model_list['0']['output_dim']
+    #     is_local = True
+    #     device = args.device
+    #     padding_side = args.padding_side
+    #     model_path = args.model_path
+    #     main_lr = args.main_lr
+    #     pad_token = args.pad_token
+    #     head_layer_trainable = args.head_layer_trainable
+    #     # prepare model and optimizer
+    #     (
+    #         self.local_model,
+    #         self.local_model_optimizer,
+    #         self.global_model,
+    #         self.global_model_optimizer,
+    #         args.tokenizer,
+    #         self.encoder
+    #     ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim,
+    #                                   is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
+    
         # prepare model and optimizer
         (
+            args,
             self.local_model,
             self.local_model_optimizer,
             self.global_model,
-            self.global_model_optimizer,
-            args.tokenizer,
-            self.encoder
-        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim,
-                                      is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
+            self.global_model_optimizer
+        ) = load_models_per_party(args, index)
+        
+        # some defense need model, add here
+        if args.apply_defense == True:
+            if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
+                # add adversarial model for local model
+                if not 'party' in args.defense_configs:
+                    args.defense_configs['party'] = [0]
+                    print('[warning] default passive party selected for applying adversarial training')
 
-        # prepare imagined adversary --  for adversarial training
-        if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
-            print('imagined_adversary init')
-            seq_length = self.args.defense_configs['seq_length']
-            embed_dim = self.args.defense_configs['embed_dim']
+                if not ('adversarial_model_lr' in args.defense_configs):
+                    adversarial_model_lr = args.main_lr
+                    print('[warning] default hyper-parameter mid_lr selected for applying MID')
+                else :
+                    adversarial_model_lr = args.defense_configs['adversarial_model_lr']
 
-            imagined_adversary_model_name = self.args.defense_configs['imagined_adversary']
-            self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(self.args.device)
-            #Adversary(seq_length, embed_dim).to(self.args.device)
-            #
+                if not ('adversarial_model' in args.defense_configs):
+                    adversarial_model_name = 'Adversarial_Mapping'
+                else:
+                    adversarial_model_name = args.defense_configs['adversarial_model']
 
-            self.imagined_adversary_lr = self.args.defense_configs['imagined_adversary_lr']
-            self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
+                seq_length = self.args.defense_configs['seq_length']
+                embed_dim = self.args.defense_configs['embed_dim']
+                
+                # prepare adversarial model --  for adversarial training
+                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(args.device)
+                self.adversarial_model_optimizer = torch.optim.Adam(
+                            [{'params': self.adversarial_model.parameters(), 'lr': adversarial_model_lr}])
 
-            self.adversary_crit = nn.CrossEntropyLoss()
-            self.adversary_lambda = self.args.defense_configs['lambda']
+                # prepare imagined adversary --  for adversarial training
+                imagined_adversary_model_name = self.args.defense_configs['imagined_adversary']
+                self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(self.args.device)
+                self.imagined_adversary_lr = self.args.defense_configs['imagined_adversary_lr']
+                self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
+
+                self.adversary_crit = nn.CrossEntropyLoss()
+                self.adversary_lambda = self.args.defense_configs['lambda']
 
 
     def prepare_data(self, args, index):
@@ -157,8 +185,8 @@ class PassiveParty_LLM(Party_LLM):
         self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)
         self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label)
 
-    def prepare_data_loader(self):
-        super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
+    # def prepare_data_loader(self):
+    #     super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
             
     def update_local_pred(self, pred):
         self.pred_received[self.args.k-1] = pred
@@ -357,10 +385,10 @@ class PassiveParty_LLM(Party_LLM):
             self.adversarial_model_optimizer.zero_grad()
 
             self.adversarial_model_loss.backward(retain_graph=True)
-            print('adversarial_model_loss:',self.adversarial_model_loss)
 
             self.adversary_attack_loss.backward(retain_graph = True)
-            print('adversary_attack_loss:',self.adversary_attack_loss)
+
+            print('adversarial_model_loss:',self.adversarial_model_loss.item(), ' adversary_attack_loss:',self.adversary_attack_loss.item())
 
             # self.weights_grad_a = torch.autograd.grad(
             #     self.local_pred,

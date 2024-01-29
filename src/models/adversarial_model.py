@@ -122,9 +122,9 @@ class GradientReversal(nn.Module):
         return self.revgrad(x, self.alpha)
 
 # a model rapper for local model with adversarial component
-class Local_Adversarial_combined_model_LLM(nn.Module):
+class Local_Adversarial_combined_model_Bert(nn.Module):
     def __init__(self, local_model, adversarial_model):
-        super(Local_Adversarial_combined_model_LLM, self).__init__()
+        super(Local_Adversarial_combined_model_Bert, self).__init__()
         assert local_model != None and adversarial_model != None
         self.local_model = local_model # for normal training
         self.adversarial_model = adversarial_model
@@ -132,10 +132,48 @@ class Local_Adversarial_combined_model_LLM(nn.Module):
         self.adversarial_output = None
         # self.adversarial_loss = None
 
-    def forward(self,x):
-        self.origin_output = self.local_model(x)
+    def forward(self, **x):
+        self.origin_output, self.origin_attention_mask = self.local_model(**x)
         self.adversarial_output = self.adversarial_model(self.origin_output)
-        return self.adversarial_output
+        self.embedding_output = self.local_model.embedding_output
+        return self.adversarial_output, self.origin_attention_mask
+
+class Local_Adversarial_combined_model_GPT2(nn.Module):
+    def __init__(self, local_model, adversarial_model):
+        super(Local_Adversarial_combined_model_GPT2, self).__init__()
+        assert local_model != None and adversarial_model != None
+        self.local_model = local_model # for normal training
+        self.adversarial_model = adversarial_model
+        self.origin_output = None
+        self.adversarial_output = None
+        # self.adversarial_loss = None
+
+    def forward(self, **x):
+        self.origin_output, self.origin_sequence_lengths, self.origin_attention_mask = self.local_model(**x)
+        self.adversarial_output = self.adversarial_model(self.origin_output)
+
+        self.embedding_output = self.local_model.embedding_output
+
+        return self.adversarial_output, self.origin_sequence_lengths, self.origin_attention_mask
+
+
+class Local_Adversarial_combined_model_Llama(nn.Module):
+    def __init__(self, local_model, adversarial_model):
+        super(Local_Adversarial_combined_model_Llama, self).__init__()
+        assert local_model != None and adversarial_model != None
+        self.local_model = local_model # for normal training
+        self.adversarial_model = adversarial_model
+        self.origin_output = None
+        self.adversarial_output = None
+        # self.adversarial_loss = None
+
+    def forward(self, **x):
+        self.origin_output, self.origin_sequence_lengths, self.origin_attention_mask = self.local_model(**x)
+        self.adversarial_output = self.adversarial_model(self.origin_output)
+
+        self.embedding_output = self.local_model.embedding_output
+
+        return self.adversarial_output, self.origin_sequence_lengths, self.origin_attention_mask
 
 
 # a model rapper for local model with adversarial component

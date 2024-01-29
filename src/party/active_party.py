@@ -201,8 +201,8 @@ class ActiveParty_LLM(Party_LLM):
         self.weights_grad_a = None
 
 
-    def prepare_data_loader(self, **kwargs):
-        super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
+    # def prepare_data_loader(self, **kwargs):
+    #     super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
 
     def eval(self, **kwargs):
         self.global_model.eval()

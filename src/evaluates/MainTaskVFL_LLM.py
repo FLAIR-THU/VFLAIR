@@ -354,7 +354,7 @@ class MainTaskVFL_LLM(object):
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader()
+            self.parties[ik].prepare_data_loader(batch_size = self.batch_size)
         self.parties[self.k-1].global_model.eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
@@ -640,12 +640,12 @@ class MainTaskVFL_LLM(object):
             QA: bs * [start_position, end_position]
         '''
         ############### allocate data ###############
-        encoder = self.args.encoder
-        if self.args.apply_cae:
-            assert encoder != None, "[error] encoder is None for CAE"
-            _, gt_one_hot_label = encoder(batch_label)      
-        else:
-            gt_one_hot_label = batch_label
+        # encoder = self.args.encoder
+        # if self.args.apply_cae:
+        #     assert encoder != None, "[error] encoder is None for CAE"
+        #     _, gt_one_hot_label = encoder(batch_label)      
+        # else:
+        gt_one_hot_label = batch_label
 
         for ik in range(self.k-1):
             # allocate data (data/label/attention_mask/token_type_ids)
@@ -834,8 +834,8 @@ class MainTaskVFL_LLM(object):
             pred = self.parties[self.k-1].global_pred
             loss = self.parties[self.k-1].global_loss
             predict_prob = F.softmax(pred, dim=-1)
-            if self.args.apply_cae:
-                predict_prob = encoder.decode(predict_prob)
+            # if self.args.apply_cae:
+            #     predict_prob = encoder.decode(predict_prob)
 
             suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
             batch_train_acc = suc_cnt / predict_prob.shape[0]
@@ -915,7 +915,7 @@ class MainTaskVFL_LLM(object):
         print_every = 1
 
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader(batch_size=self.batch_size)
+            self.parties[ik].prepare_data_loader( batch_size=self.batch_size)
 
         test_acc = 0.0
         # Early Stop
