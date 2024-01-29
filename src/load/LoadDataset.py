@@ -1450,16 +1450,21 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'CoLA':
-        text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
-        df = pd.read_csv(text_path, delimiter='\t', header=None,
+        if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
+            train_set_file = args.dataset_split['train_set_file']
+            test_set_file = args.dataset_split['test_set_file']
+        else:
+            train_set_file = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
+            test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
+
+        df = pd.read_csv(train_set_file, delimiter='\t', header=None,
                          names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
-        text_path = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
-        df = pd.read_csv(text_path, delimiter='\t', header=None,
+        df = pd.read_csv(test_set_file, delimiter='\t', header=None,
                          names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values
         labels = df.label.values

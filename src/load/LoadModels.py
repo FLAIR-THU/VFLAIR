@@ -367,19 +367,19 @@ def load_basic_models_llm_bert(args,index):
     pad_token = args.pad_token
     head_layer_trainable = args.head_layer_trainable
     local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-        pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+        pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
     )
     args.tokenizer = tokenizer
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
+def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
     # current_model_type = args.model_list[str(index)]['type']
     # current_output_dim = args.model_list[str(index)]['output_dim']
 
     if pretrained == 0: # finetune your own LLM based on base models(bert-base-uncased)
-        tokenizer = BertTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=True)
         tokenizer.padding_side = padding_side if (padding_side in ["left","right"]) else "left"
-        full_bert = BertModel.from_pretrained(MODEL_PATH[current_model_type])
+        full_bert = BertModel.from_pretrained(model_path)
 
         if pad_token == "default":
             if tokenizer.pad_token is None:
@@ -439,14 +439,14 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_mo
             global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
     else: # load third party pretrained LLM
-        print('load_basic_models_llm pretrained:',current_model_type)
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        print('load_basic_models_llm pretrained:', model_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
         tokenizer.padding_side = padding_side if (padding_side in ["left","right"]) else "left"
 
         if task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         else:
-            full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         
         # for name, param in full_model.named_parameters():
         #     print("-----full_model--{}:{}".format(name, param.shape))
@@ -820,10 +820,10 @@ def load_basic_models_llm_llama(args,index):
     
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
+def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
     if model_type in ['Bert', 'Albert', 'Roberta']:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
         )
     elif model_type in ['GPT2']:
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
@@ -850,7 +850,7 @@ def load_basic_models_llm(args,index):
 def load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
     if current_model_type in LLM_supported:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_new(
-            pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
         )
         #args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
 

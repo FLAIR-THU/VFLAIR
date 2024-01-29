@@ -10,8 +10,8 @@
     },
     "dataset":{
         "dataset_name": "SQuAD",
-        "train_set_file": "D:\\work\\projects\\VFLAIR\\src\\dataset\\train-v1.1.json",
-        "test_set_file": "D:\\work\\projects\\VFLAIR\\src\\dataset\\dev-v1.1.json",
+        "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+        "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
         "num_classes": 1,
         "use_prompt": 1,
         "n_shot": 1
@@ -30,7 +30,7 @@
             "output_dim": 1,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "1": {
             "type": "rsvp-aibertserini-bert-base-squad",
@@ -39,7 +39,7 @@
             "output_dim": 1,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "task":{
             "task_type": "QuestionAnswering",
