@@ -910,14 +910,19 @@ class PassiveParty_LLM(Party_LLM):
         #     self.parties[ik].LR_decay(i_epoch)
         self.args.parties[self.args.k-1].global_LR_decay(i_epoch)
 
+    def _send_global_modal_train_message(self):
+        self.args.parties[self.args.k - 1].global_model.train()
+
     def train(self, i_epoch):
-        data_loader_list = [self.test_loader]
+        data_loader_list = [self.train_loader]
         postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
         i = -1
         print_every = 1
         total_time = 0
         with torch.no_grad():
             for parties_data in zip(*data_loader_list):
+                ############ Allocate Data #################
+                # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
                 _parties_data = []
                 for party_id in range(len(parties_data)):  # iter through each passive party
                     batch_input_ids = []
@@ -966,6 +971,10 @@ class PassiveParty_LLM(Party_LLM):
                 else:
                     gt_one_hot_label = parties_data[0][1]
 
+                i += 1
+                self._send_global_modal_train_message()
+
+                # ====== train batch (start) ======
                 enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
                 exit_time = time.time()
@@ -1000,7 +1009,7 @@ class PassiveParty_LLM(Party_LLM):
             # LR record
             # if self.args.k == 2:
             #     LR_passive_list.append(self.parties[0].give_current_lr())
-            # LR_active_list.append(self.parties[1].give_current_lr())
+                # LR_active_list.append(self.parties[1].give_current_lr())
 
     def train_batch(self, parties_data, batch_label):
         '''
