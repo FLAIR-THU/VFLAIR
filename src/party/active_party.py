@@ -320,7 +320,11 @@ class ActiveParty_LLM(Party_LLM):
         # passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[0][0] , \
         #     retain_graph=True).detach().clone()
         return pred
-    
+
+    def receive_loss_and_gradients(self, loss, gradients):
+        self.global_loss = loss
+        self.global_gradients = gradients
+
     def generate(self, pred_list, test=False):
         # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
         #     pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1])

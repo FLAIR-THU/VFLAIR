@@ -274,6 +274,8 @@ class MainTaskVFL_LLM(object):
         for ik in range(self.k-1):
             # self.communication_cost += get_size_of(final_pred)
             self.parties[ik].global_pred = final_pred
+
+        return final_pred
     
     def local_gradient_transmit(self):
         for ik in range(self.k-1):
@@ -281,8 +283,8 @@ class MainTaskVFL_LLM(object):
                 passive_local_gradient= self.parties[self.k-1].cal_passive_local_gradient(ik)
                 self.parties[ik].local_gradient = passive_local_gradient
 
-    def global_gradient_transmit(self, all_pred_list):
-        global_loss = self.parties[0].cal_loss()  # raw global loss
+    def global_gradient_transmit(self, final_pred):
+        global_loss = self.parties[0].cal_loss(final_pred)  # raw global loss
 
         # add adversary loss
         # ============= Adversarial Training =============
@@ -320,7 +322,7 @@ class MainTaskVFL_LLM(object):
         # for ik in range(self.k-1):
         #     self.parties[ik].local_backward()
 
-        global_gradients = self.parties[0].cal_global_gradient()
+        global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
         self.communication_cost += get_size_of(global_gradients)
 
         self.parties[self.k-1].global_loss = self.parties[0].global_loss
@@ -661,11 +663,11 @@ class MainTaskVFL_LLM(object):
 
         # =================== Commu ===================
         all_pred_list = self.pred_transmit() # exchange info between party: local_pred/global_pred
-        self.global_pred_transmit() 
+        final_pred = self.global_pred_transmit()
         # =================== Commu ===================
 
         # passive party -> global gradient -> active party
-        self.global_gradient_transmit(all_pred_list)
+        self.global_gradient_transmit(final_pred)
         
         # active party -> local gradient -> passive party
         if self.parties[0].local_model_optimizer != None:
