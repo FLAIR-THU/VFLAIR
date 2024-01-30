@@ -20,7 +20,7 @@ from utils.communication_protocol_funcs import compress_pred
 
 from models.imagined_adversary_models import *
 import time
-
+import numpy as np
 
 # Imagined Adversary
 class Adversary(nn.Module):
@@ -965,10 +965,9 @@ class PassiveParty_LLM(Party_LLM):
                     gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
                 else:
                     gt_one_hot_label = parties_data[0][1]
-                self.gt_one_hot_label = gt_one_hot_label
 
                 enter_time = time.time()
-                self.loss, self.train_acc = self.train_batch(parties_data, self.gt_one_hot_label)
+                self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
                 exit_time = time.time()
                 total_time += (exit_time - enter_time)
                 self.num_total_comms = self.num_total_comms + 1
