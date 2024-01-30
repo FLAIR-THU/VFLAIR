@@ -108,6 +108,8 @@ class PassiveParty_LLM(Party_LLM):
         self.global_pred = None
         self.global_loss = None
         self.communication_cost = 0
+        self.num_total_comms = 0
+        self.current_step = 0
 
         self.num_labels = args.num_classes
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
@@ -919,97 +921,98 @@ class PassiveParty_LLM(Party_LLM):
         i = -1
         print_every = 1
         total_time = 0
-        with torch.no_grad():
-            for parties_data in zip(*data_loader_list):
-                ############ Allocate Data #################
-                # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
-                _parties_data = []
-                for party_id in range(len(parties_data)):  # iter through each passive party
-                    batch_input_ids = []
-                    batch_label = []
-                    batch_attention_mask = []
-                    batch_token_type_ids = []
-                    batch_feature = []
-                    for bs_id in range(len(parties_data[party_id])):
-                        # Input_ids
-                        batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
-                        # Attention Mask
-                        batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
 
-                        # ptoken_type_ids
-                        if parties_data[party_id][bs_id][3] == []:
-                            batch_token_type_ids = None
-                        else:
-                            batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
+        for parties_data in zip(*data_loader_list):
+            ############ Allocate Data #################
+            # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
+            _parties_data = []
+            for party_id in range(len(parties_data)):  # iter through each passive party
+                batch_input_ids = []
+                batch_label = []
+                batch_attention_mask = []
+                batch_token_type_ids = []
+                batch_feature = []
+                for bs_id in range(len(parties_data[party_id])):
+                    # Input_ids
+                    batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
+                    # Attention Mask
+                    batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
 
-                        # feature (for QuestionAnswering only)
-                        if parties_data[party_id][bs_id][4] == []:
-                            batch_feature = None
-                        else:
-                            batch_feature.append(parties_data[party_id][bs_id][4])
+                    # ptoken_type_ids
+                    if parties_data[party_id][bs_id][3] == []:
+                        batch_token_type_ids = None
+                    else:
+                        batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
 
-                        # Label
-                        if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append(parties_data[party_id][bs_id][1].tolist())
-                        else:
-                            batch_label.append(parties_data[party_id][bs_id][1])
+                    # feature (for QuestionAnswering only)
+                    if parties_data[party_id][bs_id][4] == []:
+                        batch_feature = None
+                    else:
+                        batch_feature.append(parties_data[party_id][bs_id][4])
 
-                    batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
-                    batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
-                    if batch_token_type_ids != None:
-                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
-                    if type(batch_label[0]) != str:
-                        batch_label = torch.tensor(batch_label).to(self.device)
+                    # Label
+                    if type(parties_data[party_id][bs_id][1]) != str:
+                        batch_label.append(parties_data[party_id][bs_id][1].tolist())
+                    else:
+                        batch_label.append(parties_data[party_id][bs_id][1])
 
-                    _parties_data.append(
-                        [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
+                batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
+                batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
+                if batch_token_type_ids != None:
+                    batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
+                if type(batch_label[0]) != str:
+                    batch_label = torch.tensor(batch_label).to(self.device)
 
-                parties_data = _parties_data
+                _parties_data.append(
+                    [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
 
-                if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
-                    gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
-                else:
-                    gt_one_hot_label = parties_data[0][1]
+            parties_data = _parties_data
 
-                i += 1
-                self._send_global_modal_train_message()
+            if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
+                gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
+            else:
+                gt_one_hot_label = parties_data[0][1]
 
-                # ====== train batch (start) ======
-                enter_time = time.time()
-                self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
-                exit_time = time.time()
-                total_time += (exit_time - enter_time)
-                self.num_total_comms = self.num_total_comms + 1
-                # if self.num_total_comms % 10 == 0:
-                #     print(f"total time for {self.num_total_comms} communication is {total_time}")
+            i += 1
+            self._send_global_modal_train_message()
 
-                # if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-                #     self.stopping_time = total_time
-                #     self.stopping_iter = self.num_total_comms
-                #     self.stopping_commu_cost = self.communication_cost
-                #     flag = 1
-                # ====== train batch (end) ======
+            # ====== train batch (start) ======
+            enter_time = time.time()
+            self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
+            exit_time = time.time()
+            total_time += (exit_time - enter_time)
+            self.num_total_comms = self.num_total_comms + 1
+            # if self.num_total_comms % 10 == 0:
+            #     print(f"total time for {self.num_total_comms} communication is {total_time}")
 
-                self.current_step = self.current_step + 1
+            # if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+            #     self.stopping_time = total_time
+            #     self.stopping_iter = self.num_total_comms
+            #     self.stopping_commu_cost = self.communication_cost
+            #     flag = 1
+            # ====== train batch (end) ======
 
-                # del(self.parties_data) # remove from cuda
-                # del(parties_data)
+            self.current_step = self.current_step + 1
 
-            # if self.args.apply_attack == True:
-            #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
-            #         print('Launch Label Inference Attack, Only train 1 epoch')
-            #         break
+            # del(self.parties_data) # remove from cuda
+            # del(parties_data)
 
-            # self.trained_models = self.save_state(True)
-            # if self.args.save_model == True:
-            #     self.save_trained_models()
+        # if self.args.apply_attack == True:
+        #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
+        #         print('Launch Label Inference Attack, Only train 1 epoch')
+        #         break
 
-            # LR decay
-            self._send_global_lr_decay(i_epoch)
-            # LR record
-            # if self.args.k == 2:
-            #     LR_passive_list.append(self.parties[0].give_current_lr())
-                # LR_active_list.append(self.parties[1].give_current_lr())
+        # self.trained_models = self.save_state(True)
+        # if self.args.save_model == True:
+        #     self.save_trained_models()
+
+        # LR decay
+        self._send_global_lr_decay(i_epoch)
+        # LR record
+        # if self.args.k == 2:
+        #     LR_passive_list.append(self.parties[0].give_current_lr())
+            # LR_active_list.append(self.parties[1].give_current_lr())
+        return self.loss, self.train_acc
 
     def train_batch(self, parties_data, batch_label):
         '''
