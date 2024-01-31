@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
 from load.LoadDataset import load_dataset_per_party,load_dataset_per_party_llm, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
-from load.LoadModels import load_models_per_party_new
+from load.LoadModels import load_models_per_party
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
@@ -76,6 +76,8 @@ class Party(object):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
+        args.need_auxiliary = 0
+        args.dataset = args.dataset_split['dataset_name']
         # data for training and testing
         self.half_dim = -1
         self.train_data = None
@@ -155,12 +157,13 @@ class Party(object):
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size, need_auxiliary=0):
+    def prepare_data_loader(self, need_auxiliary=0, **kwargs):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
         #     self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
+        batch_size = self.args.batch_size
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # , 
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:

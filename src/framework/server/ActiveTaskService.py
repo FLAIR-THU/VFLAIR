@@ -24,7 +24,7 @@ class ActiveTaskService(threading.Thread):
     def run(self):
         args = Namespace(**self._data)
         if self._party is None:
-            self._party = ActiveParty_LLM(args, -1)
+            self._party = ActiveParty_LLM(args, 1)
 
         while True:
             task = self._queues['active'].get()

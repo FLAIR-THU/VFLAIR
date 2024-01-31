@@ -543,7 +543,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.gt_one_hot_label = gt_one_hot_label
 
                 pred_list = self.pred_transmit()
-                test_logit = self._send_pred_message(pred_list)
+                test_logit = self._send_message(pred_list)
 
                 exact_scores, f1s = self.output(test_logit, gt_one_hot_label, parties_data)
                 exact_score_list.extend(exact_scores)
@@ -916,14 +916,26 @@ class PassiveParty_LLM(Party_LLM):
 
     def _send_message(self, pred_list):
         value = fpm.Value()
-        new_list = [item.tolist() for item in pred_list]
+        new_list = [item.tolist() for item in pred_list[0]]
 
         value.string = json.dumps(new_list)
         node = fpn.Node(node_id=self._client.id)
         msg = mu.MessageUtil.create(node, {"pred_list": value}, 4)
         response = self._client.open_and_send(msg)
         result = response.named_values['test_logit'].string
-        return json.loads(result)
+        test_logit = json.loads(result)
+
+        start_logits = torch.Tensor(test_logit['start_logits'])
+        end_logits = torch.Tensor(test_logit['end_logits'])
+
+        test_logit_output = QuestionAnsweringModelOutput(
+            loss=None,
+            start_logits=start_logits.to(self.args.device),
+            end_logits=end_logits.to(self.args.device),
+            hidden_states=None,
+            attentions=None,
+        )
+        return test_logit_output
 
     def _send_pred_message(self, pred_list):
         return self.args.parties[self.args.k - 1].aggregate(pred_list, test="True")
