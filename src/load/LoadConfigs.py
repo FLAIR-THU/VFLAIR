@@ -12,7 +12,7 @@ LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedSco
 ATTRIBUTE_INFERENCE = ['AttributeInference']
 FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
 # LLM attacks
-INVERSION = ["VanillaModelInversion"]
+INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","WhiteBoxInversion"]
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
@@ -88,30 +88,39 @@ def do_load_basic_configs(config_file_path, args):
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
 
     ############## for LLM ###############
+    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None
+    # pretrained finetune
+
     # Tokenizer
     args.tokenizer = None # for LLM if needed
     args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None
     if args.tokenizer_dict != None:
+        
         args.padding = args.tokenizer_dict['padding'] if('padding' in args.tokenizer_dict) else 0
         # "longest"  "max_length"  "do_not_pad"
-        # if args.padding == 0:
-        #     args.padding = None
-        # elif args.padding == 1:
-        #     args.padding = True
+        args.padding_type = args.tokenizer_dict['padding_type'] if('padding_type' in args.tokenizer_dict) else 'outside'
+        # "inside" "outside"
+        args.pad_token = args.tokenizer_dict['pad_token'] if('pad_token' in args.tokenizer_dict) else 'default'
+        # default
         args.truncation = args.tokenizer_dict['truncation'] if('truncation' in args.tokenizer_dict) else "do_not_truncate"
         # "only first"  "only_second"  "longest_first"  "do_not_truncate"
-
         args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
         args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
+        args.add_special_tokens = args.tokenizer_dict['add_special_tokens'] if('add_special_tokens' in args.tokenizer_dict) else 0
+        if args.add_special_tokens == 0:
+            args.add_special_tokens = False
+        else:
+            args.add_special_tokens = True
 
     else:
-        args.padding = None
+        args.padding = 'do_not_pad'
     
-    if args.padding:
-        print('args.padding:',args.padding,type(args.padding))
+    if args.padding == 'do_not_pad':
+        args.pad_info = f'donotpad-{str(args.add_special_tokens)}'
+    elif args.padding == 'longest':
+        args.pad_info = f'longest-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     else:
-        print('None args.padding:',args.padding,type(args.padding))
-
+        args.pad_info = f'maxlength-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     ############## for LLM ###############
 
 
@@ -141,7 +150,14 @@ def do_load_basic_configs(config_file_path, args):
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    args.model_type = config_model_dict[str(ik)]['model_type'] # Overall Model Type
+                    args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
+                    args.head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
+                    
+                    if args.head_layer_trainable == 1:
+                        args.head_layer_trainable = True
+                    else:
+                        args.head_layer_trainable = False
+                    
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']
@@ -153,12 +169,6 @@ def do_load_basic_configs(config_file_path, args):
                         args.model_path = ""
                         args.pretrained = 0
                 else:
-                    # if 'path' in config_model_dict[str(ik)]:
-                    #     model_type_name = config_model_dict[str(ik)]['path'].split('/')[-2]
-                    #     temp = {'type':model_type_name, 'path':config_model_dict[str(ik)]['path']}
-                    #     model_dict[str(ik)] = temp
-                    # else:
-                    #     model_dict[str(ik)] = default_dict_element
                     model_dict[str(ik)] = default_dict_element
             else:
                 model_dict[str(ik)] = default_dict_element
@@ -233,8 +243,12 @@ def do_load_basic_configs(config_file_path, args):
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
-            args.defense_param = args.defense_configs['dp_strength']
-            args.defense_param_name = 'dp_strength'
+            if 'dp_strength' in args.defense_configs:
+                args.defense_param = args.defense_configs['dp_strength']
+                args.defense_param_name = 'dp_strength'
+            else:
+                args.defense_param = args.defense_configs['epsilon']
+                args.defense_param_name = 'epsilon'
         elif args.defense_name == "GradientSparsification":
             args.defense_param = args.defense_configs['gradient_sparse_rate']
             args.defense_param_name = 'gradient_sparse_rate'

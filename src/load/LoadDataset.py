@@ -48,8 +48,10 @@ TABULAR_DATA = ['breast_cancer_diagnose', 'diabetes', 'adult_income', 'criteo', 
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20', 'cola_public', 'SST-2', 'STS-B', 'MRPC', 'MNLI', 'QNLI', 'QQP', 'WNLI', 'RTE', 'MMLU']
 
+def dataset_partition_llm_new(args, dst, half_dim):
+    return dataset_partition_llm(args, -1, dst, half_dim)
 
-def dataset_partition_llm(args, dst, half_dim):
+def dataset_partition_llm(args, index, dst, half_dim):
     '''
     dst : ( np.array(texts),np.array(label) )
     party 1 ~ k-1: Passive Party with data/label, no global model
@@ -774,12 +776,12 @@ def load_dataset_per_party(args, index):
                     aux_dst = (aux_dst[0].to(args.device), aux_dst[1].to(args.device))
             else:
                 train_dst = (
-                    [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device))
+                [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device))
                 test_dst = (
-                    [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device))
+                [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device))
                 if args.need_auxiliary == 1:
                     aux_dst = (
-                        [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device))
+                    [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device))
             train_dst = dataset_partition(args, index, train_dst, half_dim)
             test_dst = dataset_partition(args, index, test_dst, half_dim)
             if args.need_auxiliary == 1:
@@ -796,15 +798,15 @@ def load_dataset_per_party(args, index):
                     aux_dst = (aux_dst[0].to(args.device), aux_dst[1].to(args.device), aux_dst[2].to(args.device))
             else:
                 train_dst = (
-                    [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device),
-                    train_dst[2].to(args.device))
+                [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device),
+                train_dst[2].to(args.device))
                 test_dst = (
-                    [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device),
-                    test_dst[2].to(args.device))
+                [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device),
+                test_dst[2].to(args.device))
                 if args.need_auxiliary == 1:
                     aux_dst = (
-                        [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device),
-                        aux_dst[2].to(args.device))
+                    [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device),
+                    aux_dst[2].to(args.device))
             train_dst = dataset_partition(args, index, train_dst, half_dim)
             test_dst = dataset_partition(args, index, test_dst, half_dim)
             if args.need_auxiliary == 1:
@@ -812,7 +814,7 @@ def load_dataset_per_party(args, index):
         else:
             train_dst, args = dataset_partition(args, index, train_dst, half_dim)
             test_dst = (
-                [deepcopy(train_dst[0][0]), deepcopy(train_dst[0][1]), test_dst[0][2]], test_dst[1], test_dst[2])
+            [deepcopy(train_dst[0][0]), deepcopy(train_dst[0][1]), test_dst[0][2]], test_dst[1], test_dst[2])
     # important
     if args.need_auxiliary == 1:
         # print(f"[debug] aux_dst={aux_dst[0].shape},{aux_dst[1].shape if aux_dst[1] != None else aux_dst[1]}")
@@ -1079,8 +1081,7 @@ def load_dataset_per_party_backdoor(args, index):
         train_poison_dst = ([train_poison_data[0].to(args.device), train_poison_data[1].to(args.device)],
                             train_poison_label.to(args.device))
         test_poison_dst = (
-            [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)],
-            test_poison_label.to(args.device))
+        [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)], test_poison_label.to(args.device))
 
     train_dst = dataset_partition(args, index, train_dst, half_dim)
     test_dst = dataset_partition(args, index, test_dst, half_dim)
@@ -1304,8 +1305,7 @@ def load_dataset_per_party_noisysample(args, index):
         train_poison_dst = ([train_poison_data[0].to(args.device), train_poison_data[1].to(args.device)],
                             train_poison_label.to(args.device))
         test_poison_dst = (
-            [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)],
-            test_poison_label.to(args.device))
+        [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)], test_poison_label.to(args.device))
 
     train_dst = dataset_partition(args, index, train_dst, half_dim)
     test_dst = dataset_partition(args, index, test_dst, half_dim)
@@ -1383,7 +1383,7 @@ def gen_prompt(train_df, choices, subject, k=-1):
     return prompt_list
 
 
-def load_dataset_per_party_llm(args):
+def load_dataset_per_party_llm(args, index):
     print('load_dataset_per_party_llm  args.need_auxiliary = ', args.need_auxiliary)
     args.classes = [None] * args.num_classes
 
@@ -1449,17 +1449,22 @@ def load_dataset_per_party_llm(args):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-    elif args.dataset == 'cola_public':
-        text_path = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
-        df = pd.read_csv(text_path, delimiter='\t', header=None,
+    elif args.dataset == 'CoLA':
+        if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
+            train_set_file = args.dataset_split['train_set_file']
+            test_set_file = args.dataset_split['test_set_file']
+        else:
+            train_set_file = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
+            test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
+
+        df = pd.read_csv(train_set_file, delimiter='\t', header=None,
                          names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
-        text_path = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
-        df = pd.read_csv(text_path, delimiter='\t', header=None,
+        df = pd.read_csv(test_set_file, delimiter='\t', header=None,
                          names=['sentence_source', 'label', 'label_notes', 'sentence'])
         sentences = df.sentence.values
         labels = df.label.values
@@ -1927,24 +1932,16 @@ def load_dataset_per_party_llm(args):
             train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
             test_set_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
 
-        # data_path = DATA_PATH + '/SQuAD'
-        # squad_dataset = load_dataset(data_path)
-
         max_seq_length = args.max_seq_length
         doc_stride = args.doc_stride
         max_query_length = args.max_query_length
 
         ## train
-        data_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
-        # dst = squad_dataset['train']
-        # train_examples = read_squad_examples(dst, is_training=True)[:10]
-        train_examples = standard_read_squad_examples(input_file=train_set_file, is_training=True)[:10]
-
-        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer,
-                                                      max_seq_length=max_seq_length,
-                                                      doc_stride=doc_stride, max_query_length=max_query_length,
-                                                      is_training=True)
-        print('train_features:', len(train_features), train_features[0].keys())
+        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)[:10]
+        train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
+                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                            max_query_length=args.max_query_length, is_training=True)
+        # print('train_features:',len(train_features),train_features[0].keys())
 
         inputs = []
         labels = []
@@ -1956,10 +1953,11 @@ def load_dataset_per_party_llm(args):
         y_train = labels
 
         ## test
-        # dst = squad_dataset['validation']
-        # test_examples = read_squad_examples(dst, is_training=True)[:10]
-        data_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
-        test_examples = standard_read_squad_examples(input_file=test_set_file, is_training=False)
+        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)
+        test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
+                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
+                            max_query_length=args.max_query_length, is_training=False)
+        print('test_features:',len(test_features),test_features[0].keys())
 
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer,
                                                      max_seq_length=max_seq_length,
@@ -1991,10 +1989,10 @@ def load_dataset_per_party_llm(args):
     # if args.need_auxiliary == 1:
     #     aux_dst = (aux_dst[0].to(args.device),aux_dst[1].to(args.device))
 
-    train_dst = dataset_partition_llm(args, train_dst, half_dim)
-    test_dst = dataset_partition_llm(args, test_dst, half_dim)
+    train_dst = dataset_partition_llm(args, index, train_dst, half_dim)
+    test_dst = dataset_partition_llm(args, index, test_dst, half_dim)
     if args.need_auxiliary == 1:
-        aux_dst = dataset_partition_llm(args, aux_dst, half_dim)
+        aux_dst = dataset_partition_llm(args, index, aux_dst, half_dim)
 
     # important
     if args.need_auxiliary == 1:

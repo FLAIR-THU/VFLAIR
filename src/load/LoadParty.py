@@ -30,7 +30,7 @@ def load_parties_llm(args):
     for ik in range(args.k-1):
         args.parties[ik] = PassiveParty_LLM(args, ik)
     # for active party args.k-1
-    args.parties[args.k-1] = ActiveParty_LLM(args)
+    args.parties[args.k-1] = ActiveParty_LLM(args, args.k-1)
 
     # # for server party 0,1,2,...,args.k_server-1
     # for ik in range(args.k_server):

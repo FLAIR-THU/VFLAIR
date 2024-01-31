@@ -16,22 +16,13 @@ import torch
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
-from evaluates.MainTaskVFL import *
 from evaluates.MainTaskVFL_LLM import *
-from evaluates.MainTaskVFLwithBackdoor import *
-from evaluates.MainTaskVFLwithNoisySample import *
 from utils.basic_functions import append_exp_res
+
+from load.LoadConfigs import INVERSION
+
 import warnings
 warnings.filterwarnings("ignore")
-
-TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB'] # main_acc  backdoor_acc
-UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample'] # main_acc
-LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
-'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
-ATTRIBUTE_INFERENCE = ['AttributeInference']
-FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL','CAFE']
-
-INVERSION = ["VanillaModelInversion"]
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -91,23 +82,31 @@ def evaluate_inversion_attack(args):
         
         if args.basic_vfl != None:
             vfl = args.basic_vfl
+            main_tack_acc = args.main_acc_noattack
         else:
             vfl = MainTaskVFL_LLM(args)
+            if args.pipeline == 'pretrained':
+                _exp_result, metric_val= vfl.train()
+            elif args.pipeline == 'finetune':
+                _exp_result, metric_val = vfl.inference()
+            main_tack_acc = metric_val
+            print(_exp_result)
+            
+
+        # if args.pretrained == 0: # finetune
+        #     _exp_result, metric_val= vfl.train()
+        # else:
+        #     _exp_result, metric_val = vfl.inference()
         
-        if args.pretrained == 0: # finetune
-            _exp_result, metric_val= vfl.train()
-        else:
-            _exp_result, metric_val = vfl.inference()
-        
-        print(_exp_result)
 
 
         print('=== Begin Attack ===')
-        recover_rate = vfl.evaluate_attack()
-        attack_metric_name = 'recover_rate'
-        
+        precision, recall = vfl.evaluate_attack()
+    
         # Save record for different defense method
-        exp_result = f"{args.attack_name}:{attack_metric_name}={recover_rate}"
+        # exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
+        #     (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
+        exp_result = f"{args.attack_name}|{args.pad_info}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
         return exp_result
@@ -145,16 +144,10 @@ if __name__ == '__main__':
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
-        
         print('======= Defense ========')
         print('Defense_Name:',args.defense_name)
         print('Defense_Config:',str(args.defense_configs))
         print('===== Total Attack Tested:',args.attack_num,' ======')
-        # print('targeted_backdoor:',args.targeted_backdoor_list,args.targeted_backdoor_index)
-        # print('untargeted_backdoor:',args.untargeted_backdoor_list,args.untargeted_backdoor_index)
-        # print('label_inference:',args.label_inference_list,args.label_inference_index)
-        # print('attribute_inference:',args.attribute_inference_list,args.attribute_inference_index)
-        # print('feature_inference:',args.feature_inference_list,args.feature_inference_index)
         print('inversion:',args.inversion_list,args.inversion_index)
 
         # Save record for different defense method
@@ -163,9 +156,9 @@ if __name__ == '__main__':
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
         if args.pretrained==1:
-            filename = f'pretrained_model={model_name}.txt'
+            filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
-            filename = f'finetuned_model={model_name}.txt'
+            filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
         args.exp_res_path = args.exp_res_dir + filename
         print(args.exp_res_path)
         print('=================================\n')
@@ -217,10 +210,16 @@ if __name__ == '__main__':
 
             
             # vanilla
-            if args.pretrained == 1:
+            # if args.pretrained == 1:
+            #     args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
+            # else:
+            #     args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
+            
+            if args.pipeline == 'pretrained':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
-            else:
+            elif args.pipeline == 'finetune':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
+
       
             # with attack
             if args.inversion_list != []:

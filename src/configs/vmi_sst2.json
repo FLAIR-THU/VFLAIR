@@ -11,6 +11,15 @@
         "dataset_name": "SST-2",
         "num_classes": 2
     },
+    "tokenizer":{
+        "padding": "do_not_pad",
+        "padding_type": "inside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 70,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
     "model_list":{
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
@@ -36,7 +45,7 @@
     },
     "attack_list": {
         "0":{
-            "name": "VanillaModelInversion",
+            "name": "VanillaModelInversion_WhiteBox",
             "parameters": {
                 "party": [1],
                 "lr": 0.01,

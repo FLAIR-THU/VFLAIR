@@ -1,0 +1,55 @@
+{
+    "epochs": 1,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 1,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left"
+    },
+    "dataset":{
+        "dataset_name": "CoLA",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
+    }
+}

@@ -72,7 +72,9 @@ def my_collate(batch):
     raise TypeError(my_collate_err_msg_format.format(elem_type))
 
 class Party(object):
-    def __init__(self, args):
+    def __init__(self, args, index):
+        self.name = "party#" + str(index + 1)
+        self.index = index
         self.args = args
         # data for training and testing
         self.half_dim = -1
@@ -114,14 +116,16 @@ class Party(object):
         # self.attacker = None
         self.defender = None
 
-        # self.prepare_model(args)
-        # self.prepare_data(args)
+        self.prepare_model(args, index)
+        self.prepare_data(args, index)
         # self.prepare_attacker(args, index)
         # self.prepare_defender(args, index)
 
         self.local_gradient = None
         self.local_pred = None
         self.local_pred_clone = None
+
+        self.origin_pred = None # for adversarial training
 
         self.cache = Cache()
         self.prev_batches = []
@@ -135,19 +139,23 @@ class Party(object):
         self.local_sequence_lengths = None # GPT2 Classification
         self.local_attention_mask = None # Llama
 
+        # for adversarial training
+        self.adversary_loss = None
+        self.mapping_distance = None
 
-    def prepare_data(self, args):
+
+    def prepare_data(self, args, index):
         (
             args,
             self.half_dim,
             train_dst,
             test_dst,
-        ) = load_dataset_per_party_llm(args)
+        ) = load_dataset_per_party_llm(args, index)
 
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size, need_auxiliary):
+    def prepare_data_loader(self, batch_size, need_auxiliary=0):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
@@ -158,7 +166,7 @@ class Party(object):
         if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
 
-    def prepare_model(self, args):
+    def prepare_model(self, args, index):
         # prepare model and optimizer
         (
             args,
@@ -166,7 +174,7 @@ class Party(object):
             self.local_model_optimizer,
             self.global_model,
             self.global_model_optimizer
-        ) = load_models_per_party_new(args)
+        ) = load_models_per_party(args, index)
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -191,46 +199,68 @@ class Party(object):
 
         if self.args.model_type == 'Bert':
             # SequenceClassification & QuestionAnswering
-            self.local_pred, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
+            self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
+            # print('self.local_model.origin_output:',self.local_model.origin_output.shape)
+            # print('self.local_model.adversarial_output:',self.local_model.adversarial_output.shape) # local_pred
+            if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                self.origin_pred = self.local_pred
+                self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
             self.local_attention_mask = self.local_attention_mask.detach().clone()
-
             return self.local_pred, self.local_pred_clone , self.local_attention_mask
         
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'SequenceClassification':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
             elif self.args.task_type == 'QuestionAnswering':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
-
 
         elif self.args.model_type == 'Llama':
             if self.args.task_type == 'SequenceClassification':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
             elif self.args.task_type == 'QuestionAnswering':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
+                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                    self.origin_pred = self.local_pred
+                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
+
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
@@ -255,118 +285,29 @@ class Party(object):
         self.num_local_updates += 1 # another update
         
         # update local model
-        self.local_model_optimizer.zero_grad()
-        # for w in self.local_model.parameters():
-        #     if w.requires_grad:
-        #         print("zero grad results in", w.grad) # None for all
-        
-        # ########## for passive local mid loss (start) ##########
-        # if passive party in defense party, do
-        if (
-            self.args.apply_mid == True
-            and (self.index in self.args.defense_configs["party"])
-            and (self.index < self.args.k - 1)
-            ):
-            # get grad for local_model.mid_model.parameters()
-            self.local_model.mid_loss.backward(retain_graph=True)
-            self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
-            # for w in self.local_model.parameters():
-            #     if w.requires_grad:
-            #         print("mid_loss grad results in", w.grad)
-            # # get grad for local_model.local_model.parameters()
-            # get grad for local_model.parameters()
-            self.weights_grad_a = torch.autograd.grad(
-                self.local_pred,
-                # self.local_model.local_model.parameters(),
-                self.local_model.parameters(),
-                grad_outputs=self.local_gradient,
-                retain_graph=True,
-            )
-            # for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
-            for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-                if w.requires_grad:
-                    if w.grad != None:
-                        w.grad += g.detach()
-                    else:
-                        w.grad = g.detach()
-            # for w in self.local_model.parameters():
-            #     if w.requires_grad:
-            #         print("total grad results in", w.grad)
-        # ########## for passive local mid loss (end) ##########
-        elif (
-            self.args.apply_dcor == True
-            and (self.index in self.args.defense_configs["party"])
-            and (self.index < self.args.k - 1) # pasive defense
-            ):
-            self.weights_grad_a = torch.autograd.grad(
-                self.local_pred,
-                self.local_model.parameters(),
-                grad_outputs=self.local_gradient,
-                retain_graph=True,
-            )
-            for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-                # print('w:',w.size(),'g:',g.size())
-                if w.requires_grad:
-                    w.grad = g.detach()
+        if self.local_model_optimizer != None:
+            # adversarial training : update adversarial model
+            if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+                self.adversarial_model_optimizer.zero_grad()
 
-            ########## dCor Loss ##########
-            # print('dcor passive defense')
-            self.distance_correlation_lambda = self.args.defense_configs['lambda']
-            loss_dcor = self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
-            dcor_gradient = torch.autograd.grad(
-                loss_dcor, self.local_model.parameters(), retain_graph=True, create_graph=True
-                )
-            # print('dcor_gradient:',len(dcor_gradient),dcor_gradient[0].size())
-            for w, g in zip(self.local_model.parameters(), dcor_gradient):
-                # print('w:',w.size(),'g:',g.size())
-                if w.requires_grad:
-                    w.grad += g.detach()
-            ########## dCor Loss ##########
-        elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-            # ########## adversarial training loss (start) ##########
-            try:
-                target_attribute = self.attribute_iter.__next__()
-            except StopIteration:
-                self.attribute_iter = iter(self.attribute_loader)
-                target_attribute = self.attribute_iter.__next__()
-            assert target_attribute.shape[0] == self.local_model.adversarial_output.shape[0], f"[Error] Data not aligned, target has shape: {target_attribute.shape}, pred has shape {self.local_model.adversarial_output.shape}"
-            attribute_loss_fn = torch.nn.CrossEntropyLoss()
-            attribute_loss = self.args.defense_configs["lambda"] * attribute_loss_fn(self.local_model.adversarial_output, target_attribute)
-            attribute_loss.backward(retain_graph=True)
-            self.local_model.adversarial_output = None
-            self.weights_grad_a = torch.autograd.grad(
-                self.local_pred,
-                self.local_model.local_model.parameters(),
-                # self.local_model.parameters(),
-                grad_outputs=self.local_gradient,
-                retain_graph=True,
-            )
-            for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
-            # for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-                if w.requires_grad:
-                    if w.grad != None:
-                        w.grad += g.detach()
-                    else:
-                        w.grad = g.detach()
-            # ########## adversarial training loss (end) ##########
-        else:
-            torch.autograd.set_detect_anomaly(True)
-            if weight != None: # CELU
-                ins_batch_cached_grad = torch.mul(weight.unsqueeze(1),self.local_gradient)
-                self.weights_grad_a = torch.autograd.grad(
-                    self.local_pred,
-                    self.local_model.parameters(),
-                    grad_outputs=ins_batch_cached_grad,
-                    retain_graph=True
-                )
-            else:
-                self.weights_grad_a = torch.autograd.grad(
-                    self.local_pred,
-                    self.local_model.parameters(),
-                    grad_outputs=self.local_gradient,
-                    retain_graph=True
-                )
-            for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-                if w.requires_grad:
-                    w.grad = g.detach()
-        self.local_model_optimizer.step()
+                final_adversary_loss = - self.adversarial_loss + self.args.adversary_lambda * self.mapping_distance
+                final_adversary_loss.backward(retain_graph=True)
+
+                # self.weights_grad_a = torch.autograd.grad(
+                #     self.local_pred,
+                #     self.local_model.adversarial_model.parameters(),
+                #     # self.local_model.parameters(),
+                #     grad_outputs=self.local_gradient,
+                #     retain_graph=True,
+                # )
+                # for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+                #     if w.requires_grad:
+                #         if w.grad != None:
+                #             w.grad += g.detach()
+                #         else:
+                #             w.grad = g.detach()
+
+                self.local_model_optimizer.step()
+
+                self.adversarial_model_optimizer.step()
+

@@ -1,0 +1,64 @@
+{
+    "epochs": 1,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 1,
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "tokenizer":{
+        "padding": "do_not_pad",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 50,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "dataset":{
+        "dataset_name": "CoLA",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [0],
+            "epsilon": 80
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
+    }
+}

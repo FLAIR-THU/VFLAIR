@@ -15,7 +15,7 @@ class PassiveTaskService:
         self._client = client
         self._node = fpn.Node(node_id=client.id)
         args = Namespace(**self._data)
-        self._party = PassiveParty_LLM(args, self._client)
+        self._party = PassiveParty_LLM(args, -1, self._client)
 
     def run(self, task):
         if hasattr(self._party, task['run']):
