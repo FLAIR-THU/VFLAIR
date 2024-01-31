@@ -348,7 +348,66 @@ class MainTaskVFL_LLM(object):
 
         return exp_result, self.test_acc
 
-    
+    def seq_inference(self):
+        # SequenceClassification
+        test_predict_labels = []
+        test_actual_labels = []
+        postfix = {'test_acc': 0.0}
+        suc_cnt = 0
+        total_sample_cnt = 0
+
+        for ik in range(self.k - 1):
+            # Passive data local predict
+            predict_labels, actual_labels, sample_cnt = self.parties[ik].predict()
+            test_predict_labels.extend(predict_labels)
+            test_actual_labels.extend(actual_labels)
+            total_sample_cnt += sample_cnt
+
+        if self.num_classes == 1:
+            self.test_mse = torch.mean(
+                (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
+            # torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
+
+            self.test_pearson_corr = \
+            stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
+            self.test_spearmanr_corr = \
+            stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
+            postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
+
+            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
+                                                                                                      self.test_pearson_corr,
+                                                                                                      self.test_spearmanr_corr)
+            print(exp_result)
+            # print('Full pred pearson:',full_test_pearson_corr)
+            return exp_result, self.test_mse
+        else:
+            # print('test_predict_labels:',test_predict_labels[:20])
+            # print('test_actual_labels:',test_actual_labels[:20])
+
+            self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
+            # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
+
+            # test_preds = np.vstack(test_preds)
+            # test_targets = np.vstack(test_targets)
+            # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
+
+            self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
+
+            postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+            # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+            postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
+
+            exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
+            print(exp_result)
+
+            self.final_state = self.save_state(False)
+            self.final_state.update(self.save_party_data())
+
+            return exp_result, self.test_acc
+
+
     def inference(self, inference_data = 'test'):
         # current_model_type = self.args.model_list['0']['type']
         # full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type]).to(self.args.device)
@@ -356,7 +415,7 @@ class MainTaskVFL_LLM(object):
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader(batch_size = self.batch_size)
+            self.parties[ik].prepare_data_loader()
         self.parties[self.k-1].global_model.eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
@@ -384,6 +443,9 @@ class MainTaskVFL_LLM(object):
 
         if self.args.task_type == "QuestionAnswering":
             return self.qa_inference()
+
+        if self.args.task_type == "SequenceClassification":
+            return self.seq_inference()
 
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)] # passive party's loaders
@@ -564,46 +626,6 @@ class MainTaskVFL_LLM(object):
                 del(parties_data) # remove from cuda
                 # break
 
-            if self.args.task_type == "SequenceClassification":
-                if self.num_classes == 1:
-                    self.test_mse = torch.mean((torch.tensor(test_predict_labels)-torch.tensor(test_actual_labels))**2).item()
-                    #torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
-
-                    self.test_pearson_corr = stats.pearsonr( torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) )[0]
-                    # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
-                    self.test_spearmanr_corr = stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-                    postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
-                    postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-                    
-                    exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr )
-                    print(exp_result)
-                    # print('Full pred pearson:',full_test_pearson_corr)
-                    return exp_result , self.test_mse
-                else:
-                    # print('test_predict_labels:',test_predict_labels[:20])
-                    # print('test_actual_labels:',test_actual_labels[:20])
-
-                    self.test_acc = suc_cnt / float(sample_cnt) # ACC
-                    # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
-
-                    # test_preds = np.vstack(test_preds)
-                    # test_targets = np.vstack(test_targets)
-                    # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
-
-                    self.test_mcc = matthews_corrcoef(np.array(test_predict_labels),np.array(test_actual_labels) ) # MCC
-
-                    postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-                    # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
-                    postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-
-                    exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc )
-                    print(exp_result)
-                    
-                    self.final_state = self.save_state(False) 
-                    self.final_state.update(self.save_party_data()) 
-
-                    return exp_result , self.test_acc
-
             if self.args.task_type == "CausalLM":
                 # print('target_word:',target_word[:2]) 
                 # print('predict_word_list:',predict_word_list[:2]) 
@@ -640,7 +662,7 @@ class MainTaskVFL_LLM(object):
         print_every = 1
 
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader( batch_size=self.batch_size)
+            self.parties[ik].prepare_data_loader()
 
         test_acc = 0.0
         # Early Stop
