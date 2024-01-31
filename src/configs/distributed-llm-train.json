@@ -1,0 +1,67 @@
+{
+    "epochs": 10,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 32,
+    "pipeline": "finetune",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+  "device": "cpu",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "tasks": [{
+      "id": 1,
+      "party": "active",
+      "run": "prepare_data_loader"
+    }, {
+      "id": 2,
+      "party": "c1",
+      "run": "prepare_data_loader"
+    }, {
+       "id": 3,
+        "party": "c1",
+        "run": "start_train"
+    }],
+    "dataset":{
+        "dataset_name": "CoLA",
+        "train_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_train.tsv",
+        "test_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_dev.tsv",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "D:\\work\\tools\\textattackbert-base-uncased-CoLA"
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "D:\\work\\tools\\textattackbert-base-uncased-CoLA"
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}

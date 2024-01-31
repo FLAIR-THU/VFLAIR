@@ -486,6 +486,7 @@ class PassiveParty_LLM(Party_LLM):
         data_loader_list = [self.test_loader]
         exact_score_list = []
         f1_list = []
+        total_sample_cnt = 0
         with torch.no_grad():
             for parties_data in zip(*data_loader_list):
                 _parties_data = []
@@ -530,8 +531,8 @@ class PassiveParty_LLM(Party_LLM):
 
                 parties_data = _parties_data
 
-                if self.args.task_type == "SequenceClassification" and self.num_classes > 1: # classification
-                    gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
+                if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
+                    gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
                 elif self.args.task_type == "QuestionAnswering":
                     gt_one_hot_label = list(parties_data[0][1])
                 else:
@@ -543,13 +544,16 @@ class PassiveParty_LLM(Party_LLM):
                 self.gt_one_hot_label = gt_one_hot_label
 
                 pred_list = self.pred_transmit()
-                test_logit = self._send_message(pred_list)
+                # test_logit = self._send_message(pred_list)
+                test_logit = self._send_pred_message(pred_list)
 
-                exact_scores, f1s = self.output(test_logit, gt_one_hot_label, parties_data)
+                exact_scores, f1s, sample_cnt = self.output(test_logit, gt_one_hot_label, parties_data)
                 exact_score_list.extend(exact_scores)
                 f1_list.extend(f1s)
+                if sample_cnt is not None:
+                    total_sample_cnt += sample_cnt
                 del parties_data
-        return exact_score_list, f1_list
+        return exact_score_list, f1_list, total_sample_cnt
 
     def launch_defense(self, gradients_list, _type):
 
@@ -680,7 +684,7 @@ class PassiveParty_LLM(Party_LLM):
         sample_cnt = 0
 
         if self.args.task_type == "SequenceClassification":
-            if self.num_classes == 1:  # regression
+            if self.args.num_classes == 1:  # regression
                 predict_label = test_logit.detach().cpu()
                 actual_label = gt_one_hot_label.detach().cpu()
 
@@ -689,9 +693,7 @@ class PassiveParty_LLM(Party_LLM):
                 predict_label = torch.tensor([_.item() for _ in predict_label])
                 actual_label = torch.tensor([_.item() for _ in actual_label])
 
-                test_predict_labels.extend(list(predict_label))
-                test_actual_labels.extend(list(actual_label))
-
+                return list(predict_label), list(actual_label)
                 # test_full_predict_labels.extend( list(full_predict_label) )
             else:  # Classification
                 enc_predict_prob = test_logit
@@ -706,13 +708,12 @@ class PassiveParty_LLM(Party_LLM):
                 test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
                 # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
 
-                test_predict_labels.extend(list(predict_label.detach().cpu()))
-                test_actual_labels.extend(list(actual_label.detach().cpu()))
                 # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
 
                 sample_cnt += predict_label.shape[0]
                 suc_cnt += torch.sum(predict_label == actual_label).item()
                 # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
+                return list(predict_label.detach().cpu()), list(actual_label.detach().cpu()), sample_cnt
 
         elif self.args.task_type == "CausalLM":
             # get logits of last hidden state
@@ -956,6 +957,38 @@ class PassiveParty_LLM(Party_LLM):
 
     def _send_global_modal_train_message(self):
         self.args.parties[self.args.k - 1].global_model.train()
+
+    def start_train(self):
+        print_every = 1
+        self.num_total_comms = 0
+        total_time = 0.0
+        flag = 0
+        self.current_epoch = 0
+
+        start_time = time.time()
+        for i_epoch in range(self.args.main_epochs):
+            self.current_epoch = i_epoch
+            postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
+            i = -1
+
+            self.loss, self.train_acc = self.train(i_epoch)
+
+            # validation
+            if (i + 1) % print_every == 0:
+                print("validate and test")
+
+                _exp_result, self.test_acc, total_sample_cnt = self.predict()
+
+                postfix['train_loss'] = self.loss
+                postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
+                postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+                # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+                # postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
+
+                exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
+                    i_epoch, self.loss, self.train_acc, self.test_acc)
+                print(exp_result)
+                self.final_epoch = i_epoch
 
     def train(self, i_epoch):
         data_loader_list = [self.train_loader]
