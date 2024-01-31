@@ -51,7 +51,7 @@ class GrpcClient():
             try:
                 self._message_service.parse_message(response)
             except (grpc.RpcError, Exception) as e:
-                logger.error(e)
+                logger.exception(e)
 
     def open_and_send(self, msg):
         with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:
