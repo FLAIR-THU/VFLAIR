@@ -76,6 +76,8 @@ class Party(object):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
+        args.need_auxiliary = 0
+        args.dataset = args.dataset_split['dataset_name']
         # data for training and testing
         self.half_dim = -1
         self.train_data = None
@@ -155,13 +157,14 @@ class Party(object):
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
 
-    def prepare_data_loader(self, batch_size, need_auxiliary=0):
+    def prepare_data_loader(self, need_auxiliary=0, **kwargs):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
         # self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True ,collate_fn=my_collate
         # if self.args.need_auxiliary == 1 and self.aux_dst != None:
         #     self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # , 
+        batch_size = self.args.batch_size
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
@@ -285,8 +288,8 @@ class Party(object):
         self.num_local_updates += 1 # another update
         
         # update local model
-        if self.local_model_optimizer != None:  
-            # adversarial training : update adversarial model         
+        if self.local_model_optimizer != None:
+            # adversarial training : update adversarial model
             if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
                 self.adversarial_model_optimizer.zero_grad()
 

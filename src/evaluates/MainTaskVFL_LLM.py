@@ -356,7 +356,7 @@ class MainTaskVFL_LLM(object):
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader(batch_size = self.batch_size)
+            self.parties[ik].prepare_data_loader()
         self.parties[self.k-1].global_model.eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
@@ -640,7 +640,7 @@ class MainTaskVFL_LLM(object):
         print_every = 1
 
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader( batch_size=self.batch_size)
+            self.parties[ik].prepare_data_loader()
 
         test_acc = 0.0
         # Early Stop
