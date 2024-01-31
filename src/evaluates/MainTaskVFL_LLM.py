@@ -654,7 +654,7 @@ class MainTaskVFL_LLM(object):
         flag = 0
         self.current_epoch = 0
 
-
+        last_adversarial_model_loss = 10000
         start_time = time.time()
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
@@ -681,10 +681,22 @@ class MainTaskVFL_LLM(object):
                     exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc)
                     print(exp_result)
+                    if self.args.apply_adversarial:
+                        print(f'adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
+                    
+                    if (i+1) % 10 == 0:
+                        if self.args.apply_adversarial:
+                            if last_adversarial_model_loss < self.parties[0].adversarial_model_loss.item():
+                                self.final_epoch = i_epoch
+                                break
+                            last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
+
                     self.final_epoch = i_epoch
         
-        exp_result = 'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
-                        self.loss, self.train_acc, self.test_acc)
+        # exp_result = f'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} final_epoch:{}'.format(
+        #                 self.loss, self.train_acc, self.test_acc, self.final_epoch)
+        
+        exp_result = f'train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
                     
         # save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/' 
         # if not os.path.exists(save_path):

@@ -155,7 +155,7 @@ if __name__ == '__main__':
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
-        if args.pretrained==1:
+        if args.pipeline=='pretrained':
             filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
             filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'

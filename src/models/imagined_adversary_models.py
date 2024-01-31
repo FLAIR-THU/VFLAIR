@@ -3,13 +3,13 @@ import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Function
 
-class ImaginedAdversary(nn.Module):
+class ImaginedAdversary_MLP3(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
     def __init__(self, seq_length, embed_dim):
-        super(ImaginedAdversary,self).__init__()
+        super(ImaginedAdversary_MLP3,self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
@@ -49,13 +49,13 @@ class ImaginedAdversary(nn.Module):
         x3 = x3.reshape(origin_shape)
         return x3
 
-class Adversarial_Mapping(nn.Module):
+class Mapping_MLP3(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
     def __init__(self, seq_length, embed_dim):
-        super(Adversarial_Mapping,self).__init__()
+        super(Mapping_MLP3,self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
