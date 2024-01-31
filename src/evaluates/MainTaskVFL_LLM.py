@@ -355,7 +355,6 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         suc_cnt = 0
         total_sample_cnt = 0
-
         for ik in range(self.k - 1):
             # Passive data local predict
             predict_labels, actual_labels, sample_cnt = self.parties[ik].predict()
@@ -383,6 +382,10 @@ class MainTaskVFL_LLM(object):
             # print('Full pred pearson:',full_test_pearson_corr)
             return exp_result, self.test_mse
         else:
+            # print('test_predict_labels:',type(test_predict_labels),len(test_predict_labels)) # list
+
+            suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
+            torch.tensor(test_actual_labels)).item()
             # print('test_predict_labels:',test_predict_labels[:20])
             # print('test_actual_labels:',test_actual_labels[:20])
 
@@ -404,6 +407,9 @@ class MainTaskVFL_LLM(object):
 
             self.final_state = self.save_state(False)
             self.final_state.update(self.save_party_data())
+
+            print('self.test_acc:',self.test_acc)
+            print('======== seq_inference ==========')
 
             return exp_result, self.test_acc
 
@@ -442,10 +448,14 @@ class MainTaskVFL_LLM(object):
         targets = []
 
         if self.args.task_type == "QuestionAnswering":
-            return self.qa_inference()
+            exp_result, main_task_result = self.qa_inference()
+            return exp_result, main_task_result
 
         if self.args.task_type == "SequenceClassification":
-            return self.seq_inference()
+            # exp_result, self.test_acc = 
+            exp_result, main_task_result = self.seq_inference()
+            return exp_result, main_task_result
+
 
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)] # passive party's loaders

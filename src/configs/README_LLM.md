@@ -27,6 +27,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
     - Note: Currently Fintune procedure is only supported for SequenceClassification tasks.【To be completed】
 
 ## Structure
+
  ![Pipeline](../../usage_guidance/figures/pipeline.png)
 
 - **Config Module**
@@ -48,7 +49,13 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
   - **Training Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
     - Provide Class MainTaskVFL_LLM() to finetune your own LLM or evaluate a pretrained LLM.
-  - **Attack&Defense**: currently not available # TODO
+  - **Attack&Defense**: 
+    - Attacks：
+      - VanillaModelInversion - WhiteBox([paper]([Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures | Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security](https://dl.acm.org/doi/10.1145/2810103.2813677))) 
+      - WhiteBoxInversion([paper]([2004.00053\] Information Leakage in Embedding Models (arxiv.org)](https://arxiv.org/abs/2004.00053)))
+    - Defense：
+      - Laplace Differential Privacy([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
+      - Adversarial Training - Privacy Preserving Mapping([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
   - **Communication**: currently we only provide FedSGD for VFL_LLM communication.
 
 - **Metrics Module**: we provide the following metris for each task type
@@ -88,7 +95,32 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
 "lr": 0.0005,
 "k": 2,
 "batch_size": 1,
+"pipeline": "finetune",
 ```
+
+- "pipeline": finetune/pretrained
+  - whether the pipeline is to finetune a base model/another pretrained model checkpoint or using a pretrained model directly for inference
+
+#### Tokenizer
+
+```json
+"tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left",
+        "add_special_tokens": 1
+}
+```
+
+- "padding": padding method 
+  - do_not_pad / max_length / longest
+- “pad_token”: the token used for padding, usually [PAD]
+- "padding_type": add [PAD] inside special tokens like [CLS] [SEP] or outside them
+- "max_length": max padding length
+- "add_special_tokens": whether to add special tokens like [CLS] [SEP]
 
 #### Communication Protocol
 
@@ -102,8 +134,6 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
 ```
 
 #### Dataset
-
-> Currently only FedSGD is supported for VFLAIR-LLM
 
 ```json
 "dataset":{
@@ -128,6 +158,7 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
     "0": {
         "type": "rsvp-aibertserini-bert-base-squad",
         "pretrained": 1,
+        "head_layer_trainable": 1,
         "output_dim": 1,
         "model_type": "Bert",
         "max_sequence": 512,
@@ -136,6 +167,7 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
     "1": {
         "type": "rsvp-aibertserini-bert-base-squad",
         "pretrained": 1,
+        "head_layer_trainable": 1,
         "output_dim": 1,
         "model_type": "Bert",
         "max_sequence": 512,
@@ -148,19 +180,64 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
         "max_seq_length": 512,
         "max_query_length" : 64,
         "max_answer_length": 30,
-        "n_best_size": 20
+        "n_best_size": 20}
 
     }
 ```
 
 - "model":
-  - "pretrained": define whether the task is finetuning a model or use a pretrained model for inference.
+  - "pretrained": represents model loading method
+    - define whether the model is loaded from a pretrained third-party model with full trained head layer(pretrained = 1) or a base model with randomly-initialized head layer.
+  - "head_layer_trainable": define whether we shall freeze the head layer paramaters or leave it open for finetuning
   - "max_sequence": max length of input acceptable for the model.
     - normally we set 512 for Bert / 1024 for GPT2
 - "task": Definition of task type
   - "task_type": name of the task type(QuestionAnswering/SequenceClassification...)
   - "metric_type"/"n_best_size": specific for QuestionAnswering tasks. it represents the type of metric calculation for QA(text-span) tasks
   - “doc_stride”/“max_seq_length”...: specific for QuestionAnswering tasks. it defines the max length of QA input
+
+#### Attack
+
+```json
+"attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
+}
+```
+
+- "name": the name for the attack
+- "party": attacker party id, currently we only support 1
+
+#### Defense
+
+```json
+"defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.05,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.05,
+            "lambda": 0.5,
+            "seq_length": 30,
+            "embed_dim": 768
+        }
+}
+```
+
+- "lambda": a hyper-parameter for trade-off between privacy and accuracy in adversarial loss function
+- "adversarial_model": adversarial model used by the defense party
+- "imagined_adversary": imagined adversary used by the defense party
+
+
 
 
 
