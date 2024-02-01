@@ -126,7 +126,7 @@ class Party(object):
         self.local_gradient = None
         self.local_pred = None
         self.local_pred_clone = None
-
+        
         self.origin_pred = None # for adversarial training
 
         self.cache = Cache()
@@ -164,7 +164,7 @@ class Party(object):
         #     self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
         batch_size = self.args.batch_size
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # , 
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
         self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
@@ -263,7 +263,7 @@ class Party(object):
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
-
+    
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 

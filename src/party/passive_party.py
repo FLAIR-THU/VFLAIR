@@ -404,7 +404,7 @@ class PassiveParty_LLM(Party_LLM):
 
             self.adversary_attack_loss.backward(retain_graph = True)
 
-            print('adversarial_model_loss:',self.adversarial_model_loss.item(), ' adversary_attack_loss:',self.adversary_attack_loss.item())
+            # print('adversarial_model_loss:',self.adversarial_model_loss.item(), ' adversary_attack_loss:',self.adversary_attack_loss.item())
 
             # self.weights_grad_a = torch.autograd.grad(
             #     self.local_pred,
@@ -566,10 +566,15 @@ class PassiveParty_LLM(Party_LLM):
             return gradients_list
 
     def apply_defense_on_transmission(self, pred_detach):
+        # print('apply_defense_on_transmission')
+        # print('pred_detach:',type(pred_detach))
+        # print(pred_detach.shape)
         ########### Defense applied on pred transmit ###########
         if self.args.apply_defense == True and self.args.apply_dp == True:
-            pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred"))
-
+            pred_detach_list = self.launch_defense(pred_detach, "pred")
+            pred_detach = torch.stack(pred_detach_list)
+            # print('after:',pred_detach.shape)
+            
         return pred_detach
 
     def apply_communication_protocol_on_transmission(self, pred_detach):
@@ -620,7 +625,7 @@ class PassiveParty_LLM(Party_LLM):
 
         # Defense
         if self.args.apply_defense:
-            if (ik in self.args.defense_configs['party']):
+            if (self.index in self.args.defense_configs['party']):
                 # print('Apply DP')
                 pred_detach = self.apply_defense_on_transmission(pred_detach)
         # Communication Process
@@ -1044,12 +1049,12 @@ class PassiveParty_LLM(Party_LLM):
             parties_data = _parties_data
 
             if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
-                gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
+                gt_one_hot_label = self.label_to_one_hot(parties_data[self.index][1], self.args.num_classes)
             else:
-                gt_one_hot_label = parties_data[0][1]
+                gt_one_hot_label = parties_data[self.index][1]
 
             i += 1
-            self._send_global_modal_train_message()
+            self._send_global_modal_train_message() # call global model to a training mode
 
             # ====== train batch (start) ======
             enter_time = time.time()
@@ -1113,8 +1118,9 @@ class PassiveParty_LLM(Party_LLM):
         torch.autograd.set_detect_anomaly(True)
 
         # =================== Commu ===================
-        all_pred_list = self.pred_transmit()  # exchange info between party: local_pred/global_pred
-        final_pred = self._send_pred_message(all_pred_list)
+        # exchange info between party: local_pred/global_pred
+        all_pred_list = self.pred_transmit()   # [ pred of this party ]
+        final_pred = self._send_pred_message(all_pred_list) # TODO: if there's multiple more passive parties
         # =================== Commu ===================
 
         # passive party -> global gradient -> active party

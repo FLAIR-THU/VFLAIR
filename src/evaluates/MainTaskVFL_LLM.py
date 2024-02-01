@@ -148,7 +148,7 @@ class MainTaskVFL_LLM(object):
             pred_detach = torch.stack( self.launch_defense(pred_detach, "pred")  )
             # print('after pred_detach:',type(pred_detach),pred_detach.shape) # torch.size bs,12,768 intermediate
         return pred_detach
-
+    
     def apply_communication_protocol_on_transmission(self, pred_detach):
         ########### communication_protocols ###########
         if self.args.communication_protocol in ['Quantization','Topk']:
@@ -184,7 +184,7 @@ class MainTaskVFL_LLM(object):
                 # ########### Defense applied on pred transmit ###########
                 # if self.args.apply_defense == True and self.args.apply_dp == True :
                 #     if (ik in self.args.defense_configs['party']):
-                #         pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred"))
+                #         pred_detach = torch.tensor(self.launch_defense(pred_detach, "pred")) 
                 # ########### communication_protocols ###########
                 # if self.args.communication_protocol in ['Quantization','Topk']:
                 #     pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
@@ -196,9 +196,9 @@ class MainTaskVFL_LLM(object):
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred()
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach , attention_mask = self.parties[ik].give_pred()
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() 
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred, pred_detach , attention_mask = self.parties[ik].give_pred()
+                    pred, pred_detach , attention_mask = self.parties[ik].give_pred() 
                 else:
                     assert 1>2, "task type not supported for finetune"
 
@@ -209,7 +209,7 @@ class MainTaskVFL_LLM(object):
                     pred_detach = self.apply_defense_on_transmission(pred_detach)
             # Communication Process
             pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)
-
+            
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
             attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
@@ -217,48 +217,48 @@ class MainTaskVFL_LLM(object):
             if self.args.model_type == 'Bert':
                 if self.args.task_type == 'SequenceClassification':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+\
                         get_size_of(attention_mask) #MB
                 elif self.args.task_type == 'QuestionAnswering':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
             elif self.args.model_type == 'Llama':
                 if self.args.task_type == 'SequenceClassification':
                     pred_list = [pred_clone,sequence_lengths,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+\
                     get_size_of(sequence_lengths)+\
                     get_size_of( attention_mask ) #MB
                 elif self.args.task_type == 'CausalLM':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+\
                     get_size_of( attention_mask ) #MB
                 elif self.args.task_type == 'QuestionAnswering':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik)  
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of( attention_mask ) #MB
             elif self.args.model_type == 'GPT2':
                 if self.args.task_type == 'SequenceClassification':
                     pred_list = [pred_clone,sequence_lengths,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)
+                    self.parties[self.k-1].receive_pred(pred_list, ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask)+get_size_of(sequence_lengths)  #MB
                 elif self.args.task_type == 'CausalLM':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred( pred_list, ik)
+                    self.parties[self.k-1].receive_pred( pred_list, ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
                 elif self.args.task_type == 'QuestionAnswering':
                     pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred( pred_list , ik)
+                    self.parties[self.k-1].receive_pred( pred_list , ik) 
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
             
@@ -355,7 +355,6 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         suc_cnt = 0
         total_sample_cnt = 0
-
         for ik in range(self.k - 1):
             # Passive data local predict
             predict_labels, actual_labels, sample_cnt = self.parties[ik].predict()
@@ -383,6 +382,10 @@ class MainTaskVFL_LLM(object):
             # print('Full pred pearson:',full_test_pearson_corr)
             return exp_result, self.test_mse
         else:
+            # print('test_predict_labels:',type(test_predict_labels),len(test_predict_labels)) # list
+
+            suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
+            torch.tensor(test_actual_labels)).item()
             # print('test_predict_labels:',test_predict_labels[:20])
             # print('test_actual_labels:',test_actual_labels[:20])
 
@@ -405,6 +408,9 @@ class MainTaskVFL_LLM(object):
             self.final_state = self.save_state(False)
             self.final_state.update(self.save_party_data())
 
+            print('self.test_acc:',self.test_acc)
+            print('======== seq_inference ==========')
+
             return exp_result, self.test_acc
 
 
@@ -415,7 +421,7 @@ class MainTaskVFL_LLM(object):
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader(batch_size = self.batch_size)
+            self.parties[ik].prepare_data_loader()
         self.parties[self.k-1].global_model.eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
@@ -442,10 +448,14 @@ class MainTaskVFL_LLM(object):
         targets = []
 
         if self.args.task_type == "QuestionAnswering":
-            return self.qa_inference()
+            exp_result, main_task_result = self.qa_inference()
+            return exp_result, main_task_result
 
         if self.args.task_type == "SequenceClassification":
-            return self.seq_inference()
+            # exp_result, self.test_acc =
+            exp_result, main_task_result = self.seq_inference()
+            return exp_result, main_task_result
+
 
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)] # passive party's loaders
@@ -662,7 +672,7 @@ class MainTaskVFL_LLM(object):
         print_every = 1
 
         for ik in range(self.k):
-            self.parties[ik].prepare_data_loader( batch_size=self.batch_size)
+            self.parties[ik].prepare_data_loader()
 
         test_acc = 0.0
         # Early Stop
@@ -676,7 +686,7 @@ class MainTaskVFL_LLM(object):
         flag = 0
         self.current_epoch = 0
 
-
+        last_adversarial_model_loss = 10000
         start_time = time.time()
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
@@ -690,25 +700,37 @@ class MainTaskVFL_LLM(object):
             if (i + 1) % print_every == 0:
                 print("validate and test")
                 self.parties[self.k-1].global_model.eval()
-
+      
                 with torch.no_grad():
                     _exp_result, self.test_acc = self.inference()
-
+                    
                     postfix['train_loss'] = self.loss
                     postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
                     postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
                     # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
                     # postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-
+                    
                     exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                         i_epoch, self.loss, self.train_acc, self.test_acc)
                     print(exp_result)
+                    if self.args.apply_adversarial:
+                        print(f'adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
+
+                    if (i+1) % 10 == 0:
+                        if self.args.apply_adversarial:
+                            if last_adversarial_model_loss < self.parties[0].adversarial_model_loss.item():
+                                self.final_epoch = i_epoch
+                                break
+                            last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
+
                     self.final_epoch = i_epoch
         
-        exp_result = 'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
-                        self.loss, self.train_acc, self.test_acc)
+        # exp_result = f'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} final_epoch:{}'.format(
+        #                 self.loss, self.train_acc, self.test_acc, self.final_epoch)
+
+        exp_result = f'train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
                     
-        # save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/'
+        # save_path = self.args.exp_res_dir + '/pretrained_trainable_layer/' 
         # if not os.path.exists(save_path):
         #     os.makedirs(save_path)
         # torch.save(self.parties[self.k-1].global_model.trainable_layer.state_dict(),\
