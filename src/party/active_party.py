@@ -242,6 +242,9 @@ class ActiveParty_LLM(Party_LLM):
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
 
+    def train_model(self):
+        self.global_model.train()
+
     def mean(self, last_task_result):
         result = json.loads(last_task_result)
         self.mean_local(result)

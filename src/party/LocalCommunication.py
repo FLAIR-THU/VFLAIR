@@ -27,5 +27,5 @@ class LocalCommunication(ICommunication):
         self.__active_party.global_LR_decay(i_epoch)
 
     def send_global_modal_train_message(self):
-        self.__active_party.global_model.train()
+        self.__active_party.train_model()
 
