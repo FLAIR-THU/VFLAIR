@@ -8,15 +8,6 @@ from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
 from party.llm_party import Party as Party_LLM
 from dataset.party_dataset import PassiveDataset, PassiveDataset_LLM
-from load.LoadModels import load_models_per_party_new, QuestionAnsweringModelOutput
-from load.LoadDataset import load_dataset_per_party_llm
-import framework.protos.message_pb2 as fpm
-import framework.protos.node_pb2 as fpn
-import framework.common.MessageUtil as mu
-import json
-import collections
-from utils.squad_utils import normalize_answer
-
 from dataset.party_dataset import ActiveDataset
 from load.LoadModels import load_models_per_party, load_models_per_party_new, QuestionAnsweringModelOutput
 import json
@@ -33,7 +24,7 @@ import numpy as np
 from sklearn.metrics import roc_auc_score,matthews_corrcoef
 import scipy.stats as stats
 import copy
-from LocalCommunication import LocalCommunication
+from .LocalCommunication import LocalCommunication
 
 # Imagined Adversary
 class Adversary(nn.Module):
@@ -101,12 +92,8 @@ class PassiveParty(Party):
 class PassiveParty_LLM(Party_LLM):
     _communication = None
 
-    def __init__(self, args, index, communication=None):
+    def __init__(self, args, index):
         super().__init__(args, index)
-        if communication is None:
-            communication = LocalCommunication(self)
-        self._communication = communication
-
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
@@ -133,6 +120,11 @@ class PassiveParty_LLM(Party_LLM):
         self.num_labels = args.num_classes
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
+    def init_communication(self, communication=None):
+        if communication is None:
+            communication = LocalCommunication(self.args.parties[self.args.k - 1])
+        self._communication = communication
+
     def prepare_model(self, args, index):
     #     current_model_type = args.model_list['0']['type']
     #     pretrained = args.pretrained
@@ -156,7 +148,7 @@ class PassiveParty_LLM(Party_LLM):
     #         self.encoder
     #     ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim,
     #                                   is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
-
+    
         # prepare model and optimizer
         (
             args,
@@ -165,7 +157,7 @@ class PassiveParty_LLM(Party_LLM):
             self.global_model,
             self.global_model_optimizer
         ) = load_models_per_party(args, index)
-
+        
         # some defense need model, add here
         if args.apply_defense == True:
             if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
@@ -187,7 +179,7 @@ class PassiveParty_LLM(Party_LLM):
 
                 seq_length = self.args.defense_configs['seq_length']
                 embed_dim = self.args.defense_configs['embed_dim']
-
+                
                 # prepare adversarial model --  for adversarial training
                 self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(args.device)
                 self.adversarial_model_optimizer = torch.optim.Adam(
@@ -684,7 +676,6 @@ class PassiveParty_LLM(Party_LLM):
                 self.gt_one_hot_label = gt_one_hot_label
 
                 pred_list = self.pred_transmit()
-                # test_logit = self._send_message(pred_list)
                 test_logit = self._send_pred_message(pred_list)
 
                 exact_scores, f1s, sample_cnt = self.output(test_logit, gt_one_hot_label, parties_data)
