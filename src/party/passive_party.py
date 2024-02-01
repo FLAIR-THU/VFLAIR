@@ -21,6 +21,7 @@ from utils.communication_protocol_funcs import compress_pred
 from models.imagined_adversary_models import *
 import time
 import numpy as np
+from .LocalCommunication import LocalCommunication
 
 # Imagined Adversary
 class Adversary(nn.Module):
@@ -86,6 +87,8 @@ class PassiveParty(Party):
 
 
 class PassiveParty_LLM(Party_LLM):
+    _communication = None
+
     def __init__(self, args, index):
         super().__init__(args, index)
         if args.device == 'cuda':
@@ -113,6 +116,11 @@ class PassiveParty_LLM(Party_LLM):
 
         self.num_labels = args.num_classes
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
+
+    def init_communication(self, communication=None):
+        if communication is None:
+            communication = LocalCommunication(self.args.parties[self.args.k - 1])
+        self._communication = communication
 
     def prepare_model(self, args, index):
     #     current_model_type = args.model_list['0']['type']
@@ -901,24 +909,22 @@ class PassiveParty_LLM(Party_LLM):
             assert 1 > 2, "task_type not supported"
 
     def _send_pred_message(self, pred_list):
-        return self.args.parties[self.args.k - 1].aggregate(pred_list, test="True")
+        return self._communication.send_pred_message(pred_list, test="True")
 
     def _send_global_backward_message(self):
-        self.args.parties[self.args.k - 1].global_backward()
+        self._communication.send_global_backward_message()
 
     def _send_global_loss_and_gradients(self, loss, gradients):
-        self.args.parties[self.args.k - 1].receive_loss_and_gradients(loss, gradients)
+        self._communication.send_global_loss_and_gradients(loss, gradients)
 
-    def _send_cal_passive_local_gradient_message(self):
-        self.args.parties[self.args.k - 1].cal_passive_local_gradient(ik)
+    def _send_cal_passive_local_gradient_message(self, pred):
+        self._communication.send_cal_passive_local_gradient_message(pred)
 
     def _send_global_lr_decay(self, i_epoch):
-        # for ik in range(self.k):
-        #     self.parties[ik].LR_decay(i_epoch)
-        self.args.parties[self.args.k-1].global_LR_decay(i_epoch)
+        self._communication.send_global_lr_decay(i_epoch)
 
     def _send_global_modal_train_message(self):
-        self.args.parties[self.args.k - 1].global_model.train()
+        self._communication.send_global_modal_train_message()
 
     def train(self, i_epoch):
         data_loader_list = [self.train_loader]
@@ -1053,7 +1059,7 @@ class PassiveParty_LLM(Party_LLM):
 
         # active party -> local gradient -> passive party
         if self.local_model_optimizer != None:
-            self.local_gradient_transmit()
+            self.local_gradient_transmit(all_pred_list)
 
         # ============= Model Update =============
         self._send_global_backward_message()  # update parameters for global trainable part
@@ -1289,9 +1295,9 @@ class PassiveParty_LLM(Party_LLM):
 
             return loss.item(), batch_train_acc
 
-    def local_gradient_transmit(self):
+    def local_gradient_transmit(self, pred):
         if self.local_model_optimizer != None:
-            passive_local_gradient= self._send_cal_passive_local_gradient_message()
+            passive_local_gradient= self._send_cal_passive_local_gradient_message(pred)
             self.local_gradient = passive_local_gradient
 
     def global_gradient_transmit(self, pred_list):
