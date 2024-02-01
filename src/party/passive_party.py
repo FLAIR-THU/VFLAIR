@@ -30,6 +30,9 @@ from utils.communication_protocol_funcs import compress_pred
 from models.imagined_adversary_models import *
 import time
 import numpy as np
+from sklearn.metrics import roc_auc_score,matthews_corrcoef
+import scipy.stats as stats
+import copy
 
 # Imagined Adversary
 class Adversary(nn.Module):
@@ -482,6 +485,139 @@ class PassiveParty_LLM(Party_LLM):
                 self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
         # end of calculate_gradient_each_class, return nothing
 
+    def qa_inference(self):
+        # QA
+        exact_score_list = []
+        f1_list = []
+
+        for ik in range(self.k - 1):
+            # Passive data local predict
+            exact_scores, f1s = self.parties[ik].predict()
+            exact_score_list.extend(exact_scores)
+            f1_list.extend(f1s)
+
+        exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
+
+        self.test_acc = exact_score
+
+        self.final_state = self.save_state(False)
+        self.final_state.update(self.save_party_data())
+
+        return exp_result, self.test_acc
+
+    def seq_inference(self):
+        # SequenceClassification
+        test_predict_labels = []
+        test_actual_labels = []
+        postfix = {'test_acc': 0.0}
+        suc_cnt = 0
+        total_sample_cnt = 0
+
+        # Passive data local predict
+        predict_labels, actual_labels, sample_cnt = self.predict()
+        test_predict_labels.extend(predict_labels)
+        test_actual_labels.extend(actual_labels)
+        total_sample_cnt += sample_cnt
+
+        if self.args.num_classes == 1:
+            self.test_mse = torch.mean(
+                (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
+            # torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
+
+            self.test_pearson_corr = \
+            stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
+            self.test_spearmanr_corr = \
+            stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+            postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
+            postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
+
+            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
+                                                                                                      self.test_pearson_corr,
+                                                                                                      self.test_spearmanr_corr)
+            print(exp_result)
+            # print('Full pred pearson:',full_test_pearson_corr)
+            return exp_result, self.test_mse
+        else:
+            # print('test_predict_labels:',type(test_predict_labels),len(test_predict_labels)) # list
+
+            suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
+            torch.tensor(test_actual_labels)).item()
+            # print('test_predict_labels:',test_predict_labels[:20])
+            # print('test_actual_labels:',test_actual_labels[:20])
+
+            self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
+            # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
+
+            # test_preds = np.vstack(test_preds)
+            # test_targets = np.vstack(test_targets)
+            # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
+
+            self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
+
+            postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+            # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+            postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
+
+            exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
+            print(exp_result)
+
+            self.final_state = self.save_state(False)
+            self.final_state.update(self.save_party_data())
+
+            print('self.test_acc:',self.test_acc)
+            print('======== seq_inference ==========')
+
+            return exp_result, self.test_acc
+
+    def save_state(self, BEFORE_MODEL_UPDATE=True):
+        if BEFORE_MODEL_UPDATE:
+            return {
+                "model": [copy.deepcopy(self.args.parties[ik].local_model) for ik in range(self.args.k)],
+                "global_model": copy.deepcopy(self.args.parties[self.args.k - 1].global_model),
+                "model_names": [str(type(self.args.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in
+                                range(self.args.k)] + [
+                                   str(type(self.args.parties[self.args.k - 1].global_model)).split('.')[-1].split('\'')[-2]]
+
+            }
+        else:
+            return {
+                # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
+                # "data": copy.deepcopy(self.parties_data),
+                "label": copy.deepcopy(self.gt_one_hot_label),
+                "predict": [copy.deepcopy(self.args.parties[ik].local_pred_clone) for ik in range(self.args.k)],
+                "gradient": [copy.deepcopy(self.args.parties[ik].local_gradient) for ik in range(self.args.k)],
+                "local_model_gradient": [copy.deepcopy(self.args.parties[ik].weights_grad_a) for ik in range(self.args.k)],
+                "train_acc": copy.deepcopy(self.train_acc),
+                "loss": copy.deepcopy(self.loss),
+                "global_pred": self.args.parties[self.args.k - 1].global_pred,
+                "final_model": [copy.deepcopy(self.args.parties[ik].local_model) for ik in range(self.args.k)],
+                "final_global_model": copy.deepcopy(self.args.parties[self.args.k - 1].global_model),
+
+            }
+
+    def save_party_data(self):
+        return {
+            # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
+            # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
+            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+
+            # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
+            # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
+            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+
+            # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
+            # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
+            # "test_attribute": [copy.deepcopy(self.parties[ik].test_attribute) for ik in range(self.k)],
+
+            "aux_loader": [self.args.parties[ik].aux_loader for ik in range(self.args.k)],
+            "train_loader": [self.args.parties[ik].train_loader for ik in range(self.args.k)],
+            "test_loader": [self.args.parties[ik].test_loader for ik in range(self.args.k)],
+
+            "batchsize": self.args.batch_size,
+            "num_classes": self.args.num_classes
+        }
+
     def predict(self):
         data_loader_list = [self.test_loader]
         exact_score_list = []
@@ -554,6 +690,16 @@ class PassiveParty_LLM(Party_LLM):
                     total_sample_cnt += sample_cnt
                 del parties_data
         return exact_score_list, f1_list, total_sample_cnt
+
+    def inference(self, inference_data='test'):
+        if self.args.task_type == "QuestionAnswering":
+            exp_result, main_task_result = self.qa_inference()
+            return exp_result, main_task_result
+
+        if self.args.task_type == "SequenceClassification":
+            # exp_result, self.test_acc =
+            exp_result, main_task_result = self.seq_inference()
+            return exp_result, main_task_result
 
     def launch_defense(self, gradients_list, _type):
 
@@ -982,7 +1128,7 @@ class PassiveParty_LLM(Party_LLM):
             if (i + 1) % print_every == 0:
                 print("validate and test")
 
-                _exp_result, self.test_acc, total_sample_cnt = self.predict()
+                _exp_result, self.test_acc = self.inference()
 
                 postfix['train_loss'] = self.loss
                 postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
