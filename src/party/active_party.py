@@ -353,8 +353,8 @@ class ActiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def cal_passive_local_gradient(self, passive_party_id):
-        passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[passive_party_id][0] , \
+    def cal_passive_local_gradient(self, passive_pred):
+        passive_local_gradient = torch.autograd.grad(self.global_pred, passive_pred, \
             grad_outputs=self.global_gradient, retain_graph=True).detach().clone()
         return passive_local_gradient
 

@@ -33,6 +33,7 @@ import numpy as np
 from sklearn.metrics import roc_auc_score,matthews_corrcoef
 import scipy.stats as stats
 import copy
+from LocalCommunication import LocalCommunication
 
 # Imagined Adversary
 class Adversary(nn.Module):
@@ -98,11 +99,14 @@ class PassiveParty(Party):
 
 
 class PassiveParty_LLM(Party_LLM):
-    _client = None
+    _communication = None
 
-    def __init__(self, args, index, client=None):
+    def __init__(self, args, index, communication=None):
         super().__init__(args, index)
-        self._client = client
+        if communication is None:
+            communication = LocalCommunication(self)
+        self._communication = communication
+
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
@@ -1059,55 +1063,23 @@ class PassiveParty_LLM(Party_LLM):
         else:
             assert 1 > 2, "task_type not supported"
 
-    def _send_message_local(self, pred_list):
-        # return self.args.parties[self.args.k - 1].aggregate_local(pred_list, test="True")
-        new_list = [item.tolist() for item in pred_list]
-
-        value = json.dumps(new_list)
-        return self.args.parties[self.args.k - 1].aggregate_local(value)
-
-    def _send_message(self, pred_list):
-        value = fpm.Value()
-        new_list = [item.tolist() for item in pred_list[0]]
-
-        value.string = json.dumps(new_list)
-        node = fpn.Node(node_id=self._client.id)
-        msg = mu.MessageUtil.create(node, {"pred_list": value}, 4)
-        response = self._client.open_and_send(msg)
-        result = response.named_values['test_logit'].string
-        test_logit = json.loads(result)
-
-        start_logits = torch.Tensor(test_logit['start_logits'])
-        end_logits = torch.Tensor(test_logit['end_logits'])
-
-        test_logit_output = QuestionAnsweringModelOutput(
-            loss=None,
-            start_logits=start_logits.to(self.args.device),
-            end_logits=end_logits.to(self.args.device),
-            hidden_states=None,
-            attentions=None,
-        )
-        return test_logit_output
-
     def _send_pred_message(self, pred_list):
-        return self.args.parties[self.args.k - 1].aggregate(pred_list, test="True")
+        return self._communication.send_pred_message(pred_list, test="True")
 
     def _send_global_backward_message(self):
-        self.args.parties[self.args.k - 1].global_backward()
+        self._communication.send_global_backward_message()
 
     def _send_global_loss_and_gradients(self, loss, gradients):
-        self.args.parties[self.args.k - 1].receive_loss_and_gradients(loss, gradients)
+        self._communication.send_global_loss_and_gradients(loss, gradients)
 
-    def _send_cal_passive_local_gradient_message(self):
-        self.args.parties[self.args.k - 1].cal_passive_local_gradient(ik)
+    def _send_cal_passive_local_gradient_message(self, pred):
+        self._communication.send_cal_passive_local_gradient_message(pred)
 
     def _send_global_lr_decay(self, i_epoch):
-        # for ik in range(self.k):
-        #     self.parties[ik].LR_decay(i_epoch)
-        self.args.parties[self.args.k-1].global_LR_decay(i_epoch)
+        self._communication.send_global_lr_decay(i_epoch)
 
     def _send_global_modal_train_message(self):
-        self.args.parties[self.args.k - 1].global_model.train()
+        self._communication.send_global_modal_train_message()
 
     def start_train(self):
         print_every = 1
@@ -1274,7 +1246,7 @@ class PassiveParty_LLM(Party_LLM):
 
         # active party -> local gradient -> passive party
         if self.local_model_optimizer != None:
-            self.local_gradient_transmit()
+            self.local_gradient_transmit(all_pred_list)
 
         # ============= Model Update =============
         self._send_global_backward_message()  # update parameters for global trainable part
@@ -1510,9 +1482,9 @@ class PassiveParty_LLM(Party_LLM):
 
             return loss.item(), batch_train_acc
 
-    def local_gradient_transmit(self):
+    def local_gradient_transmit(self, pred):
         if self.local_model_optimizer != None:
-            passive_local_gradient= self._send_cal_passive_local_gradient_message()
+            passive_local_gradient= self._send_cal_passive_local_gradient_message(pred)
             self.local_gradient = passive_local_gradient
 
     def global_gradient_transmit(self, pred_list):

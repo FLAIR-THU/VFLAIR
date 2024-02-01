@@ -9,7 +9,7 @@ import argparse
 import torch
 
 from load.LoadConfigs import * #load_configs
-from framework.ml.LoadParty import load_parties_llm
+from load.LoadParty import load_parties_llm
 from evaluates.MainTask_LLM import *
 from utils.basic_functions import append_exp_res
 import warnings

@@ -1,7 +1,7 @@
 POST http://localhost:5000/job
 Content-Type: application/x-www-form-urlencoded
 
-config=D:\work\projects\VFLAIR\src\configs\distributed-llm.json
+config=D:\work\projects\VFLAIR\src\configs\distributed-llm-train.json
 
 ### 获取详情
 GET http://localhost:5000/job?id=25
