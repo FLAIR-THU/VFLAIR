@@ -16,7 +16,10 @@ class LocalCommunication(ICommunication):
         self.__active_party.global_backward()
 
     def send_global_loss_and_gradients(self, loss, gradients):
-        self.__active_party.receive_loss_and_gradients(loss, gradients)
+        self.__active_party.receive_loss_and_gradients({
+            'loss': loss,
+            'gradients': gradients
+        })
 
     def send_cal_passive_local_gradient_message(self, pred):
         self.__active_party.cal_passive_local_gradient(pred)

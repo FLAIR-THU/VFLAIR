@@ -45,7 +45,7 @@ class DistributedCommunication(ICommunication):
 
     def send_global_loss_and_gradients(self, loss, gradients):
         task = Task()
-        task.run = "receive_loss_and_gradients"
+        task.run = "receive_loss_and_gradients_remote"
         task.party = "active"
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())

@@ -344,9 +344,18 @@ class ActiveParty_LLM(Party_LLM):
         #     retain_graph=True).detach().clone()
         return pred
 
-    def receive_loss_and_gradients(self, loss, gradients):
-        self.global_loss = loss
-        self.global_gradients = gradients
+    def receive_loss_and_gradients_remote(self, data):
+        loss = torch.Tensor([data['loss']])
+        gradients = torch.Tensor(data['gradients'])
+        result = {
+            'loss': loss,
+            'gradients': gradients
+        }
+        self.receive_loss_and_gradients(result)
+
+    def receive_loss_and_gradients(self, data):
+        self.global_loss = data['loss']
+        self.global_gradients = data['gradients']
 
     def generate(self, pred_list, test=False):
         # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]

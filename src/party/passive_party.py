@@ -1407,7 +1407,7 @@ class PassiveParty_LLM(Party_LLM):
         elif self.args.task_type == 'SequenceClassification':
             # ###### Noisy Label Attack #######
             # convert back to clean label to get true acc
-            if self.args.apply_nl == True:
+            if 'apply_nl' in self.args and self.args.apply_nl:
                 real_batch_label = self.clean_one_hot_label
             else:
                 real_batch_label = batch_label
