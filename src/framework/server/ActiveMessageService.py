@@ -54,9 +54,14 @@ class MessageService:
             return {}
         elif message.type == fpm.START_TASK:
             # client sending task to active
-            params = message.data.named_values['pred_list']
-            data = json.loads(params.string)
-            task = self._init_task()
+            task_value = message.data.named_values['task']
+            task = json.loads(task_value.string)
+
+            params = message.data.named_values['data']
+            data = None
+            if params is not None and len(params.string) > 0:
+                data = json.loads(params.string)
+
             result = self._task_service.run_specific(task, data)
             value = fpm.Value()
             if result is None:

@@ -279,14 +279,34 @@ class ActiveParty_LLM(Party_LLM):
             #     exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
             #     return exp_result, self.test_acc
 
+    def _do_aggregate_remote(self, pred_list):
+        t1 = torch.Tensor(pred_list[0])
+        t2 = torch.Tensor(pred_list[1])
+        t1 = t1.to(self.args.device)
+        t2 = t2.to(self.args.device)
+        result = self.aggregate([[t1, t2]])
+
+        if self.args.model_type == 'Bert':
+            if self.args.task_type == 'SequenceClassification':
+                return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'QuestionAnswering':
+                return {
+                    # "loss": result.total_loss.float(),
+                    "start_logits": result.start_logits.tolist(),
+                    "end_logits": result.end_logits.tolist(),
+                    # "hidden_states": result.outputs.hidden_states,
+                    # "attentions": result.outputs.attentions,
+                }
+
     def aggregate_remote(self, pred_list):
-        self.global_model.eval()
+        if self.args.head_layer_trainable:
+            return self._do_aggregate_remote(pred_list)
         with torch.no_grad():
-            t1 = torch.Tensor(pred_list[0])
-            t2 = torch.Tensor(pred_list[1])
-            t1 = t1.to(self.args.device)
-            t2 = t2.to(self.args.device)
-            return self.aggregate([[t1, t2]])
+            return self._do_aggregate_remote(pred_list)
 
     def aggregate(self, pred_list, test=False):
         self.passive_pred_list = pred_list

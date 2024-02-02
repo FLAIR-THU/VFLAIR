@@ -5,6 +5,7 @@ import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu
 from argparse import Namespace
 import json
+from .DistributedCommunication import DistributedCommunication
 
 logger = logger_util.get_logger()
 
@@ -15,7 +16,8 @@ class PassiveTaskService:
         self._client = client
         self._node = fpn.Node(node_id=client.id)
         args = Namespace(**self._data)
-        self._party = PassiveParty_LLM(args, 0, self._client)
+        self._party = PassiveParty_LLM(args, 0)
+        self._party.init_communication(DistributedCommunication(self._client))
 
     def run(self, task):
         if hasattr(self._party, task['run']):

@@ -42,17 +42,14 @@ class ActiveTaskService(threading.Thread):
     def run_specific(self, task, data):
         logger.info(f"running specific task: {task}")
         logger.info(f"Party: {self._party}")
-        if hasattr(self._party, task.run):
-            target_func = getattr(self._party, task.run)
-            result = target_func(data)
+        if hasattr(self._party, task['run']):
+            target_func = getattr(self._party, task['run'])
+            if data is not None:
+                result = target_func(data)
+            else:
+                result = target_func()
             logger.info(f"Finished specific task: {task}")
-            return {
-                # "loss": result.total_loss.float(),
-                "start_logits": result.start_logits.tolist(),
-                "end_logits": result.end_logits.tolist(),
-                # "hidden_states": result.outputs.hidden_states,
-                # "attentions": result.outputs.attentions,
-            }
+            return result
 
     def run_next(self):
         task = task_repository.find_next(self._job_id)

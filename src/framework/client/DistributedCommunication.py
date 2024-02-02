@@ -3,21 +3,18 @@ import json
 import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu
-import torch
-from load.LoadModels import QuestionAnsweringModelOutput
 from framework.database.model.Task import Task
+
 
 class DistributedCommunication(ICommunication):
     _client = None
-    _device = None
     _node = None
 
-    def __init__(self, client, device):
+    def __init__(self, client):
         self._client = client
-        self._device = device
         self._node = fpn.Node(node_id=self._client.id)
 
-    def send_pred_message(self, pred_list):
+    def send_pred_message(self, pred_list, parse_result_fn, test="True"):
         task = Task()
         task.run = "aggregate_remote"
         task.party = "active"
@@ -33,17 +30,9 @@ class DistributedCommunication(ICommunication):
         result = response.named_values['test_logit'].string
         test_logit = json.loads(result)
 
-        start_logits = torch.Tensor(test_logit['start_logits'])
-        end_logits = torch.Tensor(test_logit['end_logits'])
-
-        test_logit_output = QuestionAnsweringModelOutput(
-            loss=None,
-            start_logits=start_logits.to(self._device),
-            end_logits=end_logits.to(self._device),
-            hidden_states=None,
-            attentions=None,
-        )
-        return test_logit_output
+        if parse_result_fn is not None:
+            return parse_result_fn(test_logit)
+        return test_logit
 
     def send_global_backward_message(self):
         task = Task()
@@ -62,7 +51,7 @@ class DistributedCommunication(ICommunication):
         task_value.string = json.dumps(task.to_dict())
 
         data_value = fpm.Value()
-        data_value.string = json.dumps({"loss": loss, "gradients": gradients})
+        data_value.string = json.dumps({"loss": loss.item(), "gradients": gradients.tolist()})
 
         msg = mu.MessageUtil.create(self._node, {"task": task_value, "data": data_value}, fpm.START_TASK)
         response = self._client.open_and_send(msg)
@@ -101,4 +90,3 @@ class DistributedCommunication(ICommunication):
         task_value.string = json.dumps(task.to_dict())
         msg = mu.MessageUtil.create(self._node, {"task": task_value}, fpm.START_TASK)
         response = self._client.open_and_send(msg)
-
