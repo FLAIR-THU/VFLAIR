@@ -7,7 +7,7 @@ from argparse import Namespace
 import json
 from .DistributedCommunication import DistributedCommunication
 
-logger = logger_util.get_logger()
+logger = logger_util.get_logger('passive_task_service')
 
 
 class PassiveTaskService:
