@@ -242,6 +242,9 @@ class ActiveParty_LLM(Party_LLM):
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
 
+    def train_model(self):
+        self.global_model.train()
+
     def mean(self, last_task_result):
         result = json.loads(last_task_result)
         self.mean_local(result)
@@ -321,9 +324,9 @@ class ActiveParty_LLM(Party_LLM):
         #     retain_graph=True).detach().clone()
         return pred
 
-    def receive_loss_and_gradients(self, loss, gradients):
-        self.global_loss = loss
-        self.global_gradients = gradients
+    def receive_loss_and_gradients(self, data):
+        self.global_loss = data['loss']
+        self.global_gradients = data['gradients']
 
     def generate(self, pred_list, test=False):
         # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]

@@ -908,8 +908,27 @@ class PassiveParty_LLM(Party_LLM):
         else:
             assert 1 > 2, "task_type not supported"
 
+    def parse_pred_message_result(self, test_logit):
+        if self.args.model_type == 'Bert':
+            if self.args.task_type == 'SequenceClassification':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                    # logits.grad = test_logit['grad_fn']
+                return logits.to(self.args.device)
+            elif self.args.task_type == 'QuestionAnswering':
+                start_logits = torch.Tensor(test_logit['start_logits'])
+                end_logits = torch.Tensor(test_logit['end_logits'])
+                return QuestionAnsweringModelOutput(
+                    loss=None,
+                    start_logits=start_logits.to(self.args.device),
+                    end_logits=end_logits.to(self.args.device),
+                    hidden_states=None,
+                    attentions=None,
+                )
+
     def _send_pred_message(self, pred_list):
-        return self._communication.send_pred_message(pred_list, test="True")
+        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result)
 
     def _send_global_backward_message(self):
         self._communication.send_global_backward_message()
@@ -1210,7 +1229,7 @@ class PassiveParty_LLM(Party_LLM):
         elif self.args.task_type == 'SequenceClassification':
             # ###### Noisy Label Attack #######
             # convert back to clean label to get true acc
-            if self.args.apply_nl == True:
+            if 'apply_nl' in self.args and self.args.apply_nl:
                 real_batch_label = self.clean_one_hot_label
             else:
                 real_batch_label = batch_label
