@@ -2,7 +2,7 @@
   "epochs": 100,
   "lr": 0.0005,
   "k": 2,
-  "batch_size": 1,
+  "batch_size": 16,
   "pipeline": "pretrained",
   "communication": {
     "communication_protocol": "FedSGD",
@@ -10,8 +10,7 @@
   },
   "dataset": {
     "dataset_name": "SQuAD",
-    "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
-    "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
+
     "num_classes": 1,
     "use_prompt": 1,
     "n_shot": 1
@@ -54,7 +53,9 @@
       "output_dim": 1,
       "model_type": "Bert",
       "max_sequence": 512,
-      "path": "D:\\work\\tools\\bertserini-bert-base-squad"
+      "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
+      "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json",
+      "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad"
     },
     "1": {
       "type": "rsvp-aibertserini-bert-base-squad",
@@ -63,7 +64,9 @@
       "output_dim": 1,
       "model_type": "Bert",
       "max_sequence": 512,
-      "path": "D:\\work\\tools\\bertserini-bert-base-squad"
+      "path": "D:\\work\\tools\\bertserini-bert-base-squad",
+      "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+      "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json"
     },
     "task": {
       "task_type": "QuestionAnswering",
