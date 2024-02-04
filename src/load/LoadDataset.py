@@ -1450,7 +1450,7 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'CoLA':
-        train_set_file, test_set_file = get_dataset_path(args.dataset_split)
+        train_set_file, test_set_file = get_dataset_path(args.model_list[index])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
@@ -1781,7 +1781,7 @@ def load_dataset_per_party_llm(args, index):
         option_dict = {option: idx for idx, option in enumerate('ABCD')}
         args.label_dict = option_dict
 
-        train_set_file, test_set_file = get_dataset_path(args.dataset_split)
+        train_set_file, test_set_file = get_dataset_path(args.model_list[index])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'MMLU/dev/'
             test_set_file = DATA_PATH + 'MMLU/test/'
@@ -1926,7 +1926,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'SQuAD':
         print(' === SQuAD === ')
-        train_set_file, test_set_file = get_dataset_path(args.dataset_split)
+        train_set_file, test_set_file = get_dataset_path(args.model_list[index])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
             test_set_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
