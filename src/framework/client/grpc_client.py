@@ -72,7 +72,7 @@ def main(main_args):
     else:
         raise ValueError("Please specify --config")
 
-    MAX_MESSAGE_LENGTH = 100*1024*1000
+    MAX_MESSAGE_LENGTH = 200*1024*1000
     with grpc.insecure_channel(f"{host}:{port}",  options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
