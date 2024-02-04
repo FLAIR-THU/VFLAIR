@@ -350,7 +350,7 @@ def load_basic_models_llm_bert(args,index):
     pretrained = args.pretrained
     device = args.device
     padding_side = args.padding_side
-    model_path = args.model_path
+    model_path = args.model_list[str(index)]['path']
     main_lr = args.main_lr
     is_local = args.k - 1 != index
     pad_token = args.pad_token

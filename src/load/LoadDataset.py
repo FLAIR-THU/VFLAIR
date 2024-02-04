@@ -1450,7 +1450,7 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'CoLA':
-        train_set_file, test_set_file = get_dataset_path(args.model_list[index])
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
