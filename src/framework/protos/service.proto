@@ -7,5 +7,6 @@ import "framework/protos/message.proto";
 service MessageService {
    rpc send(Message) returns (Message);
    rpc register(Message) returns (stream Message);
+   rpc unregister(Message) returns (Message);
    rpc send_stream(stream Message) returns (stream Message);
 }

@@ -19,7 +19,7 @@ class MessageType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     QUERY_JOB: _ClassVar[MessageType]
     FINISH_TASK: _ClassVar[MessageType]
     START_TASK: _ClassVar[MessageType]
-    HEARTBEAT: _ClassVar[MessageType]
+    UNREGISTER: _ClassVar[MessageType]
 OK: Code
 ERROR: Code
 PLAIN: MessageType
@@ -27,7 +27,7 @@ CREATE_JOB: MessageType
 QUERY_JOB: MessageType
 FINISH_TASK: MessageType
 START_TASK: MessageType
-HEARTBEAT: MessageType
+UNREGISTER: MessageType
 
 class Message(_message.Message):
     __slots__ = ("node", "code", "message", "data", "type")

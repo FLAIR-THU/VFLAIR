@@ -24,6 +24,11 @@ class MessageServiceStub(object):
                 request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
                 response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
                 )
+        self.unregister = channel.unary_unary(
+                '/framework.protos.MessageService/unregister',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
         self.send_stream = channel.stream_stream(
                 '/framework.protos.MessageService/send_stream',
                 request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
@@ -46,6 +51,12 @@ class MessageServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def unregister(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def send_stream(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -62,6 +73,11 @@ def add_MessageServiceServicer_to_server(servicer, server):
             ),
             'register': grpc.unary_stream_rpc_method_handler(
                     servicer.register,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'unregister': grpc.unary_unary_rpc_method_handler(
+                    servicer.unregister,
                     request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
                     response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
             ),
@@ -109,6 +125,23 @@ class MessageService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_stream(request, target, '/framework.protos.MessageService/register',
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def unregister(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/framework.protos.MessageService/unregister',
             framework_dot_protos_dot_message__pb2.Message.SerializeToString,
             framework_dot_protos_dot_message__pb2.Message.FromString,
             options, channel_credentials,

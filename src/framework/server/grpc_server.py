@@ -41,8 +41,9 @@ class GrpcServer(fps.MessageServiceServicer):
             response = {}
             the_queue.put(response)
         else:
-            logger.info("Node {} already registered".format(node_id))
-            return
+            msg = "Node {} already registered".format(node_id)
+            logger.warning(msg)
+            yield mu.MessageUtil.error(self._node, msg)
 
         try:
             while self._clients.__contains__(node_id):
@@ -64,6 +65,11 @@ class GrpcServer(fps.MessageServiceServicer):
             logger.info("stream closed for {}".format(node_id))
             self._clients.remove(node_id)
             self._queues.pop(node_id)
+
+    def unregister(self, request, context):
+        node_id = request.node.node_id
+        self._clients.remove(node_id)
+        return mu.MessageUtil.create(self._node, {}, fpm.PLAIN)
 
     def send(self, request, context):
         if self._message_service is None:

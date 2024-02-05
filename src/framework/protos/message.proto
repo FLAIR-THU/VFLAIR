@@ -15,7 +15,7 @@ enum MessageType {
   QUERY_JOB = 2;
   FINISH_TASK = 3;
   START_TASK = 4;
-  HEARTBEAT = 5;
+  UNREGISTER = 5;
 }
 
 message Message{

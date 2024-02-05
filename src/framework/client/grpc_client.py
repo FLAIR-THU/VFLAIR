@@ -1,5 +1,6 @@
 import framework.protos.service_pb2_grpc as fps
 import framework.protos.node_pb2 as fpn
+import framework.protos.message_pb2 as fpm
 import framework.client.PassiveMessageService as fcp
 import grpc
 import yaml
@@ -49,9 +50,16 @@ class GrpcClient():
             self._message_service = fcp.PassiveMessageService(self)
         for response in response_iterator:
             try:
+                if response.code is fpm.ERROR:
+                    logger.error("received msg from server, code(%s), message: %s, please try again." % (response.code, response.message))
+                    return self.unregister()
                 self._message_service.parse_message(response)
             except (grpc.RpcError, Exception) as e:
                 logger.exception(e)
+
+    def unregister(self):
+        msg = mu.MessageUtil.create(self._node, {}, fpm.UNREGISTER)
+        return msg
 
     def open_and_send(self, msg):
         with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:

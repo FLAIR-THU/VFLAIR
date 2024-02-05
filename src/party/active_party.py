@@ -250,7 +250,7 @@ class ActiveParty_LLM(Party_LLM):
         self.mean_local(result)
 
     def mean_local(self, result):
-        exact_score_list, f1_list = result
+        exact_score_list, f1_list, _ = result
         if self.args.task_type == "QuestionAnswering":
             exact_score = np.mean(exact_score_list)
             f1 = np.mean(f1_list)

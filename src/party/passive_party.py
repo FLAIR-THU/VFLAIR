@@ -558,8 +558,8 @@ class PassiveParty_LLM(Party_LLM):
             exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
 
-            self.final_state = self.save_state(False)
-            self.final_state.update(self.save_party_data())
+            # self.final_state = self.save_state(False)
+            # self.final_state.update(self.save_party_data())
 
             print('self.test_acc:',self.test_acc)
             print('======== seq_inference ==========')
@@ -1049,7 +1049,7 @@ class PassiveParty_LLM(Party_LLM):
                 else:
                     assert 1 > 2, f"{self.args.metric_type} not provided!"
 
-                return exact_score_list, f1_list
+                return exact_score_list, f1_list, None
 
         else:
             assert 1 > 2, "task_type not supported"
