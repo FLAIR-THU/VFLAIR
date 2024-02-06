@@ -1,4 +1,7 @@
 FROM python:3.8.18
+
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:$LD_LIBRARY_PATH
+
 ADD ./web /web
 WORKDIR /web
 RUN pip install -r requirements.txt

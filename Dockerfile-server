@@ -1,0 +1,9 @@
+FROM python:3.8.18
+
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:$LD_LIBRARY_PATH
+
+ADD ./server /server
+WORKDIR /server
+RUN pip install -r requirements.txt
+
+CMD ["python", "--config=./web_config.yml", "/web/main.py"]

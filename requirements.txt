@@ -4,7 +4,6 @@ pandas==1.4.3
 Pillow==9.3.0
 requests==2.28.1
 scikit_learn==1.2.0
-tensorflow==2.4.1
 torch==1.10.2
 torchsummary==1.5.1
 torchvision==0.11.3
@@ -13,3 +12,14 @@ phe==1.5.0
 networkx==3.1
 ipykernel==6.23.2
 openpyxl==3.1.2
+fastapi==0.103
+uvicorn==0.27.0.post1
+sqlmodel==0.0.14
+transformers==4.37.2
+PyYAML==6.0.1
+grpcio==1.32.0
+datasets==2.16.1
+huggingface-hub==0.20.3
+PyMySQL==1.1.0
+protobuf==3.20.3
+python-multipart==0.0.7

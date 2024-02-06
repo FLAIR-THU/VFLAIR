@@ -1,8 +1,7 @@
 import argparse
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, UploadFile
 import uvicorn
 
-from load.LoadConfigs import load_llm_configs
 from framework.client.grpc_client import GrpcClient
 import framework.common.MessageUtil as mu
 import framework.protos.node_pb2 as fpn
@@ -15,6 +14,7 @@ from contextlib import asynccontextmanager
 
 service = {}
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     args = parse_args()
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
     init_grpc_client(args)
     yield
     service.clear()
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -35,15 +36,29 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/job")
-def create_job(config: Annotated[str, Form()]):
-    data = load_llm_configs(config, argparse.Namespace())
+@app.post("/job/upload")
+async def upload_job(file: UploadFile):
+    if file is None:
+        return {"result": "error", "message": "No file exists"}
+    contents = await file.read()
     value = fpm.Value()
-    value.string = json.dumps(vars(data))
+    value.string = contents
     msg = mu.MessageUtil.create(node, {"config": value}, 1)
     result = service['grpc_client'].open_and_send(msg)
     job_id = result.named_values['job_id'].sint64
     return {"result": "success", "job_id": job_id}
+
+
+@app.post("/job")
+def create_job(config: Annotated[str, Form()]):
+    with open(config, "r") as f:
+        data = f.read()
+        value = fpm.Value()
+        value.string = data
+        msg = mu.MessageUtil.create(node, {"config": value}, 1)
+        result = service['grpc_client'].open_and_send(msg)
+        job_id = result.named_values['job_id'].sint64
+        return {"result": "success", "job_id": job_id}
 
 
 @app.get("/job")
@@ -61,7 +76,6 @@ def init_grpc_client(args):
     service['grpc_client'] = GrpcClient("web", args.grpc_host, args.grpc_port)
 
 
-
 def parse_args():
     parser = argparse.ArgumentParser("WebServer")
     parser.add_argument('--config', default='./web_config.yml')
@@ -74,4 +88,3 @@ def parse_args():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=5000, log_level="info")
-
