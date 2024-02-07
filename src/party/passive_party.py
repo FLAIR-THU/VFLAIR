@@ -1268,8 +1268,8 @@ class PassiveParty_LLM(Party_LLM):
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
-            pred = self.parties[self.k - 1].global_pred  # QuestionAnsweringModelOutput
-            loss = self.parties[self.k - 1].global_loss
+            pred = self.args.parties[self.args.k - 1].global_pred  # QuestionAnsweringModelOutput
+            loss = self.args.parties[self.args.k - 1].global_loss
 
             start_logits = pred.start_logits
             end_logits = pred.end_logits

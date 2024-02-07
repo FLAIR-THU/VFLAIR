@@ -246,11 +246,12 @@ class ActiveParty_LLM(Party_LLM):
         self.global_model.train()
 
     def mean(self, last_task_result):
-        result = json.loads(last_task_result)
-        self.mean_local(result)
+        predict_result = json.loads(last_task_result)
+        exact_score_list, f1_list, _ = predict_result
+        self.mean_local((exact_score_list, f1_list))
 
     def mean_local(self, result):
-        exact_score_list, f1_list, _ = result
+        exact_score_list, f1_list = result
         if self.args.task_type == "QuestionAnswering":
             exact_score = np.mean(exact_score_list)
             f1 = np.mean(f1_list)
