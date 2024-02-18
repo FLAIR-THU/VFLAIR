@@ -3,7 +3,7 @@ from party.passive_party import PassiveParty_LLM
 import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu
-from argparse import Namespace
+from load.LoadConfigs import load_llm_configs
 import json
 from .DistributedCommunication import DistributedCommunication
 
@@ -15,7 +15,7 @@ class PassiveTaskService:
         self._data = data
         self._client = client
         self._node = fpn.Node(node_id=client.id)
-        args = Namespace(**self._data)
+        args = load_llm_configs(self._data)
         self._party = PassiveParty_LLM(args, 0)
         self._party.init_communication(DistributedCommunication(self._client))
 

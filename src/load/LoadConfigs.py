@@ -16,9 +16,8 @@ INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
-def load_llm_configs(config_str, args):
-    config_dict = json.loads(config_str)
-    args = do_load_basic_configs(config_dict, args)
+def load_llm_configs(config_dict):
+    args = do_load_basic_configs(config_dict, argparse.Namespace())
     args.tasks = config_dict['tasks']
     args.device = config_dict['device']
     args.gpu = config_dict['gpu']

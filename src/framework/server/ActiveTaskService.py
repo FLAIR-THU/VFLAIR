@@ -3,7 +3,7 @@ import threading
 import framework.common.logger_util as logger_util
 from party.active_party import ActiveParty_LLM
 
-from argparse import Namespace
+from load.LoadConfigs import load_llm_configs
 
 from framework.database.repository.TaskRepository import task_repository
 
@@ -22,7 +22,7 @@ class ActiveTaskService(threading.Thread):
         self._job_id = job_id
 
     def run(self):
-        args = Namespace(**self._data)
+        args = load_llm_configs(self._data)
         if self._party is None:
             self._party = ActiveParty_LLM(args, 1)
 
