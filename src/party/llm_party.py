@@ -77,7 +77,7 @@ class Party(object):
         self.index = index
         self.args = args
         args.need_auxiliary = 0
-        args.dataset = args.dataset['dataset_name']
+        args.dataset = args.dataset_split['dataset_name']
         # data for training and testing
         self.half_dim = -1
         self.train_data = None
