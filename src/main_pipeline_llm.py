@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 import numpy as np
@@ -38,9 +39,11 @@ def evaluate_no_attack_pretrained(args):
     # No Attack
     set_seed(args.current_seed)
 
+    print(datetime.datetime.now())
     vfl = MainTaskVFL_LLM(args)
     exp_result, metric_val = vfl.inference()
-
+    print(datetime.datetime.now())
+    print(exp_result, metric_val)
     # attack_metric = main_acc_noattack - main_acc
     # attack_metric_name = 'acc_loss'
 

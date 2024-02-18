@@ -1,5 +1,5 @@
 {
-    "epochs": 100,
+    "epochs": 2,
     "lr": 0.0005,
     "k": 2,
     "batch_size": 1,
@@ -22,20 +22,26 @@
     },
     "model_list":{
         "0": {
-            "type": "bert-base-uncased",
-            "pretrained": 0,
+            "type": "rsvp-aibertserini-bert-base-squad",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+            "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
+            "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "1": {
-            "type": "bert-base-uncased",
-            "pretrained": 0,
+            "type": "rsvp-aibertserini-bert-base-squad",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+            "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
+            "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "task":{
             "task_type": "QuestionAnswering",

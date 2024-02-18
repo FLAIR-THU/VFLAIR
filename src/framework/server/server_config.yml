@@ -2,7 +2,7 @@
 #  url: sqlite:///vflair.db
 
 database:
-  url: mysql+mysqldb://root:abcd1234@localhost:3316/vflair?charset=utf8mb4
+  url: mysql+mysqldb://root:abcd1234@172.22.176.1:3316/vflair?charset=utf8mb4
 
 server:
   host: 0.0.0.0

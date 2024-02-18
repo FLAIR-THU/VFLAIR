@@ -30,6 +30,8 @@
             "output_dim": 1,
             "model_type": "Bert",
             "max_sequence": 512,
+            "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+            "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
             "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "1": {
@@ -39,6 +41,8 @@
             "output_dim": 1,
             "model_type": "Bert",
             "max_sequence": 512,
+            "train_set_file": "D:\\work\\tools\\datasets\\Squad\\train-v1.1.json",
+            "test_set_file": "D:\\work\\tools\\datasets\\Squad\\dev-v1.1.json",
             "path": "D:\\work\\tools\\bertserini-bert-base-squad"
         },
         "task":{

@@ -3,11 +3,11 @@ import framework.protos.node_pb2 as fpn
 import framework.protos.message_pb2 as fpm
 import framework.client.PassiveMessageService as fcp
 import grpc
-import yaml
 from framework.common import MessageUtil as mu
 import framework.common.logger_util as logger_util
 import argparse
 import os
+from framework.common.yaml_loader import load_yaml
 logger = logger_util.get_logger("grpc_client")
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -73,7 +73,7 @@ class GrpcClient():
 
 def main(main_args):
     if main_args.config is not None:
-        config = yaml.safe_load(open(main_args.config))
+        config = load_yaml(main_args.config)
         host = config["server"]["host"]
         port = config["server"]["port"]
         client_id = config["client"]["id"]

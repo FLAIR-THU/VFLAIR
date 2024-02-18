@@ -1,6 +1,6 @@
 server:
-  host: localhost
-  port: 3333
+  host: ${GRPC_SERVER:localhost}
+  port: ${GRPC_PORT:3333}
 
 client:
-  id: c1
+  id: ${CLIENT_ID:c1}

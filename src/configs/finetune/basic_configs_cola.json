@@ -19,8 +19,6 @@
     },
     "dataset":{
         "dataset_name": "CoLA",
-        "train_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_train.tsv",
-        "test_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_dev.tsv",
         "num_classes": 2
     },
     "model_list":{
@@ -31,6 +29,8 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
+            "train_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_train.tsv",
+            "test_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_dev.tsv",
             "path": "D:\\work\\tools\\textattackbert-base-uncased-CoLA"
         },
         "1": {
@@ -40,6 +40,8 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
+            "train_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_train.tsv",
+            "test_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_dev.tsv",
             "path": "D:\\work\\tools\\textattackbert-base-uncased-CoLA"
         },
         "task":{

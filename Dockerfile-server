@@ -1,9 +1,11 @@
 FROM python:3.8.18
 
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:$LD_LIBRARY_PATH
+ADD ./src /vflair
+ADD ./requirements.txt /vflair/requirements.txt
 
-ADD ./server /server
-WORKDIR /server
-RUN pip install -r requirements.txt
+WORKDIR /vflair
+RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-CMD ["python", "--config=./web_config.yml", "/web/main.py"]
+ENV PYTHONPATH "${PYTHONPATH}:/vflair"
+EXPOSE 3333
+CMD ["python", "./framework/server/grpc_server.py", "--config=./framework/server/server_config.yml"]
