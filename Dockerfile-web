@@ -7,5 +7,7 @@ WORKDIR /vflair
 RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ENV PYTHONPATH "${PYTHONPATH}:/vflair"
+ENV GRPC_SERVER "localhost"
+ENV GRPC_PORT "3333"
 EXPOSE 5000
 CMD ["python", "./framework/web/main.py", "--config=./framework/web/web_config.yml"]
