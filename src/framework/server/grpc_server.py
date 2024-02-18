@@ -8,7 +8,7 @@ from concurrent import futures
 from threading import Thread
 import framework.common.MessageQueue as mq
 import framework.common.logger_util as logger_util
-import yaml
+from framework.common.yaml_loader import load_yaml
 import argparse
 import json
 import queue
@@ -109,7 +109,7 @@ class GrpcServer(fps.MessageServiceServicer):
 
 def main(main_args):
     if main_args.config is not None:
-        config = yaml.safe_load(open(main_args.config))
+        config = load_yaml(main_args.config)
         logger.info("config: %s", config)
         host = config["server"]["host"]
         port = config["server"]["port"]

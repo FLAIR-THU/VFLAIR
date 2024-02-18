@@ -8,7 +8,7 @@ import framework.protos.node_pb2 as fpn
 import framework.protos.message_pb2 as fpm
 from typing_extensions import Annotated
 import json
-import yaml
+from framework.common.yaml_loader import load_yaml
 import framework.common.logger_util as logger_util
 from contextlib import asynccontextmanager
 
@@ -80,11 +80,11 @@ def parse_args():
     parser = argparse.ArgumentParser("WebServer")
     parser.add_argument('--config', default='./web_config.yml')
     args = parser.parse_args()
-    config = yaml.safe_load(open(args.config))
+    config = load_yaml(args.config)
     args.grpc_host = config["grpc_server"]["host"]
     args.grpc_port = config["grpc_server"]["port"]
     return args
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=5000, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, log_level="info")
