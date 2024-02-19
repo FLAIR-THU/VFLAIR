@@ -52,14 +52,15 @@ class GrpcClient():
             try:
                 if response.code is fpm.ERROR:
                     logger.error("received msg from server, code(%s), message: %s, please try again." % (response.code, response.message))
-                    return self.unregister()
+                    self.unregister(stub)
+                    return
                 self._message_service.parse_message(response)
             except (grpc.RpcError, Exception) as e:
                 logger.exception(e)
 
-    def unregister(self):
+    def unregister(self, stub):
         msg = mu.MessageUtil.create(self._node, {}, fpm.UNREGISTER)
-        return msg
+        stub.unregister(msg)
 
     def open_and_send(self, msg):
         with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:
