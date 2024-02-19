@@ -16,8 +16,8 @@ INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","
 
 communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
 
-def load_llm_configs(config_file, args):
-    args, config_dict = do_load_basic_configs(config_file, args)
+def load_llm_configs(config_dict):
+    args = do_load_basic_configs(config_dict, argparse.Namespace())
     args.tasks = config_dict['tasks']
     args.device = config_dict['device']
     args.gpu = config_dict['gpu']
@@ -26,12 +26,12 @@ def load_llm_configs(config_file, args):
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/' + config_file_name + '.json'
-    args, _ = do_load_basic_configs(config_file_path, args)
+    config_file = open(config_file_path, "r")
+    config_dict = json.load(config_file)
+    args = do_load_basic_configs(config_dict, args)
     return args
 
-def do_load_basic_configs(config_file_path, args):
-    config_file = open(config_file_path,"r")
-    config_dict = json.load(config_file)
+def do_load_basic_configs(config_dict, args):
     # print(config_dict)
     
     # args.main_lr, learning rate for main task
@@ -324,7 +324,7 @@ def do_load_basic_configs(config_file_path, args):
     else:
         print('===== No Attack ======')
     
-    return args, config_dict
+    return args
 
 def load_attack_configs(config_file_name, args, index):
     '''

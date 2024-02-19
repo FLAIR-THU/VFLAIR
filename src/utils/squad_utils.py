@@ -2,7 +2,6 @@ import logging
 import json
 import collections
 import math
-import tensorflow as tf
 import string
 import re
 # from gpt2sqa.tokenization import ( BasicTokenizer)
@@ -155,7 +154,7 @@ class InputFeatures(object):
 def standard_read_squad_examples(input_file, is_training, version_2_with_negative=False):
     """Read a SQuAD json file into a list of SquadExample."""
     # with tf.io.gfile.Open(input_file, "r") as reader:
-    with tf.io.gfile.GFile(input_file, "r") as reader:
+    with open(input_file, "r") as reader:
         input_data = json.load(reader)["data"]
 
     def is_whitespace(c):

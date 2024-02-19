@@ -3,7 +3,6 @@ sys.path.append(os.pardir)
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
@@ -44,7 +43,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification,AutoM
 
 from load.LoadModels import MODEL_PATH
 
-tf.compat.v1.enable_eager_execution() 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable =True
 torch.backends.cudnn.benchmark = True
@@ -335,7 +333,7 @@ class MainTaskVFL_LLM(object):
 
         for ik in range(self.k - 1):
             # Passive data local predict
-            exact_scores, f1s = self.parties[ik].predict()
+            exact_scores, f1s, _ = self.parties[ik].predict()
             exact_score_list.extend(exact_scores)
             f1_list.extend(f1s)
 
