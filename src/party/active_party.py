@@ -207,29 +207,6 @@ class ActiveParty_LLM(Party_LLM):
     def eval(self, **kwargs):
         self.global_model.eval()
 
-    # def prepare_model(self, args, index):
-        # current_model_type = args.model_list['1']['type']
-        # pretrained = args.pretrained
-        # task_type = args.task_type
-        # model_type = args.model_type
-        # current_output_dim = args.model_list['1']['output_dim']
-        # is_local = False
-        # device = args.device
-        # padding_side = args.padding_side
-        # model_path = args.model_path
-        # main_lr = args.main_lr
-        # pad_token = args.pad_token
-        # head_layer_trainable = args.head_layer_trainable
-        # # prepare model and optimizer
-        # (
-        #     self.local_model,
-        #     self.local_model_optimizer,
-        #     self.global_model,
-        #     self.global_model_optimizer,
-        #     args.tokenizer,
-        #     self.encoder
-        # ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
-
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
 

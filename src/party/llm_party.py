@@ -278,11 +278,11 @@ class Party(object):
         self.local_batch_attention_mask = local_batch_attention_mask
         self.local_batch_token_type_ids = local_batch_token_type_ids
     
-    def local_forward():
+    def local_forward(self):
         # args.local_model()
         pass
 
-    def local_backward(self,weight=None):
+    def local_backward(self, weight=None):
         # print('local_backward self.local_pred:',self.local_pred.requires_grad)
 
         self.num_local_updates += 1 # another update
