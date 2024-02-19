@@ -91,6 +91,7 @@ class PassiveParty_LLM(Party_LLM):
 
     def __init__(self, args, index):
         super().__init__(args, index)
+        self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
@@ -122,74 +123,42 @@ class PassiveParty_LLM(Party_LLM):
             communication = LocalCommunication(self.args.parties[self.args.k - 1])
         self._communication = communication
 
-    def prepare_model(self, args, index):
-    #     current_model_type = args.model_list['0']['type']
-    #     pretrained = args.pretrained
-    #     task_type = args.task_type
-    #     model_type = args.model_type
-    #     current_output_dim = args.model_list['0']['output_dim']
-    #     is_local = True
-    #     device = args.device
-    #     padding_side = args.padding_side
-    #     model_path = args.model_path
-    #     main_lr = args.main_lr
-    #     pad_token = args.pad_token
-    #     head_layer_trainable = args.head_layer_trainable
-    #     # prepare model and optimizer
-    #     (
-    #         self.local_model,
-    #         self.local_model_optimizer,
-    #         self.global_model,
-    #         self.global_model_optimizer,
-    #         args.tokenizer,
-    #         self.encoder
-    #     ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim,
-    #                                   is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
-    
-        # prepare model and optimizer
-        (
-            args,
-            self.local_model,
-            self.local_model_optimizer,
-            self.global_model,
-            self.global_model_optimizer
-        ) = load_models_per_party(args, index)
-        
+    def init_apply_defense(self, need_apply_defense, apply_adversarial, defense_configs, main_lr, device):
         # some defense need model, add here
-        if args.apply_defense == True:
-            if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
+        if need_apply_defense:
+            if apply_adversarial and (self.index in defense_configs["party"]):
                 # add adversarial model for local model
-                if not 'party' in args.defense_configs:
-                    args.defense_configs['party'] = [0]
+                if not 'party' in defense_configs:
+                    defense_configs['party'] = [0]
                     print('[warning] default passive party selected for applying adversarial training')
 
-                if not ('adversarial_model_lr' in args.defense_configs):
-                    adversarial_model_lr = args.main_lr
+                if not ('adversarial_model_lr' in defense_configs):
+                    adversarial_model_lr = main_lr
                     print('[warning] default hyper-parameter mid_lr selected for applying MID')
                 else :
-                    adversarial_model_lr = args.defense_configs['adversarial_model_lr']
+                    adversarial_model_lr = defense_configs['adversarial_model_lr']
 
-                if not ('adversarial_model' in args.defense_configs):
+                if not ('adversarial_model' in defense_configs):
                     adversarial_model_name = 'Adversarial_Mapping'
                 else:
-                    adversarial_model_name = args.defense_configs['adversarial_model']
+                    adversarial_model_name = defense_configs['adversarial_model']
 
-                seq_length = self.args.defense_configs['seq_length']
-                embed_dim = self.args.defense_configs['embed_dim']
+                seq_length = defense_configs['seq_length']
+                embed_dim = defense_configs['embed_dim']
                 
                 # prepare adversarial model --  for adversarial training
-                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(args.device)
+                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(device)
                 self.adversarial_model_optimizer = torch.optim.Adam(
                             [{'params': self.adversarial_model.parameters(), 'lr': adversarial_model_lr}])
 
                 # prepare imagined adversary --  for adversarial training
-                imagined_adversary_model_name = self.args.defense_configs['imagined_adversary']
-                self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(self.args.device)
-                self.imagined_adversary_lr = self.args.defense_configs['imagined_adversary_lr']
+                imagined_adversary_model_name = defense_configs['imagined_adversary']
+                self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(device)
+                self.imagined_adversary_lr = defense_configs['imagined_adversary_lr']
                 self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
 
                 self.adversary_crit = nn.CrossEntropyLoss()
-                self.adversary_lambda = self.args.defense_configs['lambda']
+                self.adversary_lambda = defense_configs['lambda']
 
 
     def prepare_data(self, args, index):
