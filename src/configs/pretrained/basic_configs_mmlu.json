@@ -24,18 +24,24 @@
         "0": {
             "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
             "pretrained": 1,
+            "head_layer_trainable": 0,
             "output_dim": 4,
             "model_type": "Llama",
             "max_sequence": 1024,
-            "path": ""
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/MMLU/dev/",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/MMLU/test/",
+            "path": "/home/shannon/dev/tools/nlp/models/HuggingFaceM4tiny-random-LlamaForCausalLM"
         },
         "1": {
             "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
             "pretrained": 1,
+            "head_layer_trainable": 0,
             "output_dim": 4,
             "model_type": "Llama",
             "max_sequence": 2048,
-            "path": ""
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/MMLU/dev/",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/MMLU/test/",
+            "path": "/home/shannon/dev/tools/nlp/models/HuggingFaceM4tiny-random-LlamaForCausalLM"
         },
         "task":{
             "task_type": "CausalLM"
