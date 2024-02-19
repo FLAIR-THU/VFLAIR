@@ -2,7 +2,7 @@ import threading
 
 import framework.common.logger_util as logger_util
 from party.active_party import ActiveParty_LLM
-
+from evaluates.MainTaskVFL_LLM import MainTaskVFL_LLM
 from load.LoadConfigs import load_llm_configs
 
 from framework.database.repository.TaskRepository import task_repository
@@ -14,6 +14,7 @@ class ActiveTaskService(threading.Thread):
     _queues = {}
     _party = None
     _last_result = None
+    _main_task = None
 
     def __init__(self, queues, data, job_id):
         threading.Thread.__init__(self)
@@ -23,8 +24,10 @@ class ActiveTaskService(threading.Thread):
 
     def run(self):
         args = load_llm_configs(self._data)
-        if self._party is None:
+        if self._main_task is None:
+            self._main_task = MainTaskVFL_LLM(args)
             self._party = ActiveParty_LLM(args, 1)
+            self._main_task.set_active_party(self._party)
 
         while True:
             task = self._queues['active'].get()
