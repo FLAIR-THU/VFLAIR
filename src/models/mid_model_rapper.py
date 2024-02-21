@@ -5,6 +5,154 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class MID_model_for_LLM_new(nn.Module):
+    def __init__(self, seq_length,embed_dim, mid_lambda, bottleneck_scale=1, std_shift=0.5):
+        super(MID_model_for_LLM_new, self).__init__()
+        self.bottleneck_scale = bottleneck_scale
+        self.input_dim = embed_dim
+        self.output_dim = seq_length*embed_dim
+        self.squeeze_dim = 124
+
+        self.seq_length = seq_length
+
+        self.mid_lambda = mid_lambda
+        self.std_shift = std_shift
+
+        self.squeeze_layer = nn.Sequential(
+            nn.Linear(self.input_dim, self.squeeze_dim, bias=True),
+            nn.ReLU(inplace=True)
+        )
+
+        self.enlarge_layer = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(seq_length*self.squeeze_dim, seq_length*self.squeeze_dim*2*bottleneck_scale, bias=True),
+            nn.ReLU(inplace=True)
+
+        )
+        self.decoder_layer = nn.Sequential(
+            # nn.Flatten(),
+            nn.Linear(seq_length*self.squeeze_dim*bottleneck_scale, self.output_dim, bias=True),
+            nn.ReLU(inplace=True)
+        )
+    
+    def forward(self, x):
+        # print('== MID Model Forward ==')
+        # print('x:',x.shape) # bs, 30 ,768
+        input_shape = x.shape
+
+        # epsilon = torch.empty((x.size()[0],x.size()[1]*self.bottleneck_scale))
+
+        epsilon = torch.empty((x.size()[0], self.seq_length*self.squeeze_dim*self.bottleneck_scale))
+        torch.nn.init.normal(epsilon, mean=0, std=1) # epsilon is initialized
+        epsilon = epsilon.to(x.device)
+        # print('epsilon:',epsilon.shape) # bs, 30
+
+        # print(f"[debug] in mid model, x.shape={x.shape}")
+        # # x.size() = (batch_size, class_num)
+        x = self.squeeze_layer(x)
+        # print('x squeeze:',x.shape) # bs, 46080=30*768
+
+
+        x_double = self.enlarge_layer(x)
+        # print('x_double:',x_double.shape) # bs, 46080=30*768
+
+        mu, std = x_double[:,:self.seq_length*self.squeeze_dim*self.bottleneck_scale], \
+            x_double[:,self.seq_length*self.squeeze_dim*self.bottleneck_scale:]
+        # print(f"mu, std={mu.shape},{std.shape}") # bs, 23040   bs, 23040
+
+        std = F.softplus(std-self.std_shift) # ? F.softplus(std-0.5) F.softplus(std-5)
+        # print("std:",std.shape)  # bs, 23040
+
+        z = mu + std * epsilon
+        z = z.to(x.device)
+
+        # print('z:',z.shape) # bs, 23040
+
+        z = self.decoder_layer(z)
+        # print('decoded z:',z.shape) # bs, 23040
+
+        z = z.reshape(input_shape)
+
+        # print('reshape z:',z.shape) # bs, 23040
+
+
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))
+        # print('mid_loss:',mid_loss)
+
+        # print('== MID Model Forward Over ==')
+
+
+        return z, mid_loss
+
+
+class MID_model_for_LLM(nn.Module):
+    def __init__(self, seq_length,embed_dim, mid_lambda, bottleneck_scale=1, std_shift=0.5):
+        super(MID_model_for_LLM, self).__init__()
+        self.bottleneck_scale = bottleneck_scale
+        self.input_dim = seq_length*embed_dim
+        self.output_dim = seq_length*embed_dim
+
+        self.mid_lambda = mid_lambda
+        self.std_shift = std_shift
+
+        self.enlarge_layer = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(self.input_dim, self.input_dim*2*bottleneck_scale, bias=True),
+            nn.ReLU(inplace=True)
+        )
+        self.decoder_layer = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(self.input_dim*bottleneck_scale, self.input_dim*bottleneck_scale*5, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Linear(self.input_dim*bottleneck_scale*5, self.output_dim, bias=True),
+            nn.ReLU(inplace=True)
+        )
+    
+    def forward(self, x):
+        print('== MID Model Forward ==')
+        print('x:',x.shape) # bs, 30 ,768
+        input_shape = x.shape
+
+        # epsilon = torch.empty((x.size()[0],x.size()[1]*self.bottleneck_scale))
+
+        epsilon = torch.empty((x.size()[0], int(x.size()[1]*x.size()[2]*self.bottleneck_scale)))
+        torch.nn.init.normal(epsilon, mean=0, std=1) # epsilon is initialized
+        epsilon = epsilon.to(x.device)
+        print('epsilon:',epsilon.shape) # bs, 30
+
+        # print(f"[debug] in mid model, x.shape={x.shape}")
+        # # x.size() = (batch_size, class_num)
+        x_double = self.enlarge_layer(x)
+        print('x_double:',x_double.shape) # bs, 46080=30*768
+
+        mu, std = x_double[:,:self.input_dim*self.bottleneck_scale], x_double[:,self.input_dim*self.bottleneck_scale:]
+        print(f"mu, std={mu.shape},{std.shape}") # bs, 23040   bs, 23040
+
+        std = F.softplus(std-self.std_shift) # ? F.softplus(std-0.5) F.softplus(std-5)
+        print("std:",std.shape)  # bs, 23040
+
+        z = mu + std * epsilon
+        z = z.to(x.device)
+
+        print('z:',z.shape) # bs, 23040
+
+        z = self.decoder_layer(z)
+        print('decoded z:',z.shape) # bs, 23040
+
+        z = z.reshape(input_shape)
+
+        print('reshape z:',z.shape) # bs, 23040
+
+
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))
+        print('mid_loss:',mid_loss)
+
+        print('== MID Model Forward Over ==')
+
+
+        return z, mid_loss
+
+
 class MID_model(nn.Module):
     def __init__(self, input_dim, output_dim, mid_lambda, bottleneck_scale=1, std_shift=0.5):
         super(MID_model, self).__init__()
@@ -31,9 +179,9 @@ class MID_model(nn.Module):
         epsilon = epsilon.to(x.device)
         # print(f"[debug] in mid model, x.shape={x.shape}")
         # # x.size() = (batch_size, class_num)
-        x_double = self.enlarge_layer(x)
+        x_double = self.enlarge_layer(x) # bs, input_dim*2*bottleneck_scale
         mu, std = x_double[:,:self.input_dim*self.bottleneck_scale], x_double[:,self.input_dim*self.bottleneck_scale:]
-        # print(f"mu, std={mu},{std}")
+        # print(f"mu, std={mu},{std}") # bs, input_dim*bottleneck_scale   bs, input_dim*bottleneck_scale
         std = F.softplus(std-self.std_shift) # ? F.softplus(std-0.5) F.softplus(std-5)
         z = mu + std * epsilon
         z = z.to(x.device)
@@ -89,7 +237,7 @@ class Passive_local_MID_model(nn.Module):
         self.mid_loss = None
 
     def forward(self,x):
-        hp = self.local_model(x)
+        hp = self.local_model(x) # hp: [bs, seq_length, embed_dim]
         z, self.mid_loss = self.mid_model(hp)
         return z
 

@@ -1,17 +1,20 @@
 import sys, os
 sys.path.append(os.pardir)
 import torch
+import json
+import collections
 from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 import torch.nn as nn
+
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
 from party.llm_party import Party as Party_LLM
+
 from dataset.party_dataset import PassiveDataset, PassiveDataset_LLM
 from dataset.party_dataset import ActiveDataset
 from load.LoadModels import load_models_per_party, load_models_per_party_new, QuestionAnsweringModelOutput
-import json
-import collections
+
 from utils.squad_utils import normalize_answer, _get_best_indexes, compute_exact, compute_f1
 from utils.communication_protocol_funcs import get_size_of
 from evaluates.defenses.defense_api import apply_defense
@@ -19,6 +22,8 @@ from dataset.party_dataset import ActiveDataset
 from utils.communication_protocol_funcs import compress_pred
 
 from models.imagined_adversary_models import *
+from models.mid_model_rapper import *
+
 import time
 import numpy as np
 
@@ -147,7 +152,8 @@ class PassiveParty_LLM(Party_LLM):
             self.global_model_optimizer
         ) = load_models_per_party(args, index)
         
-        # some defense need model, add here
+
+        ######## some defense models, add here ########
         if args.apply_defense == True:
             if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
                 # add adversarial model for local model
@@ -182,8 +188,38 @@ class PassiveParty_LLM(Party_LLM):
 
                 self.adversary_crit = nn.CrossEntropyLoss()
                 self.adversary_lambda = self.args.defense_configs['lambda']
+            
+            elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]):
+                # add mid model for local model
+                
+                if not 'lambda' in self.args.defense_configs:
+                    self.mid_lambda = self.args.defense_configs['lambda'] 
+                else:
+                    self.mid_lambda = 0.001
+                
+                if not ('lr' in self.args.defense_configs):
+                    self.mid_lr = args.main_lr  
+                else :
+                    self.mid_lr = args.defense_configs['lr'] 
+                
+                current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) \
+                    if 'bottleneck_scale' in args.defense_configs else 1
+        
+                if 'std_shift_hyperparameter' in self.args.defense_configs:
+                    std_shift_hyperparameter = int(args.defense_configs['std_shift_hyperparameter'])
+                else:
+                    std_shift_hyperparameter = 5 
 
+                seq_length = self.args.defense_configs['seq_length']
+                embed_dim = self.args.defense_configs['embed_dim']
 
+                self.mid_model = MID_model_for_LLM_new(seq_length,embed_dim,\
+                self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+
+                self.mid_model_optimizer = torch.optim.Adam(self.mid_model.parameters(), lr=self.mid_lr)
+
+                # mid_model_list = [MID_model(args.model_list[str(_ik)]['output_dim'],args.model_list[str(_ik)]['output_dim'],args.defense_configs['lambda'],bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k-1)]
+                    
     def prepare_data(self, args, index):
         super().prepare_data(args, index) # Party_llm's prepare_data
  
@@ -319,13 +355,14 @@ class PassiveParty_LLM(Party_LLM):
 
             # loss used to update adversarial model mapping
             self.adversarial_model_loss =   self.adversary_lambda * mapping_distance  - self.adversary_attack_loss
-        # # active mid model loss
-        # if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
-        #     # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
-        #     assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
-        #     for mid_loss in self.global_model.mid_loss_list:
-        #         loss = loss + mid_loss
-        #     self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+        
+        elif self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
+            # assert len(pred_list)-1 == len(self.global_model.mid_loss_list)
+            # for mid_loss in self.global_model.mid_loss_list:
+            self.global_loss = self.global_loss + self.mid_loss
+
+            # self.global_model.mid_loss_list = [torch.empty((1,1)).to(self.args.device) for _ in range(len(self.global_model.mid_loss_list))]
+        
         # # active dcor loss
         # elif self.args.apply_dcor==True and (self.index in self.args.defense_configs['party']):
         #     # print('dcor active defense')
@@ -385,32 +422,37 @@ class PassiveParty_LLM(Party_LLM):
         # adversarial training : update adversarial model
         if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.imagined_adversary_optimizer.zero_grad()
-
             self.adversarial_model_optimizer.zero_grad()
 
+            self.adversary_attack_loss.backward(retain_graph = True)
             self.adversarial_model_loss.backward(retain_graph=True)
 
-            self.adversary_attack_loss.backward(retain_graph = True)
+            self.adversarial_model_optimizer.step()
+            self.imagined_adversary_optimizer.step()
 
-            # print('adversarial_model_loss:',self.adversarial_model_loss.item(), ' adversary_attack_loss:',self.adversary_attack_loss.item())
+        
+        elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
+            and (self.index < self.args.k - 1)):
+
+            self.mid_model_optimizer.zero_grad()
+
+            self.mid_loss.backward(retain_graph=True)
+            # self.mid_loss = torch.empty((1, 1)).to(self.args.device)
 
             # self.weights_grad_a = torch.autograd.grad(
             #     self.local_pred,
-            #     self.local_model.adversarial_model.parameters(),
-            #     # self.local_model.parameters(),
+            #     self.mid_model.parameters(),
             #     grad_outputs=self.local_gradient,
             #     retain_graph=True,
             # )
-            # for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
+            # for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
             #     if w.requires_grad:
             #         if w.grad != None:
             #             w.grad += g.detach()
             #         else:
             #             w.grad = g.detach()
-
-            self.adversarial_model_optimizer.step()
-
-            self.imagined_adversary_optimizer.step()
+            
+            self.mid_model_optimizer.step()
 
 
 
@@ -1019,275 +1061,7 @@ class PassiveParty_LLM(Party_LLM):
             # LR_active_list.append(self.parties[1].give_current_lr())
         return self.loss, self.train_acc
 
-    def train_batch(self, parties_data, batch_label):
-        '''
-        batch_label: self.gt_one_hot_label   may be noisy
-            QA: bs * [start_position, end_position]
-        '''
-        ############### allocate data ###############
-        # encoder = self.args.encoder
-        # if self.args.apply_cae:
-        #     assert encoder != None, "[error] encoder is None for CAE"
-        #     _, gt_one_hot_label = encoder(batch_label)
-        # else:
-        gt_one_hot_label = batch_label
-
-        # allocate data (data/label/attention_mask/token_type_ids)
-        input_shape = parties_data[0][0].shape[:2]  # parties_data[ik][0].size()
-        self.input_shape = input_shape
-        self.obtain_local_data(parties_data[0][0], parties_data[0][2], parties_data[0][3])
-        self.gt_one_hot_label = gt_one_hot_label
-        ############### allocate data ###############
-
-        ################ normal vertical federated learning ################
-        torch.autograd.set_detect_anomaly(True)
-
-        # =================== Commu ===================
-        # exchange info between party: local_pred/global_pred
-        all_pred_list = self.pred_transmit()   # [ pred of this party ]
-        final_pred = self._send_pred_message(all_pred_list) # TODO: if there's multiple more passive parties
-        # =================== Commu ===================
-
-        # passive party -> global gradient -> active party
-        self.global_gradient_transmit(final_pred)
-
-        # active party -> local gradient -> passive party
-        if self.local_model_optimizer != None:
-            self.local_gradient_transmit()
-
-        # ============= Model Update =============
-        self._send_global_backward_message()  # update parameters for global trainable part
-        # if self.parties[ik].local_model_optimizer != None:
-        self.local_backward()
-        # ============= Model Update =============
-
-        ################ normal vertical federated learning ################
-
-        # print train_acc each batch
-        if self.args.task_type == 'QuestionAnswering':
-            pred = self.parties[self.k - 1].global_pred  # QuestionAnsweringModelOutput
-            loss = self.parties[self.k - 1].global_loss
-
-            start_logits = pred.start_logits
-            end_logits = pred.end_logits
-
-            n_best_size = self.args.n_best_size
-            start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
-            end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
-
-            exact_score_list = []
-            f1_list = []
-            # for each sample in this batch
-            for i in range(start_logits.shape[0]):
-                _start_logits = start_logits[i]
-                _end_logits = end_logits[i]
-                _start_indexes = start_indexes[i]
-                _end_indexes = end_indexes[i]
-
-                ############ Gold ################
-                feature = parties_data[0][4][i]
-                feature_tokens = [_token[0] for _token in feature["tokens"]]
-
-                gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
-                if len(gold_start_indexs.shape) == 0:
-                    gold_start_indexs = gold_start_indexs.unsqueeze(0)
-                if len(gold_end_indexs.shape) == 0:
-                    gold_end_indexs = gold_end_indexs.unsqueeze(0)
-                gold_ans = []  # gold answers for this sample
-                for _i in range(len(gold_start_indexs)):
-                    gold_start_index = int(gold_start_indexs[_i])
-                    gold_end_index = int(gold_end_indexs[_i])
-                    gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
-                    gold_ans_text = normalize_answer(gold_ans_text)
-                    gold_ans.append(gold_ans_text)
-                # print('gold_ans:',gold_ans,feature["orig_answer_text"])
-
-                ############ Pred ################
-                _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                    "PrelimPrediction",
-                    ["start_index", "end_index", "start_logit", "end_logit"])
-                _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                    "NbestPrediction", ["text", "start_logit", "end_logit"])
-
-                # iterate through all possible start-end pairs
-                prelim_predictions = []
-                for start_index in _start_indexes:
-                    for end_index in _end_indexes:
-                        # We could hypothetically create invalid predictions, e.g., predict
-                        # that the start of the span is in the question. We throw out all
-                        # invalid predictions.
-                        if start_index >= len(feature["tokens"]):
-                            continue
-                        if end_index >= len(feature["tokens"]):
-                            continue
-                        if start_index not in feature["token_to_orig_map"]:
-                            continue
-                        if end_index not in feature["token_to_orig_map"]:
-                            continue
-                        if not feature["token_is_max_context"].get(start_index, False):
-                            continue
-                        if end_index < start_index:
-                            continue
-                        length = end_index - start_index + 1
-                        if length > self.args.max_answer_length:
-                            continue
-
-                        prelim_predictions.append(
-                            _PrelimPrediction(
-                                start_index=start_index,
-                                end_index=end_index,
-                                start_logit=_start_logits[start_index],
-                                end_logit=_end_logits[end_index]))
-
-                # Iterate through Sorted Predictions
-                prelim_predictions = sorted(
-                    prelim_predictions,
-                    key=lambda x: (x.start_logit + x.end_logit),
-                    reverse=True)
-                exact_score = 0
-                f1 = 0
-                # Get n best prediction text
-                nbest = []
-                n_best_size = min(n_best_size, len(prelim_predictions))
-                for _id in range(n_best_size):
-                    start_index = prelim_predictions[_id].start_index
-                    end_index = prelim_predictions[_id].end_index
-
-                    pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
-                    pred_ans_text = normalize_answer(pred_ans_text)
-
-                    nbest.append(
-                        _NbestPrediction(
-                            text=pred_ans_text,
-                            start_logit=prelim_predictions[_id].start_logit,
-                            end_logit=prelim_predictions[_id].end_logit))
-
-                # Get best predicted answer
-                total_scores = []
-                best_non_null_entry = None
-
-                if self.args.metric_type == "best_pred":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                    pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                    # Calculate exact_score/f1 for best pred
-                    # print('best pred:',pred_ans_text)
-                    exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                    f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                elif self.args.metric_type == "n_best":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                        pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-                        # Calculate best exact_score/f1 among n best preds
-                        exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                        f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                else:
-                    assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-            exact_score = np.mean(exact_score_list)
-            f1 = np.mean(f1_list)
-
-            return loss.item(), exact_score
-
-        elif self.args.task_type == 'SequenceClassification':
-            # ###### Noisy Label Attack #######
-            # convert back to clean label to get true acc
-            if self.args.apply_nl == True:
-                real_batch_label = self.clean_one_hot_label
-            else:
-                real_batch_label = batch_label
-            # ###### Noisy Label Attack #######
-
-            pred = final_pred
-            loss = self.global_loss
-            predict_prob = F.softmax(pred, dim=-1)
-            # if self.args.apply_cae:
-            #     predict_prob = encoder.decode(predict_prob)
-
-            suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
-            batch_train_acc = suc_cnt / predict_prob.shape[0]
-
-            return loss.item(), batch_train_acc
-
-        elif self.args.task_type == 'CausalLM':
-            pred = self.parties[self.k - 1].global_pred  # logits
-            loss = self.parties[self.k - 1].global_loss
-            test_logit = pred
-            next_token_logits = test_logit[:,
-                                -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
-
-            if self.args.dataset == "Lambada":
-                # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-                target_word_list = [normalize_answer(_p) for _p in gt_one_hot_label]
-                # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
-
-                # predict_word_list : bs * predicted words
-                enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-                if self.args.metric_type == "best_pred":
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
-                    predict_word_list = [normalize_answer(_p) for _p in predict_word]
-                elif self.args.metric_type == "n_best":
-                    logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                    # print('index_list:',index_list.shape)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    # print('predict_label:',predict_label.shape)
-                    predict_word_list = []
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                        # print('predict_word:',predict_word)
-                # print('predict_word_list:',type(predict_word_list),len(predict_word_list))
-                # print(predict_word_list)
-
-                if self.args.metric_type == "best_pred":
-                    suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] == predict_word_list[i]:
-                            suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
-                elif self.args.metric_type == "n_best":
-                    suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] in predict_word_list[i]:
-                            suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
-                else:
-                    assert 1 > 2, 'metric type not supported'
-
-
-            else:  # MMLU
-                choice_id_list = []
-                for choice in self.args.label_dict.keys():
-                    choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
-                    _id = self.args.tokenizer(choice).input_ids[-1]
-                enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
-                enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
-
-                predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
-
-                test_predict_labels.extend(predict_label.detach().cpu().tolist())
-                test_actual_labels.extend(actual_label.detach().cpu().tolist())
-                # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
-
-                sample_cnt += predict_label.shape[0]
-                suc_cnt += torch.sum(predict_label == actual_label).item()
-
-            return loss.item(), batch_train_acc
+    
 
     def local_gradient_transmit(self):
         if self.local_model_optimizer != None:

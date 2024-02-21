@@ -328,10 +328,10 @@ class VanillaModelInversion_WhiteBox(Attacker):
         else:
             result_path = f'./exp_result/{str(self.args.dataset)}/{self.attack_name}/{self.args.defense_name}_{self.args.defense_param}_finetuned_{str(model_name)}/'
 
-        if not os.path.exists(result_path):
-            os.makedirs(result_path)
-        result_file_name = result_path + f'{self.args.pad_info}_{str(Precision)}_{str(Recall)}.csv'
-        print(result_file_name)
-        attack_result.to_csv(result_file_name)
+        # if not os.path.exists(result_path):
+        #     os.makedirs(result_path)
+        # result_file_name = result_path + f'{self.args.pad_info}_{str(Precision)}_{str(Recall)}.csv'
+        # print(result_file_name)
+        # attack_result.to_csv(result_file_name)
 
         return Precision, Recall
