@@ -16,16 +16,16 @@
         "0": {
             "type": "GCN",
             "hidden_dim": 32,
-            "output_dim": 16,
+            "output_dim": 7,
             "path": ""
         },
         "1": {
             "type": "GCN",
             "hidden_dim": 32,
-            "output_dim": 16,
+            "output_dim": 7,
             "path": ""
         },
         "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
+        "global_model": "ClassificationModelHostTrainableHeadGCN"
     }
 }

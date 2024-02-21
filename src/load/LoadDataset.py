@@ -174,9 +174,10 @@ def dataset_partition(args, index, dst, half_dim):
         dim_list = []
         for ik in range(args.k):
             dim_list.append(int(args.model_list[str(ik)]['input_dim']))
-            if len(dim_list) > 1:
-                dim_list[-1] = dim_list[-1] + dim_list[-2]
-        dim_list.insert(0, 0)
+            if len(dim_list)>1:
+                for i in range(1, len(dim_list)):
+                    dim_list[i]=dim_list[i]+dim_list[i-1]
+        dim_list.insert(0,0)
 
         if args.k == 1:  # Centralized Training
             return (dst[0], dst[1])
@@ -562,6 +563,7 @@ def load_dataset_per_party(args, index):
             A = np.array(adj.todense())
             X = sparse_to_tuple(features.tocoo())
             print("cora dataset before split", A.shape, type(X), X[0].shape)
+            print(f"#train_sample={len(idx_train)}, #test_sample={len(idx_test)}")
             args.idx_train = torch.LongTensor(idx_train)
             args.idx_test = torch.LongTensor(idx_test)
             label = torch.LongTensor(label).to(args.device)

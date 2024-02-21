@@ -2,7 +2,7 @@
     "epochs": 30,
     "lr": 0.01,
     "k": 2,
-    "batch_size": 1024,
+    "batch_size": 2048,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -26,33 +26,5 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "GaussianDP",
-        "parameters": {
-            "party": [0],
-            "dp_strength": 0.1
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.005,
-                "epochs": 60,
-                "batch_size": 1024
-            }
-        },
-        "1":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        }
     }
-    
 }

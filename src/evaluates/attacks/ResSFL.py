@@ -240,9 +240,12 @@ class ResSFL(Attacker):
                             _rand_mse = criterion(rand_img, img[ik])
                             mse_list.append(_mse)
                             rand_mse_list.append(_rand_mse)
+                            output[ik] = output[ik].reshape(img[ik].size())
                         mse = torch.sum(torch.tensor(mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
                         rand_mse = torch.sum(torch.tensor(rand_mse_list) * torch.tensor(feature_dimention_list))/torch.sum(torch.tensor(feature_dimention_list))
-                    
+                    if i_epoch == self.epochs - 1:
+                        output = torch.stack(output)
+                        torch.save(output, f"./exp_result/ressfl/{self.args.defense_name}.pkl")
                     print('Epoch {}% \t train_loss:{:.2f} mse:{:.4}, mse_reduction:{:.2f}'.format(
                         i_epoch, train_loss.item(), mse, rand_mse-mse))
             

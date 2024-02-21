@@ -45,8 +45,8 @@ def evaluate_performance(tvfl, X_train, y_train, X_test, y_test, grid=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("tree")
-    parser.add_argument("--seed", type=int, default=42, help="random seed")
-    parser.add_argument("--dataset", type=str, default="credit")
+    parser.add_argument("--seed", type=int, default=0, help="random seed")
+    parser.add_argument("--dataset", type=str, default="breastcancer")
     parser.add_argument(
         "--configs",
         type=str,
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.seed, stratify=y
     )
-
+    print(X_train.shape)
     datasets = [
         X_train[:, featureid_lists[0]],
         X_train[:, featureid_lists[1]],

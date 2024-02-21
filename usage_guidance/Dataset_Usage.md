@@ -46,7 +46,7 @@ In VFLAIR, we defaultly provide several dataset that are oftenly used under VFL 
 
      1. News20
         * By default, the data are stored under directory `../../share_dataset/news20/`
-        * Download from [20 Newsgroups]([Home Page for 20 Newsgroups Data Set (qwone.com)](http://qwone.com/~jason/20Newsgroups/)), and align texts from the same category into the same directory as`../../share_dataset/news20/"category_name"/text_files`
+        * Download from [20 Newsgroups]([Home Page for 20 Newsgroups Data Set (qwone.com)](http://qwone.com/~jason/20Newsgroups/)), and align texts from the same category into the same directory as `../../share_dataset/news20/"category_name"/text_files`
         * 3 versions of the news20 dataset are available(20news-19997.tar.gz/20news-bydate/tar.gz/20news-18828.tar.gz). In VFLow, we use 20news-19997.tar.gz by default.
         * TF-IDF is used for data processing, turning each text into a sparse matrix. Dimension of the matrix may vary using different versions of the news20 dataset, therefor affecting the 'input_dim' in bottom models. Please refer to [] for details. 
 

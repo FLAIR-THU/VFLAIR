@@ -4,6 +4,7 @@ from typing import Callable, List
 import numpy as np
 
 from .tree_node_core import Node
+from .idlmid import is_satisfied_mi_bound
 
 
 def xgboost_compute_gain(
@@ -56,6 +57,7 @@ class XGBoostNode(Node):
         self,
         parties_: list,
         y_: list,
+        y_onehot_encoded_: list,
         num_classes_: int,
         gradient_: list,
         hessian_: list,
@@ -65,16 +67,19 @@ class XGBoostNode(Node):
         gamma_: float,
         eps_: float,
         depth_: int,
+        prior_: list,
+        mi_bound_: float = -1,
         active_party_id_: int = -1,
         use_only_active_party_: bool = False,
         n_job_: int = 1,
-        custom_secure_cond_func: Callable = (lambda _: False),
         gradient_encrypted: list = None,
         hessian_encrypted: list = None,
+        y_onehot_encoded_encrypted: list = None
     ):
         super().__init__()
         self.parties = parties_
         self.y = y_
+        self.y_onehot_encoded = y_onehot_encoded_
         self.num_classes = num_classes_
         self.gradient = gradient_
         self.hessian = hessian_
@@ -84,12 +89,14 @@ class XGBoostNode(Node):
         self.gamma = gamma_
         self.eps = eps_
         self.depth = depth_
+        self.prior = prior_
+        self.mi_bound = mi_bound_
         self.active_party_id = active_party_id_
         self.use_only_active_party = use_only_active_party_
         self.n_job = n_job_
-        self.custom_secure_cond_func = custom_secure_cond_func
         self.gradient_encrypted = gradient_encrypted
         self.hessian_encrypted = hessian_encrypted
+        self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
 
         self.best_entropy = None
         self.left = None
@@ -176,6 +183,10 @@ class XGBoostNode(Node):
         sum_hess,
         tot_cnt,
     ):
+        temp_y_class_cnt = [0 for _ in range(self.num_classes)]
+        for r in range(self.row_count):
+            temp_y_class_cnt[int(self.y[self.idxs[r]])] += 1
+
         temp_left_class_cnt = [0 for _ in range(self.num_classes)]
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
         grad_dim = len(sum_grad)
@@ -188,7 +199,7 @@ class XGBoostNode(Node):
                 search_results_encrypted = self.parties[
                     temp_party_id
                 ].greedy_search_split(
-                    self.gradient_encrypted, self.hessian_encrypted, self.idxs
+                    self.gradient_encrypted, self.hessian_encrypted, self.y_onehot_encoded_encrypted, self.idxs
                 )
                 search_results = []
                 for j in range(len(search_results_encrypted)):
@@ -201,10 +212,13 @@ class XGBoostNode(Node):
                             search_results_encrypted[j][k][1]
                         )
                         tls = search_results_encrypted[j][k][2]
-                        search_results[-1].append((tlg, tlh, tls))
+                        tlc = self.parties[self.active_party_id].decrypt_1dlist(
+                            search_results_encrypted[j][k][3]
+                        )
+                        search_results[-1].append((tlg, tlh, tls, tlc))
             else:
                 search_results = self.parties[temp_party_id].greedy_search_split(
-                    self.gradient, self.hessian, self.idxs
+                    self.gradient, self.hessian, self.y_onehot_encoded, self.idxs
                 )
 
             temp_score, temp_entropy = 0, 0
@@ -223,6 +237,10 @@ class XGBoostNode(Node):
                 temp_left_size = 0
                 # temp_right_size = 0
 
+                for c in range(self.num_classes):
+                    temp_left_class_cnt[c] = 0
+                    temp_right_class_cnt[c] = 0
+
                 for c in range(grad_dim):
                     temp_left_grad[c] = 0
                     temp_left_hess[c] = 0
@@ -233,7 +251,39 @@ class XGBoostNode(Node):
                         temp_left_hess[c] += search_results[j][k][1][c]
 
                     temp_left_size += search_results[j][k][2]
-                    # temp_right_size = tot_cnt - temp_left_size
+                    temp_right_size = tot_cnt - temp_left_size
+
+                    for c in range(self.num_classes):
+                        temp_left_class_cnt[c] += search_results[j][k][3][c]
+                        temp_right_class_cnt[c] = (
+                            temp_y_class_cnt[c] - temp_left_class_cnt[c]
+                        )
+
+                    if (temp_party_id != self.active_party_id) and (
+                        (
+                            not is_satisfied_mi_bound(
+                                self.num_classes,
+                                self.mi_bound,
+                                temp_left_size,
+                                len(self.y),
+                                self.entire_class_cnt,
+                                self.prior,
+                                temp_left_class_cnt,
+                            )
+                        )
+                        or (
+                            not is_satisfied_mi_bound(
+                                self.num_classes,
+                                self.mi_bound,
+                                temp_right_size,
+                                len(self.y),
+                                self.entire_class_cnt,
+                                self.prior,
+                                temp_right_class_cnt,
+                            )
+                        )
+                    ):
+                        continue
 
                     skip_flag = False
                     for c in range(grad_dim):
@@ -321,14 +371,37 @@ class XGBoostNode(Node):
             if not any(x == self.idxs[i] for x in left_idxs):
                 right_idxs.append(self.idxs[i])
 
-        left_is_satisfied_secure_cond = self.custom_secure_cond_func((self, left_idxs))
-        right_is_satisfied_secure_cond = self.custom_secure_cond_func(
-            (self, right_idxs)
+        left_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
+        for i in left_idxs:
+            left_y_class_cnt_within_node[int(self.y[i])] += 1
+
+        right_y_class_cnt_within_node = [0 for _ in range(self.num_classes)]
+        for i in right_idxs:
+            right_y_class_cnt_within_node[int(self.y[i])] += 1
+
+        left_is_satisfied_secure_cond = is_satisfied_mi_bound(
+            self.num_classes,
+            self.mi_bound,
+            len(left_idxs),
+            len(self.y),
+            self.entire_class_cnt,
+            self.prior,
+            left_y_class_cnt_within_node,
+        )
+        right_is_satisfied_secure_cond = is_satisfied_mi_bound(
+            self.num_classes,
+            self.mi_bound,
+            len(right_idxs),
+            len(self.y),
+            self.entire_class_cnt,
+            self.prior,
+            right_y_class_cnt_within_node,
         )
 
         self.left = XGBoostNode(
             self.parties,
             self.y,
+            self.y_onehot_encoded,
             self.num_classes,
             self.gradient,
             self.hessian,
@@ -338,15 +411,21 @@ class XGBoostNode(Node):
             self.gamma,
             self.eps,
             self.depth - 1,
+            self.prior,
+            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or (left_is_satisfied_secure_cond)),
             self.n_job,
+            self.gradient_encrypted,
+            self.hessian_encrypted,
+            self.y_onehot_encoded_encrypted
         )
         if self.left.is_leaf_flag == 1:
             self.left.party_id = self.party_id
         self.right = XGBoostNode(
             self.parties,
             self.y,
+            self.y_onehot_encoded,
             self.num_classes,
             self.gradient,
             self.hessian,
@@ -356,9 +435,14 @@ class XGBoostNode(Node):
             self.gamma,
             self.eps,
             self.depth - 1,
+            self.prior,
+            self.mi_bound,
             self.active_party_id,
             (self.use_only_active_party or (right_is_satisfied_secure_cond)),
             self.n_job,
+            self.gradient_encrypted,
+            self.hessian_encrypted,
+            self.y_onehot_encoded_encrypted
         )
         if self.right.is_leaf_flag == 1:
             self.right.party_id = self.party_id
