@@ -12,6 +12,7 @@ import framework.database.model.Task as Task
 
 logger = logger_util.get_logger()
 
+
 class MessageService:
     _queues = {}
     _task_service = None
@@ -32,11 +33,10 @@ class MessageService:
         data = json.loads(params.string)
         job_id = self._create_job(data)
         if data['fl_type'] == 'VFL':
-            self._task_service = fst.ActiveTaskService(self._queues, data, job_id)
-            self._task_service.run_next()
+            self._task_service = fst.ActiveTaskService(self._queues)
             self._task_service.start()
+        self._task_service.add_job(job_id, data)
         return job_id
-
 
     def parse_message(self, message):
         if message.type == fpm.CREATE_JOB:

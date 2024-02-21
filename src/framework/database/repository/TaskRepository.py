@@ -55,6 +55,7 @@ class TaskRepository:
                 task.result = json.dumps(result)
             session.add(task)
             session.commit()
+            return task
 
 task_repository = TaskRepository()
 
