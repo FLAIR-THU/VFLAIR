@@ -16,7 +16,7 @@ class PassiveTaskService:
         self._client = client
         self._node = fpn.Node(node_id=client.id)
         args = load_llm_configs(self._data)
-        self._party = PassiveParty_LLM(args, 0)
+        self._party = PassiveParty_LLM(args, client.index)
         self._party.init_communication(DistributedCommunication(self._client))
 
     def run(self, task):
@@ -30,6 +30,6 @@ class PassiveTaskService:
         value.string = json.dumps(data)
         id_value = fpm.Value()
         id_value.sint64 = task_id
-        msg = mu.MessageUtil.create(self._node, {"task_id": id_value, "result": value}, 3)
+        msg = mu.MessageUtil.create(self._node, {"task_id": id_value, "result": value}, fpm.FINISH_TASK)
         response = self._client.open_and_send(msg)
         return response

@@ -4,3 +4,4 @@ server:
 
 client:
   id: ${CLIENT_ID:c1}
+  index: ${CLIENT_INDEX:0}
