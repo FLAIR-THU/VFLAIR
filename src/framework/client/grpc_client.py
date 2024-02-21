@@ -16,8 +16,9 @@ class GrpcClient():
     _message_service = None
     _node = None
 
-    def __init__(self, client_id, host, port):
+    def __init__(self, client_id, client_index, host, port):
         self.id = client_id
+        self.index = client_index
         self.host = host
         self.port = port
         self._node = fpn.Node(node_id=f"{self.id}")
@@ -78,6 +79,7 @@ def main(main_args):
         host = config["server"]["host"]
         port = config["server"]["port"]
         client_id = config["client"]["id"]
+        client_index = config["client"]["index"]
     else:
         raise ValueError("Please specify --config")
 
@@ -87,7 +89,7 @@ def main(main_args):
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ]) as channel:
         stub = fps.MessageServiceStub(channel)
-        GrpcClient(client_id, host, port).register(stub)
+        GrpcClient(client_id, client_index, host, port).register(stub)
 
 
 if __name__ == "__main__":
