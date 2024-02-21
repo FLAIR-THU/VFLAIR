@@ -1476,30 +1476,33 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-    elif args.dataset == 'yelp':
+    elif args.dataset == 'yelp-polarity':
         X_train = []
         y_train = []
         X_test = []
         y_test = []
-        text_path = DATA_PATH + 'yelp/yelp_academic_dataset_review.json'
-        with open(text_path, "r") as file:
-            line_idx = 1
-            for line in file:
-                data = json.loads(line)
-                if line_idx <= 489316:
-                    X_train.append(data["text"])
-                    y_train.append(data["stars"])
-                else:
-                    X_test.append(data["text"])
-                    y_test.append(data["stars"])
-        X_train = np.array(X_train)
-        y_train = np.array(y_train)
+        train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
+        test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
 
-        X_test = np.array(X_test)
-        y_test = np.array(y_test)
+        df = pd.read_csv(train_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        scalar = np.array([-1])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_train = np.array(sentences)
+        y_train = np.array(labels) + scalar
+        df = pd.read_csv(test_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_test = np.array(sentences)
+        y_test = np.array(labels) + scalar
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
+
+        print(type(X_train), X_train.shape, X_test.shape)  
+        print(type(y_train), y_train.shape, y_test.shape)  
 
     elif args.dataset == "emotion":
         X_train = []

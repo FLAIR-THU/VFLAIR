@@ -37,6 +37,7 @@ YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
 MODEL_PATH = {
 'bert-base-uncased': YOUR_MODEL_PATH+"bert-base-uncased",
 "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+"textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH+"textattackbert-base-uncased-yelp-polarity",
 "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
 "textattackbert-base-uncased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
 "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
