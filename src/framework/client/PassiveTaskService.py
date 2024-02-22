@@ -11,17 +11,27 @@ logger = logger_util.get_logger('passive_task_service')
 
 
 class PassiveTaskService:
-    def __init__(self, data, client):
-        self._data = data
+    _parties = {}
+    _client = None
+
+    def _get_party(self, task):
+        return self._parties[task['job_id']]
+
+    def add_job(self, job_id, data):
+        if job_id not in self._parties:
+            args = load_llm_configs(data)
+            party = PassiveParty_LLM(args, self._client.index)
+            party.init_communication(DistributedCommunication(self._client, job_id))
+            self._parties[job_id] = party
+
+    def __init__(self, client):
         self._client = client
         self._node = fpn.Node(node_id=client.id)
-        args = load_llm_configs(self._data)
-        self._party = PassiveParty_LLM(args, client.index)
-        self._party.init_communication(DistributedCommunication(self._client))
 
     def run(self, task):
-        if hasattr(self._party, task['run']):
-            target_func = getattr(self._party, task['run'])
+        party = self._get_party(task)
+        if hasattr(party, task['run']):
+            target_func = getattr(party, task['run'])
             result = target_func()
             return self._send_message(task["id"], result)
 

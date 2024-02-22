@@ -9,15 +9,18 @@ from framework.database.model.Task import Task
 class DistributedCommunication(ICommunication):
     _client = None
     _node = None
+    _job_id = None
 
-    def __init__(self, client):
+    def __init__(self, client, job_id):
         self._client = client
         self._node = fpn.Node(node_id=self._client.id)
+        self._job_id = job_id
 
     def send_pred_message(self, pred_list, parse_result_fn, test="True"):
         task = Task()
         task.run = "aggregate_remote"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
 
@@ -38,6 +41,7 @@ class DistributedCommunication(ICommunication):
         task = Task()
         task.run = "global_backward"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
         msg = mu.MessageUtil.create(self._node, {"task": task_value}, fpm.START_TASK)
@@ -47,6 +51,7 @@ class DistributedCommunication(ICommunication):
         task = Task()
         task.run = "receive_loss_and_gradients_remote"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
 
@@ -60,6 +65,7 @@ class DistributedCommunication(ICommunication):
         task = Task()
         task.run = "cal_passive_local_gradient"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
 
@@ -74,6 +80,7 @@ class DistributedCommunication(ICommunication):
         task = Task()
         task.run = "global_LR_decay"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
 
@@ -86,6 +93,7 @@ class DistributedCommunication(ICommunication):
         task = Task()
         task.run = "train_model"
         task.party = "active"
+        task.job_id = self._job_id
         task_value = fpm.Value()
         task_value.string = json.dumps(task.to_dict())
         msg = mu.MessageUtil.create(self._node, {"task": task_value}, fpm.START_TASK)

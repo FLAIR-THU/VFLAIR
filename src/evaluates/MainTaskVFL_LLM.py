@@ -10,7 +10,6 @@ import copy
 from sklearn.metrics import matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
-from party.active_party import ActiveParty_LLM
 
 # from models.vision import resnet18, MLP2
 
@@ -43,7 +42,6 @@ class MainTaskVFL_LLM(object):
         self.k = args.k
         # self.k_server = args.k_server
         self.device = args.device
-        self.dataset_name = args.dataset
         # self.train_dataset = args.train_dst
         # self.val_dataset = args.test_dst
         # self.half_dim = args.half_dim
@@ -54,9 +52,9 @@ class MainTaskVFL_LLM(object):
         # self.num_classes = args.num_classes
         # self.num_class_list = args.num_class_list
         self.num_classes = args.num_classes
-        self.exp_res_dir = args.exp_res_dir
+        # self.exp_res_dir = args.exp_res_dir
 
-        self.exp_res_path = args.exp_res_path
+        # self.exp_res_path = args.exp_res_path
         self.parties = args.parties
         # self.servers = args.servers
 
@@ -64,7 +62,7 @@ class MainTaskVFL_LLM(object):
 
         self.parties_data = None
         self.gt_one_hot_label = None
-        self.clean_one_hot_label  = None
+        self.clean_one_hot_label = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
@@ -99,16 +97,17 @@ class MainTaskVFL_LLM(object):
 
         self.num_update_per_batch = args.num_update_per_batch
         self.num_batch_per_workset = args.Q #args.num_batch_per_workset
-        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
-
-    def init_active_party(self):
-        self.active_party = ActiveParty_LLM(self.args, 1)
+        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset
+        self._last_result = None
 
     def set_last_result(self, result):
         self._last_result = result
 
     def get_last_result(self):
         return self._last_result
+
+    def get_active_party(self):
+        return self.parties[self.k - 1]
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()

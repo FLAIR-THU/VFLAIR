@@ -73,7 +73,7 @@ def show_job(id: int):
 
 
 def init_grpc_client(args):
-    service['grpc_client'] = GrpcClient("web", args.grpc_host, args.grpc_port)
+    service['grpc_client'] = GrpcClient("web", -1, args.grpc_host, args.grpc_port)
 
 
 def parse_args():

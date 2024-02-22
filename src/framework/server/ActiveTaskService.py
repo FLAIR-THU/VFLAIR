@@ -3,8 +3,9 @@ import threading
 import framework.common.logger_util as logger_util
 
 from evaluates.MainTaskVFL_LLM import MainTaskVFL_LLM
+from framework.client.RemotePassiveParty import RemotePassiveParty
 from load.LoadConfigs import load_llm_configs
-
+from party.active_party import ActiveParty_LLM
 from framework.database.repository.TaskRepository import task_repository
 
 logger = logger_util.get_logger('active_task_service')
@@ -18,21 +19,30 @@ class ActiveTaskService(threading.Thread):
         threading.Thread.__init__(self)
         self._queues = queues
 
+    def _init_parties(self, args):
+        active_party = ActiveParty_LLM(args, 1)
+        parties = []
+        for i in range(args.k - 1):
+            parties.append(RemotePassiveParty())
+        parties.append(active_party)
+        return parties
+
     def add_job(self, job_id, data):
         args = load_llm_configs(data)
+        args.parties = self._init_parties(args)
         self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
         self.run_next(job_id)
 
-    def _get_main_task(self, task):
+    def _get_main_task(self, job_id):
         for main_task in self._main_tasks:
-            if main_task.job_id == task['job_id']:
+            if main_task.job_id == job_id:
                 return main_task
 
     def run(self):
         while True:
             task = self._queues['active'].get()
-            main_task = self._get_main_task(task)
-            party = main_task.active_party
+            main_task = self._get_main_task(task.job_id)
+            party = main_task.get_active_party()
             logger.info(f"Running task: {task}")
             logger.info(f"Party: {party}")
             if hasattr(party, task.run):
@@ -45,7 +55,7 @@ class ActiveTaskService(threading.Thread):
                     break
 
     def run_specific(self, task, data):
-        party = self._get_main_task(task).active_party
+        party = self._get_main_task(task['job_id']).get_active_party()
         logger.info(f"running specific task: {task}")
         logger.info(f"Party: {party}")
         if hasattr(party, task['run']):
@@ -71,7 +81,7 @@ class ActiveTaskService(threading.Thread):
     def save_and_next(self, data):
         logger.info(f"Saving {data}")
         task_id, result = data['task_id'].sint64, data['result'].string
-        task = task_repository.change_status(task_id, 1, result)
-        main_task = self._get_main_task(task)
+        job_id = task_repository.change_status(task_id, 1, result)
+        main_task = self._get_main_task(job_id)
         main_task.set_last_result(result)
-        self.run_next(task.job_id)
+        self.run_next(job_id)
