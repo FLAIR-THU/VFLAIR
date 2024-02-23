@@ -8,9 +8,14 @@ import framework.common.logger_util as logger_util
 import argparse
 import os
 from framework.common.yaml_loader import load_yaml
+import framework.credentials.credentials as credentials
 logger = logger_util.get_logger("grpc_client")
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+channel_credential = grpc.ssl_channel_credentials(
+    credentials.ROOT_CERTIFICATE
+)
 
 class GrpcClient():
     _message_service = None
@@ -64,12 +69,12 @@ class GrpcClient():
         stub.unregister(msg)
 
     def open_and_send(self, msg):
-        with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:
+        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential) as channel:
             stub = fps.MessageServiceStub(channel)
             return self.send(stub, msg)
 
     def open_and_register(self):
-        with grpc.insecure_channel(f"{self.host}:{self.port}") as channel:
+        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential) as channel:
             stub = fps.MessageServiceStub(channel)
             self.register(stub)
 
@@ -84,7 +89,8 @@ def main(main_args):
         raise ValueError("Please specify --config")
 
     MAX_MESSAGE_LENGTH = 200*1024*1000
-    with grpc.insecure_channel(f"{host}:{port}",  options=[
+
+    with grpc.secure_channel(f"{host}:{port}",  channel_credential, options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ]) as channel:

@@ -14,6 +14,7 @@ import json
 import queue
 from framework.common import MessageUtil as mu
 import framework.server.ActiveMessageService as fsm
+import framework.credentials.credentials as credentials
 from framework.database.repository.JobRepository import job_repository
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -117,13 +118,21 @@ def main(main_args):
         raise ValueError("Please specify --config")
 
     MAX_MESSAGE_LENGTH = 200 * 1024 * 1000
+    server_credentials = grpc.ssl_server_credentials(
+        (
+            (
+                credentials.SERVER_CERTIFICATE_KEY,
+                credentials.SERVER_CERTIFICATE,
+            ),
+        )
+    )
     server = grpc.server(futures.ThreadPoolExecutor(), options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ])
     grpc_server = GrpcServer()
     fps.add_MessageServiceServicer_to_server(grpc_server, server)
-    server.add_insecure_port("{}:{}".format(host, port))
+    server.add_secure_port("{}:{}".format(host, port), server_credentials)
 
     server.start()
     logger.info("--------GRPC server started-----")
