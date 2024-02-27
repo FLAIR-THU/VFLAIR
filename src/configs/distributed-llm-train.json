@@ -56,9 +56,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "D:\\work\\tools\\textattackbert-base-uncased-CoLA",
-            "train_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_train.tsv",
-            "test_set_file": "D:\\work\\tools\\datasets\\CoLA\\raw\\in_domain_dev.tsv"
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA",
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv"
         },
         "task":{
             "task_type": "SequenceClassification"

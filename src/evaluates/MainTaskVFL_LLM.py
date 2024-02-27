@@ -1,47 +1,27 @@
-import sys, os
-sys.path.append(os.pardir)
-import torch
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
+import os
+import sys
 
-from tqdm import tqdm
-import numpy as np
-import random
+sys.path.append(os.pardir)
+import torch.nn.functional as F
+
 import time
 import copy
-import collections
 
-from sklearn.metrics import roc_auc_score,matthews_corrcoef
+from sklearn.metrics import matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
-import torch
-import warnings
-import collections
-
-from transformers import top_k_top_p_filtering
 
 # from models.vision import resnet18, MLP2
-from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
 
 from utils.communication_protocol_funcs import get_size_of
 
 # from evaluates.attacks.attack_api import apply_attack
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
-from utils.constants import *
-import utils.constants as shared_var
-from utils.marvell_functions import KL_gradient_perturb
-from utils.noisy_label_functions import add_noise
-from utils.noisy_sample_functions import noisy_sample
-from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
-from utils.squad_utils import  normalize_answer,_get_best_indexes, get_tokens, compute_exact, compute_f1
-
+from utils.communication_protocol_funcs import compress_pred
+from utils.squad_utils import  normalize_answer
 
 from evaluates.attacks.attack_api import AttackerLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification,AutoModelForCausalLM
-
-from load.LoadModels import MODEL_PATH
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable =True
@@ -56,12 +36,12 @@ STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.6
 
 class MainTaskVFL_LLM(object):
 
-    def __init__(self, args):
+    def __init__(self, args, job_id):
+        self.job_id = job_id
         self.args = args
         self.k = args.k
         # self.k_server = args.k_server
         self.device = args.device
-        self.dataset_name = args.dataset
         # self.train_dataset = args.train_dst
         # self.val_dataset = args.test_dst
         # self.half_dim = args.half_dim
@@ -72,9 +52,9 @@ class MainTaskVFL_LLM(object):
         # self.num_classes = args.num_classes
         # self.num_class_list = args.num_class_list
         self.num_classes = args.num_classes
-        self.exp_res_dir = args.exp_res_dir
+        # self.exp_res_dir = args.exp_res_dir
 
-        self.exp_res_path = args.exp_res_path
+        # self.exp_res_path = args.exp_res_path
         self.parties = args.parties
         # self.servers = args.servers
 
@@ -82,7 +62,7 @@ class MainTaskVFL_LLM(object):
 
         self.parties_data = None
         self.gt_one_hot_label = None
-        self.clean_one_hot_label  = None
+        self.clean_one_hot_label = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
@@ -117,7 +97,17 @@ class MainTaskVFL_LLM(object):
 
         self.num_update_per_batch = args.num_update_per_batch
         self.num_batch_per_workset = args.Q #args.num_batch_per_workset
-        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
+        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset
+        self._last_result = None
+
+    def set_last_result(self, result):
+        self._last_result = result
+
+    def get_last_result(self):
+        return self._last_result
+
+    def get_active_party(self):
+        return self.parties[self.k - 1]
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()

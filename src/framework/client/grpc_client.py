@@ -95,7 +95,7 @@ def main(main_args):
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
     ]) as channel:
         stub = fps.MessageServiceStub(channel)
-        GrpcClient(client_id, client_index, host, port).register(stub)
+        GrpcClient(client_id, int(client_index), host, port).register(stub)
 
 
 if __name__ == "__main__":
