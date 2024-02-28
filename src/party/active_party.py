@@ -207,29 +207,6 @@ class ActiveParty_LLM(Party_LLM):
     def eval(self, **kwargs):
         self.global_model.eval()
 
-    def prepare_model(self, args, index):
-        current_model_type = args.model_list['1']['type']
-        pretrained = args.pretrained
-        task_type = args.task_type
-        model_type = args.model_type
-        current_output_dim = args.model_list['1']['output_dim']
-        is_local = False
-        device = args.device
-        padding_side = args.padding_side
-        model_path = args.model_path
-        main_lr = args.main_lr
-        pad_token = args.pad_token
-        head_layer_trainable = args.head_layer_trainable
-        # prepare model and optimizer
-        (
-            self.local_model,
-            self.local_model_optimizer,
-            self.global_model,
-            self.global_model_optimizer,
-            args.tokenizer,
-            self.encoder
-        ) = load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable)
-
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
 
@@ -242,9 +219,13 @@ class ActiveParty_LLM(Party_LLM):
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
 
+    def train_model(self):
+        self.global_model.train()
+
     def mean(self, last_task_result):
-        result = json.loads(last_task_result)
-        self.mean_local(result)
+        predict_result = json.loads(last_task_result)
+        exact_score_list, f1_list, _ = predict_result
+        self.mean_local((exact_score_list, f1_list))
 
     def mean_local(self, result):
         exact_score_list, f1_list = result
@@ -276,14 +257,34 @@ class ActiveParty_LLM(Party_LLM):
             #     exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
             #     return exp_result, self.test_acc
 
+    def _do_aggregate_remote(self, pred_list):
+        t1 = torch.Tensor(pred_list[0])
+        t2 = torch.Tensor(pred_list[1])
+        t1 = t1.to(self.args.device)
+        t2 = t2.to(self.args.device)
+        result = self.aggregate([[t1, t2]])
+
+        if self.args.model_type == 'Bert':
+            if self.args.task_type == 'SequenceClassification':
+                return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'QuestionAnswering':
+                return {
+                    # "loss": result.total_loss.float(),
+                    "start_logits": result.start_logits.tolist(),
+                    "end_logits": result.end_logits.tolist(),
+                    # "hidden_states": result.outputs.hidden_states,
+                    # "attentions": result.outputs.attentions,
+                }
+
     def aggregate_remote(self, pred_list):
-        self.global_model.eval()
+        if self.args.head_layer_trainable:
+            return self._do_aggregate_remote(pred_list)
         with torch.no_grad():
-            t1 = torch.Tensor(pred_list[0])
-            t2 = torch.Tensor(pred_list[1])
-            t1 = t1.to(self.args.device)
-            t2 = t2.to(self.args.device)
-            return self.aggregate([[t1, t2]])
+            return self._do_aggregate_remote(pred_list)
 
     def aggregate(self, pred_list, test=False):
         self.passive_pred_list = pred_list
@@ -319,9 +320,9 @@ class ActiveParty_LLM(Party_LLM):
 
         return pred
 
-    def receive_loss_and_gradients(self, loss, gradients):
-        self.global_loss = loss
-        self.global_gradients = gradients
+    def receive_loss_and_gradients(self, data):
+        self.global_loss = data['loss']
+        self.global_gradients = data['gradients']
 
     def generate(self, pred_list, test=False):
         # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
@@ -351,10 +352,9 @@ class ActiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def cal_passive_local_gradient(self, passive_party_id):
-        passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[passive_party_id][0] , \
-            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
-
+    def cal_passive_local_gradient(self, passive_pred):
+        passive_local_gradient = torch.autograd.grad(self.global_pred, passive_pred, \
+            grad_outputs=self.global_gradient, retain_graph=True).detach().clone()
         return passive_local_gradient
 
     def global_backward(self):

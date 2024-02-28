@@ -37,6 +37,7 @@ YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
 MODEL_PATH = {
 'bert-base-uncased': YOUR_MODEL_PATH+"bert-base-uncased",
 "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+"textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH+"textattackbert-base-uncased-yelp-polarity",
 "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
 "textattackbert-base-uncased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
 "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
@@ -350,7 +351,7 @@ def load_basic_models_llm_bert(args,index):
     pretrained = args.pretrained
     device = args.device
     padding_side = args.padding_side
-    model_path = args.model_path
+    model_path = args.model_list[str(index)]['path']
     main_lr = args.main_lr
     is_local = args.k - 1 != index
     pad_token = args.pad_token
@@ -631,12 +632,13 @@ def load_basic_models_llm_gpt2(args,index):
 def load_basic_models_llm_llama(args,index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
+    model_path = args.model_path
 
     if args.pretrained == 0:
-        args.tokenizer = LlamaTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer = LlamaTokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
-        full_llama = LlamaModel.from_pretrained(MODEL_PATH[current_model_type])
+        full_llama = LlamaModel.from_pretrained(model_path)
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
@@ -699,18 +701,18 @@ def load_basic_models_llm_llama(args,index):
             global_model_optimizer = torch.optim.Adam(list(global_model.score.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token#{'pad_token': '[PAD]'})
           
         if args.task_type == 'CausalLM':
-            full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForCausalLM.from_pretrained(model_path)
         elif args.task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         elif args.task_type == 'SequenceClassification':
-            full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         else:
             assert 1>2, "task type not supported"
 

@@ -1,5 +1,5 @@
 {
-    "epochs": 10,
+    "epochs": 1000,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 32,
@@ -18,36 +18,56 @@
         "add_special_tokens": 1
     },
     "dataset":{
-        "dataset_name": "CoLA",
+        "dataset_name": "yelp-polarity",
         "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-CoLA",
+            "type": "textattackbert-base-uncased-yelp-polarity",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-yelp-polarity"
         },
         "1": {
-            "type": "textattackbert-base-uncased-CoLA",
+            "type": "textattackbert-base-uncased-yelp-polarity",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-yelp-polarity"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.05,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.05,
+            "lambda": 0.5,
+            "seq_length": 30,
+            "embed_dim": 768
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
     }
 }

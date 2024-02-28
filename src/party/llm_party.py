@@ -284,7 +284,7 @@ class Party(object):
         self.local_batch_attention_mask = local_batch_attention_mask
         self.local_batch_token_type_ids = local_batch_token_type_ids
     
-    def local_forward():
+    def local_forward(self):
         # args.local_model()
         pass
 

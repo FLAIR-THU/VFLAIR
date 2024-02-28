@@ -1452,10 +1452,8 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'CoLA':
-        if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
-            train_set_file = args.dataset_split['train_set_file']
-            test_set_file = args.dataset_split['test_set_file']
-        else:
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
+        if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'CoLA/raw/in_domain_train.tsv'
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
 
@@ -1480,30 +1478,33 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-    elif args.dataset == 'yelp':
+    elif args.dataset == 'yelp-polarity':
         X_train = []
         y_train = []
         X_test = []
         y_test = []
-        text_path = DATA_PATH + 'yelp/yelp_academic_dataset_review.json'
-        with open(text_path, "r") as file:
-            line_idx = 1
-            for line in file:
-                data = json.loads(line)
-                if line_idx <= 489316:
-                    X_train.append(data["text"])
-                    y_train.append(data["stars"])
-                else:
-                    X_test.append(data["text"])
-                    y_test.append(data["stars"])
-        X_train = np.array(X_train)
-        y_train = np.array(y_train)
+        train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
+        test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
 
-        X_test = np.array(X_test)
-        y_test = np.array(y_test)
+        df = pd.read_csv(train_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        scalar = np.array([-1])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_train = np.array(sentences)
+        y_train = np.array(labels) + scalar
+        df = pd.read_csv(test_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_test = np.array(sentences)
+        y_test = np.array(labels) + scalar
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
+
+        print(type(X_train), X_train.shape, X_test.shape)  
+        print(type(y_train), y_train.shape, y_test.shape)  
 
     elif args.dataset == "emotion":
         X_train = []
@@ -1536,7 +1537,7 @@ def load_dataset_per_party_llm(args, index):
             for line in file:
                 data = json.loads(line)
                 X_test.append(data["text"])
-                y_test.append(data["label"])        
+                y_test.append(data["label"])
 
         X_train = np.array(X_train)
         y_train = np.array(y_train)
@@ -1546,7 +1547,7 @@ def load_dataset_per_party_llm(args, index):
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
-        
+
 
     elif args.dataset == 'SST-2':
         text_path = DATA_PATH + 'SST-2/train.tsv'
@@ -1785,12 +1786,16 @@ def load_dataset_per_party_llm(args, index):
         option_dict = {option: idx for idx, option in enumerate('ABCD')}
         args.label_dict = option_dict
 
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
+        if train_set_file is None or test_set_file is None:
+            train_set_file = DATA_PATH + 'MMLU/dev/'
+            test_set_file = DATA_PATH + 'MMLU/test/'
+
         ### train ###
-        text_path = DATA_PATH + 'MMLU/dev/'
         df_train = pd.DataFrame()
-        for name in sorted(os.listdir(text_path)):
+        for name in sorted(os.listdir(train_set_file)):
             # print(name[:-4])
-            _df = pd.read_csv(text_path + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
+            _df = pd.read_csv(train_set_file + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
             _name_list = name.split('_')[:-1]
             subject_name = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
             _df['subject'] = subject_name
@@ -1823,11 +1828,10 @@ def load_dataset_per_party_llm(args, index):
         #     y_train = np.array(labels)
 
         ### test ###
-        text_path = DATA_PATH + 'MMLU/test/'
         df_test = pd.DataFrame()
-        for name in sorted(os.listdir(text_path)):
+        for name in sorted(os.listdir(test_set_file)):
             # print(name[:-4])
-            _df = pd.read_csv(text_path + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
+            _df = pd.read_csv(test_set_file + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
             _name_list = name.split('_')[:-1]
             _df['subject'] = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
             df_test = pd.concat([df_test, _df])
@@ -1927,10 +1931,8 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'SQuAD':
         print(' === SQuAD === ')
-        if 'train_set_file' in args.dataset_split and 'test_set_file' in args.dataset_split:
-            train_set_file = args.dataset_split['train_set_file']
-            test_set_file = args.dataset_split['test_set_file']
-        else:
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
+        if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
             test_set_file = DATA_PATH + '/SQuAD/data/dev-v1.1.json'
 
@@ -2001,5 +2003,12 @@ def load_dataset_per_party_llm(args, index):
         return args, half_dim, train_dst, test_dst, aux_dst
     else:
         return args, half_dim, train_dst, test_dst
+
+def get_dataset_path(dataset_split):
+    if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
+        train_set_file = dataset_split['train_set_file']
+        test_set_file = dataset_split['test_set_file']
+        return train_set_file, test_set_file
+    return None, None
 
 
