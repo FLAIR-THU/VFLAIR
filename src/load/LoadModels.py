@@ -418,15 +418,13 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
             for param in global_model.bert.parameters():
                 param.requires_grad = False
 
-            # # Trainable Part for finetuning
-            # if args.model_path != "":
-            #     global_model.head_layer.load_state_dict(torch.load(args.model_path))
+            # Trainable Part for finetuning
             for param in global_model.head_layer.parameters():
                 param.requires_grad = True
-            
-            global_model = global_model.to(device)
             global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
+            global_model = global_model.to(device)
+            
     else: # load third party pretrained LLM
         print('load_basic_models_llm pretrained:', model_path)
         tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
@@ -493,24 +491,13 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
                 param.requires_grad = False
 
             # Head Layer Trainable/Freeze
-            print('args.head_layer_trainable:',head_layer_trainable)
+            print('head_layer_trainable:',head_layer_trainable)
             for param in global_model.head_layer.parameters():
                 param.requires_grad = head_layer_trainable
-            # if args.task_type == "QuestionAnswering":
-            #     for param in global_model.head_layer.parameters():
-            #         param.requires_grad = args.head_layer_trainable
-            # elif args.task_type == "SequenceClassification":
-            #     for param in global_model.classifier.parameters():
-            #         param.requires_grad = args.head_layer_trainable
-            # elif args.task_type == "CausalLM":
-            #     for param in global_model.lm_head.parameters():
-            #         param.requires_grad = args.head_layer_trainable
-            # else:
-            #     assert 1>2,"task type not supported"
+            if head_layer_trainable:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
-            
             global_model = global_model.to(device)
-            global_model_optimizer = None
 
     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
 
@@ -563,8 +550,6 @@ def load_basic_models_llm_gpt2(args,index):
             for param in global_model.transformer.parameters():
                 param.requires_grad = False
             # Trainable Part for finetuning
-            if args.model_path != "":
-                global_model.head_layer.load_state_dict(torch.load(args.model_path))
             for param in global_model.head_layer.parameters():
                 param.requires_grad = True
             global_model = global_model.to(args.device)
@@ -636,26 +621,10 @@ def load_basic_models_llm_gpt2(args,index):
             # Classifier already pretrained
             for param in global_model.head_layer.parameters():
                 param.requires_grad = args.head_layer_trainable
-            # if args.task_type == "CausalLM":
-            #     if args.model_path != "":
-            #         global_model.lm_head.load_state_dict(torch.load(args.model_path))
-            #     for param in global_model.lm_head.parameters():
-            #         param.requires_grad = False
-            # elif args.task_type == "QuestionAnswering":
-            #     if args.model_path != "":
-            #         global_model.lm_head.load_state_dict(torch.load(args.model_path))
-            #     for param in global_model.qa_outputs.parameters():
-            #         param.requires_grad = False
-            # elif args.task_type == "SequenceClassification":
-            #     if args.model_path != "":
-            #         global_model.score.load_state_dict(torch.load(args.model_path))
-            #     for param in global_model.score.parameters():
-            #         param.requires_grad = False
-            # else:
-            #     assert 1>2, "task type not supported"
+            if args.head_layer_trainable:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
             global_model = global_model.to(args.device)
-            global_model_optimizer = None
     
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

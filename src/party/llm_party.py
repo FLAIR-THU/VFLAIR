@@ -205,9 +205,6 @@ class Party(object):
             self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
             # print('self.local_model.origin_output:',self.local_model.origin_output.shape)
             # print('self.local_model.adversarial_output:',self.local_model.adversarial_output.shape) # local_pred
-            if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                self.origin_pred = self.local_pred
-                self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
             self.local_attention_mask = self.local_attention_mask.detach().clone()
             # return self.local_pred, self.local_pred_clone , self.local_attention_mask
@@ -215,25 +212,16 @@ class Party(object):
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'SequenceClassification':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
             elif self.args.task_type == 'QuestionAnswering':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids = self.local_batch_token_type_ids)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
@@ -241,34 +229,28 @@ class Party(object):
         elif self.args.model_type == 'Llama':
             if self.args.task_type == 'SequenceClassification':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
             elif self.args.task_type == 'QuestionAnswering':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
-                if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-                    self.origin_pred = self.local_pred
-                    self.local_pred = self.adversarial_model(self.origin_pred)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
         
+        
         ######### Defense Applied on Local Model Prediction Process ###########
         if self.args.apply_mid and (self.index in self.args.defense_configs["party"]):
-            self.local_pred , self.mid_loss = self.mid_model(self.local_pred)
+            self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
             self.local_pred_clone = self.local_pred.detach().clone()
-        
+        elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+            self.origin_pred = self.local_pred
+            self.local_pred = self.adversarial_model(self.origin_pred)
 
         if self.args.model_type == 'Bert':
             return self.local_pred, self.local_pred_clone , self.local_attention_mask

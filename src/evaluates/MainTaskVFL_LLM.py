@@ -286,47 +286,13 @@ class MainTaskVFL_LLM(object):
     def global_gradient_transmit(self, final_pred):
         global_loss = self.parties[0].cal_loss(final_pred)  # raw global loss
 
-        # add adversary loss
-        # ============= Adversarial Training =============
-        # update adversary
-        # if self.args.apply_adversarial:
-        #     self.imagined_adversary_optimizer.zero_grad()
-
-        #     adversary_loss = 0
-        #     mapping_distance = 0
-        #     for ik in range(self.k-1):
-        #         intermediate = all_pred_list[ik][0] # bs, seq, embed_dim768
-        #         adversary_recovered_embedding = self.imagined_adversary(intermediate)
-        #         real_embedding =  self.parties[ik].local_model.embedding_output
-        #         adversary_loss += self.adversary_crit(adversary_recovered_embedding, real_embedding)
-
-        #         mapping_distance += torch.norm( self.parties[ik].local_model.adversarial_model.origin_output -\
-        #          self.parties[ik].local_model.adversarial_model.adversarial_output , p=2)
-
-        #     adversary_loss = adversary_loss / intermediate.shape[0]
-
-        #     adversary_loss.backward(retain_graph = True)
-
-        #     self.imagined_adversary_optimizer.step()
-
-        #     self.parties[0].adversary_loss = adversary_loss
-        #     self.parties[0].mapping_distance = mapping_distance
-
-        #     # renew loss function
-        #     self.parties[0].global_loss = self.parties[0].global_loss \
-        #                                         + self.adversary_lambda * mapping_distance \
-        #                                         - adversary_loss
-        # ============= Adversarial Training =============
-
-        # update passive party local model (if needed)
-        # for ik in range(self.k-1):
-        #     self.parties[ik].local_backward()
-
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
         self.communication_cost += get_size_of(global_gradients)
 
-        self.parties[self.k-1].global_loss = self.parties[0].global_loss
-        self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
+        self.parties[self.k-1].receive_loss_and_gradients(\
+                    self.parties[0].global_loss, self.parties[0].global_gradients)
+        # self.parties[self.k-1].global_loss = self.parties[0].global_loss
+        # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
     def qa_inference(self):
         # QA
@@ -367,6 +333,9 @@ class MainTaskVFL_LLM(object):
                 (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
             # torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
 
+            # print('test_predict_labels:',test_predict_labels[:5])
+            # print('test_actual_labels:',test_actual_labels[:5])
+
             self.test_pearson_corr = \
             stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
             # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
@@ -382,24 +351,16 @@ class MainTaskVFL_LLM(object):
             # print('Full pred pearson:',full_test_pearson_corr)
             return exp_result, self.test_mse
         else:
-            # print('test_predict_labels:',type(test_predict_labels),len(test_predict_labels)) # list
-
             suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
             torch.tensor(test_actual_labels)).item()
             # print('test_predict_labels:',test_predict_labels[:20])
             # print('test_actual_labels:',test_actual_labels[:20])
 
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
-            # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
-
-            # test_preds = np.vstack(test_preds)
-            # test_targets = np.vstack(test_targets)
-            # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
 
             self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
 
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-            # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
 
             exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
@@ -412,13 +373,11 @@ class MainTaskVFL_LLM(object):
 
 
     def inference(self, inference_data = 'test'):
-        # current_model_type = self.args.model_list['0']['type']
-        # full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type]).to(self.args.device)
-
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
-        for ik in range(self.k):
+        for ik in range(self.k-1):
             self.parties[ik].prepare_data_loader()
+            self.parties[ik].local_model.eval()
         self.parties[self.k-1].global_model.eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
@@ -556,7 +515,8 @@ class MainTaskVFL_LLM(object):
 
                         predict_label = torch.argmax(enc_predict_prob, dim=-1)
                         actual_label = torch.argmax(gt_one_hot_label, dim=-1)
-                        # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
+                        print('predict_label:',predict_label[:15])
+                        print('actual_label:',actual_label[:15])
 
                         test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
                         test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
@@ -687,20 +647,18 @@ class MainTaskVFL_LLM(object):
         # exchange info between party: local_pred/global_pred
         all_pred_list = self.pred_transmit()   # [ pred of this party ]
         final_pred = self.parties[self.args.k - 1].aggregate(all_pred_list, test="True")  #self._send_pred_message(all_pred_list)
-        # =================== Commu ===================
 
         # passive party -> global gradient -> active party
         self.global_gradient_transmit(final_pred)
 
         # active party -> local gradient -> passive party
-        # if self.local_model_optimizer != None:
         self.local_gradient_transmit()
+        # =================== Commu ===================
 
         # ============= Model Update =============
         # update parameters for global trainable part
         self.args.parties[self.args.k - 1].global_backward() # self._send_global_backward_message() 
         for ik in range(self.k-1):
-            # if self.parties[ik].local_model_optimizer != None:
             self.parties[ik].local_backward()
         # ============= Model Update =============
 
@@ -845,18 +803,10 @@ class MainTaskVFL_LLM(object):
             return loss.item(), exact_score
 
         elif self.args.task_type == 'SequenceClassification':
-            # ###### Noisy Label Attack #######
-            # convert back to clean label to get true acc
-            if self.args.apply_nl == True:
-                real_batch_label = self.clean_one_hot_label
-            else:
-                real_batch_label = batch_label
-            # ###### Noisy Label Attack #######
+            real_batch_label = batch_label
 
             pred = final_pred
             predict_prob = F.softmax(pred, dim=-1)
-            # if self.args.apply_cae:
-            #     predict_prob = encoder.decode(predict_prob)
 
             suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
             batch_train_acc = suc_cnt / predict_prob.shape[0]
@@ -941,6 +891,7 @@ class MainTaskVFL_LLM(object):
         for ik in range(self.k):
             self.parties[ik].prepare_data_loader()
 
+
         test_acc = 0.0
         # Early Stop
         last_loss = 1000000
@@ -1019,12 +970,14 @@ class MainTaskVFL_LLM(object):
                 i += 1
 
                 # passive party call active party global model to a training mode
-                self.parties[0]._send_global_modal_train_message() 
-                enter_time = time.time()
+                self.parties[0]._send_global_model_train_message() 
+                
                 # ====== train batch (start) ======
+                enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
-                # ====== train batch (end) ======
                 exit_time = time.time()
+                # ====== train batch (end) ======
+
                 total_time += (exit_time - enter_time)
                 self.num_total_comms = self.num_total_comms + 1
                 # if self.num_total_comms % 10 == 0:
@@ -1035,6 +988,11 @@ class MainTaskVFL_LLM(object):
             # LR decay
             self.LR_Decay(i_epoch)
             
+            if self.args.apply_adversarial:
+                print(f'adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
+            if self.args.apply_mid:
+                print(f'global_loss={self.parties[0].global_loss},mid_loss={self.parties[0].mid_loss}')
+
 
             # validation
             if (i + 1) % print_every == 0:
@@ -1042,6 +1000,7 @@ class MainTaskVFL_LLM(object):
                 self.parties[self.k-1].global_model.eval()
       
                 with torch.no_grad():
+
                     _exp_result, self.test_acc = self.inference()
                     
                     postfix['train_loss'] = self.loss
@@ -1054,11 +1013,6 @@ class MainTaskVFL_LLM(object):
                         i_epoch, self.loss, self.train_acc, self.test_acc)
                     print(exp_result)
 
-                    if self.args.apply_adversarial:
-                        print(f'adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
-                    if self.args.apply_mid:
-                        print(f'mid_loss:{self.parties[0].mid_loss.item()}')
-
                     if (i+1) % 10 == 0:
                         if self.args.apply_adversarial:
                             if last_adversarial_model_loss < self.parties[0].adversarial_model_loss.item():
@@ -1068,15 +1022,12 @@ class MainTaskVFL_LLM(object):
 
                     self.final_epoch = i_epoch
         
-        # exp_result = f'train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f} final_epoch:{}'.format(
-        #                 self.loss, self.train_acc, self.test_acc, self.final_epoch)
-        
         exp_result = f'train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
         # self.final_state = self.save_state() 
         # self.final_state.update(self.save_state(False)) 
-        self.final_state = self.save_state(False) 
-        self.final_state.update(self.save_party_data()) 
+        # self.final_state = self.save_state(False) 
+        # self.final_state.update(self.save_party_data()) 
 
         return exp_result, self.test_acc #, self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 

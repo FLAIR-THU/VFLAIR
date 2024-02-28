@@ -1600,7 +1600,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'MRPC':
         text_path = DATA_PATH + 'MRPC/train.tsv'
-        df = pd.read_csv(text_path, sep='\t')  # ,error_bad_lines=False)# names=[  'sentence','label']
+        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # sep='\t',error_bad_lines=False)# names=[  'sentence','label']
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values
@@ -1609,7 +1609,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'MRPC/dev.tsv'
-        df = pd.read_csv(text_path, sep='\t')  # ,error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # ,error_bad_lines=False)
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values

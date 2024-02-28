@@ -239,8 +239,11 @@ def do_load_basic_configs(config_file_path, args):
         print('===== No Defense ======')
     # get Info: args.defense_param  args.defense_param_name
     if args.apply_defense == True:
-        if args.defense_name in ["CAE", "DCAE", "MID", "DistanceCorrelation", "AdversarialTraining"]:
+        if args.defense_name in ["CAE", "DCAE", "DistanceCorrelation", "AdversarialTraining"]:
             args.defense_param = args.defense_configs['lambda']
+            args.defense_param_name = 'lambda'
+        elif args.defense_name in ["MID"]:
+            args.defense_param = str(args.defense_configs['mid_model_name'])+'_'+str(args.defense_configs['lambda'])
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
             if 'dp_strength' in args.defense_configs:

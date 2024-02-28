@@ -1,8 +1,8 @@
 {
-    "epochs": 10,
-    "lr": 0.001,
+    "epochs": 2,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 32,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -25,7 +25,7 @@
         "0": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -34,7 +34,7 @@
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -47,14 +47,13 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "AdversarialTraining",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.05,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.05,
-            "lambda": 0.0005,
+            "mid_model_name":"MIDModel1",
+            "lr": 0.05,
+            "lambda": 0.01,
+            "current_bottleneck_scale": 1,
             "seq_length": 30,
             "embed_dim": 768
         }

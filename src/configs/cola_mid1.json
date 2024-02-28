@@ -1,8 +1,8 @@
 {
-    "epochs": 10,
+    "epochs": 5,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 32,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -47,14 +47,13 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "AdversarialTraining",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.05,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.05,
-            "lambda": 0.0005,
+            "mid_model_name":"MIDModel_SqueezeLinear",
+            "lr": 0.001,
+            "lambda": 1e-5,
+            "current_bottleneck_scale": 1,
             "seq_length": 30,
             "embed_dim": 768
         }

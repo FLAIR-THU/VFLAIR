@@ -196,7 +196,7 @@ class ActiveParty_LLM(Party_LLM):
         
         self.global_pred = None # transmitted to passive party
         self.global_loss = None # transmitted from passive party
-        self.global_gradient = None # transmitted from passive party
+        self.global_gradients = None # transmitted from passive party
 
         self.weights_grad_a = None
 
@@ -317,8 +317,6 @@ class ActiveParty_LLM(Party_LLM):
 
         self.global_pred = pred
 
-        # passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[0][0] , \
-        #     retain_graph=True).detach().clone()
         return pred
 
     def receive_loss_and_gradients(self, loss, gradients):
@@ -355,17 +353,15 @@ class ActiveParty_LLM(Party_LLM):
 
     def cal_passive_local_gradient(self, passive_party_id):
         passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[passive_party_id][0] , \
-            grad_outputs=self.global_gradient, retain_graph=True).detach().clone()
+            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+
         return passive_local_gradient
 
     def global_backward(self):
+        # print('=== Active Global Backward ===')
 
         if self.global_model_optimizer != None: 
             if self.args.task_type == 'QuestionAnswering':
-                # server with trainable global layer
-                # print('self.global_loss:',type(self.global_loss), self.global_loss)
-                # print('self.global_pred:',type(self.global_pred), self.global_pred) # .start_logits  end_logits
-                
                 _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
                 _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
                 _gradients = _gradients_end+_gradients_start
@@ -401,27 +397,16 @@ class ActiveParty_LLM(Party_LLM):
                 # print('weights_grad_a:',weights_grad_a)
                
                 self.global_model_optimizer.step()
-            else:
-                # # server with trainable global layer
-                # _gradients = torch.autograd.grad(self.global_loss, self.global_pred, retain_graph=True)
-                # _gradients_clone = _gradients[0].detach().clone()
-
-                _gradients_clone = self.global_gradient
-                
+            else:                
                 # update global model
-                self.global_model_optimizer.zero_grad()
-                parameters = []          
-            
-                # trainable layer parameters
-                weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                self.global_model_optimizer.zero_grad()  
+                weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.head_layer.parameters(), grad_outputs=self.global_gradients, retain_graph=True)
                 self.weights_grad_a = weights_grad_a
-                for w, g in zip(self.global_model.trainable_layer.parameters(), weights_grad_a):
+                for w, g in zip(self.global_model.head_layer.parameters(), weights_grad_a):
                     if w.requires_grad:
                         w.grad = g.detach()
-                # print('weights_grad_a:',weights_grad_a)
-               
                 self.global_model_optimizer.step()
-          
+
 
 
 class ActiveParty(Party):
@@ -461,6 +446,7 @@ class ActiveParty(Party):
             pred = self.global_model(pred_list, self.local_batch_data)
         else:
             pred = self.global_model(pred_list)
+        
         if self.train_index != None: # for graph data
             if test == False:
                 loss = self.criterion(pred[self.train_index], gt_one_hot_label[self.train_index])
@@ -468,6 +454,7 @@ class ActiveParty(Party):
                 loss = self.criterion(pred[self.test_index], gt_one_hot_label[self.test_index])
         else:
             loss = self.criterion(pred, gt_one_hot_label)
+        
         # ########## for active mid model loss (start) ##########
         if self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             # print(f"in active party mid, label={gt_one_hot_label}, global_model.mid_loss_list={self.global_model.mid_loss_list}")
