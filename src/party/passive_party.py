@@ -1068,6 +1068,7 @@ class PassiveParty_LLM(Party_LLM):
         self.current_epoch = 0
 
         start_time = time.time()
+        results = []
         for i_epoch in range(self.args.main_epochs):
             self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -1090,7 +1091,10 @@ class PassiveParty_LLM(Party_LLM):
                 exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
                     i_epoch, self.loss, self.train_acc, self.test_acc)
                 print(exp_result)
+                results.append(exp_result)
                 self.final_epoch = i_epoch
+
+        return results
 
     def train(self, i_epoch):
         data_loader_list = [self.train_loader]
