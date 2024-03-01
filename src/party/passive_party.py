@@ -152,7 +152,7 @@ class PassiveParty_LLM(Party_LLM):
                     print('[warning] default passive party selected for applying adversarial training')
 
             
-                self.adversarial_model_lr = args.defense_configs['adversarial_model_lr']
+                self.adversarial_model_lr = defense_configs['adversarial_model_lr']
 
                 if not ('adversarial_model' in defense_configs):
                     adversarial_model_name = 'Adversarial_Mapping'
@@ -163,7 +163,7 @@ class PassiveParty_LLM(Party_LLM):
                 embed_dim = defense_configs['embed_dim']
                 
                 # prepare adversarial model --  for adversarial training
-                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(args.device)
+                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(self.args.device)
                 if self.local_model_optimizer == None:
                     self.local_model_optimizer = torch.optim.Adam(self.adversarial_model.parameters(), lr=self.adversarial_model_lr)
                 else:
@@ -179,7 +179,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
 
                 self.adversary_crit = nn.CrossEntropyLoss()
-                self.adversary_lambda = self.args.defense_configs['lambda']
+                self.adversary_lambda = defense_configs['lambda']
             
             elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]):
                 self.mid_lambda = self.args.defense_configs['lambda'] 

@@ -50,7 +50,7 @@
         "name": "MID",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel1",
+            "mid_model_name":"MIDModel_SqueezeLinear",
             "lr": 0.05,
             "lambda": 0.01,
             "current_bottleneck_scale": 1,
