@@ -184,12 +184,12 @@ class PassiveParty_LLM(Party_LLM):
             elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]):
                 self.mid_lambda = self.args.defense_configs['lambda'] 
                 self.mid_model_name = self.args.defense_configs['mid_model_name'] 
-                self.mid_lr = args.defense_configs['lr'] 
-                current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) \
-                    if 'bottleneck_scale' in args.defense_configs else 1
+                self.mid_lr = self.args.defense_configs['lr'] 
+                current_bottleneck_scale = int(self.args.defense_configs['bottleneck_scale']) \
+                    if 'bottleneck_scale' in self.args.defense_configs else 1
         
                 if 'std_shift_hyperparameter' in self.args.defense_configs:
-                    std_shift_hyperparameter = int(args.defense_configs['std_shift_hyperparameter'])
+                    std_shift_hyperparameter = int(self.args.defense_configs['std_shift_hyperparameter'])
                 else:
                     std_shift_hyperparameter = 5 
 
@@ -979,8 +979,9 @@ class PassiveParty_LLM(Party_LLM):
     # def _send_global_model_train_message(self):
     #     self.local_model.train()
     #     self.args.parties[self.args.k - 1].global_model.train()
-    def _send_global_modal_train_message(self):
-        self._communication.send_global_modal_train_message()
+    
+    def _send_global_model_train_message(self):
+        self._communication.send_global_model_train_message()
 
     def train(self, i_epoch):
         data_loader_list = [self.train_loader]
@@ -1041,7 +1042,7 @@ class PassiveParty_LLM(Party_LLM):
                 gt_one_hot_label = parties_data[self.index][1]
 
             i += 1
-            self._send_global_modal_train_message() # call global model to a training mode
+            self._send_global_model_train_message() # call global model to a training mode
 
             # ====== train batch (start) ======
             enter_time = time.time()

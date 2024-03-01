@@ -238,6 +238,16 @@ class MIDModel_SqueezeLinear(nn.Module):
             nn.Linear(seq_length*self.squeeze_dim*bottleneck_scale, self.output_dim, bias=True),
             nn.ReLU(inplace=True)
         )
+
+        torch.nn.init.xavier_uniform_(self.squeeze_layer[0].weight)
+        torch.nn.init.zeros_(self.squeeze_layer[0].bias)
+
+        torch.nn.init.xavier_uniform_(self.enlarge_layer[1].weight)
+        torch.nn.init.zeros_(self.enlarge_layer[1].bias)
+
+        torch.nn.init.xavier_uniform_(self.decoder_layer[0].weight)
+        torch.nn.init.zeros_(self.decoder_layer[0].bias)
+
     
     def forward(self, x):
         # print('== MID Model Forward ==')

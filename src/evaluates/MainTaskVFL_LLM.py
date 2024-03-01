@@ -287,8 +287,7 @@ class MainTaskVFL_LLM(object):
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
         self.communication_cost += get_size_of(global_gradients)
 
-        self.parties[self.k-1].receive_loss_and_gradients(\
-                    self.parties[0].global_loss, self.parties[0].global_gradients)
+        self.parties[self.k-1].receive_loss_and_gradients(self.parties[0].global_loss, self.parties[0].global_gradients)
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 

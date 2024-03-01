@@ -320,9 +320,9 @@ class ActiveParty_LLM(Party_LLM):
 
         return pred
 
-    def receive_loss_and_gradients(self, data):
-        self.global_loss = data['loss']
-        self.global_gradients = data['gradients']
+    def receive_loss_and_gradients(self, loss, gradients):
+        self.global_loss = loss
+        self.global_gradients = gradients
 
     def generate(self, pred_list, test=False):
         # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
@@ -354,7 +354,7 @@ class ActiveParty_LLM(Party_LLM):
 
     def cal_passive_local_gradient(self, passive_pred):
         passive_local_gradient = torch.autograd.grad(self.global_pred, passive_pred, \
-            grad_outputs=self.global_gradient, retain_graph=True).detach().clone()
+            grad_outputs=self.global_gradients, retain_graph=True).detach().clone()
         return passive_local_gradient
 
     def global_backward(self):
