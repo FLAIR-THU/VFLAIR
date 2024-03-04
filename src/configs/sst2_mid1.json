@@ -1,8 +1,9 @@
 {
-    "epochs": 100,
-    "lr": 0.0005,
+    "epochs": 25,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 1,
+    "batch_size": 64,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -12,8 +13,8 @@
         "num_classes": 2
     },
     "tokenizer":{
-        "padding": "do_not_pad",
-        "padding_type": "inside",
+        "padding": "max_length",
+        "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
         "max_length": 70,
@@ -24,24 +25,38 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [0],
+            "mid_model_name":"MIDModel_SqueezeLinear",
+            "lr": 0.001,
+            "lambda": 1e-4,
+            "current_bottleneck_scale": 1,
+            "seq_length": 70,
+            "embed_dim": 768
+        }
     },
     "attack_list": {
         "0":{

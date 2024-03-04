@@ -6,52 +6,52 @@
 echo 'CoLA VMI_whitebox DP'
 
 # 0.5
-# python main_pipeline_llm.py --configs cola_dp
+python main_pipeline_llm.py --configs cola_ad
 
 # 0.2
-sed -i 's/"lambda": 0.5/"lambda": 0.2/g' ./configs/cola_dp.json
-# python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 0.5/"lambda": 0.2/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 0.7
-sed -i 's/"lambda": 0.2/"lambda": 0.7/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 0.2/"lambda": 0.7/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 1
-sed -i 's/"lambda": 0.7/"lambda": 1.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 0.7/"lambda": 1.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 2
-sed -i 's/"lambda": 1.0/"lambda": 2.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 1.0/"lambda": 2.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 5
-sed -i 's/"lambda": 2.0/"lambda": 5.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 2.0/"lambda": 5.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 10
-sed -i 's/"lambda": 5.0/"lambda": 10.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 5.0/"lambda": 10.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 50
-sed -i 's/"lambda": 10.0/"lambda": 50.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 10.0/"lambda": 50.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 100
-sed -i 's/"lambda": 50.0/"lambda": 100.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 50.0/"lambda": 100.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 200
-sed -i 's/"lambda": 100.0/"lambda": 200.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 100.0/"lambda": 200.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 500
-sed -i 's/"lambda": 200.0/"lambda": 500.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 200.0/"lambda": 500.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 # 1000
-sed -i 's/"lambda": 500.0/"lambda": 1000.0/g' ./configs/cola_dp.json
-python main_pipeline_llm.py --configs cola_dp
+sed -i 's/"lambda": 500.0/"lambda": 1000.0/g' ./configs/cola_ad.json
+python main_pipeline_llm.py --configs cola_ad
 
 
-sed -i 's/"lambda": 1000.0/"lambda": 0.5/g' ./configs/cola_dp.json
+sed -i 's/"lambda": 1000.0/"lambda": 0.5/g' ./configs/cola_ad.json
 

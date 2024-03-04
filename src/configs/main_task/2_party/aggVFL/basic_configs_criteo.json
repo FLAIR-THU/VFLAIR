@@ -1,8 +1,8 @@
 {
-    "epochs": 30,
-    "lr": 0.001,
+    "epochs": 5,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 2048,
+    "batch_size": 8192,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -14,18 +14,18 @@
     },
     "model_list":{
         "0": {
-            "type": "MLP3",
-            "input_dim": 4096,
-            "output_dim": 4,
+            "type": "MLP3_256_sparse",
+            "input_dim": 13,
+            "output_dim": 2,
             "path": ""
         },
         "1": {
-            "type": "MLP3",
-            "input_dim": 4096,
-            "output_dim": 4,
+            "type": "MLP3_256_dense",
+            "input_dim": 26,
+            "output_dim": 2,
             "path": ""
         },
         "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead3"
+        "global_model": "ClassificationModelHostTrainableHead"
     }
 }

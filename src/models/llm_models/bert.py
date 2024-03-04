@@ -158,7 +158,7 @@ class BertForSequenceClassification_pretrained(nn.Module):
             pooled_output = outputs[1]
             pooled_output = self.dropout(pooled_output)
             logits = self.head_layer(pooled_output)
-            
+
         loss = None
         if labels is not None:
             if self.config.problem_type is None:
@@ -284,7 +284,7 @@ class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
 class BertForSequenceClassification_forfinetune(nn.Module):
     def __init__(self, globalbert, output_dim,dropout=0.5):
         super(BertForSequenceClassification_forfinetune, self).__init__()
-        self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
+        self.bert = globalbert 
         self.model_type = globalbert.model_type
 
         self.head_layer = nn.Sequential(
@@ -317,6 +317,7 @@ class BertForSequenceClassification_forfinetune(nn.Module):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
+        
         if self.model_type == 'Bert':
             pooled_output = outputs[1]
             logits = self.head_layer(pooled_output)
@@ -793,6 +794,7 @@ class GlobalBertModel(BertPreTrainedModel):
 
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output) if self.pooler is not None else None
+
 
         if not return_dict:
             return (sequence_output, pooled_output) + encoder_outputs[1:]

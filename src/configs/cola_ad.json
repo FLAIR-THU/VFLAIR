@@ -1,8 +1,8 @@
 {
-    "epochs": 1000,
-    "lr": 0.0001,
+    "epochs": 1,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 64,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -29,7 +29,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
         },
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
@@ -38,7 +40,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -54,7 +58,7 @@
             "adversarial_model_lr": 0.05,
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.05,
-            "lambda": 0.5,
+            "lambda": 0.0005,
             "seq_length": 30,
             "embed_dim": 768
         }

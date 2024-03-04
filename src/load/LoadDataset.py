@@ -174,9 +174,10 @@ def dataset_partition(args, index, dst, half_dim):
         dim_list = []
         for ik in range(args.k):
             dim_list.append(int(args.model_list[str(ik)]['input_dim']))
-            if len(dim_list) > 1:
-                dim_list[-1] = dim_list[-1] + dim_list[-2]
-        dim_list.insert(0, 0)
+            if len(dim_list)>1:
+                for i in range(1, len(dim_list)):
+                    dim_list[i]=dim_list[i]+dim_list[i-1]
+        dim_list.insert(0,0)
 
         if args.k == 1:  # Centralized Training
             return (dst[0], dst[1])
@@ -562,6 +563,7 @@ def load_dataset_per_party(args, index):
             A = np.array(adj.todense())
             X = sparse_to_tuple(features.tocoo())
             print("cora dataset before split", A.shape, type(X), X[0].shape)
+            print(f"#train_sample={len(idx_train)}, #test_sample={len(idx_test)}")
             args.idx_train = torch.LongTensor(idx_train)
             args.idx_test = torch.LongTensor(idx_test)
             label = torch.LongTensor(label).to(args.device)
@@ -1476,30 +1478,33 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-    elif args.dataset == 'yelp':
+    elif args.dataset == 'yelp-polarity':
         X_train = []
         y_train = []
         X_test = []
         y_test = []
-        text_path = DATA_PATH + 'yelp/yelp_academic_dataset_review.json'
-        with open(text_path, "r") as file:
-            line_idx = 1
-            for line in file:
-                data = json.loads(line)
-                if line_idx <= 489316:
-                    X_train.append(data["text"])
-                    y_train.append(data["stars"])
-                else:
-                    X_test.append(data["text"])
-                    y_test.append(data["stars"])
-        X_train = np.array(X_train)
-        y_train = np.array(y_train)
+        train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
+        test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
 
-        X_test = np.array(X_test)
-        y_test = np.array(y_test)
+        df = pd.read_csv(train_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        scalar = np.array([-1])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_train = np.array(sentences)
+        y_train = np.array(labels) + scalar
+        df = pd.read_csv(test_set_file, delimiter=',', header=None,
+                         names=['label', 'sentence'])
+        sentences = df.sentence.values
+        labels = df.label.values
+        X_test = np.array(sentences)
+        y_test = np.array(labels) + scalar
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
+
+        print(type(X_train), X_train.shape, X_test.shape)  
+        print(type(y_train), y_train.shape, y_test.shape)  
 
     elif args.dataset == "emotion":
         X_train = []
@@ -1596,7 +1601,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'MRPC':
         text_path = DATA_PATH + 'MRPC/train.tsv'
-        df = pd.read_csv(text_path, sep='\t')  # ,error_bad_lines=False)# names=[  'sentence','label']
+        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # sep='\t',error_bad_lines=False)# names=[  'sentence','label']
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values
@@ -1605,7 +1610,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'MRPC/dev.tsv'
-        df = pd.read_csv(text_path, sep='\t')  # ,error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # ,error_bad_lines=False)
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values
@@ -1936,7 +1941,7 @@ def load_dataset_per_party_llm(args, index):
         max_query_length = args.max_query_length
 
         ## train
-        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)[:10]
+        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
