@@ -147,16 +147,42 @@ def do_load_basic_configs(config_dict, args):
         args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
 
         
+        args.encoder_trainable = []
+        args.head_layer_trainable = []
+
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
-                    args.head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
                     
-                    if args.head_layer_trainable == 1:
-                        args.head_layer_trainable = True
+                    # args.encoder_trainable = config_model_dict[str(ik)]['encoder_trainable'] if  'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+                    # if args.encoder_trainable == 1:
+                    #     args.encoder_trainable = True
+                    # else:
+                    #     args.encoder_trainable = False
+                    # args.head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
+                    # if args.head_layer_trainable == 1:
+                    #     args.head_layer_trainable = True
+                    # else:
+                    #     args.head_layer_trainable = False
+                    
+                    encoder_trainable = config_model_dict[str(ik)]['encoder_trainable'] if  'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+                    if encoder_trainable == 1:
+                        encoder_trainable = True
                     else:
-                        args.head_layer_trainable = False
+                        encoder_trainable = False
+                    args.encoder_trainable.append(encoder_trainable)
+                    
+                    if ik != args.k-1:
+                        args.head_layer_trainable.append(False) # no head layer for passive parties
+                    else:
+                        head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
+                        if head_layer_trainable == 1:
+                            head_layer_trainable = True
+                        else:
+                            head_layer_trainable = False
+                        args.head_layer_trainable.append(head_layer_trainable)
+
                     
                     if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
@@ -172,6 +198,10 @@ def do_load_basic_configs(config_dict, args):
                     model_dict[str(ik)] = default_dict_element
             else:
                 model_dict[str(ik)] = default_dict_element
+        
+        print('args.encoder_trainable:',args.encoder_trainable)
+        print('args.head_layer_trainable:',args.head_layer_trainable)
+        
         args.model_list = model_dict
         args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
         args.global_model = config_model_dict['global_model'] if ('global_model' in config_model_dict) else 'ClassificationModelHostHead'
@@ -243,7 +273,7 @@ def do_load_basic_configs(config_dict, args):
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name in ["MID"]:
-            args.defense_param = str(args.defense_configs['mid_model_name'])+'_'+str(args.defense_configs['lambda'])
+            args.defense_param = str(args.defense_configs['mid_model_name'])+'_'+str(args.defense_configs['mid_position'])+'_'+str(args.defense_configs['lambda'])
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
             if 'dp_strength' in args.defense_configs:

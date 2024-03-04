@@ -1,8 +1,8 @@
 {
-    "epochs": 20,
+    "epochs": 10,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 128,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -25,7 +25,8 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -34,7 +35,8 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -50,9 +52,10 @@
         "name": "MID",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModelCNN_MaxUnpool2d",
+            "mid_model_name":"MIDModel_Linear",
             "lr": 0.05,
-            "lambda": 0.01,
+            "lambda": 0.0,
+            "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 70,
             "embed_dim": 768

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 import random
 import time
 import copy
@@ -282,7 +283,7 @@ class MainTaskVFL_LLM(object):
                 self.parties[ik].local_gradient = passive_local_gradient
 
     def global_gradient_transmit(self, final_pred):
-        global_loss = self.parties[0].cal_loss(final_pred)  # raw global loss
+        global_loss = self.parties[0].cal_loss(final_pred)  
 
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
         self.communication_cost += get_size_of(global_gradients)
@@ -292,23 +293,24 @@ class MainTaskVFL_LLM(object):
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
     def qa_inference(self):
+        print('=== qa_inference ===')
+
         # QA
         exact_score_list = []
         f1_list = []
-
         for ik in range(self.k - 1):
             # Passive data local predict
             exact_scores, f1s, _ = self.parties[ik].predict()
             exact_score_list.extend(exact_scores)
             f1_list.extend(f1s)
 
+        
         exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
-
         self.test_acc = exact_score
+        # self.final_state = self.save_state(False)
+        # self.final_state.update(self.save_party_data())
 
-        self.final_state = self.save_state(False)
-        self.final_state.update(self.save_party_data())
-
+        print(exp_result)
         return exp_result, self.test_acc
 
     def seq_inference(self):
@@ -332,7 +334,6 @@ class MainTaskVFL_LLM(object):
 
             # print('test_predict_labels:',test_predict_labels[:5])
             # print('test_actual_labels:',test_actual_labels[:5])
-
             self.test_pearson_corr = \
             stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
             # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
@@ -354,7 +355,6 @@ class MainTaskVFL_LLM(object):
             # print('test_actual_labels:',test_actual_labels[:20])
 
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
-
             self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
 
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
@@ -903,6 +903,8 @@ class MainTaskVFL_LLM(object):
 
         last_adversarial_model_loss = 10000
         start_time = time.time()
+
+        data_record = pd.DataFrame(columns = ['Epoch','train_loss','train_acc','test_acc'])
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -1018,13 +1020,27 @@ class MainTaskVFL_LLM(object):
                             last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
 
                     self.final_epoch = i_epoch
-        
+
+            data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]  
+
         exp_result = f'train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
         # self.final_state = self.save_state() 
         # self.final_state.update(self.save_state(False)) 
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
+
+        result_path = f'exp_result/{self.args.dataset}/Q{str(self.args.Q)}/'
+        # if not os.path.exists(result_path):
+        #     os.makedirs(result_path)
+        model_name = self.args.model_list[str(0)]["type"] #.replace('/','-')
+        if self.args.pipeline=='pretrained':
+            filename = f'{self.args.defense_name}_{self.args.defense_param},pretrained_model={self.args.model_list[str(0)]["type"]}'
+        else:
+            filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={self.args.model_list[str(0)]["type"]}'
+        result_file_name = result_path + filename + f'.csv'
+        print('Save csv to:',result_file_name)
+        data_record.to_csv(result_file_name)
 
         return exp_result, self.test_acc #, self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 

@@ -356,13 +356,17 @@ def load_basic_models_llm_bert(args,index):
     is_local = args.k - 1 != index
     pad_token = args.pad_token
     head_layer_trainable = args.head_layer_trainable
+    encoder_trainable = args.encoder_trainable
+
     local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-        pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
-    )
+        pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,\
+         head_layer_trainable, encoder_trainable)
+
     args.tokenizer = tokenizer
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
+def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_output_dim, is_local, device, \
+padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trainable):
     # current_model_type = args.model_list[str(index)]['type']
     # current_output_dim = args.model_list[str(index)]['output_dim']
 
@@ -470,6 +474,13 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
             print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
             local_model_optimizer = None
 
+            print('Local Model: encoder_trainable = ',encoder_trainable[0])
+            for param in local_model.encoder_layer.parameters():
+                param.requires_grad = encoder_trainable[0]
+            if encoder_trainable[0]:
+                local_model_optimizer = torch.optim.Adam(list(local_model.encoder_layer.parameters()), lr=main_lr)
+
+
         ########### Global Model ###########
         global_model = None
         global_model_optimizer = None
@@ -492,10 +503,10 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
                 param.requires_grad = False
 
             # Head Layer Trainable/Freeze
-            print('head_layer_trainable:',head_layer_trainable)
+            print('Global Model : head_layer_trainable = ',head_layer_trainable[1])
             for param in global_model.head_layer.parameters():
-                param.requires_grad = head_layer_trainable
-            if head_layer_trainable:
+                param.requires_grad = head_layer_trainable[1]
+            if head_layer_trainable[1]:
                 global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
             global_model = global_model.to(device)
@@ -506,7 +517,7 @@ def load_basic_models_llm_gpt2(args,index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
 
-    if args.pretrained == 0:
+    if args.pretrained == 0: # load from base LLM with randomly initialized head layer
         print('finetune gpt path:',MODEL_PATH[current_model_type])
         args.tokenizer = GPT2Tokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"

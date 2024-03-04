@@ -174,7 +174,7 @@ from load.LoadModels import load_models_per_party, load_models_per_party_new
 
 class ActiveParty_LLM(Party_LLM):
     def __init__(self, args, index):
-        print('==== ActiveParty_LLM ======')
+        print(f'==== initialize ActiveParty_LLM : party {index}======')
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
@@ -281,7 +281,7 @@ class ActiveParty_LLM(Party_LLM):
                 }
 
     def aggregate_remote(self, pred_list):
-        if self.args.head_layer_trainable:
+        if self.args.head_layer_trainable[1]:
             return self._do_aggregate_remote(pred_list)
         with torch.no_grad():
             return self._do_aggregate_remote(pred_list)
@@ -375,8 +375,8 @@ class ActiveParty_LLM(Party_LLM):
             
                 # trainable layer parameters
                 # load grads into parameters
-                weights_grad_a_start = torch.autograd.grad(self.global_pred.start_logits, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
-                weights_grad_a_end = torch.autograd.grad(self.global_pred.end_logits, self.global_model.trainable_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                weights_grad_a_start = torch.autograd.grad(self.global_pred.start_logits, self.global_model.head_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                weights_grad_a_end = torch.autograd.grad(self.global_pred.end_logits, self.global_model.head_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
                 
                 # print('weights_grad_a_start:',len(weights_grad_a_start),type(weights_grad_a_start)) # 2 tuple
                 # print('weights_grad_a_end:',len(weights_grad_a_end),type(weights_grad_a_end))
@@ -391,7 +391,7 @@ class ActiveParty_LLM(Party_LLM):
                 # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
 
                 # self.weights_grad_a = self.weights_grad_a/2
-                for w, g in zip(self.global_model.trainable_layer.parameters(), self.weights_grad_a):
+                for w, g in zip(self.global_model.head_layer.parameters(), self.weights_grad_a):
                     if w.requires_grad:
                         w.grad = g.detach()
                 # print('weights_grad_a:',weights_grad_a)

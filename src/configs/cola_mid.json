@@ -1,8 +1,8 @@
 {
-    "epochs": 2,
+    "epochs": 50,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 128,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -50,9 +50,10 @@
         "name": "MID",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_SqueezeLinear",
-            "lr": 0.05,
-            "lambda": 0.01,
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.0001,
+            "lambda": 0.0,
+            "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 30,
             "embed_dim": 768
