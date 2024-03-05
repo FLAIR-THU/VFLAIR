@@ -321,8 +321,8 @@ class ActiveParty_LLM(Party_LLM):
         return pred
 
     def receive_loss_and_gradients_remote(self, data):
-        loss = torch.Tensor([data['loss']])
-        gradients = torch.Tensor(data['gradients'])
+        loss = torch.Tensor([data['loss']]).to(self.args.device)
+        gradients = torch.Tensor(data['gradients']).to(self.args.device)
         self.receive_loss_and_gradients(loss, gradients)
 
     def receive_loss_and_gradients(self, loss, gradients):
