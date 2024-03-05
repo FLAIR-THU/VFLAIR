@@ -85,7 +85,7 @@ class DistributedCommunication(ICommunication):
         task_value.string = json.dumps(task.to_dict())
 
         data_value = fpm.Value()
-        data_value.string = i_epoch
+        data_value.string = str(i_epoch)
         msg = mu.MessageUtil.create(self._node, {"task": task_value, "data": data_value}, fpm.START_TASK)
         response = self._client.open_and_send(msg)
 
