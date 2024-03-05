@@ -314,19 +314,18 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         print('len:',len(clean_sample_origin_id),'  precision:',precision, ' recall:',recall)
                         print('origin_text:',origin_text)
                         print('pred_text:',pred_text)
-
-                        append_exp_res(self.args.exp_res_path, origin_text)
-                        append_exp_res(self.args.exp_res_path, pred_text)
+                        # append_exp_res(self.args.exp_res_path, origin_text)
+                        # append_exp_res(self.args.exp_res_path, pred_text)
                     flag += 1
 
         Precision = attack_result['Precision'].mean()
         Recall = attack_result['Recall'].mean()
 
-        model_name = self.args.model_list['0']['type']
-        if self.args.pretrained == 1:
-            result_path = f'./exp_result/{str(self.args.dataset)}/{self.attack_name}/{self.args.defense_name}_{self.args.defense_param}_pretrained_{str(model_name)}/'
-        else:
-            result_path = f'./exp_result/{str(self.args.dataset)}/{self.attack_name}/{self.args.defense_name}_{self.args.defense_param}_finetuned_{str(model_name)}/'
+        # model_name = self.args.model_list['0']['type']
+        # if self.args.pretrained == 1:
+        #     result_path = f'./exp_result/{str(self.args.dataset)}/{self.attack_name}/{self.args.defense_name}_{self.args.defense_param}_pretrained_{str(model_name)}/'
+        # else:
+        #     result_path = f'./exp_result/{str(self.args.dataset)}/{self.attack_name}/{self.args.defense_name}_{self.args.defense_param}_finetuned_{str(model_name)}/'
 
         # if not os.path.exists(result_path):
         #     os.makedirs(result_path)

@@ -1,5 +1,5 @@
 {
-    "epochs": 50,
+    "epochs": 10,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 128,
@@ -25,24 +25,22 @@
         "0": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -57,7 +55,7 @@
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.0001,
             "lambda": 0.0,
-            "mid_position": "out",
+            "mid_position": "inner",
             "current_bottleneck_scale": 1,
             "seq_length": 30,
             "embed_dim": 768

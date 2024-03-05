@@ -199,6 +199,7 @@ class Party(object):
         return
 
     def give_pred(self):
+        # print(' in give pred')
 
         if self.args.model_type == 'Bert':
             # SequenceClassification & QuestionAnswering
@@ -245,12 +246,20 @@ class Party(object):
         
         
         ######### Defense Applied on Local Model Prediction Process ###########
-        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]):
+        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
             self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
             self.local_pred_clone = self.local_pred.detach().clone()
+        
+        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "inner") :
+            # print('inner mid: self.mid_position=',self.mid_position)
+            self.mid_loss = self.local_model.mid_loss
+            # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
+        
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred
             self.local_pred = self.adversarial_model(self.origin_pred)
+        ######### Defense Applied on Local Model Prediction Process ###########
+
 
         if self.args.model_type == 'Bert':
             return self.local_pred, self.local_pred_clone , self.local_attention_mask

@@ -553,8 +553,9 @@ class LocalBertModel(BertPreTrainedModel):
             self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
         self.encoder = LocalBertEncoder(self.config,self.encoder_layer) #full_bert.encoder #BertEncoder(config)
         
-        # for adversarial model
-        # self.adversarial_model = None
+        # for MID defense
+        self.inner_mid_model = None
+        self.mid_loss = None
 
     def forward(
         self,
@@ -662,7 +663,14 @@ class LocalBertModel(BertPreTrainedModel):
             self.embedding_output = embedding_output
         # else:
         # print('embedding_output:',embedding_output.shape) # [bs, seq_length, 768(embed_dim)]
-        
+        # print('Local Forward')
+        ############ mid ############
+        if self.inner_mid_model != None:
+            # print(' =======  Inner MID  ======= ')
+            embedding_output, self.mid_loss = self.inner_mid_model(embedding_output)
+            self.embedding_output = embedding_output
+        ############ mid ############
+
         intermediate =self.encoder(
             embedding_output,
             attention_mask=extended_attention_mask,
@@ -676,16 +684,8 @@ class LocalBertModel(BertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        # print('## local output')
-        # print('intermediate:',type(intermediate), intermediate.shape )
-        # print('attention_mask:',type(attention_mask), attention_mask.shape )
-        # print('input_shape:',input_shape )
-
-        # if self.adversarial_model != None:
-        #     self.adversarial_output = self.adversarial_model(intermediate)
-        #     self.origin_output = intermediate
-
         return intermediate , attention_mask 
+
 
 class GlobalBertModel(BertPreTrainedModel):
     def __init__(self, full_bert, num_encoders, model_type = 'Bert'):
