@@ -89,7 +89,7 @@ class DistributedCommunication(ICommunication):
         msg = mu.MessageUtil.create(self._node, {"task": task_value, "data": data_value}, fpm.START_TASK)
         response = self._client.open_and_send(msg)
 
-    def send_global_modal_train_message(self):
+    def send_global_model_train_message(self):
         task = Task()
         task.run = "train_model"
         task.party = "active"
