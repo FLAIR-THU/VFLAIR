@@ -516,13 +516,14 @@ padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trai
 def load_basic_models_llm_gpt2(args,index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
+    model_path = args.model_list[str(index)]['path']
 
     if args.pretrained == 0: # load from base LLM with randomly initialized head layer
-        print('finetune gpt path:',MODEL_PATH[current_model_type])
-        args.tokenizer = GPT2Tokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        print('finetune gpt path:', model_path)
+        args.tokenizer = GPT2Tokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
-        full_gpt = GPT2Model.from_pretrained(MODEL_PATH[current_model_type])
+        full_gpt = GPT2Model.from_pretrained(model_path)
         if args.tokenizer.pad_token is None:
             args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
@@ -568,15 +569,15 @@ def load_basic_models_llm_gpt2(args,index):
             global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
         
         if args.task_type == 'CausalLM':
-            full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForCausalLM.from_pretrained(model_path)
         elif args.task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         elif args.task_type == 'SequenceClassification':
-            full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         else:
             assert 1>2 , "task type not supported"
         
@@ -607,6 +608,12 @@ def load_basic_models_llm_gpt2(args,index):
             print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
             local_model_optimizer = None
 
+            print('Local Model: encoder_trainable = ',args.encoder_trainable[0])
+            for param in local_model.h.parameters():
+                param.requires_grad = args.encoder_trainable[0]
+            if args.encoder_trainable[0]:
+                local_model_optimizer = torch.optim.Adam(list(local_model.h.parameters()), lr=main_lr)
+
         ########### Global Model ###########
         global_model = None
         global_model_optimizer = None
@@ -630,11 +637,12 @@ def load_basic_models_llm_gpt2(args,index):
             for param in global_model.transformer.parameters():
                 param.requires_grad = False
 
-            # Classifier already pretrained
+            # Head Layer Trainable/Freeze
+            print('Global Model : head_layer_trainable = ',args.head_layer_trainable[1])
             for param in global_model.head_layer.parameters():
-                param.requires_grad = args.head_layer_trainable
-            if args.head_layer_trainable:
-                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+                param.requires_grad = args.head_layer_trainable[1]
+            if args.head_layer_trainable[1]:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
             global_model = global_model.to(args.device)
     

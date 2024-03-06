@@ -6,6 +6,7 @@ import collections
 from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 import torch.nn as nn
+from torch.nn.utils.rnn import pad_sequence
 
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
@@ -30,53 +31,6 @@ from sklearn.metrics import roc_auc_score,matthews_corrcoef
 import scipy.stats as stats
 import copy
 from .LocalCommunication import LocalCommunication
-
-# Imagined Adversary
-class Adversary(nn.Module):
-    '''
-    input --- intermediate : bs, seq_length, 768(embed_dim)
-    output --- embedding : bs, seq_length, 768(embed_dim)
-    '''
-    def __init__(self, seq_length, embed_dim):
-        super(Adversary,self).__init__()
-        # print('Adversary init:',seq_length, embed_dim)
-        self.seq_length = seq_length
-        self.embed_dim = embed_dim
-
-        self.net1 = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(seq_length*embed_dim, 80),
-            nn.LayerNorm(80),
-            nn.ReLU(),
-        )
-
-        self.net2 = nn.Sequential(
-            nn.Linear(80, 80),
-            nn.LayerNorm(80),
-            nn.ReLU()
-        )
-
-        self.net3 = nn.Sequential(
-            nn.Linear(80, seq_length*embed_dim),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        origin_shape = x.shape
-        # print('x:',x.shape,origin_shape)
-
-        x = torch.tensor(x,dtype=torch.float32)
-        x1 = self.net1(x)
-        # print('x1:',x1.shape)
-
-        x2 = self.net2(x1)
-        # print('x2:',x2.shape)
-
-        x3 = self.net3(x2)
-        # print('x3:',x3.shape)
-
-        x3 = x3.reshape(origin_shape)
-        return x3
 
 
 class PassiveParty(Party):
@@ -127,6 +81,7 @@ class PassiveParty_LLM(Party_LLM):
         self.num_labels = args.num_classes
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
+        self.encoder_trainable = args.encoder_trainable[index]
     # def prepare_model(self, args, index):
     #     (
     #         args,
@@ -205,7 +160,6 @@ class PassiveParty_LLM(Party_LLM):
                 seq_length = self.args.defense_configs['seq_length']
                 embed_dim = self.args.defense_configs['embed_dim']
 
-                print(f' === self.mid_model_name:{self.mid_model_name} === ')
 
                 if self.mid_position == "inner":
                     print('init defense: inner mid')
@@ -228,6 +182,9 @@ class PassiveParty_LLM(Party_LLM):
                     else:
                         self.local_model_optimizer.add_param_group({'params': self.mid_model.parameters(), 'lr': self.mid_lr})
 
+                print(f'self.mid_model_name:{self.mid_model_name}')
+
+
     def prepare_data(self, args, index):
         super().prepare_data(args, index) # Party_llm's prepare_data
  
@@ -244,6 +201,9 @@ class PassiveParty_LLM(Party_LLM):
         self.pred_received[giver_index] = pred
 
     def cal_global_gradient(self, global_loss, global_pred):
+        # print('Passive Party cal global_gradients:')
+        # print('Global Loss=',global_loss)
+
         if self.args.task_type == 'QuestionAnswering':
             _gradients_start = torch.autograd.grad(global_loss, global_pred.start_logits, retain_graph=True)
             _gradients_end = torch.autograd.grad(global_loss, global_pred.end_logits, retain_graph=True)
@@ -255,6 +215,7 @@ class PassiveParty_LLM(Party_LLM):
             global_gradients = torch.autograd.grad(global_loss, global_pred, retain_graph=True)
             global_gradients_clone = global_gradients[0].detach().clone()
             self.global_gradients = global_gradients_clone
+
         return global_gradients_clone
 
     def cal_loss(self, pred, test=False):
@@ -370,6 +331,7 @@ class PassiveParty_LLM(Party_LLM):
 
         elif self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             # print(f'main_loss={self.global_loss},mid_loss={self.mid_loss}')
+            # print('self.mid_loss.requires_grad:',self.mid_loss.requires_grad)
             self.global_loss = self.global_loss + self.mid_loss
         # ########### Defense on Loss ###############
 
@@ -384,24 +346,7 @@ class PassiveParty_LLM(Party_LLM):
             pred_gradients_list_clone.append(pred_gradients_list[ik][0].detach().clone())
         # self.global_backward(pred, loss)
         return pred_gradients_list, pred_gradients_list_clone
-    
-    def give_gradient(self):
-        pred_list = self.pred_received 
 
-        if self.gt_one_hot_label == None:
-            print('give gradient:self.gt_one_hot_label == None')
-            assert 1>2
-        self.global_loss  = self.cal_loss(self.global_pred)
-        pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
-        # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
-
-        if self.args.defense_name == "GradPerturb":
-            self.calculate_gradient_each_class(self.global_pred, pred_list)
-        
-        self.update_local_gradient(pred_gradients_list_clone[0])
-
-        return pred_gradients_list_clone
-    
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient
 
@@ -425,20 +370,34 @@ class PassiveParty_LLM(Party_LLM):
             self.imagined_adversary_optimizer.step()
 
             self.local_model_optimizer.zero_grad()
-            self.weights_grad_a = torch.autograd.grad(
+
+            if self.encoder_trainable:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.encoder_layer.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                )
+                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
+
+            weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.adversarial_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
             )
-            for w, g in zip(self.adversarial_model.parameters(), self.weights_grad_a):
+            for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
                 if w.requires_grad:
                     if w.grad != None:
                         w.grad += g.detach()
                     else:
                         w.grad = g.detach()
             self.local_model_optimizer.step()
-
 
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "out"):
@@ -451,19 +410,45 @@ class PassiveParty_LLM(Party_LLM):
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
 
-            self.weights_grad_a = torch.autograd.grad(
+            # update mid_model/local_encoder with mid_loss.backward
+            self.mid_loss.backward(retain_graph=True)
+
+            # update local encoder with global_loss
+            weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.mid_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
             )
-            for w, g in zip(self.mid_model.parameters(), self.weights_grad_a):
+            for w, g in zip(self.mid_model.parameters(), weights_grad_a):
                 if w.requires_grad:
                     if w.grad != None:
                         w.grad += g.detach()
                     else:
                         w.grad = g.detach()
-            
+
+            if self.encoder_trainable:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.encoder_layer.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                )
+                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
+
+            # print('Backward MID Model:')
+            # mark = 0
+            # for name, param in self.mid_model.named_parameters():
+            #     if mark == 0:
+            #         print(name, param)
+            #         mark = mark + 1
+
+            # assert 1>2
             self.local_model_optimizer.step()
 
             # print('self.mid_loss:',self.mid_loss)
@@ -482,15 +467,13 @@ class PassiveParty_LLM(Party_LLM):
         
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "inner"):
-            # print('before')
-            # mark = 0
-            # for name, param in self.local_model.inner_mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
 
+            ###########  update mid_model  ###########
+            # with mid_loss.backward
+            self.mid_loss.backward(retain_graph=True)
+            # with global_loss -> local_gradient
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.local_model.inner_mid_model.parameters(),
@@ -504,6 +487,22 @@ class PassiveParty_LLM(Party_LLM):
                     else:
                         w.grad = g.detach()
             
+            ###########  update local encoder  ###########
+            #  with cross_entropy_loss + mid_loss -> local_gradient
+            if self.encoder_trainable:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.encoder_layer.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                )
+                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
+
             self.local_model_optimizer.step()
 
             # self.mid_loss = self.local_model.mid_loss
@@ -560,139 +559,6 @@ class PassiveParty_LLM(Party_LLM):
                 self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
         # end of calculate_gradient_each_class, return nothing
 
-    def qa_inference(self):
-        # QA
-        exact_score_list = []
-        f1_list = []
-
-        for ik in range(self.k - 1):
-            # Passive data local predict
-            exact_scores, f1s = self.parties[ik].predict()
-            exact_score_list.extend(exact_scores)
-            f1_list.extend(f1s)
-
-        exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
-
-        self.test_acc = exact_score
-
-        self.final_state = self.save_state(False)
-        self.final_state.update(self.save_party_data())
-
-        return exp_result, self.test_acc
-
-    def seq_inference(self):
-        # SequenceClassification
-        test_predict_labels = []
-        test_actual_labels = []
-        postfix = {'test_acc': 0.0}
-        suc_cnt = 0
-        total_sample_cnt = 0
-
-        # Passive data local predict
-        predict_labels, actual_labels, sample_cnt = self.predict()
-        test_predict_labels.extend(predict_labels)
-        test_actual_labels.extend(actual_labels)
-        total_sample_cnt += sample_cnt
-
-        if self.args.num_classes == 1:
-            self.test_mse = torch.mean(
-                (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
-            # torch.nn.MSELoss()(  torch.tensor(test_predict_labels), torch.tensor(test_actual_labels) ).item()
-
-            self.test_pearson_corr = \
-            stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            # full_test_pearson_corr = pearsonr( torch.tensor(test_full_predict_labels), torch.tensor(test_actual_labels) )[0]
-            self.test_spearmanr_corr = \
-            stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
-            postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-
-            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
-                                                                                                      self.test_pearson_corr,
-                                                                                                      self.test_spearmanr_corr)
-            print(exp_result)
-            # print('Full pred pearson:',full_test_pearson_corr)
-            return exp_result, self.test_mse
-        else:
-            # print('test_predict_labels:',type(test_predict_labels),len(test_predict_labels)) # list
-
-            suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
-            torch.tensor(test_actual_labels)).item()
-            # print('test_predict_labels:',test_predict_labels[:20])
-            # print('test_actual_labels:',test_actual_labels[:20])
-
-            self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
-            # full_test_acc = full_suc_cnt / float(sample_cnt) # ACC
-
-            # test_preds = np.vstack(test_preds)
-            # test_targets = np.vstack(test_targets)
-            # self.test_auc = np.mean(multiclass_auc(test_targets, test_preds)) # AUC
-
-            self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
-
-            postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-            # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
-            postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-
-            exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
-            print(exp_result)
-
-            # self.final_state = self.save_state(False)
-            # self.final_state.update(self.save_party_data())
-
-            print('self.test_acc:',self.test_acc)
-            print('======== seq_inference ==========')
-
-            return exp_result, self.test_acc
-
-    def save_state(self, BEFORE_MODEL_UPDATE=True):
-        if BEFORE_MODEL_UPDATE:
-            return {
-                "model": [copy.deepcopy(self.args.parties[ik].local_model) for ik in range(self.args.k)],
-                "global_model": copy.deepcopy(self.args.parties[self.args.k - 1].global_model),
-                "model_names": [str(type(self.args.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in
-                                range(self.args.k)] + [
-                                   str(type(self.args.parties[self.args.k - 1].global_model)).split('.')[-1].split('\'')[-2]]
-
-            }
-        else:
-            return {
-                # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
-                # "data": copy.deepcopy(self.parties_data),
-                "label": copy.deepcopy(self.gt_one_hot_label),
-                "predict": [copy.deepcopy(self.args.parties[ik].local_pred_clone) for ik in range(self.args.k)],
-                "gradient": [copy.deepcopy(self.args.parties[ik].local_gradient) for ik in range(self.args.k)],
-                "local_model_gradient": [copy.deepcopy(self.args.parties[ik].weights_grad_a) for ik in range(self.args.k)],
-                "train_acc": copy.deepcopy(self.train_acc),
-                "loss": copy.deepcopy(self.loss),
-                "global_pred": self.args.parties[self.args.k - 1].global_pred,
-                "final_model": [copy.deepcopy(self.args.parties[ik].local_model) for ik in range(self.args.k)],
-                "final_global_model": copy.deepcopy(self.args.parties[self.args.k - 1].global_model),
-
-            }
-
-    def save_party_data(self):
-        return {
-            # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
-            # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
-
-            # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
-            # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
-
-            # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
-            # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
-            # "test_attribute": [copy.deepcopy(self.parties[ik].test_attribute) for ik in range(self.k)],
-
-            "aux_loader": [self.args.parties[ik].aux_loader for ik in range(self.args.k)],
-            "train_loader": [self.args.parties[ik].train_loader for ik in range(self.args.k)],
-            "test_loader": [self.args.parties[ik].test_loader for ik in range(self.args.k)],
-
-            "batchsize": self.args.batch_size,
-            "num_classes": self.args.num_classes
-        }
-
     def predict(self):
         data_loader_list = [self.test_loader]
         exact_score_list = []
@@ -734,11 +600,25 @@ class PassiveParty_LLM(Party_LLM):
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
-                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)         
+                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
+
+                    # print('batch_label:',batch_label)
                     # print('batch_label:',type(batch_label),len(batch_label) )
-                    # print('batch_label[0]',type(batch_label[0]))
+
                     if type( batch_label[0] ) != str:
-                        batch_label = torch.tensor(batch_label).to(self.device)
+                        if self.args.task_type == 'QuestionAnswering':
+                            # origin_batch_label_shape [bs, 2, num_of_answers]
+                            # 2*bs, num_of_answers
+                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+
+                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                            batch_label = batch_label.reshape(origin_batch_label_shape)
+                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
+                            # print('After batch_label:',batch_label.shape)
+                        else:
+                            batch_label = torch.tensor(batch_label).to(self.device)
+
 
                     _parties_data.append([batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] )
 
@@ -768,16 +648,6 @@ class PassiveParty_LLM(Party_LLM):
                 del parties_data
         
         return exact_score_list, f1_list, total_sample_cnt
-
-    def inference(self, inference_data='test'):
-        if self.args.task_type == "QuestionAnswering":
-            exp_result, main_task_result = self.qa_inference()
-            return exp_result, main_task_result
-
-        if self.args.task_type == "SequenceClassification":
-            # exp_result, self.test_acc =
-            exp_result, main_task_result = self.seq_inference()
-            return exp_result, main_task_result
 
     def launch_defense(self, gradients_list, _type):
 
@@ -1024,6 +894,9 @@ class PassiveParty_LLM(Party_LLM):
                 for _i in range(len(gold_start_indexs)):
                     gold_start_index = int(gold_start_indexs[_i])
                     gold_end_index = int(gold_end_indexs[_i])
+                    if gold_start_index == -1:
+                        continue
+
                     gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
                     gold_ans_text = normalize_answer(gold_ans_text)
                     gold_ans.append(gold_ans_text)
@@ -1529,6 +1402,8 @@ class PassiveParty_LLM(Party_LLM):
         if self.local_model_optimizer != None:
             passive_local_gradient= self._send_cal_passive_local_gradient_message(pred)
             self.local_gradient = passive_local_gradient
+        print('Passive Party receive self.local_gradient(passive_local_gradient)')
+        print(self.local_gradient)
 
     def global_gradient_transmit(self, pred_list):
         global_loss = self.cal_loss(pred_list)  # raw global loss

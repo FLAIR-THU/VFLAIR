@@ -129,7 +129,7 @@ class MIDModelCNN_MaxUnpool2d(nn.Module):
         z = z.reshape(input_shape)
         # print('reshape z:',z.shape) 
 
-        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[0]*input_shape[1]*input_shape[2])
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
         # print('== MID Model Forward Over ==')
@@ -201,7 +201,7 @@ class MIDModelCNN_ConvTranspose2d(nn.Module):
         z = z.reshape(input_shape)
         # print('reshape z:',z.shape) # bs, 23040
 
-        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[0]*input_shape[1]*input_shape[2])
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
         # print('== MID Model Forward Over ==')
@@ -289,7 +289,7 @@ class MIDModel_SqueezeLinear(nn.Module):
 
         # print('reshape z:',z.shape) # bs, 23040
 
-        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1)) / (input_shape[0]*input_shape[1]*input_shape[2])
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1)) / (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
         # print('== MID Model Forward Over ==')
@@ -308,18 +308,18 @@ class MIDModel_Linear(nn.Module):
         self.mid_lambda = mid_lambda
         self.std_shift = std_shift
 
-        self.drop_out_p = 0.2
+        # self.drop_out_p = 0.2
         
         self.enlarge_layer = nn.Sequential(
             # nn.Flatten(),
             nn.Linear(self.input_dim, self.input_dim*2*bottleneck_scale, bias=True),
-            nn.Dropout(p=self.drop_out_p, inplace=False),
+            # nn.Dropout(p=self.drop_out_p, inplace=False),
             nn.ReLU(inplace=True)
         )
         self.decoder_layer = nn.Sequential(
             # nn.Flatten(),
             nn.Linear(self.input_dim*bottleneck_scale, self.output_dim, bias=True),
-            nn.Dropout(p=self.drop_out_p, inplace=False),
+            # nn.Dropout(p=self.drop_out_p, inplace=False),
             nn.ReLU(inplace=True)
 
             # nn.Linear(self.input_dim*bottleneck_scale, self.input_dim*bottleneck_scale*5, bias=True),
@@ -364,10 +364,28 @@ class MIDModel_Linear(nn.Module):
         # print('reshape z:',z.shape) # bs, 23040
 
 
-        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[0]*input_shape[1]*input_shape[2])
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
-        # print('== MID Model Forward Over ==')
+        # print('== In mid model ==')
+        # mark = 0
+        # for name, param in self.enlarge_layer.named_parameters():
+        #     if mark == 0:
+        #         print(name, param.grad)
+        #         mark = mark + 1
+        
+        # mid_loss.backward()
+
+        # print('-'*25)
+        # mark = 0
+        # for name, param in self.enlarge_layer.named_parameters():
+        #     if mark == 0:
+        #         print(name, param.grad)
+        #         mark = mark + 1
+        # print('== In mid model ==')
+
+        # assert 1>2
+
 
         return z, mid_loss
 
@@ -441,7 +459,7 @@ class MIDModel_PoolLinear(nn.Module):
         # print('reshape z:',z.shape) # bs, 23040
 
 
-        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[0]*input_shape[1]*input_shape[2])
+        mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
         # print('== MID Model Forward Over ==')

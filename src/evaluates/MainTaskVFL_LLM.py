@@ -1,6 +1,7 @@
 import sys, os
 sys.path.append(os.pardir)
 import torch
+from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
@@ -296,14 +297,14 @@ class MainTaskVFL_LLM(object):
         global_loss = self.parties[0].cal_loss(final_pred)
 
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
-        self.communication_cost += get_size_of(global_gradients)
 
+        self.communication_cost += get_size_of(global_gradients)
+        
         self.parties[self.k-1].receive_loss_and_gradients(self.parties[0].global_loss, self.parties[0].global_gradients)
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
     def qa_inference(self):
-        print('=== qa_inference ===')
 
         # QA
         exact_score_list = []
@@ -361,8 +362,8 @@ class MainTaskVFL_LLM(object):
         else:
             suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
             torch.tensor(test_actual_labels)).item()
-            # print('test_predict_labels:',test_predict_labels[:20])
-            # print('test_actual_labels:',test_actual_labels[:20])
+            print('test_predict_labels:',test_predict_labels[:10])
+            print('test_actual_labels:',test_actual_labels[:10])
 
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
             self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
@@ -456,12 +457,29 @@ class MainTaskVFL_LLM(object):
                         else:
                             batch_label.append( parties_data[party_id][bs_id][1]  )
 
+                    # print('batch_input_ids:',type(batch_input_ids),len(batch_input_ids))
+                    # print(batch_input_ids)
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
                         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device) 
+                    
                     if type( batch_label[0] ) != str:
-                        batch_label = torch.tensor(batch_label).to(self.device)
+                        if self.args.task_type == 'QuestionAnswering':
+                            # origin_batch_label_shape [bs, 2, num_of_answers]
+                            # 2*bs, num_of_answers
+                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                            
+                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                            batch_label = batch_label.reshape(origin_batch_label_shape)
+                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
+                            # print('After batch_label:',batch_label.shape)
+                        else:
+                            batch_label = torch.tensor(batch_label).to(self.device)
+                    
+                    # if type( batch_label[0] ) != str:
+                    #     batch_label = torch.tensor(batch_label).to(self.device)
                     
                     _parties_data.append([batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] )
                 
@@ -543,13 +561,14 @@ class MainTaskVFL_LLM(object):
                     
                     if self.args.dataset == "Lambada":
                         # generated, generate_text = self.parties[self.k-1].generate(pred_list, test="True")
-                        # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label.shape)
-
-                        # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
+                        # print('gt_one_hot_label:',type(gt_one_hot_label),len(gt_one_hot_label),gt_one_hot_label[0])
+                        
                         target_word = [ normalize_answer(_p) for _p in gt_one_hot_label] # list of normalized tokens
                         # print('target_word:',type(target_word),len(target_word),target_word) # 
                         target_word_list.extend( target_word )
-                        # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
+
+                        # print('target_word_list:',type(target_word_list),len(target_word_list))
+                        # print(target_word_list)
 
                         # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
                         # target_word = gt_one_hot_label[0]
@@ -573,7 +592,7 @@ class MainTaskVFL_LLM(object):
                                 predict_word = [self.args.tokenizer.decode( [_label]) for _label in predict_label[_bs].tolist()]
                                 predict_word = [ normalize_answer(_p) for _p in predict_word]
                                 predict_word_list.append(predict_word) # predict_word: list of n best for this batch
-                                # print('predict_word:',predict_word)
+                            # print('predict_word_list:',predict_word_list)
                             
                     else: # MMLU
                         choice_id_list = []
@@ -637,7 +656,6 @@ class MainTaskVFL_LLM(object):
         ############### allocate data ###############
         gt_one_hot_label = batch_label
         self.gt_one_hot_label = gt_one_hot_label
-
         # allocate data/attention mask to passive party
         for ik in range(self.k-1):
             # allocate data (data/label/attention_mask/token_type_ids)
@@ -646,6 +664,7 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
         ############### allocate data ###############
+
 
         ################ normal vertical federated learning ################
         torch.autograd.set_detect_anomaly(True)
@@ -670,6 +689,7 @@ class MainTaskVFL_LLM(object):
         # ============= Model Update =============
 
         ################ normal vertical federated learning ################
+
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
@@ -1002,8 +1022,21 @@ class MainTaskVFL_LLM(object):
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
                         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
-                    if type(batch_label[0]) != str:
-                        batch_label = torch.tensor(batch_label).to(self.device)
+                    
+                    if type( batch_label[0] ) != str:
+                        if self.args.task_type == 'QuestionAnswering':
+                            # origin_batch_label_shape [bs, 2, num_of_answers]
+                            # 2*bs, num_of_answers
+                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                            
+                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                            batch_label = batch_label.reshape(origin_batch_label_shape)
+                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
+                            # print('After batch_label:',batch_label.shape)
+                        else:
+                            batch_label = torch.tensor(batch_label).to(self.device)
+
 
                     _parties_data.append(
                         [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
@@ -1090,7 +1123,14 @@ class MainTaskVFL_LLM(object):
         result_file_name = result_path + filename + f'.csv'
         print('Save csv to:',result_file_name)
         data_record.to_csv(result_file_name)
-
+        
+        # print('Final mid model:')
+        # mark = 0
+        # for name, param in self.parties[0].mid_model.named_parameters():
+        #     if mark == 0:
+        #         print(name, param)
+        #         mark = mark + 1
+                
         return exp_result, self.test_acc #, self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
 

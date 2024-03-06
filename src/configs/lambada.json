@@ -1,8 +1,9 @@
 {
-    "epochs": 100,
-    "lr": 0.0005,
+    "epochs": 5,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 1,
+    "batch_size": 128,
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -12,42 +13,42 @@
         "num_classes": 1,
         "use_prompt": 1
     },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 50,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
     "model_list":{
         "0": {
             "type": "gpt2",
             "pretrained": 1,
+            "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
             "type": "gpt2",
             "pretrained": 1,
+            "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": ""
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 32,
-            "max_seq_length": 32,
+            "doc_stride" : 8,
+            "max_seq_length": 8,
             "metric_type": "n_best",
             "n_best_size": 8
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32
-            }
-        }
     }
 }
