@@ -19,19 +19,27 @@ class ActiveTaskService(threading.Thread):
         threading.Thread.__init__(self)
         self._queues = queues
 
-    def _init_parties(self, args):
+    def _init_parties(self, args, job_id):
         active_party = ActiveParty_LLM(args, 1)
         parties = []
         for i in range(args.k - 1):
-            parties.append(RemotePassiveParty())
+            client_id = f'c{i + 1}'
+            queue = self._queues[client_id]
+            parties.append(RemotePassiveParty(client_id, queue, job_id))
         parties.append(active_party)
         return parties
 
     def add_job(self, job_id, data):
         args = load_llm_configs(data)
-        args.parties = self._init_parties(args)
-        self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
-        self.run_next(job_id)
+        args.parties = self._init_parties(args, job_id)
+        # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
+        # self.run_next(job_id)
+        main_task = MainTaskVFL_LLM(args, job_id)
+        self._main_tasks.append(main_task)
+        if args.pipeline == 'pretrained':
+            main_task.inference()
+        elif args.pipeline == 'finetune':
+            main_task.train()
 
     def _get_main_task(self, job_id):
         for main_task in self._main_tasks:

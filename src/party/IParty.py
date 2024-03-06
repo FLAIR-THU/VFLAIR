@@ -12,3 +12,15 @@ class IParty(object):
     def load_dataset(self):
         pass
 
+    @abstractmethod
+    def prepare_data_loader(self):
+        pass
+
+    @abstractmethod
+    def eval(self):
+        pass
+
+    @abstractmethod
+    def predict(self):
+        pass
+

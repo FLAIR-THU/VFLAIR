@@ -18,7 +18,7 @@ communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantizati
 
 def load_llm_configs(config_dict):
     args = do_load_basic_configs(config_dict, argparse.Namespace())
-    args.tasks = config_dict['tasks']
+    # args.tasks = config_dict['tasks']
     args.device = config_dict['device']
     args.gpu = config_dict['gpu']
     args.fl_type = config_dict['fl_type']

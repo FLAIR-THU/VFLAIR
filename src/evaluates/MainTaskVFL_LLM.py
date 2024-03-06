@@ -890,6 +890,45 @@ class MainTaskVFL_LLM(object):
 
             return loss.item(), batch_train_acc
 
+    def start_train(self):
+        for ik in range(self.k):
+            self.parties[ik].prepare_data_loader()
+
+        print_every = 1
+        self.num_total_comms = 0
+        total_time = 0.0
+        flag = 0
+        self.current_epoch = 0
+
+        start_time = time.time()
+        results = []
+        for i_epoch in range(self.args.main_epochs):
+            self.current_epoch = i_epoch
+            postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
+            i = -1
+
+            for ik in range(self.k - 1):
+                self.loss, self.train_acc = self.parties[ik].train(i_epoch)
+
+            # validation
+            if (i + 1) % print_every == 0:
+                print("validate and test")
+
+                _exp_result, self.test_acc = self.inference()
+
+                postfix['train_loss'] = self.loss
+                postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
+                postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
+                # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
+                # postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
+
+                exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
+                    i_epoch, self.loss, self.train_acc, self.test_acc)
+                print(exp_result)
+                results.append(exp_result)
+                self.final_epoch = i_epoch
+
+        return results
 
     def train(self):
 

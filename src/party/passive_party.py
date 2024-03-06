@@ -1169,42 +1169,6 @@ class PassiveParty_LLM(Party_LLM):
     def _send_global_model_train_message(self):
         self._communication.send_global_model_train_message()
 
-    def start_train(self):
-        print_every = 1
-        self.num_total_comms = 0
-        total_time = 0.0
-        flag = 0
-        self.current_epoch = 0
-
-        start_time = time.time()
-        results = []
-        for i_epoch in range(self.args.main_epochs):
-            self.current_epoch = i_epoch
-            postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
-            i = -1
-
-            self.loss, self.train_acc = self.train(i_epoch)
-
-            # validation
-            if (i + 1) % print_every == 0:
-                print("validate and test")
-
-                _exp_result, self.test_acc = self.inference()
-
-                postfix['train_loss'] = self.loss
-                postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
-                postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-                # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
-                # postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-
-                exp_result = 'Epoch {}% \t train_loss:{:.2f} train_acc:{:.2f} test_acc:{:.2f}'.format(
-                    i_epoch, self.loss, self.train_acc, self.test_acc)
-                print(exp_result)
-                results.append(exp_result)
-                self.final_epoch = i_epoch
-
-        return results
-
     def train(self, i_epoch):
         data_loader_list = [self.train_loader]
         postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -1285,7 +1249,7 @@ class PassiveParty_LLM(Party_LLM):
             self.current_step = self.current_step + 1
 
             # del(self.parties_data) # remove from cuda
-            # del(parties_data)
+            del(parties_data)
 
         # if self.args.apply_attack == True:
         #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
@@ -1311,11 +1275,6 @@ class PassiveParty_LLM(Party_LLM):
             QA: bs * [start_position, end_position]
         '''
         ############### allocate data ###############
-        # encoder = self.args.encoder
-        # if self.args.apply_cae:
-        #     assert encoder != None, "[error] encoder is None for CAE"
-        #     _, gt_one_hot_label = encoder(batch_label)
-        # else:
         gt_one_hot_label = batch_label
 
         # allocate data (data/label/attention_mask/token_type_ids)
@@ -1331,19 +1290,17 @@ class PassiveParty_LLM(Party_LLM):
         # =================== Commu ===================
         # exchange info between party: local_pred/global_pred
         all_pred_list = self.pred_transmit()   # [ pred of this party ]
-        final_pred = self._send_pred_message(all_pred_list) # TODO: if there's multiple more passive parties
-        # =================== Commu ===================
+        final_pred = self._send_pred_message(all_pred_list)
 
         # passive party -> global gradient -> active party
         self.global_gradient_transmit(final_pred)
 
         # active party -> local gradient -> passive party
-        if self.local_model_optimizer != None:
-            self.local_gradient_transmit(all_pred_list)
+        self.local_gradient_transmit(all_pred_list)
 
         # ============= Model Update =============
-        self._send_global_backward_message()  # update parameters for global trainable part
-        # if self.parties[ik].local_model_optimizer != None:
+        # update parameters for global trainable part
+        self._send_global_backward_message()
         self.local_backward()
         # ============= Model Update =============
 
@@ -1488,22 +1445,15 @@ class PassiveParty_LLM(Party_LLM):
             return loss.item(), exact_score
 
         elif self.args.task_type == 'SequenceClassification':
-            # ###### Noisy Label Attack #######
-            # convert back to clean label to get true acc
-            if 'apply_nl' in self.args and self.args.apply_nl:
-                real_batch_label = self.clean_one_hot_label
-            else:
-                real_batch_label = batch_label
-            # ###### Noisy Label Attack #######
+            real_batch_label = batch_label
 
             pred = final_pred
-            loss = self.global_loss
             predict_prob = F.softmax(pred, dim=-1)
-            # if self.args.apply_cae:
-            #     predict_prob = encoder.decode(predict_prob)
 
             suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
             batch_train_acc = suc_cnt / predict_prob.shape[0]
+
+            loss = self.global_loss
 
             return loss.item(), batch_train_acc
 

@@ -96,15 +96,15 @@ class MessageService:
         job_id = job_repository.create(job)
         job.id = job_id
 
-        for task_data in data['tasks']:
-            task = Task.Task()
-            task.task_id = task_data['id']
-            task.run = task_data['run']
-            task.job_id = job_id
-            task.create_time = datetime.now()
-            task.status = 0
-            task.party = task_data['party']
-            task_id = task_repository.create(task)
-            task.id = task_id
+        # for task_data in data['tasks']:
+        #     task = Task.Task()
+        #     task.task_id = task_data['id']
+        #     task.run = task_data['run']
+        #     task.job_id = job_id
+        #     task.create_time = datetime.now()
+        #     task.status = 0
+        #     task.party = task_data['party']
+        #     task_id = task_repository.create(task)
+        #     task.id = task_id
 
         return job_id
