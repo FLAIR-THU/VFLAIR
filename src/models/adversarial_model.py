@@ -3,55 +3,42 @@ import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Function
 
-############ ImaginedAdversary ###############
-class ImaginedAdversary_MLP3(nn.Module):
+################### Adversarial Model: Privacy Preserving Mapping #####################
+class Mapping_MLP2(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
     def __init__(self, seq_length, embed_dim):
-        super(ImaginedAdversary_MLP3,self).__init__()
+        super(Mapping_MLP2,self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
 
         self.net1 = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(seq_length*embed_dim, 80), 
+            nn.Linear(embed_dim, 80), 
             nn.LayerNorm(80),
             nn.ReLU(),
         )
 
         self.net2 = nn.Sequential(
-            nn.Linear(80, 80), 
-            nn.LayerNorm(80),
-            nn.ReLU()
-        )
-
-        self.net3 = nn.Sequential(
-            nn.Linear(80, seq_length*embed_dim),
+            nn.Linear(80, embed_dim),
             nn.Sigmoid()
         )
 
     def forward(self, x):
-        origin_shape = x.shape
+        # origin_shape = x.shape
         # print('x:',x.shape,origin_shape)
-
-        x = torch.tensor(x,dtype=torch.float32)
+        # x = torch.tensor(x,dtype=torch.float32)
         x1 = self.net1(x)
         # print('x1:',x1.shape)
 
         x2 = self.net2(x1)
         # print('x2:',x2.shape)
 
-        x3 = self.net3(x2)
-        # print('x3:',x3.shape)
+        # x2 = x2.reshape(origin_shape)
+        return x2
 
-        x3 = x3.reshape(origin_shape)
-        return x3
-
-
-################### Adversarial Model: Privacy Preserving Mapping #####################
 class Mapping_MLP3(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
@@ -85,7 +72,7 @@ class Mapping_MLP3(nn.Module):
         origin_shape = x.shape
         # print('x:',x.shape,origin_shape)
 
-        x = torch.tensor(x,dtype=torch.float32)
+        # x = torch.tensor(x,dtype=torch.float32)
         x1 = self.net1(x)
         # print('x1:',x1.shape)
 

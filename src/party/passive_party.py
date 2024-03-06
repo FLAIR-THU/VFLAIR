@@ -23,6 +23,8 @@ from dataset.party_dataset import ActiveDataset
 from utils.communication_protocol_funcs import compress_pred
 
 from models.imagined_adversary_models import *
+from models.adversarial_model import *
+
 from models.mid_model_rapper import *
 
 import time
@@ -48,18 +50,21 @@ class PassiveParty(Party):
 class PassiveParty_LLM(Party_LLM):
     _communication = None
 
-    def __init__(self, args, index):
-        super().__init__(args, index)
+    def __init__(self, args, index, need_data = True):
+        super().__init__(args, index, need_data = need_data)
         print(f'==== initialize PassiveParty_LLM : party {index}======')
+        
         self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
             print(f'running on cuda{torch.cuda.current_device()}')
         self.criterion = cross_entropy_for_onehot
+        
         # self.encoder = args.encoder
-        self.train_index = args.idx_train
-        self.test_index = args.idx_test
+        self.train_index = None #args.idx_train
+        self.test_index = None #args.idx_test
+        
         self.device = args.device
 
         self.gt_one_hot_label = None
@@ -217,19 +222,25 @@ class PassiveParty_LLM(Party_LLM):
 
     def cal_loss(self, pred, test=False):
         gt_one_hot_label = self.gt_one_hot_label # label
-
+        
         # ########### Normal Loss ###############
         if self.args.task_type == 'SequenceClassification':
             # loss = self.criterion(pred, gt_one_hot_label)
             pooled_logits = pred
             labels = gt_one_hot_label
+
             # GPT2
             if self.num_labels == 1:
                 self.problem_type = "regression"
-            elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                self.problem_type = "single_label_classification"
             else:
-                self.problem_type = "multi_label_classification"
+                self.problem_type = "single_label_classification"
+            # elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+            #     self.problem_type = "single_label_classification"
+            # else:
+            #     self.problem_type = "multi_label_classification"
+
+            # print('self.problem_type:',self.problem_type)
+            # print('labels:',labels.dtype, labels.shape)
 
             if self.problem_type == "regression":
                 loss_fct = MSELoss()
@@ -239,10 +250,10 @@ class PassiveParty_LLM(Party_LLM):
                     loss = loss_fct(pooled_logits, labels)
             elif self.problem_type == "single_label_classification":
                 loss_fct = CrossEntropyLoss()
-                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(pooled_logits, labels)
+                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels) #labels.view(-1)
+            # elif self.problem_type == "multi_label_classification":
+            #     loss_fct = BCEWithLogitsLoss()
+            #     loss = loss_fct(pooled_logits, labels)
 
         elif self.args.task_type == 'CausalLM':
             #  GPT2
@@ -369,11 +380,17 @@ class PassiveParty_LLM(Party_LLM):
             self.local_model_optimizer.zero_grad()
 
             if self.encoder_trainable:
+                # [bs, seq_len70, embed_dim768]
+                # print('self.local_pred:',self.local_pred.shape)
+                # print('self.origin_pred:',self.origin_pred.shape)
+                # print('self.local_gradient:',self.local_gradient.shape)
+
                 weights_grad_a = torch.autograd.grad(
                     self.local_pred,
                     self.local_model.encoder_layer.parameters(),
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
+                    #allow_unused = True
                 )
                 for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
                     if w.requires_grad:
@@ -448,19 +465,6 @@ class PassiveParty_LLM(Party_LLM):
             # assert 1>2
             self.local_model_optimizer.step()
 
-            # print('self.mid_loss:',self.mid_loss)
-            # mark = 0
-            # for name, param in self.mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param.grad)
-            #         mark = mark + 1
-
-            # print('after')
-            # mark = 0
-            # for name, param in self.mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
         
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "inner"):
@@ -599,9 +603,6 @@ class PassiveParty_LLM(Party_LLM):
                     if batch_token_type_ids != None:
                         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)     
 
-                    # print('batch_label:',batch_label)
-                    # print('batch_label:',type(batch_label),len(batch_label) )
-
                     if type( batch_label[0] ) != str:
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
@@ -687,7 +688,7 @@ class PassiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()  # , _input_shape
             elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
+                pred, pred_detach, attention_mask  = self.give_pred()  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
             else:

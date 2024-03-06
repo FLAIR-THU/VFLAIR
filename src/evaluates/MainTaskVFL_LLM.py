@@ -314,6 +314,48 @@ class MainTaskVFL_LLM(object):
         print(exp_result)
         return exp_result, self.test_acc
 
+    def vfl_forward(  self, input_ids, attention_mask, token_type_ids ):
+        
+        print('=== vfl forward ===')
+        print('input_ids:',input_ids.shape)
+        print('attention_mask:',attention_mask.shape)
+        print('token_type_ids:',token_type_ids)
+
+        # if len(input_ids.shape) == 1:
+        #     _input_ids = input_ids.unsqueeze(0)
+        #     if attention_mask != None:
+        #         _attention_mask = attention_mask.unsqueeze(0)
+        #     else:
+        #         _attention_mask = attention_mask
+        #     if token_type_ids != None:
+        #         _token_type_ids = token_type_ids.unsqueeze(0)
+        #     else:
+        #         _token_type_ids = token_type_ids
+        # else:
+            # _input_ids = input_ids
+            # _attention_mask = attention_mask
+            # _token_type_ids = token_type_ids
+
+
+        input_shape = input_ids.shape[:2]  # batchsize, seq_length
+        self.input_shape = input_shape
+
+        self.parties[0].obtain_local_data(input_ids, attention_mask, token_type_ids)
+        # self.gt_one_hot_label = gt_one_hot_label
+
+        # self.parties[1].encoder_attention_mask = self.parties[0].local_model.encoder_attention_mask
+        # self.parties[1].encoder_hidden_states = self.parties[0].local_model.encoder_hidden_states
+
+        # passive party do local pred
+        pred_list = self.parties[0].pred_transmit()
+
+
+        # passive party inform active party to do global pred
+        test_logit = self.parties[0]._send_pred_message(pred_list)
+        
+        final_output = self.parties[1].global_output
+        return final_output
+
     def seq_inference(self):
         # SequenceClassification
         test_predict_labels = []
@@ -321,6 +363,7 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         suc_cnt = 0
         total_sample_cnt = 0
+
         for ik in range(self.k - 1):
             # Passive data local predict
             predict_labels, actual_labels, sample_cnt = self.parties[ik].predict()
@@ -447,8 +490,6 @@ class MainTaskVFL_LLM(object):
                         else:
                             batch_label.append( parties_data[party_id][bs_id][1]  )
 
-                    # print('batch_input_ids:',type(batch_input_ids),len(batch_input_ids))
-                    # print(batch_input_ids)
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
@@ -655,10 +696,8 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
         ############### allocate data ###############
 
-
         ################ normal vertical federated learning ################
-        torch.autograd.set_detect_anomaly(True)
-
+        # torch.autograd.set_detect_anomaly(True)
         # =================== Commu ===================
         # exchange info between party: local_pred/global_pred
         all_pred_list = self.pred_transmit()   # [ pred of this party ]

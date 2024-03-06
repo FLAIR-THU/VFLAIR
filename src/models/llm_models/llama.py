@@ -343,6 +343,8 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
             config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
+        print('-------- Global Llama forward')
+
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         transformer_outputs = self.model(
@@ -377,9 +379,12 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
         #         )
         #     else:
         #         sequence_lengths = -1
+        
+        # print('logits:',logits.shape)
 
         pooled_logits = logits[torch.arange(batch_size, device=logits.device), sequence_lengths]
 
+        # print('pooled_logits:',pooled_logits)
         # return pooled_logits
         loss = None
         if labels is not None:

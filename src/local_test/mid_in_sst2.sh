@@ -5,24 +5,26 @@
 
 echo 'MID in test'
 
-# 0.001
-python main_pipeline_llm.py --configs sst2_mid_in
+# 0.1
+python main_pipeline_llm.py --configs sst2_mid_inner1
 
 # 0.01
-sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/sst2_mid_in.json
-python main_pipeline_llm.py --configs sst2_mid_in
+sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/sst2_mid_inner1.json
+python main_pipeline_llm.py --configs sst2_mid_inner1
+
+sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/sst2_mid_inner1.json
+
+
+sed -i 's/"mid_model_name":"MIDModel_SqueezeLinear"/"mid_model_name":"MIDModelCNN_ConvTranspose2d"/g' ./configs/sst2_mid_inner1.json
 
 # 0.1
-sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/sst2_mid_in.json
-python main_pipeline_llm.py --configs sst2_mid_in
+python main_pipeline_llm.py --configs sst2_mid_inner1
 
-# 0.5
-sed -i 's/"lambda": 0.1/"lambda": 0.5/g' ./configs/sst2_mid_in.json
-python main_pipeline_llm.py --configs sst2_mid_in
+# 0.01
+sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/sst2_mid_inner1.json
+python main_pipeline_llm.py --configs sst2_mid_inner1
 
-# 1.0
-sed -i 's/"lambda": 0.5/"lambda": 1.0/g' ./configs/sst2_mid_in.json
-python main_pipeline_llm.py --configs sst2_mid_in
+sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/sst2_mid_inner1.json
 
-sed -i 's/"lambda": 1.0/"lambda": 0.001/g' ./configs/sst2_mid_in.json
+sed -i 's/"mid_model_name":"MIDModelCNN_ConvTranspose2d"/"mid_model_name":"MIDModel_SqueezeLinear"/g' ./configs/sst2_mid_inner1.json
 

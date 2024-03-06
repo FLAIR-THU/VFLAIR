@@ -1556,7 +1556,7 @@ def load_dataset_per_party_llm(args, index):
         labels = df.label.values
 
         X_train = np.array(sentences)
-        y_train = np.array(labels)
+        y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
         text_path = DATA_PATH + 'SST-2/dev.tsv'
         df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']

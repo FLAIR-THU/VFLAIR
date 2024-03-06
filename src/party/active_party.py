@@ -173,14 +173,14 @@ from load.LoadModels import load_models_per_party, load_models_per_party_new
 
 
 class ActiveParty_LLM(Party_LLM):
-    def __init__(self, args, index):
+    def __init__(self, args, index, need_data = True):
         print(f'==== initialize ActiveParty_LLM : party {index}======')
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
             print(f'running on cuda{torch.cuda.current_device()}')
 
-        super().__init__(args, index)
+        super().__init__(args, index, need_data = need_data)
         self.name = "server#" + str(index + 1)
         self.criterion = cross_entropy_for_onehot
         # self.encoder = args.encoder
@@ -199,6 +199,9 @@ class ActiveParty_LLM(Party_LLM):
         self.global_gradients = None # transmitted from passive party
 
         self.weights_grad_a = None
+
+        self.encoder_hidden_states = None
+        self.encoder_attention_mask = None
 
 
     # def prepare_data_loader(self, **kwargs):
@@ -287,36 +290,54 @@ class ActiveParty_LLM(Party_LLM):
             return self._do_aggregate_remote(pred_list)
 
     def aggregate(self, pred_list, test=False):
+        # print(' == Active Aggregate == ')
+
         self.passive_pred_list = pred_list
+        # print('self.passive_pred_list[0][0]:',self.passive_pred_list[0][0])
+
         self.passive_pred_list[0][0].requires_grad = True
 
         if self.args.model_type == 'Bert': # passive_pred_list[0] = [intermediate, attention_mask]
             if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],return_dict=True).logits
+                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],return_dict=True)
+                pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1], return_dict=True)
+                pred = self.global_output
         
         elif self.args.model_type == 'GPT2': # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True).logits
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                 attention_mask=self.passive_pred_list[0][1],\
+                 encoder_hidden_states = self.encoder_hidden_states,\
+                 encoder_attention_mask = self.encoder_attention_mask,\
+                #  past_key_values = self.passive_pred_list[0][2],\
+                  return_dict=True)
+                pred = self.global_output.logits
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True).logits
+                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+                pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True).logits
+                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                pred = self.global_output.logits
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True).logits
+                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+                pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         self.global_pred = pred
+        # print('self.global_pred:',self.global_pred)
 
         return pred
 

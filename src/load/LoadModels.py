@@ -361,7 +361,7 @@ def load_basic_models_llm_bert(args,index):
     local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
         pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,\
          head_layer_trainable, encoder_trainable)
-
+    
     args.tokenizer = tokenizer
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
@@ -459,6 +459,17 @@ padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trai
         else:
                 assert 1>2,"task type not supported"
 
+        if pad_token == "default":
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token) #
+                full_model.config.pad_token_id = pad_id
+            pad_token = "default_"+tokenizer.pad_token
+        else:
+            tokenizer.pad_token = pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = tokenizer.convert_tokens_to_ids(pad_token) #
+            full_model.config.pad_token_id = pad_id
+
         config = full_model.config
 
 
@@ -523,11 +534,19 @@ def load_basic_models_llm_gpt2(args,index):
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         full_gpt = GPT2Model.from_pretrained(MODEL_PATH[current_model_type])
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+
+        if args.pad_token == "default":
+            if args.tokenizer.pad_token is None:
+                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                full_gpt.config.pad_token_id = pad_id
+            args.pad_token = "default_"+args.tokenizer.pad_token
+        else:
+            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(pad_token) #
             full_gpt.config.pad_token_id = pad_id
-        config = full_gpt.config #print(full_bert.encoder.layer[0])
+        
+        args.config = full_gpt.config #print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
         local_model = None
@@ -579,11 +598,6 @@ def load_basic_models_llm_gpt2(args,index):
             full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
         else:
             assert 1>2 , "task type not supported"
-        
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
-            full_model.config.pad_token_id = pad_id
 
         full_gpt = full_model.transformer
         if args.task_type == 'CausalLM':
@@ -592,8 +606,20 @@ def load_basic_models_llm_gpt2(args,index):
             head_layer = full_model.qa_outputs
         else:
             head_layer = full_model.score
-        config = full_model.config
+        
+        args.config = full_model.config
 
+        if args.pad_token == "default":
+            print('Default pad')
+            if args.tokenizer.pad_token is None:
+                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                full_model.config.pad_token_id = pad_id
+            args.pad_token = "default_"+args.tokenizer.pad_token
+        else:
+            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
+            full_model.config.pad_token_id = pad_id
 
         ########### Local Model ###########
         local_model = None
@@ -657,9 +683,16 @@ def load_basic_models_llm_llama(args,index):
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
         full_llama = LlamaModel.from_pretrained(model_path)
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+
+        if args.pad_token == "default":
+            if args.tokenizer.pad_token is None:
+                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                full_llama.config.pad_token_id = pad_id
+            args.pad_token = "default_"+args.tokenizer.pad_token
+        else:
+            args.tokenizer.pad_token = pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
             full_llama.config.pad_token_id = pad_id
             
         config = full_llama.config #print(full_bert.encoder.layer[0])
@@ -722,9 +755,6 @@ def load_basic_models_llm_llama(args,index):
         args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token#{'pad_token': '[PAD]'})
-          
         if args.task_type == 'CausalLM':
             full_model = AutoModelForCausalLM.from_pretrained(model_path)
         elif args.task_type == 'QuestionAnswering':
@@ -733,9 +763,6 @@ def load_basic_models_llm_llama(args,index):
             full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         else:
             assert 1>2, "task type not supported"
-
-        # for name, param in full_model.named_parameters():
-        #     print("-----full_model--{}:{}".format(name, param.shape))
 
         full_llama = full_model.model
 
@@ -747,6 +774,17 @@ def load_basic_models_llm_llama(args,index):
             head_layer = full_model.score
         else:
             assert 1>2, "task type not supported"
+
+        if args.pad_token == "default":
+            if args.tokenizer.pad_token is None:
+                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                full_model.config.pad_token_id = pad_id
+            args.pad_token = "default_"+args.tokenizer.pad_token
+        else:
+            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
+            full_model.config.pad_token_id = pad_id
 
         config = full_model.config
 
