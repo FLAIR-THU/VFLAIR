@@ -1,6 +1,6 @@
 {
     "epochs": 10,
-    "lr": 0.0005,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 512,
     "pipeline": "finetune",
@@ -26,7 +26,7 @@
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "head_layer_trainable": 1,
-            "encoder_trainable": 0,
+            "encoder_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -49,27 +49,16 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "AdversarialTraining",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.05,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.05,
-            "lambda": 0.001,
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.05,
+            "lambda": 0.1,
+            "mid_position": "out",
+            "current_bottleneck_scale": 1,
             "seq_length": 70,
             "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32
-            }
         }
     }
 }

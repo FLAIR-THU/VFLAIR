@@ -367,7 +367,25 @@ class MIDModel_Linear(nn.Module):
         mid_loss = self.mid_lambda * torch.mean(torch.sum((-0.5)*(1+2*torch.log(std)-mu**2 - std**2),1))/ (input_shape[1]*input_shape[2])
         # print('mid_loss:',mid_loss)
 
-        # print('== MID Model Forward Over ==')
+        # print('== In mid model ==')
+        # mark = 0
+        # for name, param in self.enlarge_layer.named_parameters():
+        #     if mark == 0:
+        #         print(name, param.grad)
+        #         mark = mark + 1
+        
+        # mid_loss.backward()
+
+        # print('-'*25)
+        # mark = 0
+        # for name, param in self.enlarge_layer.named_parameters():
+        #     if mark == 0:
+        #         print(name, param.grad)
+        #         mark = mark + 1
+        # print('== In mid model ==')
+
+        # assert 1>2
+
 
         return z, mid_loss
 
