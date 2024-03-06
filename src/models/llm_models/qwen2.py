@@ -13,11 +13,40 @@ import torch
 import copy
 
 
+class Qwen2DecoderLayerParam(object):
+    def __init__(self,
+                 hidden_states: torch.Tensor,
+                 attention_mask: Optional[torch.Tensor] = None,
+                 position_ids: Optional[torch.LongTensor] = None,
+                 past_key_values: Optional[Tuple[torch.Tensor]] = None,
+                 output_attentions: Optional[bool] = False,
+                 use_cache: Optional[bool] = False):
+        self.hidden_states = hidden_states,
+        self.attention_mask = copy.deepcopy(attention_mask),
+        self.position_ids = copy.deepcopy(position_ids),
+        self.past_key_values = past_key_values,
+        self.output_attentions = copy.deepcopy(output_attentions),
+        self.use_cache = copy.deepcopy(use_cache)
+
+
+class VFLModel:
+    def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
+        raise NotImplementedError('Not implemented')
+
+
 class Qwen2ModelSplitter(Qwen2Model):
-    pass
+    def split_layers(self, idx_of_layers: Iterable[int]) -> bool:
+        new_layers = ModuleList()
+        for i, layer in enumerate(self.layers):
+            if i in idx_of_layers:
+                new_layers.append(layer)
+        self.layers = new_layers
+        return True
 
 
-class LocalQwen2Model(Qwen2ModelSplitter):
+class LocalQwen2Model(Qwen2ModelSplitter, VFLModel):
+    def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
+        return self.split_layers(idx_of_layers)
 
     def forward(
             self,
@@ -31,6 +60,20 @@ class LocalQwen2Model(Qwen2ModelSplitter):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
+        """
+        改写forward方法的输入输出
+        :param input_ids:
+        :param attention_mask:
+        :param position_ids:
+        :param past_key_values:
+        :param inputs_embeds:
+        :param use_cache:
+        :param output_attentions:
+        :param output_hidden_states:
+        :param return_dict:
+        :return:
+        """
+
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -38,7 +81,6 @@ class LocalQwen2Model(Qwen2ModelSplitter):
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
         # retrieve input_ids and inputs_embeds
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
@@ -145,7 +187,12 @@ class LocalQwen2Model(Qwen2ModelSplitter):
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
-
+        intermediate_states = Qwen2DecoderLayerParam(hidden_states=hidden_states,
+                                                     attention_mask=attention_mask,
+                                                     position_ids=position_ids,
+                                                     past_key_values=past_key_values,
+                                                     output_attentions=output_attentions,
+                                                     use_cache=use_cache, )
         hidden_states = self.norm(hidden_states)
 
         # add hidden states from the last decoder layer
@@ -158,7 +205,7 @@ class LocalQwen2Model(Qwen2ModelSplitter):
 
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
-        return BaseModelOutputWithPast(
+        return intermediate_states, BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
             past_key_values=next_cache,
             hidden_states=all_hidden_states,
@@ -179,6 +226,19 @@ class GlobalQwen2Model(Qwen2ModelSplitter):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
+        """
+
+        :param input_ids: 禁止传入
+        :param attention_mask:
+        :param position_ids:
+        :param past_key_values:
+        :param inputs_embeds:
+        :param use_cache:
+        :param output_attentions:
+        :param output_hidden_states:
+        :param return_dict:
+        :return:
+        """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -188,6 +248,8 @@ class GlobalQwen2Model(Qwen2ModelSplitter):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # retrieve input_ids and inputs_embeds
+        if input_ids:
+            raise ValueError('dont support this param, pls use inputs_embeds instead')
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
         elif input_ids is not None:
@@ -245,15 +307,16 @@ class GlobalQwen2Model(Qwen2ModelSplitter):
                 inputs_embeds,
                 past_key_values_length,
             )
-        else:
-            # 4d mask is passed through the layers
-            attention_mask = _prepare_4d_causal_attention_mask(
-                attention_mask,
-                (batch_size, seq_length),
-                inputs_embeds,
-                past_key_values_length,
-                sliding_window=self.config.sliding_window,
-            )
+        # 注释掉多余的计算
+        # else:
+        #     # 4d mask is passed through the layers
+        #     attention_mask = _prepare_4d_causal_attention_mask(
+        #         attention_mask,
+        #         (batch_size, seq_length),
+        #         inputs_embeds,
+        #         past_key_values_length,
+        #         sliding_window=self.config.sliding_window,
+        #     )
 
         hidden_states = inputs_embeds
 
@@ -314,5 +377,12 @@ class GlobalQwen2Model(Qwen2ModelSplitter):
         )
 
 
-class GlobalQwen2ForCausalLM(Qwen2ForCausalLM):
-    pass
+class GlobalQwen2ForCausalLM(Qwen2ForCausalLM, VFLModel):
+    def __init__(self, config: Qwen2Config, **kwargs):
+        super().__init__(config)
+        self.model = GlobalQwen2Model(config)
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
+        return self.model.split_layers(idx_of_layers)
