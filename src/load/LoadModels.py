@@ -607,6 +607,12 @@ def load_basic_models_llm_gpt2(args,index):
             print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
             local_model_optimizer = None
 
+            print('Local Model: encoder_trainable = ',args.encoder_trainable[0])
+            for param in local_model.h.parameters():
+                param.requires_grad = args.encoder_trainable[0]
+            if args.encoder_trainable[0]:
+                local_model_optimizer = torch.optim.Adam(list(local_model.h.parameters()), lr=main_lr)
+
         ########### Global Model ###########
         global_model = None
         global_model_optimizer = None
@@ -630,11 +636,12 @@ def load_basic_models_llm_gpt2(args,index):
             for param in global_model.transformer.parameters():
                 param.requires_grad = False
 
-            # Classifier already pretrained
+            # Head Layer Trainable/Freeze
+            print('Global Model : head_layer_trainable = ',args.head_layer_trainable[1])
             for param in global_model.head_layer.parameters():
-                param.requires_grad = args.head_layer_trainable
-            if args.head_layer_trainable:
-                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+                param.requires_grad = args.head_layer_trainable[1]
+            if args.head_layer_trainable[1]:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
             global_model = global_model.to(args.device)
     

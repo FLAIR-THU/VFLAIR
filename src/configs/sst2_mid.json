@@ -1,5 +1,5 @@
 {
-    "epochs": 10,
+    "epochs": 2,
     "lr": 0.0005,
     "k": 2,
     "batch_size": 128,
@@ -54,7 +54,7 @@
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.05,
-            "lambda": 0.0,
+            "lambda": 0.8,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 70,

@@ -6,6 +6,7 @@ import collections
 from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 import torch.nn as nn
+from torch.nn.utils.rnn import pad_sequence
 
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
@@ -124,6 +125,7 @@ class PassiveParty_LLM(Party_LLM):
         self.num_labels = args.num_classes
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
+        self.encoder_trainable = args.encoder_trainable[index]
     # def prepare_model(self, args, index):
     #     (
     #         args,
@@ -367,6 +369,7 @@ class PassiveParty_LLM(Party_LLM):
 
         elif self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             # print(f'main_loss={self.global_loss},mid_loss={self.mid_loss}')
+            # print('self.mid_loss.requires_grad:',self.mid_loss.requires_grad)
             self.global_loss = self.global_loss + self.mid_loss
         # ########### Defense on Loss ###############
 
@@ -382,22 +385,22 @@ class PassiveParty_LLM(Party_LLM):
         # self.global_backward(pred, loss)
         return pred_gradients_list, pred_gradients_list_clone
     
-    def give_gradient(self):
-        pred_list = self.pred_received 
+    # def give_gradient(self):
+    #     pred_list = self.pred_received 
 
-        if self.gt_one_hot_label == None:
-            print('give gradient:self.gt_one_hot_label == None')
-            assert 1>2
-        self.global_loss  = self.cal_loss(self.global_pred)
-        pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
-        # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
+    #     if self.gt_one_hot_label == None:
+    #         print('give gradient:self.gt_one_hot_label == None')
+    #         assert 1>2
+    #     self.global_loss  = self.cal_loss(self.global_pred)
+    #     pred_gradients_list, pred_gradients_list_clone = self.gradient_calculation(pred_list, self.global_loss)
+    #     # self.local_gradient = pred_gradients_list_clone[self.args.k-1] # update local gradient
 
-        if self.args.defense_name == "GradPerturb":
-            self.calculate_gradient_each_class(self.global_pred, pred_list)
+    #     if self.args.defense_name == "GradPerturb":
+    #         self.calculate_gradient_each_class(self.global_pred, pred_list)
         
-        self.update_local_gradient(pred_gradients_list_clone[0])
+    #     self.update_local_gradient(pred_gradients_list_clone[0])
 
-        return pred_gradients_list_clone
+    #     return pred_gradients_list_clone
     
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient
@@ -422,6 +425,21 @@ class PassiveParty_LLM(Party_LLM):
             self.imagined_adversary_optimizer.step()
 
             self.local_model_optimizer.zero_grad()
+
+            if self.encoder_trainable:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.encoder_layer.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                )
+                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
+
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.adversarial_model.parameters(),
@@ -447,6 +465,20 @@ class PassiveParty_LLM(Party_LLM):
             #         mark = mark + 1
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
+
+            if self.encoder_trainable:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.local_model.encoder_layer.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                )
+                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
 
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
@@ -598,11 +630,25 @@ class PassiveParty_LLM(Party_LLM):
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
-                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)         
+                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)     
+
+                    # print('batch_label:',batch_label)
                     # print('batch_label:',type(batch_label),len(batch_label) )
-                    # print('batch_label[0]',type(batch_label[0]))
+
                     if type( batch_label[0] ) != str:
-                        batch_label = torch.tensor(batch_label).to(self.device)
+                        if self.args.task_type == 'QuestionAnswering':
+                            # origin_batch_label_shape [bs, 2, num_of_answers]
+                            # 2*bs, num_of_answers
+                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                            
+                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                            batch_label = batch_label.reshape(origin_batch_label_shape)
+                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
+                            # print('After batch_label:',batch_label.shape)
+                        else:
+                            batch_label = torch.tensor(batch_label).to(self.device)
+                    
 
                     _parties_data.append([batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] )
 
@@ -878,6 +924,9 @@ class PassiveParty_LLM(Party_LLM):
                 for _i in range(len(gold_start_indexs)):
                     gold_start_index = int(gold_start_indexs[_i])
                     gold_end_index = int(gold_end_indexs[_i])
+                    if gold_start_index == -1:
+                        continue
+
                     gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
                     gold_ans_text = normalize_answer(gold_ans_text)
                     gold_ans.append(gold_ans_text)

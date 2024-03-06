@@ -273,7 +273,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
     def __init__(self, global_gpt, lm_head):
         super().__init__(global_gpt.config)
         self.transformer = global_gpt #GPT2Model(config)
-        self.lm_head = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.head_layer = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         # Model parallel
         self.model_parallel = False
@@ -305,7 +305,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         )
         assert_device_map(self.device_map, len(self.transformer.h))
         self.transformer.parallelize(self.device_map)
-        self.lm_head = self.lm_head.to(self.transformer.first_device)
+        self.head_layer = self.head_layer.to(self.transformer.first_device)
         self.model_parallel = True
 
     def deparallelize(self):
@@ -315,7 +315,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         )
         self.transformer.deparallelize()
         self.transformer = self.transformer.to("cpu")
-        self.lm_head = self.lm_head.to("cpu")
+        self.head_layer = self.head_layer.to("cpu")
         self.model_parallel = False
         torch.cuda.empty_cache()
 
@@ -329,7 +329,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         pass #return self.lm_head
 
     def set_output_embeddings(self, new_embeddings):
-        self.lm_head = new_embeddings
+        self.head_layer = new_embeddings
 
     def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
         token_type_ids = kwargs.get("token_type_ids", None)
@@ -423,9 +423,9 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         # Set device for model parallelism
         if self.model_parallel:
             torch.cuda.set_device(self.transformer.first_device)
-            hidden_states = hidden_states.to(self.lm_head.weight.device)
+            hidden_states = hidden_states.to(self.head_layer.weight.device)
 
-        lm_logits = self.lm_head(hidden_states)
+        lm_logits = self.head_layer(hidden_states)
         # return lm_logits
 
         loss = None
@@ -459,7 +459,7 @@ class GPT2ForSequenceClassification_forfinetune(GPT2PreTrainedModel):
         super().__init__(global_gpt.config)
         self.num_labels = output_dim #global_gpt.config.num_labels
         self.transformer = global_gpt #GPT2Model(config)
-        self.trainable_layer = nn.Linear(global_gpt.config.n_embd, self.num_labels, bias=False) # score
+        self.head_layer = nn.Linear(global_gpt.config.n_embd, self.num_labels, bias=False) # score
 
         # Model parallel
         self.model_parallel = False
@@ -504,7 +504,7 @@ class GPT2ForSequenceClassification_forfinetune(GPT2PreTrainedModel):
             return_dict=return_dict
         )
         hidden_states = transformer_outputs[0]
-        logits = self.trainable_layer(hidden_states)
+        logits = self.head_layer(hidden_states)
 
         batch_size  = input_shape[0]
         # print('GPT2ForSequenceClassification_pretrained input_shape:',input_shape)
@@ -575,7 +575,7 @@ class GPT2LMHeadModel_forfinetune(GPT2PreTrainedModel):
     def __init__(self, global_gpt):
         super().__init__(global_gpt.config)
         self.transformer = global_gpt #GPT2Model(config)
-        self.trainable_layer = nn.Linear(global_gpt.config.n_embd, global_gpt.config.vocab_size, bias=False) # trainable
+        self.head_layer = nn.Linear(global_gpt.config.n_embd, global_gpt.config.vocab_size, bias=False) # trainable
 
         # Model parallel
         self.model_parallel = False
@@ -607,7 +607,7 @@ class GPT2LMHeadModel_forfinetune(GPT2PreTrainedModel):
         )
         assert_device_map(self.device_map, len(self.transformer.h))
         self.transformer.parallelize(self.device_map)
-        self.trainable_layer = self.trainable_layer.to(self.transformer.first_device)
+        self.head_layer = self.head_layer.to(self.transformer.first_device)
         self.model_parallel = True
 
     def deparallelize(self):
@@ -725,9 +725,9 @@ class GPT2LMHeadModel_forfinetune(GPT2PreTrainedModel):
         # Set device for model parallelism
         if self.model_parallel:
             torch.cuda.set_device(self.transformer.first_device)
-            hidden_states = hidden_states.to(self.trainable_layer.weight.device)
+            hidden_states = hidden_states.to(self.head_layer.weight.device)
 
-        lm_logits = self.trainable_layer(hidden_states)
+        lm_logits = self.head_layer(hidden_states)
         # return lm_logits
 
         loss = None

@@ -520,8 +520,9 @@ def GradPerturb(args, original_object):
     # return gradients
 
 
-DELTAF = {'Bert':81.82, 'GPT2':110.2}
+
 ############ LLM defense ##############
+DELTAF = {'Bert':81.82, 'GPT2':110.2}
 def LaplaceDP_for_llm(args, original_object):
     # print('LaplaceDP_for_llm:',type(original_object),original_object[0].shape)
     original_object = original_object[0] # bs, 12, 768
