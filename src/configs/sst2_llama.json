@@ -3,7 +3,7 @@
     "lr": 0.0005,
     "k": 2,
     "batch_size": 512,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -23,53 +23,29 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "benayasllama-2-7b-sst2_v0",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
-            "model_type": "Bert",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "benayasllama-2-7b-sst2_v0",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
-            "model_type": "Bert",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "AdversarialTraining",
-        "parameters": {
-            "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.05,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.05,
-            "lambda": 0.001,
-            "seq_length": 70,
-            "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32
-            }
-        }
     }
 }

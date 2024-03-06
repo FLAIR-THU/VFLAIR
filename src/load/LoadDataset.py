@@ -1942,7 +1942,7 @@ def load_dataset_per_party_llm(args, index):
 
         texts = []
         target_word = []
-        for _all_text in train_all_texts:
+        for _all_text in test_all_texts:
             # _all_text = _all_text.maketrans('', '', string.punctuation) #_all_text.rstrip(string.punctuation)
             _all_text = _all_text.strip().split()
             _all_text = [c for c in _all_text if c not in string.punctuation]

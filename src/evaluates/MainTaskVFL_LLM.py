@@ -287,8 +287,9 @@ class MainTaskVFL_LLM(object):
         global_loss = self.parties[0].cal_loss(final_pred)  
 
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
-        self.communication_cost += get_size_of(global_gradients)
 
+        self.communication_cost += get_size_of(global_gradients)
+        
         self.parties[self.k-1].receive_loss_and_gradients(self.parties[0].global_loss, self.parties[0].global_gradients)
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
@@ -351,8 +352,8 @@ class MainTaskVFL_LLM(object):
         else:
             suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
             torch.tensor(test_actual_labels)).item()
-            # print('test_predict_labels:',test_predict_labels[:20])
-            # print('test_actual_labels:',test_actual_labels[:20])
+            print('test_predict_labels:',test_predict_labels[:10])
+            print('test_actual_labels:',test_actual_labels[:10])
 
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
             self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
@@ -645,7 +646,6 @@ class MainTaskVFL_LLM(object):
         ############### allocate data ###############
         gt_one_hot_label = batch_label
         self.gt_one_hot_label = gt_one_hot_label
-
         # allocate data/attention mask to passive party
         for ik in range(self.k-1):
             # allocate data (data/label/attention_mask/token_type_ids)
@@ -654,6 +654,7 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
         ############### allocate data ###############
+
 
         ################ normal vertical federated learning ################
         torch.autograd.set_detect_anomaly(True)
@@ -678,6 +679,7 @@ class MainTaskVFL_LLM(object):
         # ============= Model Update =============
 
         ################ normal vertical federated learning ################
+
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
@@ -1072,7 +1074,14 @@ class MainTaskVFL_LLM(object):
         result_file_name = result_path + filename + f'.csv'
         print('Save csv to:',result_file_name)
         data_record.to_csv(result_file_name)
-
+        
+        # print('Final mid model:')
+        # mark = 0
+        # for name, param in self.parties[0].mid_model.named_parameters():
+        #     if mark == 0:
+        #         print(name, param)
+        #         mark = mark + 1
+                
         return exp_result, self.test_acc #, self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
 
