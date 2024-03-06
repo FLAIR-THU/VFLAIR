@@ -1877,7 +1877,11 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'Lambada':
-        data_file = DATA_PATH + 'Lambada'
+        dataset_split = args.model_list[str(index)]
+        if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
+            data_file = dataset_split['train_set_file']
+        else:
+            data_file = DATA_PATH + 'Lambada'
         print(data_file)
         dataset = load_dataset(data_file)
 
