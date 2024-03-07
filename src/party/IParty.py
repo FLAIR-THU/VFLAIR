@@ -24,3 +24,7 @@ class IParty(object):
     def predict(self):
         pass
 
+    @abstractmethod
+    def train(self, i_epoch):
+        pass
+

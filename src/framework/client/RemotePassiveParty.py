@@ -39,3 +39,11 @@ class RemotePassiveParty(IParty):
         task.job_id = self._job_id
         self._queue.put(task)
 
+    def train(self, i_epoch):
+        task = Task()
+        task.run = "train"
+        task.party = self._client_id
+        task.job_id = self._job_id
+        task.params = str(i_epoch)
+        self._queue.put(task)
+

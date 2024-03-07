@@ -30,7 +30,9 @@
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "path": "/home/shannon/dev/tools/nlp/models/gpt2"
         },
         "1": {
             "type": "gpt2",
@@ -39,7 +41,9 @@
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "path": "/home/shannon/dev/tools/nlp/models/gpt2"
         },
         "task":{
             "task_type": "CausalLM",

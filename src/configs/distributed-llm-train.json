@@ -20,19 +20,6 @@
   "device": "cuda",
   "gpu": 0,
   "fl_type": "VFL",
-  "tasks": [{
-      "id": 1,
-      "party": "active",
-      "run": "prepare_data_loader"
-    }, {
-      "id": 2,
-      "party": "c1",
-      "run": "prepare_data_loader"
-    }, {
-       "id": 3,
-        "party": "c1",
-        "run": "start_train"
-    }],
     "dataset":{
         "dataset_name": "CoLA",
         "num_classes": 2

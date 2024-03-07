@@ -39,7 +39,7 @@ class ActiveTaskService(threading.Thread):
         if args.pipeline == 'pretrained':
             main_task.inference()
         elif args.pipeline == 'finetune':
-            main_task.train()
+            main_task.start_train()
 
     def _get_main_task(self, job_id):
         for main_task in self._main_tasks:

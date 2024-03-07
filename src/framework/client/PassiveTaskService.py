@@ -32,7 +32,12 @@ class PassiveTaskService:
         party = self._get_party(task)
         if hasattr(party, task['run']):
             target_func = getattr(party, task['run'])
-            result = target_func()
+            params = task['params']
+            if params is not None:
+                params_value = json.loads(params)
+                result = target_func(params_value)
+            else:
+                result = target_func()
             return self._send_message(task["id"], result)
 
     def _send_message(self, task_id, data):

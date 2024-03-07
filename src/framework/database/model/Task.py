@@ -10,6 +10,7 @@ class Task(SQLModel, table=True):
     party: str
     run: str
     result: Optional[str]
+    params: Optional[str]
     create_time: datetime
     start_time: Optional[datetime]
     end_time: Optional[datetime]
