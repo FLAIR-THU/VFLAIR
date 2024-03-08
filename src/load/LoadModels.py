@@ -831,7 +831,7 @@ def load_basic_models_llm_llama(args, index):
 
 
 def load_basic_models_llm_qwen2(args, index):
-    model_path = args.mode_path
+    model_path = args.model_list[str(index)]['path']
     split_idx = 2
     args.tokenizer = AutoTokenizer.from_pretrained(model_path)
     local_model = LocalQwen2Model.from_pretrained(model_path)
@@ -872,7 +872,7 @@ def load_basic_models_llm(args, index):
     elif args.model_type in ['Llama']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(
             args, index)
-    elif str(args.model_type).lower in ['qwen2']:
+    elif str(args.model_type).lower() in ['qwen2']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_qwen2(
             args, index)
     else:

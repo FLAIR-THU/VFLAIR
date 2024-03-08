@@ -5,7 +5,7 @@ code based on transformers=4.37.2
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.models.qwen2.modeling_qwen2 import Qwen2Model, Qwen2ForCausalLM, Qwen2Config, Qwen2DecoderLayer, \
     BaseModelOutputWithPast, Cache, DynamicCache, _prepare_4d_causal_attention_mask_for_sdpa, \
-    _prepare_4d_causal_attention_mask,PreTrainedModel
+    _prepare_4d_causal_attention_mask, PreTrainedModel
 from torch.nn import ModuleList
 from typing import Iterable, Optional, Union, List, Tuple
 # import logging as logger
@@ -21,12 +21,14 @@ class Qwen2DecoderLayerParam(object):
                  position_ids: Optional[torch.LongTensor] = None,
                  past_key_values: Optional[Tuple[torch.Tensor]] = None,
                  output_attentions: Optional[bool] = False,
+                 output_hidden_states: Optional[bool] =False,
                  use_cache: Optional[bool] = False):
         self.hidden_states = hidden_states,
         self.attention_mask = copy.deepcopy(attention_mask),
         self.position_ids = copy.deepcopy(position_ids),
         self.past_key_values = past_key_values,
         self.output_attentions = copy.deepcopy(output_attentions),
+        self.output_hidden_states =output_hidden_states
         self.use_cache = copy.deepcopy(use_cache)
 
 
@@ -193,6 +195,7 @@ class LocalQwen2Model(Qwen2ModelSplitter, VFLModel):
                                                      position_ids=position_ids,
                                                      past_key_values=past_key_values,
                                                      output_attentions=output_attentions,
+                                                     output_hidden_states=output_hidden_states,
                                                      use_cache=use_cache, )
         hidden_states = self.norm(hidden_states)
 
@@ -393,7 +396,7 @@ class GlobalQwen2ForCausalLM(Qwen2ForCausalLM, VFLModel):
 class E2EModel(Qwen2ForCausalLM):
     def __init__(self, local_model: LocalQwen2Model, global_model: GlobalQwen2Model):
         super().__init__(local_model.config)
-        self.layers=ModuleList()
+        self.layers = ModuleList()
         self.local_model = local_model
         self.global_model = global_model
 

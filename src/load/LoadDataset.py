@@ -2050,7 +2050,8 @@ def load_dataset_per_party_llm(args, index):
         print(type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
         print(type(y_train), len(y_train), len(y_test), y_train[0])  #
 
-
+    elif not args.dataset:
+        return None
     else:
         assert args.dataset == 'news20', "dataset not supported yet"
 

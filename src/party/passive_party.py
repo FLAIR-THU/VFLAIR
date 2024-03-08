@@ -58,8 +58,12 @@ class PassiveParty_LLM(Party_LLM):
             print(f'running on cuda{torch.cuda.current_device()}')
         self.criterion = cross_entropy_for_onehot
         # self.encoder = args.encoder
-        self.train_index = args.idx_train
-        self.test_index = args.idx_test
+        try:
+            self.train_index = args.idx_train
+            self.test_index = args.idx_test
+
+        except:
+            pass
         self.device = args.device
 
         self.gt_one_hot_label = None
@@ -183,6 +187,8 @@ class PassiveParty_LLM(Party_LLM):
 
 
     def prepare_data(self, args, index):
+        if not args.dataset:
+            return None
         super().prepare_data(args, index) # Party_llm's prepare_data
  
         self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)

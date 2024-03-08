@@ -39,7 +39,7 @@ from utils.noisy_sample_functions import noisy_sample
 from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
 from utils.squad_utils import  normalize_answer,_get_best_indexes, get_tokens, compute_exact, compute_f1
 
-
+from loguru import logger
 from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification,AutoModelForCausalLM
 
@@ -370,6 +370,23 @@ class MainTaskVFL_LLM(object):
             return exp_result, self.test_acc
 
     def _llm_inference(self,**kwargs):
+        if not kwargs:
+            tokenizer = self.args.tokenizer
+            prompt = "You are a python programmer, what can you do?"
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+            text = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            model_inputs = tokenizer([text], return_tensors="pt")
+            kwargs.update({'input_ids': model_inputs.input_ids,
+                           'output_hidden_states': True})
+            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
+
         def _format_forward_kwargs(**kwargs):
             base_dict={'input_ids':  None,
             'attention_mask':  None,
@@ -378,7 +395,7 @@ class MainTaskVFL_LLM(object):
             'inputs_embeds':  None,
             'use_cache':  False,
             'output_attentions':  None,
-            'output_hidden_states':  None,
+            'output_hidden_states':  True,
             'return_dict':  None,}
             for k in base_dict:
                 if k in kwargs:
@@ -390,16 +407,19 @@ class MainTaskVFL_LLM(object):
         for ik in range(self.k - 1):
             # Passive data local predict
             passive_party=self.parties[ik]
-            intermediate = passive_party.local_model.forward(_format_forward_kwargs(**kwargs))[0]
+            intermediate = passive_party.local_model.forward(**_format_forward_kwargs(**kwargs))[0]
+            logger.debug('finish passive party')
+            logger.debug(intermediate.hidden_states[-1])
             # resp=passive_party._send_pred_message(intermediate)
         # execute active_party
         active_party=self.parties[self.k-1]
-        resp=active_party.glbal_model.forward(inputs_embeds=intermediate.hidden_states[0],
+        resp=active_party.global_model.forward(inputs_embeds=intermediate.hidden_states[0],
                                       attention_mask=intermediate.attention_mask[0],
                                       past_key_values=intermediate.past_key_values[0],
-                                      output_hidden_states=intermediate.output_attentions[0],
+                                      output_hidden_states=intermediate.output_hidden_states,
                                       position_ids=intermediate.position_ids[0], use_cache=False)
-        return resp
+        logger.debug(resp.hidden_states[-1])
+        return '',''
 
     def inference(self, inference_data = 'test',**kwargs):
         # print(' ========= Inference ==========')
