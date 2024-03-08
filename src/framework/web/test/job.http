@@ -8,9 +8,9 @@ POST http://localhost:5000/job/upload
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="distributed-llm-train.json"
+Content-Disposition: form-data; name="file"; filename="lambada.json"
 
-< /home/shannon/dev/projects/VFLAIR/src/configs/distributed-llm-train.json
+< /home/shannon/dev/projects/VFLAIR/src/configs/lambada.json
 --WebAppBoundary--
 
 ### 获取详情
