@@ -369,8 +369,39 @@ class MainTaskVFL_LLM(object):
 
             return exp_result, self.test_acc
 
+    def _llm_inference(self,**kwargs):
+        def _format_forward_kwargs(**kwargs):
+            base_dict={'input_ids':  None,
+            'attention_mask':  None,
+            'position_ids':  None,
+            'past_key_values':  None,
+            'inputs_embeds':  None,
+            'use_cache':  False,
+            'output_attentions':  None,
+            'output_hidden_states':  None,
+            'return_dict':  None,}
+            for k in base_dict:
+                if k in kwargs:
+                    base_dict.update({k:kwargs.get(k)})
+            return base_dict
+        if self.k>2:
+            raise ValueError('llm_inference only supports k=2')
 
-    def inference(self, inference_data = 'test'):
+        for ik in range(self.k - 1):
+            # Passive data local predict
+            passive_party=self.parties[ik]
+            intermediate = passive_party.local_model.forward(_format_forward_kwargs(**kwargs))[0]
+            # resp=passive_party._send_pred_message(intermediate)
+        # execute active_party
+        active_party=self.parties[self.k-1]
+        resp=active_party.glbal_model.forward(inputs_embeds=intermediate.hidden_states[0],
+                                      attention_mask=intermediate.attention_mask[0],
+                                      past_key_values=intermediate.past_key_values[0],
+                                      output_hidden_states=intermediate.output_attentions[0],
+                                      position_ids=intermediate.position_ids[0], use_cache=False)
+        return resp
+
+    def inference(self, inference_data = 'test',**kwargs):
         # print(' ========= Inference ==========')
         postfix = {'test_acc': 0.0}
         for ik in range(self.k-1):
@@ -405,11 +436,14 @@ class MainTaskVFL_LLM(object):
             exp_result, main_task_result = self.qa_inference()
             return exp_result, main_task_result
 
-        if self.args.task_type == "SequenceClassification":
+        elif self.args.task_type == "SequenceClassification":
             # exp_result, self.test_acc = 
             exp_result, main_task_result = self.seq_inference()
             return exp_result, main_task_result
 
+        elif self.args.task_type == "DevLLMInference":
+            # LLM推理入口，兼容forward格式入参
+            return self._llm_inference(**kwargs)
 
         with torch.no_grad():
             data_loader_list = [self.parties[ik].test_loader for ik in range(self.k-1)] # passive party's loaders
