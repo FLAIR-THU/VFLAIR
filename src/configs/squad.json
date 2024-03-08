@@ -4,6 +4,9 @@
     "k": 2,
     "batch_size": 64,
     "pipeline": "pretrained",
+    "device": "cuda",
+    "gpu": 0,
+    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

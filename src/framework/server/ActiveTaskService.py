@@ -88,8 +88,8 @@ class ActiveTaskService(threading.Thread):
 
     def save_and_next(self, data):
         logger.info(f"Saving {data}")
-        task_id, result = data['task_id'].sint64, data['result'].string
-        job_id = task_repository.change_status(task_id, 1, result)
+        job_id, result, run = data['job_id'].sint64, data['result'].string, data['run'].string
+        # job_id = task_repository.change_status(task_id, 1, result)
         main_task = self._get_main_task(job_id)
-        main_task.set_last_result(result)
+        main_task.set_last_result(result, run)
         self.run_next(job_id)

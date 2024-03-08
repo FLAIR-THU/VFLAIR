@@ -38,13 +38,16 @@ class PassiveTaskService:
                 result = target_func(params_value)
             else:
                 result = target_func()
-            return self._send_message(task["id"], result)
+            return self._send_message(task["job_id"], result, task["run"])
 
-    def _send_message(self, task_id, data):
+    def _send_message(self, job_id, data, run):
         value = fpm.Value()
         value.string = json.dumps(data)
+        run_value = fpm.Value()
+        run_value.string = run
         id_value = fpm.Value()
-        id_value.sint64 = task_id
-        msg = mu.MessageUtil.create(self._node, {"task_id": id_value, "result": value}, fpm.FINISH_TASK)
+        id_value.sint64 = job_id
+        logger.info("sending message: {}".format(data))
+        msg = mu.MessageUtil.create(self._node, {"job_id": id_value, "result": value, "run": run_value}, fpm.FINISH_TASK)
         response = self._client.open_and_send(msg)
         return response

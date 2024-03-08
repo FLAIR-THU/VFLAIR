@@ -1,3 +1,4 @@
+import json
 import sys, os
 sys.path.append(os.pardir)
 import torch
@@ -13,7 +14,7 @@ import random
 import time
 import copy
 import collections
-
+import threading
 from sklearn.metrics import roc_auc_score,matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
@@ -121,9 +122,14 @@ class MainTaskVFL_LLM(object):
         self.num_batch_per_workset = args.Q #args.num_batch_per_workset
         self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset
         self._last_result = None
+        self._barrier = threading.Barrier(args.k)
 
-    def set_last_result(self, result):
-        self._last_result = result
+    def set_last_result(self, result, run):
+        if run == 'predict':
+            self._last_result = json.loads(result)
+            self._barrier.wait()
+        else:
+            self._last_result = result
 
     def get_last_result(self):
         return self._last_result
@@ -311,18 +317,18 @@ class MainTaskVFL_LLM(object):
         f1_list = []
         for ik in range(self.k - 1):
             # Passive data local predict
-            exact_scores, f1s, _ = self.parties[ik].predict()
-            exact_score_list.extend(exact_scores)
-            f1_list.extend(f1s)
+            self.parties[ik].predict()
 
-
+            # exact_score_list.extend(exact_scores)
+            # f1_list.extend(f1s)
+        self._barrier.wait()
+        print('============================================')
+        print(self._last_result)
+        [exact_score_list, f1_list, _] = self._last_result
         exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
-        self.test_acc = exact_score
-        # self.final_state = self.save_state(False)
-        # self.final_state.update(self.save_party_data())
 
         print(exp_result)
-        return exp_result, self.test_acc
+        return exp_result, exact_score
 
     def seq_inference(self):
         # SequenceClassification
@@ -385,8 +391,8 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         for ik in range(self.k-1):
             self.parties[ik].prepare_data_loader()
-            self.parties[ik].local_model.eval()
-        self.parties[self.k-1].global_model.eval()
+            self.parties[ik].eval()
+        self.parties[self.k-1].eval()
         # self.final_state = self.save_state(False) 
         # self.final_state.update(self.save_party_data()) 
 

@@ -184,6 +184,8 @@ class PassiveParty_LLM(Party_LLM):
 
                 print(f'self.mid_model_name:{self.mid_model_name}')
 
+    def eval(self, **kwargs):
+        self.local_model.eval()
 
     def prepare_data(self, args, index):
         super().prepare_data(args, index) # Party_llm's prepare_data
