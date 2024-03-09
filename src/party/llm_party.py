@@ -97,6 +97,8 @@ class Party(object):
         self.adversary_loss = None
         self.mapping_distance = None
 
+    def eval(self):
+        pass
 
     def prepare_data(self, args, index):
         (

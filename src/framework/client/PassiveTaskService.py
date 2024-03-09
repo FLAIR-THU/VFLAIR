@@ -1,5 +1,5 @@
 import framework.common.logger_util as logger_util
-from party.passive_party import PassiveParty_LLM
+from load.LoadParty import get_class_constructor
 import framework.protos.message_pb2 as fpm
 import framework.protos.node_pb2 as fpn
 import framework.common.MessageUtil as mu
@@ -20,7 +20,7 @@ class PassiveTaskService:
     def add_job(self, job_id, data):
         if job_id not in self._parties:
             args = load_llm_configs(data)
-            party = PassiveParty_LLM(args, self._client.index)
+            party = get_class_constructor(args.passive_party_class)(args, self._client.index)
             party.init_communication(DistributedCommunication(self._client, job_id))
             self._parties[job_id] = party
 

@@ -5,7 +5,7 @@ import framework.common.logger_util as logger_util
 from evaluates.MainTaskVFL_LLM import MainTaskVFL_LLM
 from framework.client.RemotePassiveParty import RemotePassiveParty
 from load.LoadConfigs import load_llm_configs
-from party.active_party import ActiveParty_LLM
+from load.LoadParty import get_class_constructor
 from framework.database.repository.TaskRepository import task_repository
 
 logger = logger_util.get_logger('active_task_service')
@@ -20,7 +20,7 @@ class ActiveTaskService(threading.Thread):
         self._queues = queues
 
     def _init_parties(self, args, job_id):
-        active_party = ActiveParty_LLM(args, 1)
+        active_party = get_class_constructor(args.active_party_class)(args, args.k-1)
         parties = []
         for i in range(args.k - 1):
             client_id = f'c{i + 1}'

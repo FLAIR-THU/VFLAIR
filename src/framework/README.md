@@ -38,6 +38,9 @@ VFLAIR
 - 运行client端：docker run --name client -d --gpus all -e GRPC_SERVER=192.168.10.3 -v /home/shannon/dev/tools/nlp:/home/shannon/dev/tools/nlp vflair-client
 - 运行Web端：docker run --name web --add-host=vflair-server.com:192.168.10.3 -d -p5000:5000 -e GRPC_SERVER=vflair-server.com vflair-web
 
+### 使用证书
+由于VFLAIR使用了SSL证书，默认证书域名是修改/etc/hosts，加入本地解析
+192.168.10.3 vflair-server.com
 
 ### 开始使用
 

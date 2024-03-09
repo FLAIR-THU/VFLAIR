@@ -21,7 +21,7 @@ class IParty(object):
         pass
 
     @abstractmethod
-    def predict(self):
+    def predict(self, **kwargs):
         pass
 
     @abstractmethod

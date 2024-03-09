@@ -29,12 +29,12 @@ def load_basic_configs(config_file_name, args):
     config_file = open(config_file_path, "r")
     config_dict = json.load(config_file)
     args = do_load_basic_configs(config_dict, args)
-    args.passive_party_class = config_dict['passive_party_class'] if ('passive_party_class' in config_dict) else "PassiveParty_LLM"
-    args.active_party_class = config_dict['active_party_class'] if ('active_party_class' in config_dict) else "ActiveParty_LLM"
     return args
 
 def do_load_basic_configs(config_dict, args):
     # print(config_dict)
+    args.passive_party_class = config_dict['passive_party_class'] if ('passive_party_class' in config_dict) else "PassiveParty_LLM"
+    args.active_party_class = config_dict['active_party_class'] if ('active_party_class' in config_dict) else "ActiveParty_LLM"
     
     # args.main_lr, learning rate for main task
     args.main_lr = config_dict['lr'] if('lr' in config_dict) else 0.001

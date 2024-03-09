@@ -385,32 +385,21 @@ class MainTaskVFL_LLM(object):
 
             return exp_result, self.test_acc
 
-    def _llm_inference(self,**kwargs):
-        if not kwargs:
-            tokenizer = self.args.tokenizer
-            prompt = "You are a python programmer, what can you do?"
-            messages = [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ]
-            text = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
-            )
-            model_inputs = tokenizer([text], return_tensors="pt")
-            kwargs.update({'input_ids': model_inputs.input_ids,
-                           'output_hidden_states': True})
-            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
-
-
+    def _llm_inference(self, **kwargs):
         if self.k>2:
             raise ValueError('llm_inference only supports k=2')
 
         for ik in range(self.k - 1):
             # Passive data local predict
             passive_party=self.parties[ik]
-            intermediate = passive_party.predict(kwargs)
+            intermediate = passive_party.predict(**kwargs)
+
+        if intermediate is None:
+            self._barrier.wait()
+            print('============================================')
+            print(self._last_result)
+            intermediate = self._last_result
+
         # execute active_party
         active_party=self.parties[self.k-1]
         resp=active_party.predict(intermediate)
@@ -459,8 +448,8 @@ class MainTaskVFL_LLM(object):
         # print(' ========= Inference ==========')
         for ik in range(self.k-1):
             self.parties[ik].prepare_data_loader()
-            self.parties[ik].local_model.eval()
-        self.parties[self.k-1].global_model.eval()
+            self.parties[ik].eval()
+        self.parties[self.k-1].eval()
 
         if self.args.task_type == "QuestionAnswering":
             exp_result, main_task_result = self.qa_inference()

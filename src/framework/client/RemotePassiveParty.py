@@ -1,6 +1,6 @@
 from party.IParty import IParty
 from framework.database.model.Task import Task
-
+import json
 
 class RemotePassiveParty(IParty):
     _client_id = None
@@ -32,11 +32,12 @@ class RemotePassiveParty(IParty):
         task.job_id = self._job_id
         self._queue.put(task)
 
-    def predict(self):
+    def predict(self, **kwargs):
         task = Task()
         task.run = "predict"
         task.party = self._client_id
         task.job_id = self._job_id
+        # task.params = json.dumps(kwargs)
         self._queue.put(task)
 
     def train(self, i_epoch):
