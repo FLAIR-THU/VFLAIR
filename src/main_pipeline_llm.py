@@ -159,7 +159,7 @@ if __name__ == '__main__':
             filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
             filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
-        args.exp_res_path = args.exp_res_dir + filename
+        args.exp_res_path = args.exp_res_dir + str(filename).replace('/','')
         print(args.exp_res_path)
         print('=================================\n')
 
