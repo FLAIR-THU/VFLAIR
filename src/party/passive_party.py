@@ -845,6 +845,8 @@ class PassiveParty_LLM(Party_LLM):
                         predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
                         # print('predict_word:',predict_word)
 
+                return target_word_list, predict_word_list, None
+
             else:  # MMLU
                 choice_id_list = []
                 for choice in self.args.label_dict.keys():
@@ -862,6 +864,8 @@ class PassiveParty_LLM(Party_LLM):
 
                 sample_cnt += predict_label.shape[0]
                 suc_cnt += torch.sum(predict_label == actual_label).item()
+
+                return [], [], 0
 
         elif self.args.task_type == "QuestionAnswering":
             start_logits = test_logit.start_logits
