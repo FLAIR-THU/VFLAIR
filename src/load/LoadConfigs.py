@@ -29,6 +29,8 @@ def load_basic_configs(config_file_name, args):
     config_file = open(config_file_path, "r")
     config_dict = json.load(config_file)
     args = do_load_basic_configs(config_dict, args)
+    args.passive_party_class = config_dict['passive_party_class'] if ('passive_party_class' in config_dict) else "PassiveParty_LLM"
+    args.active_party_class = config_dict['active_party_class'] if ('active_party_class' in config_dict) else "ActiveParty_LLM"
     return args
 
 def do_load_basic_configs(config_dict, args):

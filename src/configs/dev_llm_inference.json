@@ -4,6 +4,11 @@
     "k": 2,
     "batch_size": 128,
     "pipeline": "pretrained",
+    "device": "cuda",
+    "gpu": 0,
+    "active_party_class": "QW_Active_Party",
+    "passive_party_class": "QW_Passive_Party",
+    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -30,7 +35,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "D:\\project\\PrivacyCompute\\model\\Qwen\\Qwen1.5-0.5B-Chat"
+            "path": "/home/shannon/dev/tools/nlp/models/Qwen1.5-0.5B-Chat"
         },
         "1": {
             "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -39,7 +44,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "D:\\project\\PrivacyCompute\\model\\Qwen\\Qwen1.5-0.5B-Chat"
+            "path": "/home/shannon/dev/tools/nlp/models/Qwen1.5-0.5B-Chat"
         },
         "task":{
             "task_type": "DevLLMInference",
