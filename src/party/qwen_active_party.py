@@ -35,3 +35,6 @@ class QW_Active_Party(Party_LLM):
                                          position_ids=position_ids, use_cache=False)
         logger.debug(resp.hidden_states[-1])
         return resp
+
+    def __call__(self, *args, **kwargs):
+        return self.predict(**kwargs)
