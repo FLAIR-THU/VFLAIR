@@ -13,23 +13,6 @@ class QW_Passive_Party(Party_LLM):
         pass
 
     def predict(self, **kwargs):
-        if not kwargs:
-            tokenizer = self.args.tokenizer
-            prompt = "You are a python programmer, what can you do?"
-            messages = [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ]
-            text = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
-            )
-            model_inputs = tokenizer([text], return_tensors="pt")
-            kwargs.update({'input_ids': model_inputs.input_ids,
-                           'output_hidden_states': True})
-            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
-
         intermediate = self.local_model.forward(**self._format_forward_kwargs(**kwargs))[0]
         logger.debug('finish passive party')
         logger.debug(intermediate.hidden_states[-1])
@@ -49,6 +32,22 @@ class QW_Passive_Party(Party_LLM):
         self._communication = communication
 
     def _format_forward_kwargs(self, **kwargs):
+        if not kwargs:
+            tokenizer = self.args.tokenizer
+            prompt = "You are a python programmer, what can you do?"
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+            text = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            model_inputs = tokenizer([text], return_tensors="pt")
+            kwargs.update({'input_ids': model_inputs.input_ids,
+                           'output_hidden_states': True})
+            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
         base_dict = {'input_ids': None,
                      'attention_mask': None,
                      'position_ids': None,
@@ -62,3 +61,6 @@ class QW_Passive_Party(Party_LLM):
             if k in kwargs:
                 base_dict.update({k: kwargs.get(k)})
         return base_dict
+
+    def __call__(self, *args, **kwargs):
+        return self.predict(**kwargs)

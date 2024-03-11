@@ -7,7 +7,7 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2Model, Qwen2ForCausalL
     BaseModelOutputWithPast, Cache, DynamicCache, _prepare_4d_causal_attention_mask_for_sdpa, \
     _prepare_4d_causal_attention_mask, PreTrainedModel
 from torch.nn import ModuleList
-from typing import Iterable, Optional, Union, List, Tuple
+from typing import Iterable, Optional, Union, List, Tuple, Callable
 # import logging as logger
 from loguru import logger
 import torch
@@ -21,14 +21,14 @@ class Qwen2DecoderLayerParam(object):
                  position_ids: Optional[torch.LongTensor] = None,
                  past_key_values: Optional[Tuple[torch.Tensor]] = None,
                  output_attentions: Optional[bool] = False,
-                 output_hidden_states: Optional[bool] =False,
+                 output_hidden_states: Optional[bool] = False,
                  use_cache: Optional[bool] = False):
         self.hidden_states = hidden_states,
         self.attention_mask = copy.deepcopy(attention_mask),
         self.position_ids = copy.deepcopy(position_ids),
         self.past_key_values = past_key_values,
         self.output_attentions = copy.deepcopy(output_attentions),
-        self.output_hidden_states =output_hidden_states
+        self.output_hidden_states = output_hidden_states
         self.use_cache = copy.deepcopy(use_cache)
 
 
@@ -394,11 +394,13 @@ class GlobalQwen2ForCausalLM(Qwen2ForCausalLM, VFLModel):
 
 
 class E2EModel(Qwen2ForCausalLM):
-    def __init__(self, local_model: LocalQwen2Model, global_model: GlobalQwen2Model):
-        super().__init__(local_model.config)
+    def __init__(self, model_config, local_model: Callable, global_model: Callable,communication: Callable=None):
+        super().__init__(model_config)
         self.layers = ModuleList()
         self.local_model = local_model
         self.global_model = global_model
+        self.communication =communication
+        self.post_init()
 
     def forward(
             self,
@@ -411,7 +413,8 @@ class E2EModel(Qwen2ForCausalLM):
             use_cache: Optional[bool] = None,
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None, **kwargs
+            return_dict: Optional[bool] = None,
+            **kwargs
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         intermediate = self.local_model(input_ids=input_ids,
                                         attention_mask=attention_mask,
@@ -423,10 +426,11 @@ class E2EModel(Qwen2ForCausalLM):
                                         output_attentions=output_attentions,
                                         output_hidden_states=output_hidden_states,
                                         return_dict=return_dict)[0]  # type: Qwen2DecoderLayerParam
-
-        output = self.global_model.forward(inputs_embeds=intermediate.hidden_states[0],
-                                           attention_mask=intermediate.attention_mask[0],
-                                           past_key_values=intermediate.past_key_values[0],
-                                           output_hidden_states=intermediate.output_attentions[0],
-                                           position_ids=intermediate.position_ids[0], use_cache=False)
+        if self.communication:
+            intermediate = self.communication(intermediate)
+        output = self.global_model(inputs_embeds=intermediate.hidden_states[0],
+                                   attention_mask=intermediate.attention_mask[0],
+                                   past_key_values=intermediate.past_key_values[0],
+                                   output_hidden_states=intermediate.output_hidden_states,
+                                   position_ids=intermediate.position_ids[0], use_cache=False)
         return output
