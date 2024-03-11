@@ -27,7 +27,7 @@ import copy
 from models.llm_models.bert import *
 from models.llm_models.gpt2 import *
 from models.llm_models.llama import *
-from models.llm_models.qwen2 import LocalQwen2Model, GlobalQwen2ForCausalLM
+from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM
 
 from models.bottom_models import *
 from models.global_models import *
@@ -876,10 +876,10 @@ def load_basic_models_llm_qwen2(args, index):
     model_path = args.model_list[str(index)]['path']
     split_idx = 2
     args.tokenizer = AutoTokenizer.from_pretrained(model_path)
-    local_model = LocalQwen2Model.from_pretrained(model_path)
+    local_model = Qwen2ModelHead.from_pretrained(model_path)
     local_model.vfl_split(range(0, split_idx))
 
-    global_model = GlobalQwen2ForCausalLM.from_pretrained(model_path)
+    global_model = Qwen2TailForCausalLM.from_pretrained(model_path)
     global_model.vfl_split(range(split_idx, 400))
 
     local_model_optimizer, global_model_optimizer = None, None
