@@ -405,14 +405,14 @@ class MainTaskVFL_LLM(object):
         resp = active_party.predict(intermediate)
         logger.debug(f"next token prediction: {resp}")
 
-        generate_ids = self.e2e_model.generate(max_new_tokens=20, **format_kwargs)
+        generate_ids = self.e2e_model.generate(format_kwargs.get('input_ids'),max_new_tokens=20)
         generate_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(format_kwargs['input_ids'], generate_ids)
         ]
         resp = self.args.tokenizer.batch_decode(generate_ids, skip_special_tokens=True,
                                                 clean_up_tokenization_spaces=False)
         logger.debug(f"text generation: {resp}")
-        return resp
+        return '',''
 
     def causal_llm_inference(self):
         postfix = {'test_acc': 0.0}
@@ -1052,7 +1052,7 @@ class MainTaskVFL_LLM(object):
             return _intermediate
 
         model_config = None
-        if not self.args.task['tack_type'] == 'DevLLMInference':
+        if not self.args.task_type == 'DevLLMInference':
             return
         for party in self.parties:
             if party.local_model:
