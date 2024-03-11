@@ -24,11 +24,11 @@ class QW_Passive_Party(Party_LLM):
         if isinstance(self._communication, LocalCommunication):
             return intermediate
         return {
-            "hidden_states": intermediate.hidden_states[0].tolist(),
-            "attention_mask": intermediate.attention_mask[0].tolist(),
+            "hidden_states": intermediate.hidden_states.tolist(),
+            "attention_mask": intermediate.attention_mask.tolist(),
             "past_key_values": None,
             "output_hidden_states": intermediate.output_hidden_states,
-            "position_ids": intermediate.position_ids[0].tolist()
+            "position_ids": intermediate.position_ids.tolist()
         }
 
     def init_communication(self, communication=None):

@@ -2,6 +2,8 @@
 copy source codes from transformers, then modify
 code based on transformers=4.37.2
 """
+import gc
+
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.models.qwen2.modeling_qwen2 import Qwen2Model, Qwen2ForCausalLM, Qwen2Config, Qwen2DecoderLayer, \
     BaseModelOutputWithPast, Cache, DynamicCache, _prepare_4d_causal_attention_mask_for_sdpa, \
@@ -12,6 +14,7 @@ from typing import Iterable, Optional, Union, List, Tuple, Callable
 from loguru import logger
 import torch
 import copy
+import os
 
 
 class Qwen2DecoderLayerParam(object):
@@ -23,13 +26,28 @@ class Qwen2DecoderLayerParam(object):
                  output_attentions: Optional[bool] = False,
                  output_hidden_states: Optional[bool] = False,
                  use_cache: Optional[bool] = False):
-        self.hidden_states = hidden_states,
-        self.attention_mask = copy.deepcopy(attention_mask),
-        self.position_ids = copy.deepcopy(position_ids),
-        self.past_key_values = past_key_values,
-        self.output_attentions = copy.deepcopy(output_attentions),
+        self.hidden_states = hidden_states
+        self.attention_mask = attention_mask
+        self.position_ids = position_ids
+        self.past_key_values = past_key_values
+        self.output_attentions = output_attentions
         self.output_hidden_states = output_hidden_states
-        self.use_cache = copy.deepcopy(use_cache)
+        self.use_cache = use_cache
+
+    def prepare_for_forward(self):
+        return {
+            'inputs_embeds': self.hidden_states,
+            'attention_mask': self.attention_mask,
+            'past_key_values': self.past_key_values,
+            'output_hidden_states': self.output_hidden_states,
+            'position_ids': self.position_ids,
+            'use_cache': False
+        }
+
+    def to(self, device):
+        for v in self.__dict__.values():
+            if isinstance(v, torch.Tensor):
+                v.to(device)
 
 
 class VFLModel:
@@ -44,6 +62,8 @@ class Qwen2ModelSplitter(Qwen2Model):
             if i in idx_of_layers:
                 new_layers.append(layer)
         self.layers = new_layers
+        # update config
+        self.config.num_hidden_layers = len(new_layers)
         return True
 
 
@@ -209,14 +229,20 @@ class Qwen2ModelHead(Qwen2ModelSplitter, VFLModel):
 
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
-        return intermediate_states, BaseModelOutputWithPast(
-            last_hidden_state=hidden_states,
-            past_key_values=next_cache,
-            hidden_states=all_hidden_states,
-            attentions=all_self_attns,
-        )
+        return intermediate_states
+        #         , BaseModelOutputWithPast(
+        #     last_hidden_state=hidden_states,
+        #     past_key_values=next_cache,
+        #     hidden_states=all_hidden_states,
+        #     attentions=all_self_attns,
+        # )
 
-class Qwen2ModelBody(Qwen2ModelSplitter,VFLModel):
+
+class Qwen2ModelBody(Qwen2ModelSplitter, VFLModel):
+
+    def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
+        return self.split_layers(idx_of_layers)
+
     def forward(
             self,
             input_ids: torch.LongTensor = None,
@@ -238,6 +264,8 @@ class Qwen2ModelBody(Qwen2ModelSplitter,VFLModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # retrieve input_ids and inputs_embeds
+        if input_ids:
+            raise ValueError('dont support this param, pls use inputs_embeds instead')
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both decoder_input_ids and decoder_inputs_embeds at the same time")
         elif input_ids is not None:
@@ -295,15 +323,16 @@ class Qwen2ModelBody(Qwen2ModelSplitter,VFLModel):
                 inputs_embeds,
                 past_key_values_length,
             )
-        else:
-            # 4d mask is passed through the layers
-            attention_mask = _prepare_4d_causal_attention_mask(
-                attention_mask,
-                (batch_size, seq_length),
-                inputs_embeds,
-                past_key_values_length,
-                sliding_window=self.config.sliding_window,
-            )
+        # 注释掉多余的计算
+        # else:
+        #     # 4d mask is passed through the layers
+        #     attention_mask = _prepare_4d_causal_attention_mask(
+        #         attention_mask,
+        #         (batch_size, seq_length),
+        #         inputs_embeds,
+        #         past_key_values_length,
+        #         sliding_window=self.config.sliding_window,
+        #     )
 
         hidden_states = inputs_embeds
 
@@ -343,7 +372,12 @@ class Qwen2ModelBody(Qwen2ModelSplitter,VFLModel):
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
-
+        intermediate_states = Qwen2DecoderLayerParam(hidden_states=hidden_states,
+                                                     attention_mask=attention_mask,
+                                                     position_ids=position_ids,
+                                                     past_key_values=past_key_values,
+                                                     output_attentions=output_attentions,
+                                                     use_cache=use_cache, )
         hidden_states = self.norm(hidden_states)
 
         # add hidden states from the last decoder layer
@@ -356,7 +390,7 @@ class Qwen2ModelBody(Qwen2ModelSplitter,VFLModel):
 
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
-        return BaseModelOutputWithPast(
+        return intermediate_states, BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
             past_key_values=next_cache,
             hidden_states=all_hidden_states,
@@ -540,6 +574,24 @@ class Qwen2TailForCausalLM(Qwen2ForCausalLM, VFLModel):
         return self.model.split_layers(idx_of_layers)
 
 
+class Qwen2TailForCausalLMExtraCopy(Qwen2ForCausalLM, VFLModel):
+    def __init__(self, config: Qwen2Config, **kwargs):
+        super().__init__(config)
+        self.vfl_model_tail = Qwen2ModelTail(config)
+        # self.model_copy=Qwen2ForCausalLM(config) #self.model 在父类初始化时加载了一份完整模型
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
+        return self.vfl_model_tail.split_layers(idx_of_layers)
+
+    def forward(self, is_first_iter=False, *args, **kwargs):
+        if is_first_iter:
+            return self.vfl_model_tail(*args, **kwargs)
+        else:
+            return super(Qwen2ForCausalLM, self).forward(*args, **kwargs)
+
+
 class E2EModel(Qwen2ForCausalLM):
     def __init__(self, model_config, local_model: Callable, global_model: Callable,communication: Callable=None, reset_barrier: Callable=None):
         super().__init__(model_config)
@@ -573,6 +625,64 @@ class E2EModel(Qwen2ForCausalLM):
                                         use_cache=use_cache,
                                         output_attentions=output_attentions,
                                         output_hidden_states=output_hidden_states,
-                                        return_dict=return_dict)  # type: Qwen2DecoderLayerParam
+                                        return_dict=return_dict)
+
+        if isinstance(intermediate, Qwen2DecoderLayerParam):
+            intermediate = intermediate.prepare_for_forward()
+
         output = self.global_model(**intermediate)
         return output
+
+
+class PipelineVFL2Slice:
+    """
+    2-slice VFL
+    can:
+        loading from raw or split model
+        save VFL model
+    """
+
+    def __init__(self, is_server_end: bool):
+        self.is_server_end = is_server_end
+
+    def from_pretrained(self, path_pretrain_model, split_index: int, **kwargs):
+        """
+
+        :param path_pretrain_model:
+        :param split_index: value should satisfy 0 < value < num_hidden_layers
+        :param kwargs:
+        :return:
+        """
+        if self.is_server_end:
+            return self._load_model_tail(path_pretrain_model, split_index, **kwargs)
+        else:
+            return self._load_model_head(path_pretrain_model, split_index, **kwargs)
+
+    def _load_model_head(self, path_model_head, split_index=None, **kwargs):
+        model_head = Qwen2ModelHead.from_pretrained(path_model_head, **kwargs)
+        if split_index is not None:
+            model_head.vfl_split(range(0, split_index))
+        return model_head
+
+    def _load_model_tail(self, path_model_tail, split_index=None, **kwargs):
+        model_tail = Qwen2TailForCausalLM.from_pretrained(path_model_tail, **kwargs)
+        if split_index is not None:
+            model_tail.vfl_split(range(split_index, self.model_tail.config.num_hidden_layers))
+        return model_tail
+
+    @staticmethod
+    def save_vfl(vfl_folder, model_head: Qwen2ModelHead = None, model_tail: Qwen2TailForCausalLM = None):
+        if model_head:
+            model_head.save_pretrained(save_directory=os.path.join(vfl_folder, 'model_head'), )
+        if model_tail:
+            model_tail.save_pretrained(save_directory=os.path.join(vfl_folder, 'model_tail'), )
+
+    def from_vfl(self, vfl_folder, **kwargs):
+        if self.is_server_end:
+            path_model_tail = os.path.join(vfl_folder, 'model_tail')
+            model_tail = self._load_model_tail(path_model_tail, **kwargs)
+            return model_tail
+        else:
+            path_model_head = os.path.join(vfl_folder, 'model_head')
+            model_head = self._load_model_head(path_model_head, **kwargs)
+            return model_head

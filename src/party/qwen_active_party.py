@@ -12,7 +12,7 @@ class QW_Active_Party(Party_LLM):
     def prepare_data(self, args, index):
         pass
 
-    def predict(self, intermediate):
+    def predict(self, intermediate,**kwargs):
         if isinstance(intermediate, dict):
             hidden_states = torch.tensor(intermediate['hidden_states']).to(self.args.device)
             attention_mask = torch.tensor(intermediate['attention_mask']).to(self.args.device)
