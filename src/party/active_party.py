@@ -279,6 +279,19 @@ class ActiveParty_LLM(Party_LLM):
                     # "hidden_states": result.outputs.hidden_states,
                     # "attentions": result.outputs.attentions,
                 }
+        elif self.args.model_type == 'GPT2': # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
+            if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                return {
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                return {
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+            else:
+                assert 1>2 , 'Task type no supported'
 
     def aggregate_remote(self, pred_list):
         if self.args.head_layer_trainable[1]:

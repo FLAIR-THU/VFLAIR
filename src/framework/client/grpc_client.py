@@ -17,6 +17,8 @@ channel_credential = grpc.ssl_channel_credentials(
     credentials.ROOT_CERTIFICATE
 )
 
+MAX_MESSAGE_LENGTH = 800*1024*1000
+
 class GrpcClient():
     _message_service = None
     _node = None
@@ -69,12 +71,20 @@ class GrpcClient():
         stub.unregister(msg)
 
     def open_and_send(self, msg):
-        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential) as channel:
+        options = [
+            ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+            ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
+        ]
+        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential, options) as channel:
             stub = fps.MessageServiceStub(channel)
             return self.send(stub, msg)
 
     def open_and_register(self):
-        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential) as channel:
+        options = [
+            ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+            ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
+        ]
+        with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential, options) as channel:
             stub = fps.MessageServiceStub(channel)
             self.register(stub)
 
@@ -87,8 +97,6 @@ def main(main_args):
         client_index = config["client"]["index"]
     else:
         raise ValueError("Please specify --config")
-
-    MAX_MESSAGE_LENGTH = 800*1024*1000
 
     with grpc.secure_channel(f"{host}:{port}",  channel_credential, options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),

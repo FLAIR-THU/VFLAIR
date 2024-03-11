@@ -1031,6 +1031,12 @@ class PassiveParty_LLM(Party_LLM):
                     hidden_states=None,
                     attentions=None,
                 )
+        elif self.args.model_type == 'GPT2':
+            if self.args.task_type == 'CausalLM':
+                logits = torch.Tensor(test_logit['logits'])
+                return logits.to(self.args.device)
+            else:
+                assert 1>2 , 'Task type no supported'
 
     def _send_pred_message(self, pred_list):
         return self._communication.send_pred_message(pred_list, self.parse_pred_message_result)

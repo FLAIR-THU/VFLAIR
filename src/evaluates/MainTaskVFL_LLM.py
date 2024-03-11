@@ -411,12 +411,12 @@ class MainTaskVFL_LLM(object):
         predict_word_list = []
         for ik in range(self.k - 1):
             # Passive data local predict
-            target_words, predict_words, _ = self.parties[ik].predict()
-            target_word_list.extend(target_words)
-            predict_word_list.extend(predict_words)
+            self.parties[ik].predict()
 
-        # print('target_word:',target_word[:2])
-        # print('predict_word_list:',predict_word_list[:2])
+        self._barrier.wait()
+        target_words, predict_words, _ = self._last_result
+        target_word_list.extend(target_words)
+        predict_word_list.extend(predict_words)
 
         if self.args.metric_type == "best_pred":
             suc_cnt = 0
