@@ -33,8 +33,8 @@ class QW_Active_Party(Party_LLM):
                                          past_key_values=past_key_values,
                                          output_hidden_states=output_hidden_states,
                                          position_ids=position_ids, use_cache=False)
-        logger.debug(resp.hidden_states[-1])
+        # logger.debug(resp.hidden_states[-1])
         return resp
 
     def __call__(self, *args, **kwargs):
-        return self.predict(**kwargs)
+        return self.predict(*args,**kwargs)
