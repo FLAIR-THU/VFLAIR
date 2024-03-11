@@ -71,7 +71,7 @@ class GPT2_VFLGeneration(GPT2LMHeadModel):
         output = self.top_vfl.vfl_forward(input_ids , attention_mask, token_type_ids)
 
         # output.logits = output.logits.squeeze()
-        print('in vfl outputs.logits:', output.logits.shape)
+        # print('in vfl outputs.logits:', output.logits.shape)
 
         return output
 

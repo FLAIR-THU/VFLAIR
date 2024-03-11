@@ -54,7 +54,7 @@
             "party": [0],
             "mid_model_name":"MIDModel_SqueezeLinear",
             "lr": 0.0001,
-            "lambda": 0.1,
+            "lambda": 0.01,
             "mid_position": "inner",
             "current_bottleneck_scale": 1,
             "seq_length": 70,

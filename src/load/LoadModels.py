@@ -527,13 +527,14 @@ padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trai
 def load_basic_models_llm_gpt2(args,index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
+    model_path = args.model_list[str(index)]['path']
 
     if args.pretrained == 0: # load from base LLM with randomly initialized head layer
-        print('finetune gpt path:',MODEL_PATH[current_model_type])
-        args.tokenizer = GPT2Tokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        print('finetune gpt path:', model_path)
+        args.tokenizer = GPT2Tokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
 
-        full_gpt = GPT2Model.from_pretrained(MODEL_PATH[current_model_type])
+        full_gpt = GPT2Model.from_pretrained(model_path)
 
         if args.pad_token == "default":
             if args.tokenizer.pad_token is None:
@@ -587,15 +588,15 @@ def load_basic_models_llm_gpt2(args,index):
             global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH[current_model_type], do_lower_case=True)
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
         args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left","right"]) else "left"
         
         if args.task_type == 'CausalLM':
-            full_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForCausalLM.from_pretrained(model_path)
         elif args.task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         elif args.task_type == 'SequenceClassification':
-            full_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH[current_model_type])
+            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         else:
             assert 1>2 , "task type not supported"
 

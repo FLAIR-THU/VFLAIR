@@ -151,7 +151,7 @@ if __name__ == '__main__':
         # greedy_output = GenerationModel.generate(input_ids = input_ids,\
         # attention_mask = attention_mask,  max_length=50)
 
-        greedy_output = GenerationModel.generate(**inputs, max_length=12)
+        greedy_output = GenerationModel.generate(**inputs, max_length=10)
 
         print("greedy_output:\n" + 100 * '-')
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
