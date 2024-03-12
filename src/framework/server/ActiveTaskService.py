@@ -51,20 +51,20 @@ class ActiveTaskService(threading.Thread):
             task = self._queues['active'].get()
             main_task = self._get_main_task(task.job_id)
             party = main_task.get_active_party()
-            logger.info(f"Running task: {task}")
+            logger.info(f"Running task: {task.run}")
             logger.info(f"Party: {party}")
             if hasattr(party, task.run):
                 target_func = getattr(party, task.run)
                 result = target_func(last_task_result=main_task.get_last_result())
                 main_task.set_last_result(result)
                 task_repository.change_status(task.id, 1, result)
-                logger.info(f"Finished task: {task}")
+                logger.info(f"Finished task: {task.run}")
                 if not self.run_next(task.job_id):
                     break
 
     def run_specific(self, task, data):
         party = self._get_main_task(task['job_id']).get_active_party()
-        logger.info(f"running specific task: {task}")
+        logger.info(f"running specific task: {task['run']}")
         logger.info(f"Party: {party}")
         if hasattr(party, task['run']):
             target_func = getattr(party, task['run'])
@@ -72,7 +72,7 @@ class ActiveTaskService(threading.Thread):
                 result = target_func(data)
             else:
                 result = target_func()
-            logger.info(f"Finished specific task: {task}")
+            logger.info(f"Finished specific task: {task['run']}")
             return result
 
     def run_next(self, job_id):

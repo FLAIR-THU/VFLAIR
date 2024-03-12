@@ -1,7 +1,7 @@
 from party.llm_party import Party as Party_LLM
 from loguru import logger
 from .LocalCommunication import LocalCommunication
-
+import torch
 
 class QW_Passive_Party(Party_LLM):
     _communication = None
@@ -13,7 +13,12 @@ class QW_Passive_Party(Party_LLM):
         pass
 
     def predict(self, **kwargs):
-        intermediate = self.local_model.forward(**self._format_forward_kwargs(**kwargs))[0]
+        params = self._format_forward_kwargs(**kwargs)
+        for k in params:
+            if isinstance(params[k], list):
+                params[k] = torch.tensor(params[k]).to(self.args.device)
+
+        intermediate = self.local_model.forward(**params)[0]
         logger.debug('finish passive party')
         logger.debug(intermediate.hidden_states[-1])
         if isinstance(self._communication, LocalCommunication):
@@ -21,7 +26,7 @@ class QW_Passive_Party(Party_LLM):
         return {
             "hidden_states": intermediate.hidden_states[0].tolist(),
             "attention_mask": intermediate.attention_mask[0].tolist(),
-            "past_key_values": intermediate.past_key_values[0],
+            "past_key_values": None,
             "output_hidden_states": intermediate.output_hidden_states,
             "position_ids": intermediate.position_ids[0].tolist()
         }

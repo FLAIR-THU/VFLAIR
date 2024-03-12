@@ -44,10 +44,6 @@ class GrpcClient():
 
     def send(self, stub, msg):
         response = stub.send(msg)
-        logger.info(
-            "code(%s), message: %s"
-            % (response.code, response.data)
-        )
         return response.data
 
 

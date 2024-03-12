@@ -393,19 +393,9 @@ class MainTaskVFL_LLM(object):
         if self.k > 2:
             raise ValueError('llm_inference only supports k=2')
 
-        # for ik in range(self.k - 1):
-        # Passive data local predict
-        passive_party = self.parties[0]
-        format_kwargs = passive_party._format_forward_kwargs(**kwargs)
+        format_kwargs = self._format_forward_kwargs(**kwargs)
 
-        intermediate = passive_party.predict(**kwargs)
-
-        # execute active_party
-        active_party = self.parties[self.k - 1]
-        resp = active_party.predict(intermediate)
-        logger.debug(f"next token prediction: {resp}")
-
-        generate_ids = self.e2e_model.generate(format_kwargs.get('input_ids'),max_new_tokens=20)
+        generate_ids = self.e2e_model.generate(format_kwargs.get('input_ids'), max_new_tokens=20)
         generate_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(format_kwargs['input_ids'], generate_ids)
         ]
@@ -413,6 +403,37 @@ class MainTaskVFL_LLM(object):
                                                 clean_up_tokenization_spaces=False)
         logger.debug(f"text generation: {resp}")
         return '',''
+
+    def _format_forward_kwargs(self, **kwargs):
+        if not kwargs:
+            tokenizer = self.args.tokenizer
+            prompt = "You are a python programmer, what can you do?"
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+            text = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+            model_inputs = tokenizer([text], return_tensors="pt")
+            kwargs.update({'input_ids': model_inputs.input_ids,
+                           'output_hidden_states': True})
+            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
+        base_dict = {'input_ids': None,
+                     'attention_mask': None,
+                     'position_ids': None,
+                     'past_key_values': None,
+                     'inputs_embeds': None,
+                     'use_cache': False,
+                     'output_attentions': None,
+                     'output_hidden_states': True,
+                     'return_dict': None, }
+        for k in base_dict:
+            if k in kwargs:
+                base_dict.update({k: kwargs.get(k)})
+        return base_dict
 
     def causal_llm_inference(self):
         postfix = {'test_acc': 0.0}
@@ -1042,12 +1063,14 @@ class MainTaskVFL_LLM(object):
         total = dummy_label.shape[0]
         return success / total
 
+    def reset_barrier(self):
+        self._barrier = threading.Barrier(2)
+
     def _init_e2e_model(self):
         def communication_callback(_intermediate):
             if _intermediate is None:
                 self._barrier.wait()
                 print('============================================')
-                print(self._last_result)
                 _intermediate = self._last_result
             return _intermediate
 
@@ -1063,4 +1086,4 @@ class MainTaskVFL_LLM(object):
                 break
         if not model_config:
             logger.error(f"No model config for E2E_model")
-        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1], communication_callback)
+        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1], communication_callback, self.reset_barrier)

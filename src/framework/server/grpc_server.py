@@ -93,10 +93,6 @@ class GrpcServer(fps.MessageServiceServicer):
         # Open a sub thread to receive data
         def parse_request():
             for request in request_iterator:
-                logger.info(
-                    "code(%s), message: %s"
-                    % (request.code, request.data)
-                )
                 mq.message_queue.put(request)
 
         t = Thread(target=parse_request)

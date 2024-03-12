@@ -35,7 +35,7 @@ class PassiveTaskService:
             params = task['params']
             if params is not None:
                 params_value = json.loads(params)
-                result = target_func(params_value)
+                result = target_func(**params_value)
             else:
                 result = target_func()
             return self._send_message(task["job_id"], result, task["run"])
