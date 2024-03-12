@@ -1018,9 +1018,9 @@ class MainTaskVFL_LLM(object):
 
                         # Label
                         if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append(parties_data[party_id][bs_id][1].tolist())
+                            batch_label.append( parties_data[party_id][bs_id][1].tolist() )
                         else:
-                            batch_label.append(parties_data[party_id][bs_id][1])
+                            batch_label.append( parties_data[party_id][bs_id][1] )
 
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
@@ -1031,13 +1031,14 @@ class MainTaskVFL_LLM(object):
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
                             # 2*bs, num_of_answers
-                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
-                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-                            
-                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
-                            batch_label = batch_label.reshape(origin_batch_label_shape)
-                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
-                            # print('After batch_label:',batch_label.shape)
+                            # print('batch_label:',batch_label)
+                            if type(batch_label[0][0]) == list:
+                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                                batch_label = batch_label.reshape(origin_batch_label_shape)   
+                            else:
+                                batch_label = torch.tensor(batch_label).to(self.device) 
                         else:
                             batch_label = torch.tensor(batch_label).to(self.device)
 

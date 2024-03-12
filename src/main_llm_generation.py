@@ -117,8 +117,9 @@ if __name__ == '__main__':
 
         vfl = MainTaskVFL_LLM(args)
 
-        
-        GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+
+        # GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         
         ######### define your input text here #########
         input_text = ["Hello, how are you these days?"]
