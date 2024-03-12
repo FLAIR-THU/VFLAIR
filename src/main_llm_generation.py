@@ -7,6 +7,7 @@ import random
 import logging
 import argparse
 import torch
+torch.cuda.current_device()
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
@@ -116,13 +117,14 @@ if __name__ == '__main__':
 
         vfl = MainTaskVFL_LLM(args)
 
-        GenerationModel = GPT2_VFLGeneration(vfl)
         
+        GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         
+        ######### define your input text here #########
         input_text = ["Hello, how are you these days?"]
+        ######### define your input text here #########
 
         inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
-
         ids = args.tokenizer(input_text, return_tensors='pt') 
         input_ids = torch.tensor(ids['input_ids']).squeeze().to(args.device)
         attention_mask = torch.tensor(ids['attention_mask']).squeeze().to(args.device)
@@ -132,27 +134,21 @@ if __name__ == '__main__':
             token_type_ids = None
         
 
-        # generated_text = GenerationModel.forward(input_ids, attention_mask, token_type_ids)
-        # print('generated_text:\n',generated_text)
-
-
-        # input_ids = args.tokenizer.encode(input_text, return_tensors='tf')
-
-        current_model_type = "gpt2"
-        tokenizer = AutoTokenizer.from_pretrained('/home/DAIR/guzx/Git_FedProject/Models/gpt2')
-        full_model = AutoModelForCausalLM.from_pretrained('/home/DAIR/guzx/Git_FedProject/Models/gpt2') # AutoModelForCausalLM
+        
+        ##### normal full model #####
+        print('full model path:',args.model_path)
+        current_model_type = args.model_type #"gpt2"
+        tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+        full_model = AutoModelForCausalLM.from_pretrained(args.model_path) # AutoModelForCausalLM
         full_model = full_model.to(args.device)
-        greedy_output = full_model.generate(**inputs, max_length=10)
+        greedy_output = full_model.generate(**inputs, max_length=30)
         print("greedy_output:\n" + 100 * '-')
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+        print('\n\n')
 
-        # generate text until the output length (which includes the context length) reaches 50
-        
-        # greedy_output = GenerationModel.generate(input_ids = input_ids,\
-        # attention_mask = attention_mask,  max_length=50)
 
-        greedy_output = GenerationModel.generate(**inputs, max_length=10)
-
+        ######### VFL model ########
+        greedy_output = GenerationModel.generate(**inputs, max_length=30)
         print("greedy_output:\n" + 100 * '-')
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 

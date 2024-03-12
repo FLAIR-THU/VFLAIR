@@ -26,7 +26,7 @@ class LlamaForSequenceClassification_forfinetune(LlamaPreTrainedModel):
         super().__init__(global_llama.config)
         self.num_labels = output_dim
         self.model = global_llama #LlamaModel(config)
-        self.score = nn.Linear(global_llama.config.hidden_size, self.num_labels, bias=False)
+        self.head_layer = nn.Linear(global_llama.config.hidden_size, self.num_labels, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -63,7 +63,7 @@ class LlamaForSequenceClassification_forfinetune(LlamaPreTrainedModel):
             return_dict=return_dict,
         )
         hidden_states = transformer_outputs[0]
-        logits = self.score(hidden_states)
+        logits = self.head_layer(hidden_states)
 
         input_shape = intermediate.size()[:2]
         batch_size = input_shape[0]
@@ -123,14 +123,125 @@ class LlamaForSequenceClassification_forfinetune(LlamaPreTrainedModel):
 
 
 #### Pretrained
+class LlamaforGeneration_pretrained(LlamaPreTrainedModel):
+    def __init__(self, global_llama, lm_head):
+        super().__init__(global_llama.config)
+        self.model = global_llama #LlamaModel(config)
+        self.vocab_size = global_llama.config.vocab_size
+        self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def forward(
+        self,intermediate,attention_mask: Optional[torch.Tensor] = None,
+        local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[Tuple, CausalLMOutputWithPast]:
+        r"""
+        Args:
+            labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+                Labels for computing the masked language modeling loss. Indices should either be in `[0, ...,
+                config.vocab_size]` or -100 (see `input_ids` docstring). Tokens with indices set to `-100` are ignored
+                (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`.
+
+        Returns:
+
+        Example:
+
+        ```python
+        >>> from transformers import AutoTokenizer, LlamaForCausalLM
+
+        >>> model = LlamaForCausalLM.from_pretrained(PATH_TO_CONVERTED_WEIGHTS)
+        >>> tokenizer = AutoTokenizer.from_pretrained(PATH_TO_CONVERTED_TOKENIZER)
+
+        >>> prompt = "Hey, are you conscious? Can you talk to me?"
+        >>> inputs = tokenizer(prompt, return_tensors="pt")
+
+        >>> # Generate
+        >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
+        >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
+        ```"""
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
+        outputs = self.model(
+            intermediate,attention_mask=attention_mask,
+
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        hidden_states = outputs[0]
+        if self.config.pretraining_tp > 1:
+            lm_head_slices = self.head_layer.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
+            logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
+            logits = torch.cat(logits, dim=-1)
+        else:
+            logits = self.head_layer(hidden_states)
+        logits = logits.float()
+        
+        # print('LlamaCausal pred:',type(logits),logits.shape)
+        # return logits
+        loss = None
+        if labels is not None:
+            # Shift so that tokens < n predict n
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            # Flatten the tokens
+            loss_fct = CrossEntropyLoss()
+            shift_logits = shift_logits.view(-1, self.config.vocab_size)
+            shift_labels = shift_labels.view(-1)
+            # Enable model parallelism
+            shift_labels = shift_labels.to(shift_logits.device)
+            loss = loss_fct(shift_logits, shift_labels)
+
+        if not return_dict:
+            output = (logits,) + outputs[1:]
+            return (loss,) + output if loss is not None else output
+
+        if use_cache:
+            past_key_values = local_past_key_values + transformer_outputs.past_key_values
+            # print('local_past_key_values:',len(local_past_key_values))
+            # print('global transformer_outputs.past_key_values:',len(transformer_outputs.past_key_values))
+            # print('final past_key_values:',len(past_key_values))
+
+        return CausalLMOutputWithPast(
+            loss=loss,
+            logits=logits,
+            past_key_values=past_key_values, #outputs.past_key_values,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+
+
 class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
-    _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, global_llama, lm_head):
         super().__init__(global_llama.config)
         self.model = global_llama #LlamaModel(config)
         self.vocab_size = global_llama.config.vocab_size
-        self.lm_head = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -142,10 +253,10 @@ class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
         self.model.embed_tokens = value
 
     def get_output_embeddings(self):
-        return self.lm_head
+        return self.head_layer
 
     def set_output_embeddings(self, new_embeddings):
-        self.lm_head = new_embeddings
+        self.head_layer = new_embeddings
 
     def set_decoder(self, decoder):
         self.model = decoder
@@ -212,11 +323,11 @@ class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
 
         hidden_states = outputs[0]
         if self.config.pretraining_tp > 1:
-            lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
+            lm_head_slices = self.head_layer.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
             logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
             logits = torch.cat(logits, dim=-1)
         else:
-            logits = self.lm_head(hidden_states)
+            logits = self.head_layer(hidden_states)
         logits = logits.float()
         
         # print('LlamaCausal pred:',type(logits),logits.shape)
@@ -320,7 +431,7 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
         super().__init__(global_llama.config)
         self.num_labels = global_llama.config.num_labels
         self.model = global_llama #LlamaModel(config)
-        self.score = score #nn.Linear(config.hidden_size, self.num_labels, bias=False)
+        self.head_layer = score #nn.Linear(config.hidden_size, self.num_labels, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -358,7 +469,7 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
             return_dict=return_dict,
         )
         hidden_states = transformer_outputs[0]
-        logits = self.score(hidden_states)
+        logits = self.head_layer(hidden_states)
         
         input_shape = intermediate.size()[:2]
         batch_size = input_shape[0]
@@ -598,7 +709,7 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         # print('attention_mask:',attention_mask.shape)
         # print('sequence_lengths:',sequence_lengths)
 
-        return hidden_states, sequence_lengths, attention_mask
+        return hidden_states, sequence_lengths, attention_mask, past_key_values
 
 class GlobalLlamaModel(LlamaPreTrainedModel):
     """

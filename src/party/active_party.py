@@ -289,7 +289,7 @@ class ActiveParty_LLM(Party_LLM):
         with torch.no_grad():
             return self._do_aggregate_remote(pred_list)
 
-    def aggregate(self, pred_list, test=False):
+    def aggregate(self, pred_list, use_cache = False, test=False):
         # print(' == Active Aggregate == ')
 
         self.passive_pred_list = pred_list
@@ -309,11 +309,17 @@ class ActiveParty_LLM(Party_LLM):
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0], \
                  attention_mask=self.passive_pred_list[0][1],\
-                 encoder_hidden_states = self.encoder_hidden_states,\
-                 encoder_attention_mask = self.encoder_attention_mask,\
-                #  past_key_values = self.passive_pred_list[0][2],\
+                 use_cache = use_cache,\
                   return_dict=True)
                 pred = self.global_output.logits
+            elif self.args.task_type == 'Generation':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                 attention_mask=self.passive_pred_list[0][1],\
+                 local_past_key_values = self.passive_pred_list[0][2],\
+                 past_key_values = self.past_key_values,\
+                 use_cache = use_cache,\
+                  return_dict=True)
+                pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
                 pred = self.global_output.logits
@@ -327,6 +333,13 @@ class ActiveParty_LLM(Party_LLM):
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
                 pred = self.global_output.logits
+            elif self.args.task_type == 'Generation':# self.passive_pred_list[0] = [intermediate, attention_mask]
+                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],\
+                 local_past_key_values = self.passive_pred_list[0][2],\
+                 past_key_values = self.past_key_values,\
+                 use_cache = use_cache,\
+                 return_dict=True)
+                pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
                 pred = self.global_output.logits
@@ -347,26 +360,6 @@ class ActiveParty_LLM(Party_LLM):
         # print('Active Party receive self.global_gradients:')
         # print(self.global_gradients)
 
-    def generate(self, pred_list, test=False):
-        # if self.args.model_type == 'Bert': # pred_list[0] = [intermediate, attention_mask]
-        #     pred = self.global_model(pred_list[0][0], attention_mask = pred_list[0][1])
-        
-        if self.args.model_type == 'GPT2': # pred_list[0] = [intermediate, sequence_lengths, attention_mask]
-            if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-                generated = self.global_model.transformer.greedy_search(intermediate = pred_list[0][0],  attention_mask=pred_list[0][1])
-                print('generated:',generated)
-                generate_text = self.args.tokenizer.decode(generated.tolist())
-                print('generate_text:',generate_text)
-
-        # elif self.args.model_type == 'Llama': 
-        #     if self.args.task_type == 'CausalLM':# pred_list[0] = [intermediate, attention_mask]
-        #         pred = self.global_model(pred_list[0][0],  attention_mask=pred_list[0][1])
-        #     elif self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-        #         pred = self.global_model(pred_list[0][0],  pred_list[0][1], attention_mask=pred_list[0][2])
-        #     else:
-        #         assert 1>2 , 'Task type no supported'
-
-        return generated, generate_text
 
     def global_LR_decay(self,i_epoch):
         if self.global_model_optimizer != None: 

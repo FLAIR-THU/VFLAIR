@@ -83,6 +83,10 @@ def do_load_basic_configs(config_dict, args):
     
     # args.dataset_split  configuration for dataste
     args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
+    if args.dataset_split == None:
+        args.num_classes = 10
+        args.use_prompt = 0
+        args.n_shot = 0
     args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
     args.use_prompt = args.dataset_split['use_prompt'] if('use_prompt' in args.dataset_split) else 0
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
@@ -154,6 +158,9 @@ def do_load_basic_configs(config_dict, args):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
+                    
+                    args.local_encoders_num = config_model_dict[str(ik)]['local_encoders_num'] if  'local_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
+                    # args.all_encoders_num = config_model_dict[str(ik)]['all_encoders_num']
                     
                     # args.encoder_trainable = config_model_dict[str(ik)]['encoder_trainable'] if  'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
                     # if args.encoder_trainable == 1:

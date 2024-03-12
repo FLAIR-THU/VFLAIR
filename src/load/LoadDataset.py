@@ -1479,10 +1479,10 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'yelp-polarity':
-        X_train = []
-        y_train = []
-        X_test = []
-        y_test = []
+        data_file = DATA_PATH + 'Yelp'
+        print(data_file)
+        dataset = load_dataset(data_file)
+
         train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
         test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
 

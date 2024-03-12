@@ -676,7 +676,7 @@ class PassiveParty_LLM(Party_LLM):
                             self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def pred_transmit(self):
+    def pred_transmit(self, use_cache = False):
         if self.args.model_type == 'Bert':
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
@@ -689,6 +689,8 @@ class PassiveParty_LLM(Party_LLM):
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()  # , _input_shape
             elif self.args.task_type == 'CausalLM':
                 pred, pred_detach, attention_mask  = self.give_pred()  # , _input_shape
+            elif self.args.task_type == 'Generation':
+                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
             else:
@@ -698,7 +700,9 @@ class PassiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()
             elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask = self.give_pred()
+                pred, pred_detach, attention_mask  = self.give_pred()
+            elif self.args.task_type == 'Generation':
+                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
                 pred, pred_detach, attention_mask = self.give_pred()
             else:
@@ -738,6 +742,10 @@ class PassiveParty_LLM(Party_LLM):
                 self.update_local_pred(pred_clone)
                 self.communication_cost += get_size_of(pred_clone) + \
                                            get_size_of(attention_mask)  # MB
+            elif self.args.task_type == 'Generation':
+                pred_list = [pred_clone, attention_mask, local_past_key_values]
+                self.update_local_pred(pred_clone)
+                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.task_type == 'QuestionAnswering':
                 pred_list = [pred_clone, attention_mask]
                 self.update_local_pred(pred_clone)
@@ -750,6 +758,10 @@ class PassiveParty_LLM(Party_LLM):
                     sequence_lengths)  # MB
             elif self.args.task_type == 'CausalLM':
                 pred_list = [pred_clone, attention_mask]
+                self.update_local_pred(pred_clone)
+                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+            elif self.args.task_type == 'Generation':
+                pred_list = [pred_clone, attention_mask, local_past_key_values]
                 self.update_local_pred(pred_clone)
                 self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.task_type == 'QuestionAnswering':
@@ -1022,8 +1034,8 @@ class PassiveParty_LLM(Party_LLM):
                     attentions=None,
                 )
 
-    def _send_pred_message(self, pred_list):
-        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result)
+    def _send_pred_message(self, pred_list, use_cache=False):
+        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
 
     def _send_global_backward_message(self):
         self._communication.send_global_backward_message()
