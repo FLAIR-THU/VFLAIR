@@ -30,7 +30,7 @@ class ActiveTaskService(threading.Thread):
         parties.append(active_party)
         return parties
 
-    async def add_job(self, job_id, data):
+    def add_job(self, job_id, data):
         args = load_llm_configs(data)
         args.parties = self._init_parties(args, job_id)
         # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))

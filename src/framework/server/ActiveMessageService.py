@@ -9,7 +9,7 @@ from framework.database.repository.JobRepository import job_repository
 from framework.database.repository.TaskRepository import task_repository
 import framework.database.model.Job as Job
 import framework.database.model.Task as Task
-import asyncio
+import threading
 
 logger = logger_util.get_logger()
 
@@ -36,7 +36,7 @@ class MessageService:
         if data['fl_type'] == 'VFL':
             self._task_service = fst.ActiveTaskService(self._queues)
             self._task_service.start()
-        asyncio.run(self._task_service.add_job(job_id, data))
+        threading.Thread(target=self._task_service.add_job, args=(job_id, data)).start()
         return job_id
 
     def parse_message(self, message):
