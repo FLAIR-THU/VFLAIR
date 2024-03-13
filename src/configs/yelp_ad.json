@@ -19,14 +19,14 @@
     },
     "dataset":{
         "dataset_name": "yelp-polarity",
-        "num_classes": 2
+        "num_classes": 5
     },
     "model_list":{
         "0": {
             "type": "textattackbert-base-uncased-yelp-polarity",
             "pretrained": 1,
             "head_layer_trainable": 1,
-            "output_dim": 2,
+            "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-yelp-polarity"
@@ -35,7 +35,7 @@
             "type": "textattackbert-base-uncased-yelp-polarity",
             "pretrained": 1,
             "head_layer_trainable": 1,
-            "output_dim": 2,
+            "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
             "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-yelp-polarity"
