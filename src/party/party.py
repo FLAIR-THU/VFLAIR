@@ -20,7 +20,7 @@ from utils.communication_protocol_funcs import Cache
 from sys import getsizeof
 
 class Party(object):
-    def __init__(self, args, index):
+    def __init__(self, args, index, need_data = True):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
@@ -61,7 +61,7 @@ class Party(object):
         # attack and defense
         # self.attacker = None
         self.defender = None
-
+    
         self.prepare_data(args, index)
         self.prepare_model(args, index)
         # self.prepare_attacker(args, index)

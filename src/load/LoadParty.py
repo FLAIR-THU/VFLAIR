@@ -27,16 +27,16 @@ def load_parties(args):
 def get_class_constructor(class_name):
     return globals()[class_name]
 
-def load_parties_llm(args):
+def load_parties_llm(args, need_data = True):
     # party 0,1,2,...,args.k-2||,args,k-1
     args.parties = [None] * args.k 
 
     assert args.k >= 1
     # for passive party 0,1,2,...,args.k-2
     for ik in range(args.k-1):
-        args.parties[ik] = get_class_constructor(args.passive_party_class)(args, ik)
+        args.parties[ik] = get_class_constructor(args.passive_party_class)(args, ik, need_data = need_data)
     # for active party args.k-1
-    args.parties[args.k-1] = get_class_constructor(args.active_party_class)(args, args.k-1)
+    args.parties[args.k-1] = get_class_constructor(args.active_party_class)(args, args.k-1, need_data = need_data)
 
     for ik in range(args.k - 1):
         args.parties[ik].init_communication()

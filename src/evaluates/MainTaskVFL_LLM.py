@@ -214,7 +214,7 @@ class MainTaskVFL_LLM(object):
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, sequence_lengths, attention_mask = self.parties[ik].give_pred()
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach, attention_mask = self.parties[ik].give_pred()
+                    pred, pred_detach , attention_mask ,  past_key_values = self.parties[ik].give_pred()
                 elif self.args.task_type == 'QuestionAnswering':
                     pred, pred_detach, attention_mask = self.parties[ik].give_pred()
                 else:
@@ -271,8 +271,8 @@ class MainTaskVFL_LLM(object):
                     self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask) + get_size_of(
                         sequence_lengths)  # MB
                 elif self.args.task_type == 'CausalLM':
-                    pred_list = [pred_clone, attention_mask]
-                    self.parties[self.k - 1].receive_pred(pred_list, ik)
+                    pred_list = [pred_clone, attention_mask, past_key_values]
+                    self.parties[self.k-1].receive_pred( pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
@@ -333,6 +333,45 @@ class MainTaskVFL_LLM(object):
 
         print(exp_result)
         return exp_result, exact_score
+
+    def vfl_forward(self, input_ids, attention_mask, token_type_ids, past_key_values):
+
+        # print('=== vfl forward ===')
+        # print('input_ids:',input_ids)
+        # print('attention_mask:',attention_mask.shape)
+        # print('token_type_ids:',token_type_ids)
+
+        if past_key_values != None:
+            self.local_past_key_values = past_key_values[:self.args.local_encoders_num]
+            self.global_past_key_values = past_key_values[self.args.local_encoders_num:]
+            self.all_past_key_values = past_key_values
+        else:
+            self.local_past_key_values = None
+            self.global_past_key_values = None
+            self.all_past_key_values = None
+
+        input_shape = input_ids.shape[:2]  # batchsize, seq_length
+        self.input_shape = input_shape
+
+        self.parties[0].obtain_local_data(input_ids, attention_mask, token_type_ids, self.local_past_key_values)
+        self.parties[1].obtain_local_data(None, None, None, past_key_values)
+
+        # self.gt_one_hot_label = gt_one_hot_label
+
+        # self.parties[1].encoder_attention_mask = self.parties[0].local_model.encoder_attention_mask
+        # self.parties[1].encoder_hidden_states = self.parties[0].local_model.encoder_hidden_states
+
+        # passive party do local pred
+        pred_list = self.parties[0].pred_transmit(use_cache = True)
+
+
+        # local_past_key_values = self.parties[0].local_model.past_key_values
+
+        # passive party inform active party to do global pred
+        test_logit = self.parties[0]._send_pred_message(pred_list, use_cache = False)
+
+        final_output = self.parties[1].global_output
+        return final_output
 
     def seq_inference(self):
         # SequenceClassification
@@ -876,14 +915,14 @@ class MainTaskVFL_LLM(object):
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
                             # 2*bs, num_of_answers
-                            batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
-                                                        for position_list in sample_label], batch_first=True,
-                                                       padding_value=-1).to(self.device)
-
-                            origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
-                            batch_label = batch_label.reshape(origin_batch_label_shape)
-                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
-                            # print('After batch_label:',batch_label.shape)
+                            # print('batch_label:',batch_label)
+                            if type(batch_label[0][0]) == list:
+                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                                batch_label = batch_label.reshape(origin_batch_label_shape)
+                            else:
+                                batch_label = torch.tensor(batch_label).to(self.device)
                         else:
                             batch_label = torch.tensor(batch_label).to(self.device)
 

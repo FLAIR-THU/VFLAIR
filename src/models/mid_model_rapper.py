@@ -226,12 +226,10 @@ class MIDModel_SqueezeLinear(nn.Module):
             nn.Linear(self.input_dim, self.squeeze_dim, bias=True),
             nn.ReLU(inplace=True)
         )
-
         self.enlarge_layer = nn.Sequential(
             nn.Flatten(),
             nn.Linear(seq_length*self.squeeze_dim, seq_length*self.squeeze_dim*2*bottleneck_scale, bias=True),
             nn.ReLU(inplace=True)
-
         )
         self.decoder_layer = nn.Sequential(
             # nn.Flatten(),
@@ -311,21 +309,12 @@ class MIDModel_Linear(nn.Module):
         # self.drop_out_p = 0.2
         
         self.enlarge_layer = nn.Sequential(
-            # nn.Flatten(),
             nn.Linear(self.input_dim, self.input_dim*2*bottleneck_scale, bias=True),
-            # nn.Dropout(p=self.drop_out_p, inplace=False),
             nn.ReLU(inplace=True)
         )
         self.decoder_layer = nn.Sequential(
-            # nn.Flatten(),
             nn.Linear(self.input_dim*bottleneck_scale, self.output_dim, bias=True),
-            # nn.Dropout(p=self.drop_out_p, inplace=False),
             nn.ReLU(inplace=True)
-
-            # nn.Linear(self.input_dim*bottleneck_scale, self.input_dim*bottleneck_scale*5, bias=True),
-            # nn.ReLU(inplace=True),
-            # nn.Linear(self.input_dim*bottleneck_scale*5, self.output_dim, bias=True),
-            # nn.ReLU(inplace=True)
         )
     
     def forward(self, x):

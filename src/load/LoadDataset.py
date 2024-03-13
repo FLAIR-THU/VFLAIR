@@ -1458,14 +1458,14 @@ def load_dataset_per_party_llm(args, index):
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
 
         df = pd.read_csv(train_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])[:100]
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
         df = pd.read_csv(test_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])[:10]
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
@@ -1479,32 +1479,46 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'yelp-polarity':
-        X_train = []
-        y_train = []
-        X_test = []
-        y_test = []
-        train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
-        test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
+        # data_file = DATA_PATH + 'Yelp'
+        # print(data_file)
+        # dataset = load_dataset(data_file)
+
+        # print( 'dataset[train][0]:',dataset['train'][0] )
+        # assert 1>2
+
+        # train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
+        # test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
+
+        train_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/train.csv'
+        test_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/test.csv'
 
         df = pd.read_csv(train_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])
+                         names=['label', 'sentence'])#[:5000]
+        # df = df[ (df['label'] == 1 ) | (df['label'] == 2) ]
+        
         scalar = np.array([-1])
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels) + scalar
+        print('y_train:',y_train[:20])
+
+
         df = pd.read_csv(test_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])
+                         names=['label', 'sentence'])#[:500]
+        # df = df[ (df['label'] == 1 ) | (df['label'] == 2) ]
+        
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
         y_test = np.array(labels) + scalar
+        print('y_test:',y_test[:20])
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-        print(type(X_train), X_train.shape, X_test.shape)  
-        print(type(y_train), y_train.shape, y_test.shape)  
+        print('X:',type(X_train), X_train.shape, X_test.shape)  
+        print('y:',type(y_train), y_train.shape, y_test.shape) 
 
     elif args.dataset == "emotion":
         X_train = []
@@ -1556,7 +1570,7 @@ def load_dataset_per_party_llm(args, index):
         labels = df.label.values
 
         X_train = np.array(sentences)
-        y_train = np.array(labels)
+        y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
         text_path = DATA_PATH + 'SST-2/dev.tsv'
         df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']

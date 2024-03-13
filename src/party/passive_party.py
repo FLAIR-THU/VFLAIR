@@ -23,6 +23,8 @@ from dataset.party_dataset import ActiveDataset
 from utils.communication_protocol_funcs import compress_pred
 
 from models.imagined_adversary_models import *
+from models.adversarial_model import *
+
 from models.mid_model_rapper import *
 
 import time
@@ -51,22 +53,21 @@ class PassiveParty(Party):
 class PassiveParty_LLM(Party_LLM):
     _communication = None
 
-    def __init__(self, args, index):
-        super().__init__(args, index)
+    def __init__(self, args, index, need_data = True):
+        super().__init__(args, index, need_data = need_data)
         print(f'==== initialize PassiveParty_LLM : party {index}======')
+
         self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
             print(f'running on cuda{torch.cuda.current_device()}')
         self.criterion = cross_entropy_for_onehot
-        # self.encoder = args.encoder
-        try:
-            self.train_index = args.idx_train
-            self.test_index = args.idx_test
 
-        except:
-            pass
+        # self.encoder = args.encoder
+        self.train_index = None #args.idx_train
+        self.test_index = None #args.idx_test
+
         self.device = args.device
 
         self.gt_one_hot_label = None
@@ -234,13 +235,19 @@ class PassiveParty_LLM(Party_LLM):
             # loss = self.criterion(pred, gt_one_hot_label)
             pooled_logits = pred
             labels = gt_one_hot_label
+
             # GPT2
             if self.num_labels == 1:
                 self.problem_type = "regression"
-            elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                self.problem_type = "single_label_classification"
             else:
-                self.problem_type = "multi_label_classification"
+                self.problem_type = "single_label_classification"
+            # elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+            #     self.problem_type = "single_label_classification"
+            # else:
+            #     self.problem_type = "multi_label_classification"
+
+            # print('self.problem_type:',self.problem_type)
+            # print('labels:',labels.dtype, labels.shape)
 
             if self.problem_type == "regression":
                 loss_fct = MSELoss()
@@ -250,10 +257,10 @@ class PassiveParty_LLM(Party_LLM):
                     loss = loss_fct(pooled_logits, labels)
             elif self.problem_type == "single_label_classification":
                 loss_fct = CrossEntropyLoss()
-                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(pooled_logits, labels)
+                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels) #labels.view(-1)
+            # elif self.problem_type == "multi_label_classification":
+            #     loss_fct = BCEWithLogitsLoss()
+            #     loss = loss_fct(pooled_logits, labels)
 
         elif self.args.task_type == 'CausalLM':
             #  GPT2
@@ -380,11 +387,17 @@ class PassiveParty_LLM(Party_LLM):
             self.local_model_optimizer.zero_grad()
 
             if self.encoder_trainable:
+                # [bs, seq_len70, embed_dim768]
+                # print('self.local_pred:',self.local_pred.shape)
+                # print('self.origin_pred:',self.origin_pred.shape)
+                # print('self.local_gradient:',self.local_gradient.shape)
+
                 weights_grad_a = torch.autograd.grad(
                     self.local_pred,
                     self.local_model.encoder_layer.parameters(),
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
+                    #allow_unused = True
                 )
                 for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
                     if w.requires_grad:
@@ -459,19 +472,6 @@ class PassiveParty_LLM(Party_LLM):
             # assert 1>2
             self.local_model_optimizer.step()
 
-            # print('self.mid_loss:',self.mid_loss)
-            # mark = 0
-            # for name, param in self.mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param.grad)
-            #         mark = mark + 1
-
-            # print('after')
-            # mark = 0
-            # for name, param in self.mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
         
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "inner"):
@@ -601,7 +601,7 @@ class PassiveParty_LLM(Party_LLM):
 
                         # Label
                         if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append( parties_data[party_id][bs_id][1].tolist()  )
+                            batch_label.append( parties_data[party_id][bs_id][1].tolist() )
                         else:
                             batch_label.append( parties_data[party_id][bs_id][1]  )
 
@@ -610,20 +610,18 @@ class PassiveParty_LLM(Party_LLM):
                     if batch_token_type_ids != None:
                         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
 
-                    # print('batch_label:',batch_label)
-                    # print('batch_label:',type(batch_label),len(batch_label) )
-
                     if type( batch_label[0] ) != str:
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
                             # 2*bs, num_of_answers
-                            batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
-                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-
-                            origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
-                            batch_label = batch_label.reshape(origin_batch_label_shape)
-                            # padded_sequence = pad_sequence([torch.tensor(seq) for sublist in list_of_lists for seq in sublist], batch_first=True, padding_value=0)
-                            # print('After batch_label:',batch_label.shape)
+                            # print('batch_label:',batch_label)
+                            if type(batch_label[0][0]) == list:
+                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                                batch_label = batch_label.reshape(origin_batch_label_shape)
+                            else:
+                                batch_label = torch.tensor(batch_label).to(self.device)
                         else:
                             batch_label = torch.tensor(batch_label).to(self.device)
 
@@ -686,7 +684,7 @@ class PassiveParty_LLM(Party_LLM):
                             self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def pred_transmit(self):
+    def pred_transmit(self, use_cache = False):
         if self.args.model_type == 'Bert':
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
@@ -698,7 +696,9 @@ class PassiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()  # , _input_shape
             elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
+                pred, pred_detach, attention_mask  = self.give_pred()  # , _input_shape
+            elif self.args.task_type == 'Generation':
+                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
             else:
@@ -708,7 +708,9 @@ class PassiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()
             elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask = self.give_pred()
+                pred, pred_detach, attention_mask  = self.give_pred()
+            elif self.args.task_type == 'Generation':
+                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
                 pred, pred_detach, attention_mask = self.give_pred()
             else:
@@ -748,6 +750,10 @@ class PassiveParty_LLM(Party_LLM):
                 self.update_local_pred(pred_clone)
                 self.communication_cost += get_size_of(pred_clone) + \
                                            get_size_of(attention_mask)  # MB
+            elif self.args.task_type == 'Generation':
+                pred_list = [pred_clone, attention_mask, local_past_key_values]
+                self.update_local_pred(pred_clone)
+                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.task_type == 'QuestionAnswering':
                 pred_list = [pred_clone, attention_mask]
                 self.update_local_pred(pred_clone)
@@ -760,6 +766,10 @@ class PassiveParty_LLM(Party_LLM):
                     sequence_lengths)  # MB
             elif self.args.task_type == 'CausalLM':
                 pred_list = [pred_clone, attention_mask]
+                self.update_local_pred(pred_clone)
+                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+            elif self.args.task_type == 'Generation':
+                pred_list = [pred_clone, attention_mask, local_past_key_values]
                 self.update_local_pred(pred_clone)
                 self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.task_type == 'QuestionAnswering':
@@ -1038,8 +1048,8 @@ class PassiveParty_LLM(Party_LLM):
             else:
                 assert 1>2 , 'Task type no supported'
 
-    def _send_pred_message(self, pred_list):
-        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result)
+    def _send_pred_message(self, pred_list, use_cache=False):
+        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
 
     def _send_global_backward_message(self):
         self._communication.send_global_backward_message()
