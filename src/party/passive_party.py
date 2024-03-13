@@ -653,7 +653,7 @@ class PassiveParty_LLM(Party_LLM):
                     total_sample_cnt += sample_cnt
                 del parties_data
         
-        return exact_score_list, f1_list, total_sample_cnt
+        return (exact_score_list, f1_list, total_sample_cnt)
 
     def launch_defense(self, gradients_list, _type):
 

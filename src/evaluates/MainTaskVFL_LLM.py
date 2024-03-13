@@ -319,16 +319,21 @@ class MainTaskVFL_LLM(object):
         # QA
         exact_score_list = []
         f1_list = []
+        need_wait = False
         for ik in range(self.k - 1):
             # Passive data local predict
-            self.parties[ik].predict()
+            result = self.parties[ik].predict()
+            if result is None:
+                need_wait = True
+            else:
+                exact_scores, f1s, _ = result
+                exact_score_list.extend(exact_scores)
+                f1_list.extend(f1s)
 
-            # exact_score_list.extend(exact_scores)
-            # f1_list.extend(f1s)
-        self._barrier.wait()
-        print('============================================')
-        print(self._last_result)
-        [exact_score_list, f1_list, _] = self._last_result
+        if need_wait:
+            self._barrier.wait()
+            print('============================================')
+            [exact_score_list, f1_list, _] = self._last_result
         exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
 
         print(exp_result)
@@ -478,14 +483,22 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         target_word_list = []
         predict_word_list = []
+        need_wait = False
         for ik in range(self.k - 1):
             # Passive data local predict
-            self.parties[ik].predict()
+            result = self.parties[ik].predict()
+            if result is None:
+                need_wait = True
+            else:
+                target_words, predict_words, _ = result
+                target_word_list.extend(target_words)
+                predict_word_list.extend(predict_words)
 
-        self._barrier.wait()
-        target_words, predict_words, _ = self._last_result
-        target_word_list.extend(target_words)
-        predict_word_list.extend(predict_words)
+        if need_wait:
+            self._barrier.wait()
+            target_words, predict_words, _ = self._last_result
+            target_word_list.extend(target_words)
+            predict_word_list.extend(predict_words)
 
         if self.args.metric_type == "best_pred":
             suc_cnt = 0
