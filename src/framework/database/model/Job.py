@@ -7,7 +7,10 @@ class Job(SQLModel, table=True):
     name: str
     fl_type: str
     params: str
+    status: int
+    result: Optional[str]
     create_time: datetime
+    end_time: Optional[datetime]
 
     def to_dict(self):
         return {c.name: self._getattr(c.name) for c in self.__table__.columns}

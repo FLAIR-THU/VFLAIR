@@ -39,17 +39,18 @@ class RemotePassiveParty(IParty):
         task.run = "predict"
         task.party = self._client_id
         task.job_id = self._job_id
-        task.params = json.dumps({
-            "input_ids": kwargs.get("input_ids").tolist(),
-            "attention_mask": kwargs.get("attention_mask").tolist(),
-            "position_ids": kwargs.get("position_ids").tolist(),
-            "past_key_values": kwargs.get("past_key_values"),
-            "input_embeds": kwargs.get("input_embeds"),
-            "use_cache": kwargs.get("use_cache"),
-            "output_attentions": kwargs.get("output_attentions"),
-            "output_hidden_states": kwargs.get("output_hidden_states"),
-            "return_dict": kwargs.get("return_dict"),
-        })
+        if kwargs is not None and len(kwargs) > 0:
+            task.params = json.dumps({
+                "input_ids": kwargs.get("input_ids").tolist(),
+                "attention_mask": kwargs.get("attention_mask").tolist(),
+                "position_ids": kwargs.get("position_ids").tolist(),
+                "past_key_values": kwargs.get("past_key_values"),
+                "input_embeds": kwargs.get("input_embeds"),
+                "use_cache": kwargs.get("use_cache"),
+                "output_attentions": kwargs.get("output_attentions"),
+                "output_hidden_states": kwargs.get("output_hidden_states"),
+                "return_dict": kwargs.get("return_dict"),
+            })
         self._queue.put(task)
 
     def train(self, i_epoch):

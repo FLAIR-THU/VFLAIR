@@ -5,7 +5,7 @@ class ICommunication(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def send_pred_message(self, pred_list, parse_result_fn):
+    def send_pred_message(self, pred_list, parse_result_fn, use_cache=False):
         pass
 
     @abstractmethod

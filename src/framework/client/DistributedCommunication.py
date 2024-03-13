@@ -16,7 +16,7 @@ class DistributedCommunication(ICommunication):
         self._node = fpn.Node(node_id=self._client.id)
         self._job_id = job_id
 
-    def send_pred_message(self, pred_list, parse_result_fn, test="True"):
+    def send_pred_message(self, pred_list, parse_result_fn, use_cache=False, test="True"):
         task = Task()
         task.run = "aggregate_remote"
         task.party = "active"

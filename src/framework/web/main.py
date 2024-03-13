@@ -72,6 +72,26 @@ def show_job(id: int):
     return job
 
 
+@app.get("/messages")
+def show_message():
+    return []
+
+
+@app.post("/message")
+async def send_message(msg: Annotated[str, Form()], file: UploadFile):
+    if file is None:
+        return {"result": "error", "message": "No file exists"}
+    contents = await file.read()
+    value = fpm.Value()
+    value.string = contents
+    msg_value = fpm.Value()
+    msg_value.string = msg
+    msg = mu.MessageUtil.create(node, {"config": value, "message": msg_value}, 1)
+    result = service['grpc_client'].open_and_send(msg)
+    job_id = result.named_values['job_id'].sint64
+    return {"result": "success", "job_id": job_id}
+
+
 def init_grpc_client(args):
     service['grpc_client'] = GrpcClient("web", -1, args.grpc_host, args.grpc_port)
 

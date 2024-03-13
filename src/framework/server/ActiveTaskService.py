@@ -7,13 +7,14 @@ from framework.client.RemotePassiveParty import RemotePassiveParty
 from load.LoadConfigs import load_llm_configs
 from load.LoadParty import get_class_constructor
 from framework.database.repository.TaskRepository import task_repository
+from framework.database.repository.JobRepository import job_repository
 
 logger = logger_util.get_logger('active_task_service')
 
 
 class ActiveTaskService(threading.Thread):
     _queues = {}
-    _main_tasks = []
+    _main_tasks = {}
 
     def __init__(self, queues):
         threading.Thread.__init__(self)
@@ -29,22 +30,27 @@ class ActiveTaskService(threading.Thread):
         parties.append(active_party)
         return parties
 
-    def add_job(self, job_id, data):
+    async def add_job(self, job_id, data):
         args = load_llm_configs(data)
         args.parties = self._init_parties(args, job_id)
         # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
         # self.run_next(job_id)
         main_task = MainTaskVFL_LLM(args, job_id)
-        self._main_tasks.append(main_task)
+        self._main_tasks.setdefault(str(job_id), main_task)
         if args.pipeline == 'pretrained':
-            main_task.inference()
+            result = main_task.inference()
         elif args.pipeline == 'finetune':
-            main_task.start_train()
+            result = main_task.start_train()
+        else:
+            raise NotImplementedError
+        self._save_job_result(job_id, result)
+        del self._main_tasks[str(job_id)]
 
     def _get_main_task(self, job_id):
-        for main_task in self._main_tasks:
-            if main_task.job_id == job_id:
-                return main_task
+        return self._main_tasks[str(job_id)]
+
+    def _save_job_result(self, job_id, result):
+        job_repository.change_status(job_id, 1, result)
 
     def run(self):
         while True:
