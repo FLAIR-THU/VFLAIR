@@ -1493,26 +1493,22 @@ def load_dataset_per_party_llm(args, index):
         test_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/test.csv'
 
         df = pd.read_csv(train_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])#[:5000]
-        # df = df[ (df['label'] == 1 ) | (df['label'] == 2) ]
+                         names=['label', 'sentence'])[:5000]
         
         scalar = np.array([-1])
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels) + scalar
-        print('y_train:',y_train[:20])
 
 
         df = pd.read_csv(test_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])#[:500]
-        # df = df[ (df['label'] == 1 ) | (df['label'] == 2) ]
+                         names=['label', 'sentence'])[:500]
         
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
         y_test = np.array(labels) + scalar
-        print('y_test:',y_test[:20])
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
