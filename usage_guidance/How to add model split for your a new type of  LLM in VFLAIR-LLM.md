@@ -16,7 +16,7 @@ We provide the following tutorial to help users implement model split based on t
 
 ## Model Split Pipeline
 
-![Model_Split_Pipeline](../../usage_guidance/figures/Model_Split_Pipeline.png)
+![Model_Split_Pipeline](./figures/Model_Split_Pipeline.png)
 
 
 
