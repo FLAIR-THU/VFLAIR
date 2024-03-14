@@ -562,6 +562,8 @@ class PassiveParty_LLM(Party_LLM):
 
     def predict(self):
         data_loader_list = [self.test_loader]
+        # data_loader_list = [self.train_loader]
+
         exact_score_list = []
         f1_list = []
         total_sample_cnt = 0
@@ -678,7 +680,7 @@ class PassiveParty_LLM(Party_LLM):
         return pred_detach
 
     def pred_transmit(self, use_cache = False):
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':
@@ -721,7 +723,7 @@ class PassiveParty_LLM(Party_LLM):
         attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
         # receive pred
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
                 pred_list = [pred_clone, attention_mask]
                 self.update_local_pred(pred_clone)
@@ -1017,7 +1019,7 @@ class PassiveParty_LLM(Party_LLM):
             assert 1 > 2, "task_type not supported"
 
     def parse_pred_message_result(self, test_logit):
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
                 logits = torch.Tensor(test_logit['logits'])
                 if test_logit['requires_grad']:

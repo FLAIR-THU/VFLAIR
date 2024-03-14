@@ -67,7 +67,7 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         super().__init__(global_gpt.config)
         self.num_labels = global_gpt.config.num_labels
         self.transformer = global_gpt #GPT2Model(config)
-        self.score = score #nn.Linear(config.n_embd, self.num_labels, bias=False)
+        self.head_layer = score #nn.Linear(config.n_embd, self.num_labels, bias=False)
 
         # Model parallel
         self.model_parallel = False
@@ -113,7 +113,7 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
             return_dict=return_dict
         )
         hidden_states = transformer_outputs[0]
-        logits = self.score(hidden_states)
+        logits = self.head_layer(hidden_states)
 
         input_shape = input_ids.size()[:2]
         batch_size  = input_shape[0]
@@ -185,7 +185,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
         super().__init__(global_gpt.config)
         self.num_labels = global_gpt.config.num_labels
         self.transformer = global_gpt #GPT2Model(config)
-        self.qa_outputs = qa_outputs #nn.Linear(config.hidden_size, 2)
+        self.head_layer = qa_outputs #nn.Linear(config.hidden_size, 2)
 
         # Model parallel
         self.model_parallel = False
@@ -234,7 +234,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
 
         sequence_output = outputs[0]
 
-        logits = self.qa_outputs(sequence_output)
+        logits = self.head_layer(sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1).contiguous()
         end_logits = end_logits.squeeze(-1).contiguous()

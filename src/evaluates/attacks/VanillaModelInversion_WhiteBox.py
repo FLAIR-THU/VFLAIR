@@ -203,8 +203,10 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     # initial guess
                     dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
-                    dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
-
+                    if origin_token_type_ids != None:
+                        dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
+                    else:
+                        dummy_local_batch_token_type_ids = None
                     # if flag == 0:
                     #     print('dummy_attention_mask:',dummy_attention_mask.shape,dummy_attention_mask)
                     #     print('dummy_local_batch_token_type_ids:',dummy_local_batch_token_type_ids.shape,dummy_local_batch_token_type_ids)
@@ -212,7 +214,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
 
                     bs, seq_length = sample_origin_data.shape
-                    if self.args.model_type == "Bert":
+                    if self.args.model_type in ['Bert','Roberta']:
                         dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
                     elif self.args.model_type == "GPT2":
                         dummy_embedding = torch.zeros([bs,seq_length,1024]).type(torch.float32).to(self.device)
@@ -226,7 +228,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     
                     def get_cost(dummy_embedding):
                         # compute dummy result
-                        if self.args.model_type == 'Bert':
+                        if self.args.model_type  in ['Bert','Roberta']:
                             dummy_intermediate, _  = local_model(input_ids=dummy_data, attention_mask = dummy_attention_mask, \
                             token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)                 
                         elif self.args.model_type == 'GPT2':
@@ -312,8 +314,10 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                     if flag == 0:
                         print('len:',len(clean_sample_origin_id),'  precision:',precision, ' recall:',recall)
-                        print('origin_text:',origin_text)
-                        print('pred_text:',pred_text)
+                        print('origin_text:\n',origin_text)
+                        print('-'*25)
+                        print('pred_text:\n',pred_text)
+                        print('-'*25)
                         # append_exp_res(self.args.exp_res_path, origin_text)
                         # append_exp_res(self.args.exp_res_path, pred_text)
                     flag += 1

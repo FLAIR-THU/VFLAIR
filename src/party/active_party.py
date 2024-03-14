@@ -267,7 +267,7 @@ class ActiveParty_LLM(Party_LLM):
         t2 = t2.to(self.args.device)
         result = self.aggregate([[t1, t2]])
 
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
                 return {
                     "requires_grad": result.requires_grad,
@@ -297,7 +297,7 @@ class ActiveParty_LLM(Party_LLM):
 
         self.passive_pred_list[0][0].requires_grad = True
 
-        if self.args.model_type == 'Bert': # passive_pred_list[0] = [intermediate, attention_mask]
+        if self.args.model_type in ['Bert','Roberta']: # passive_pred_list[0] = [intermediate, attention_mask]
             if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],return_dict=True)
                 pred = self.global_output.logits

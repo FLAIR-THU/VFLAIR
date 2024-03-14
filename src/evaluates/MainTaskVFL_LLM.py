@@ -157,14 +157,14 @@ class MainTaskVFL_LLM(object):
         return pred_detach
 
 
-    def pred_transmit(self): 
+    def pred_transmit(self, use_cache = False): 
         '''
         Active party gets pred from passive parties
         '''
         all_pred_list = []
         for ik in range(self.k-1):
             # give pred
-            if self.args.model_type == 'Bert':
+            if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, attention_mask  = self.parties[ik].give_pred() # , _input_shape
                 elif self.args.task_type == 'QuestionAnswering':
@@ -214,7 +214,7 @@ class MainTaskVFL_LLM(object):
             attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
             # receive pred
-            if self.args.model_type == 'Bert':
+            if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
                     pred_list = [pred_clone,attention_mask]
                     self.parties[self.k-1].receive_pred(pred_list, ik)  
@@ -392,8 +392,8 @@ class MainTaskVFL_LLM(object):
         else:
             suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
             torch.tensor(test_actual_labels)).item()
-            print('test_predict_labels:',test_predict_labels[:10])
-            print('test_actual_labels:',test_actual_labels[:10])
+            # print('test_predict_labels:',test_predict_labels[:10])
+            # print('test_actual_labels:',test_actual_labels[:10])
 
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
             self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
@@ -714,7 +714,7 @@ class MainTaskVFL_LLM(object):
         # torch.autograd.set_detect_anomaly(True)
         # =================== Commu ===================
         # exchange info between party: local_pred/global_pred
-        all_pred_list = self.pred_transmit()   # [ pred of this party ]
+        all_pred_list = self.parties[0].pred_transmit()   # [ pred of this party ]
         final_pred = self.parties[self.args.k - 1].aggregate(all_pred_list, test="True")  #self._send_pred_message(all_pred_list)
 
         # passive party -> global gradient -> active party

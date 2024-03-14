@@ -50,6 +50,8 @@ MODEL_PATH = {
 "textattackroberta-base-SST-2":YOUR_MODEL_PATH+"textattackroberta-base-SST-2",
 "textattackalbert-base-v2-CoLA":YOUR_MODEL_PATH+"textattackalbert-base-v2-CoLA",
 "textattackroberta-base-MNLI":YOUR_MODEL_PATH+"textattackroberta-base-MNLI",
+"nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH+"nihaldsouza1yelp-rating-classification",
+
 "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH+"rsvp-aibertserini-bert-base-squad",
 
 "gpt2":YOUR_MODEL_PATH+"gpt2",

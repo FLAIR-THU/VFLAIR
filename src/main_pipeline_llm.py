@@ -45,6 +45,8 @@ def evaluate_no_attack_pretrained(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
+    exp_result = f"{args.pad_info}| " + exp_result
+    print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
     return vfl, metric_val
@@ -60,10 +62,12 @@ def evaluate_no_attack_finetune(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}| " \
+    exp_result = f"K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}|{args.pad_info}|" \
         + exp_result
     print(exp_result)
+
     append_exp_res(args.exp_res_path, exp_result)
+
     # append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}==stopping_time:{stopping_time}==stopping_commu_cost:{stopping_commu_cost}")
     
     return vfl, metric_val
