@@ -85,8 +85,12 @@ async def send_message(msg: Annotated[str, Form()], file: UploadFile):
     value = fpm.Value()
     value.string = contents
     msg_value = fpm.Value()
-    msg_value.string = msg
-    msg = mu.MessageUtil.create(node, {"config": value, "message": msg_value}, 1)
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": msg}
+    ]
+    msg_value.string = json.dumps(messages)
+    msg = mu.MessageUtil.create(node, {"config": value, "messages": msg_value}, 1)
     result = service['grpc_client'].open_and_send(msg)
     job_id = result.named_values['job_id'].sint64
     return {"result": "success", "job_id": job_id}

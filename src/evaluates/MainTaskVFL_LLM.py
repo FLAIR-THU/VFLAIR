@@ -450,21 +450,22 @@ class MainTaskVFL_LLM(object):
 
     def _format_forward_kwargs(self, **kwargs):
         if not kwargs:
-            tokenizer = self.args.tokenizer
-            prompt = "You are a python programmer, what can you do?"
             messages = [
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": "You are a python programmer, what can you do?"}
             ]
-            text = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
-            )
-            model_inputs = tokenizer([text], return_tensors="pt")
-            kwargs.update({'input_ids': model_inputs.input_ids,
-                           'output_hidden_states': True})
-            logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
+        else:
+            messages = kwargs['messages']
+        tokenizer = self.args.tokenizer
+        text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+        model_inputs = tokenizer([text], return_tensors="pt")
+        kwargs.update({'input_ids': model_inputs.input_ids,
+                       'output_hidden_states': True})
+        logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
         base_dict = {'input_ids': None,
                      'attention_mask': None,
                      'position_ids': None,

@@ -1,13 +1,12 @@
 import threading
 
 import framework.common.logger_util as logger_util
-
 from evaluates.MainTaskVFL_LLM import MainTaskVFL_LLM
 from framework.client.RemotePassiveParty import RemotePassiveParty
+from framework.database.repository.JobRepository import job_repository
+from framework.database.repository.TaskRepository import task_repository
 from load.LoadConfigs import load_llm_configs
 from load.LoadParty import get_class_constructor
-from framework.database.repository.TaskRepository import task_repository
-from framework.database.repository.JobRepository import job_repository
 
 logger = logger_util.get_logger('active_task_service')
 
@@ -21,7 +20,7 @@ class ActiveTaskService(threading.Thread):
         self._queues = queues
 
     def _init_parties(self, args, job_id):
-        active_party = get_class_constructor(args.active_party_class)(args, args.k-1)
+        active_party = get_class_constructor(args.active_party_class)(args, args.k - 1)
         parties = []
         for i in range(args.k - 1):
             client_id = f'c{i + 1}'
@@ -30,7 +29,8 @@ class ActiveTaskService(threading.Thread):
         parties.append(active_party)
         return parties
 
-    def add_job(self, job_id, data):
+    def add_job(self, job_id, data, params=None):
+        params = params if params else {}
         args = load_llm_configs(data)
         args.parties = self._init_parties(args, job_id)
         # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
@@ -38,7 +38,7 @@ class ActiveTaskService(threading.Thread):
         main_task = MainTaskVFL_LLM(args, job_id)
         self._main_tasks.setdefault(str(job_id), main_task)
         if args.pipeline == 'pretrained':
-            result = main_task.inference()
+            result = main_task.inference(messages=params)
         elif args.pipeline == 'finetune':
             result = main_task.start_train()
         else:

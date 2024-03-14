@@ -46,6 +46,13 @@ VFLAIR
 
 修改配置文件，假设保存在basic_config_cola.json文件中，
 1. 发起任务：使用curl localhost:5000/job/upload -F "file=@/Users/test/Downloads/basic_config_cola.json" -v
+    
+    其中curl是发http请求的工具
+
+    localhost:5000/job/upload
+
+    -F参数传递配置文件路径
+    
 2. 命令运行成功后会返回任务的id, 我们可以根据id，查看任务的结果
 3. 查看任务结果：使用 curl localhost:5000/job?id=1
 

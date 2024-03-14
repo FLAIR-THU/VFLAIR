@@ -32,11 +32,17 @@ class MessageService:
 
         params = config.named_values['config']
         data = json.loads(params.string)
+
+        messages = config.named_values['messages']
+        messages_data = None
+        if len(messages.string) > 0:
+            messages_data = json.loads(messages.string)
+
         job_id = self._create_job(data)
         if data['fl_type'] == 'VFL':
             self._task_service = fst.ActiveTaskService(self._queues)
             self._task_service.start()
-        threading.Thread(target=self._task_service.add_job, args=(job_id, data)).start()
+        threading.Thread(target=self._task_service.add_job, args=(job_id, data, messages_data)).start()
         return job_id
 
     def parse_message(self, message):
