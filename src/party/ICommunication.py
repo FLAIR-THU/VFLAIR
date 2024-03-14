@@ -5,7 +5,7 @@ class ICommunication(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def send_pred_message(self, pred_list, parse_result_fn):
+    def send_pred_message(self, pred_list, parse_result_fn, use_cache=False):
         pass
 
     @abstractmethod
@@ -25,6 +25,6 @@ class ICommunication(object):
         pass
 
     @abstractmethod
-    def send_global_modal_train_message(self):
+    def send_global_model_train_message(self):
         pass
 
