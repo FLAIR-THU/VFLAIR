@@ -6,7 +6,7 @@ import torch
 class QW_Passive_Party(Party_LLM):
     _communication = None
 
-    def __init__(self, args, index):
+    def __init__(self, args, index, **kwargs):
         super().__init__(args, index)
 
     def prepare_data(self, args, index):

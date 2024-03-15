@@ -11,7 +11,7 @@ import json
 from framework.common.yaml_loader import load_yaml
 import framework.common.logger_util as logger_util
 from contextlib import asynccontextmanager
-
+from argparse import Namespace
 service = {}
 
 
@@ -82,17 +82,15 @@ async def send_message(msg: Annotated[str, Form()], file: UploadFile):
     if file is None:
         return {"result": "error", "message": "No file exists"}
     contents = await file.read()
-    value = fpm.Value()
-    value.string = contents
-    msg_value = fpm.Value()
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": msg}
     ]
-    msg_value.string = json.dumps(messages)
-    msg = mu.MessageUtil.create(node, {"config": value, "messages": msg_value}, 1)
-    result = service['grpc_client'].open_and_send(msg)
-    job_id = result.named_values['job_id'].sint64
+    msg = Namespace()
+    msg.data = {"config": contents, "messages": messages}
+    msg.type = fpm.CREATE_JOB
+    result = service['grpc_client'].parse_message(msg)
+    job_id = result['job_id']
     return {"result": "success", "job_id": job_id}
 
 

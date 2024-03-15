@@ -20,6 +20,8 @@ class MessageService:
 
     def __init__(self, queues):
         self._queues = queues
+        self._task_service = fst.ActiveTaskService(self._queues)
+        self._task_service.start()
 
     def _queue_tasks(self, data):
         tasks = data['tasks']
@@ -27,49 +29,20 @@ class MessageService:
         client_queue = self._queues[task['party']]
         client_queue.put(task)
 
-    def _run_task(self, config):
-        logger.info("received config: {}".format(config.named_values))
-
-        params = config.named_values['config']
-        data = json.loads(params.string)
-
-        messages = config.named_values['messages']
-        messages_data = None
-        if len(messages.string) > 0:
-            messages_data = json.loads(messages.string)
-
-        job_id = self._create_job(data)
-        if data['fl_type'] == 'VFL':
-            self._task_service = fst.ActiveTaskService(self._queues)
-            self._task_service.start()
-        threading.Thread(target=self._task_service.add_job, args=(job_id, data, messages_data)).start()
-        return job_id
-
     def parse_message(self, message):
-        if message.type == fpm.CREATE_JOB:
-            # start job
-            job_id = self._run_task(message.data)
-            value = fpm.Value()
-            value.sint64 = job_id
-            return {"job_id": value}
-        elif message.type == fpm.QUERY_JOB:
+        if message.type == fpm.QUERY_JOB:
             # query job detail
             return self.show_job(message)
-        elif message.type == fpm.FINISH_TASK:
-            # client finish tasks
-            self._task_service.save_and_next(message.data.named_values)
-            return {}
         elif message.type == fpm.START_TASK:
             # client sending task to active
             task_value = message.data.named_values['task']
             task = json.loads(task_value.string)
 
-            params = message.data.named_values['data']
-            data = None
-            if params is not None and len(params.string) > 0:
-                data = json.loads(params.string)
+            data = task['params']
+            config_value = message.data.named_values['config']
+            config = json.loads(config_value.string)
 
-            result = self._task_service.run_specific(task, data)
+            result = self._task_service.run_specific(task, data, config)
             value = fpm.Value()
             if result is None:
                 result = {}
@@ -94,24 +67,4 @@ class MessageService:
         task.party = 'active'
         return task
 
-    def _create_job(self, data):
-        job = Job.Job()
-        job.name = data['fl_type']+"任务"
-        job.fl_type = data['fl_type']
-        job.params = json.dumps(data)
-        job.create_time = datetime.now()
-        job_id = job_repository.create(job)
-        job.id = job_id
 
-        # for task_data in data['tasks']:
-        #     task = Task.Task()
-        #     task.task_id = task_data['id']
-        #     task.run = task_data['run']
-        #     task.job_id = job_id
-        #     task.create_time = datetime.now()
-        #     task.status = 0
-        #     task.party = task_data['party']
-        #     task_id = task_repository.create(task)
-        #     task.id = task_id
-
-        return job_id

@@ -7,8 +7,11 @@ from framework.common import MessageUtil as mu
 import framework.common.logger_util as logger_util
 import argparse
 import os
+import json
 from framework.common.yaml_loader import load_yaml
+from framework.database.repository.JobRepository import job_repository
 import framework.credentials.credentials as credentials
+
 logger = logger_util.get_logger("grpc_client")
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -42,10 +45,22 @@ class GrpcClient():
                 % (response.code, response.data)
             )
 
-    def send(self, stub, msg):
+    def send(self, stub, task):
+        job = job_repository.get_by_id(task.job_id)
+        config_value = fpm.Value()
+        config_value.string = job.params
+
+        task_value = fpm.Value()
+        task_value.string = json.dumps(task.to_dict())
+        msg = mu.MessageUtil.create(self._node, {"config": config_value, "task": task_value}, fpm.START_TASK)
+
         response = stub.send(msg)
         return response.data
 
+    def parse_message(self, response):
+        if self._message_service is None:
+            self._message_service = fcp.PassiveMessageService(self)
+        return self._message_service.parse_message(response)
 
     def register(self, stub):
         msg = mu.MessageUtil.create(self._node, {})
@@ -66,14 +81,14 @@ class GrpcClient():
         msg = mu.MessageUtil.create(self._node, {}, fpm.UNREGISTER)
         stub.unregister(msg)
 
-    def open_and_send(self, msg):
+    def open_and_send(self, task):
         options = [
             ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
             ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
         ]
         with grpc.secure_channel(f"{self.host}:{self.port}", channel_credential, options) as channel:
             stub = fps.MessageServiceStub(channel)
-            return self.send(stub, msg)
+            return self.send(stub, task)
 
     def open_and_register(self):
         options = [

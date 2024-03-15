@@ -427,14 +427,5 @@ class E2EModel(Qwen2ForCausalLM):
                                         output_attentions=output_attentions,
                                         output_hidden_states=output_hidden_states,
                                         return_dict=return_dict)  # type: Qwen2DecoderLayerParam
-        if self.communication:
-            intermediate = self.communication(intermediate)
-        # output = self.global_model(inputs_embeds=intermediate.hidden_states[0],
-        #                            attention_mask=intermediate.attention_mask[0],
-        #                            past_key_values=intermediate.past_key_values[0],
-        #                            output_hidden_states=intermediate.output_hidden_states,
-        #                            position_ids=intermediate.position_ids[0], use_cache=False)
-        output = self.global_model(intermediate)
-        if self.reset_barrier:
-            self.reset_barrier()
+        output = self.global_model(**intermediate)
         return output

@@ -315,25 +315,17 @@ class MainTaskVFL_LLM(object):
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
     def qa_inference(self):
-
         # QA
         exact_score_list = []
         f1_list = []
-        need_wait = False
         for ik in range(self.k - 1):
             # Passive data local predict
             result = self.parties[ik].predict()
-            if result is None:
-                need_wait = True
-            else:
-                exact_scores, f1s, _ = result
-                exact_score_list.extend(exact_scores)
-                f1_list.extend(f1s)
 
-        if need_wait:
-            self._barrier.wait()
-            print('============================================')
-            [exact_score_list, f1_list, _] = self._last_result
+            exact_scores, f1s, _ = result
+            exact_score_list.extend(exact_scores)
+            f1_list.extend(f1s)
+
         exp_result, exact_score = self.parties[self.k - 1].mean_local((exact_score_list, f1_list))
 
         print(exp_result)
@@ -484,20 +476,10 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
         target_word_list = []
         predict_word_list = []
-        need_wait = False
         for ik in range(self.k - 1):
             # Passive data local predict
             result = self.parties[ik].predict()
-            if result is None:
-                need_wait = True
-            else:
-                target_words, predict_words, _ = result
-                target_word_list.extend(target_words)
-                predict_word_list.extend(predict_words)
-
-        if need_wait:
-            self._barrier.wait()
-            target_words, predict_words, _ = self._last_result
+            target_words, predict_words, _ = result
             target_word_list.extend(target_words)
             predict_word_list.extend(predict_words)
 

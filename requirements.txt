@@ -1,13 +1,13 @@
---extra-index-url https://download.pytorch.org/whl/cu113
+--extra-index-url https://download.pytorch.org/whl/cu118
 matplotlib==3.5.1
 numpy==1.23.5
 pandas==1.4.3
 Pillow==9.3.0
 requests==2.28.1
 scikit_learn==1.2.0
-torch==1.12.1+cu113
+torch==2.0.1+cu118
 torchsummary==1.5.1
-torchvision==0.13.1+cu113
+torchvision==0.15.2+cu118
 tqdm==4.62.3
 phe==1.5.0
 networkx==3.1

@@ -6,7 +6,7 @@ from loguru import logger
 
 
 class QW_Active_Party(Party_LLM):
-    def __init__(self, args, index):
+    def __init__(self, args, index, **kwargs):
         super().__init__(args, index)
 
     def prepare_data(self, args, index):
@@ -34,7 +34,15 @@ class QW_Active_Party(Party_LLM):
                                          output_hidden_states=output_hidden_states,
                                          position_ids=position_ids, use_cache=False)
         # logger.debug(resp.hidden_states[-1])
+        if isinstance(intermediate, dict):
+            return {
+                "attentions": resp.get("attentions"),
+                "hidden_states": resp.get("hidden_states"),
+                "logits": resp.get("logits").tolist(),
+                "past_key_values": resp.get("past_key_values"),
+                "loss": resp.get("loss"),
+            }
         return resp
 
     def __call__(self, *args, **kwargs):
-        return self.predict(*args,**kwargs)
+        return self.predict(*args, **kwargs)

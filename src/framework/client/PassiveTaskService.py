@@ -6,6 +6,9 @@ import framework.common.MessageUtil as mu
 from load.LoadConfigs import load_llm_configs
 import json
 from .DistributedCommunication import DistributedCommunication
+from framework.server.RemoteActiveParty import RemoteActiveParty
+from evaluates.MainTaskVFL_LLM import MainTaskVFL_LLM
+from framework.database.repository.JobRepository import job_repository
 
 logger = logger_util.get_logger('passive_task_service')
 
@@ -13,6 +16,7 @@ logger = logger_util.get_logger('passive_task_service')
 class PassiveTaskService:
     _parties = {}
     _client = None
+    _main_tasks = {}
 
     def _get_party(self, task):
         return self._parties[task['job_id']]
@@ -23,6 +27,31 @@ class PassiveTaskService:
             party = get_class_constructor(args.passive_party_class)(args, self._client.index)
             party.init_communication(DistributedCommunication(self._client, job_id))
             self._parties[job_id] = party
+
+    def _init_parties(self, args, job_id):
+        passive_party = get_class_constructor(args.passive_party_class)(args, 0)
+        parties = [passive_party, RemoteActiveParty(self._client, job_id, args)]
+        return parties
+
+    def run_job(self, job_id, data, params=None):
+        params = params if params else {}
+        args = load_llm_configs(data)
+        args.parties = self._init_parties(args, job_id)
+        # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
+        # self.run_next(job_id)
+        main_task = MainTaskVFL_LLM(args, job_id)
+        self._main_tasks.setdefault(str(job_id), main_task)
+        if args.pipeline == 'pretrained':
+            result = main_task.inference(messages=params)
+        elif args.pipeline == 'finetune':
+            result = main_task.start_train()
+        else:
+            raise NotImplementedError
+        self._save_job_result(job_id, result)
+        del self._main_tasks[str(job_id)]
+
+    def _save_job_result(self, job_id, result):
+        job_repository.change_status(job_id, 1, result)
 
     def __init__(self, client):
         self._client = client
