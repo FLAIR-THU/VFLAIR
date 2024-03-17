@@ -41,11 +41,11 @@ async def upload_job(file: UploadFile):
     if file is None:
         return {"result": "error", "message": "No file exists"}
     contents = await file.read()
-    value = fpm.Value()
-    value.string = contents
-    msg = mu.MessageUtil.create(node, {"config": value}, 1)
-    result = service['grpc_client'].open_and_send(msg)
-    job_id = result.named_values['job_id'].sint64
+    msg = Namespace()
+    msg.data = {"config": contents}
+    msg.type = fpm.CREATE_JOB
+    result = service['grpc_client'].parse_message(msg)
+    job_id = result['job_id']
     return {"result": "success", "job_id": job_id}
 
 
@@ -95,7 +95,7 @@ async def send_message(msg: Annotated[str, Form()], file: UploadFile):
 
 
 def init_grpc_client(args):
-    service['grpc_client'] = GrpcClient("web", -1, args.grpc_host, args.grpc_port)
+    service['grpc_client'] = GrpcClient("web", 0, args.grpc_host, args.grpc_port)
 
 
 def parse_args():

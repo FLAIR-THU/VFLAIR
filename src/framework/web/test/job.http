@@ -4,6 +4,16 @@ Content-Type: application/x-www-form-urlencoded
 config=/home/shannon/dev/projects/VFLAIR/src/configs/distributed-llm-train.json
 
 ###
+POST http://localhost:5000/job/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="lambada.json"
+
+< /home/shannon/dev/projects/VFLAIR/src/configs/lambada.json
+--WebAppBoundary--
+
+###
 POST http://localhost:5000/message
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 

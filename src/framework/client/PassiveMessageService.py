@@ -35,7 +35,7 @@ class PassiveMessageService:
 
         params = data_dict['config']
         data = json.loads(params)
-        messages = data_dict['messages']
+        messages = data_dict['messages'] if 'messages' in data_dict else None
 
         job_id = self._create_job(data)
         if data['fl_type'] == 'VFL':

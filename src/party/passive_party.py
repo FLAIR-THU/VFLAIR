@@ -708,7 +708,7 @@ class PassiveParty_LLM(Party_LLM):
             if self.args.task_type == 'SequenceClassification':
                 pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()
             elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask  = self.give_pred()
+                pred, pred_detach, attention_mask, _ = self.give_pred()
             elif self.args.task_type == 'Generation':
                 pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
             elif self.args.task_type == 'QuestionAnswering':

@@ -707,7 +707,7 @@ def load_basic_models_llm_gpt2(args, index):
                 for param in global_model.head_layer.parameters():
                     param.requires_grad = args.head_layer_trainable[1]
                 if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
+                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
             global_model = global_model.to(args.device)
 

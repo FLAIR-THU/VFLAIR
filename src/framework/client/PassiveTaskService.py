@@ -24,12 +24,13 @@ class PassiveTaskService:
     def add_job(self, job_id, data):
         if job_id not in self._parties:
             args = load_llm_configs(data)
-            party = get_class_constructor(args.passive_party_class)(args, self._client.index)
-            party.init_communication(DistributedCommunication(self._client, job_id))
-            self._parties[job_id] = party
+            passive_party = get_class_constructor(args.passive_party_class)(args, self._client.index)
+            passive_party.init_communication(DistributedCommunication(self._client, job_id))
+            self._parties[job_id] = passive_party
 
     def _init_parties(self, args, job_id):
-        passive_party = get_class_constructor(args.passive_party_class)(args, 0)
+        passive_party = get_class_constructor(args.passive_party_class)(args, self._client.index)
+        passive_party.init_communication(DistributedCommunication(self._client, job_id))
         parties = [passive_party, RemoteActiveParty(self._client, job_id, args)]
         return parties
 

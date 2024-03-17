@@ -242,7 +242,7 @@ class Party(object):
             if self.args.task_type == 'SequenceClassification':
                 return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, None
             elif self.args.task_type == 'Generation':
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.past_key_values 
             elif self.args.task_type == 'QuestionAnswering':
