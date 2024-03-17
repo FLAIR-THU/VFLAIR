@@ -1044,6 +1044,8 @@ class PassiveParty_LLM(Party_LLM):
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'CausalLM':
                 logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
                 return logits.to(self.args.device)
             else:
                 assert 1>2 , 'Task type no supported'
@@ -1058,7 +1060,7 @@ class PassiveParty_LLM(Party_LLM):
         self._communication.send_global_loss_and_gradients(loss, gradients)
 
     def _send_cal_passive_local_gradient_message(self, pred):
-        self._communication.send_cal_passive_local_gradient_message(pred)
+        return self._communication.send_cal_passive_local_gradient_message(pred)
 
     def _send_global_lr_decay(self, i_epoch):
         self._communication.send_global_lr_decay(i_epoch)
@@ -1194,7 +1196,8 @@ class PassiveParty_LLM(Party_LLM):
         final_pred = self._send_pred_message(all_pred_list)
 
         # passive party -> global gradient -> active party
-        self.global_gradient_transmit(final_pred)
+        global_loss, global_gradients = self.global_gradient_transmit(final_pred)
+        global_pred = final_pred
 
         # active party -> local gradient -> passive party
         self.local_gradient_transmit(all_pred_list)
@@ -1209,8 +1212,8 @@ class PassiveParty_LLM(Party_LLM):
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
-            pred = self.args.parties[self.args.k - 1].global_pred  # QuestionAnsweringModelOutput
-            loss = self.args.parties[self.args.k - 1].global_loss
+            pred = global_pred  # QuestionAnsweringModelOutput
+            loss = global_loss
 
             start_logits = pred.start_logits
             end_logits = pred.end_logits
@@ -1354,16 +1357,15 @@ class PassiveParty_LLM(Party_LLM):
             suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
             batch_train_acc = suc_cnt / predict_prob.shape[0]
 
-            loss = self.global_loss
+            loss = global_loss
 
             return loss.item(), batch_train_acc
 
         elif self.args.task_type == 'CausalLM':
-            pred = self.parties[self.k - 1].global_pred  # logits
-            loss = self.parties[self.k - 1].global_loss
+            pred = global_pred  # logits
+            loss = global_loss
             test_logit = pred
-            next_token_logits = test_logit[:,
-                                -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
+            next_token_logits = test_logit[:, -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
 
             if self.args.dataset == "Lambada":
                 # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
@@ -1440,6 +1442,7 @@ class PassiveParty_LLM(Party_LLM):
         self.communication_cost += get_size_of(global_gradients)
 
         self._send_global_loss_and_gradients(self.global_loss, self.global_gradients)
+        return self.global_loss, self.global_gradients
 
 
 

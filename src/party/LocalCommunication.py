@@ -22,7 +22,7 @@ class LocalCommunication(ICommunication):
         })
 
     def send_cal_passive_local_gradient_message(self, pred):
-        self.__active_party.cal_passive_local_gradient(pred)
+        return self.__active_party.cal_passive_local_gradient(pred)
 
     def send_global_lr_decay(self, i_epoch):
         # for ik in range(self.k):
