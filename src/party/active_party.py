@@ -285,6 +285,8 @@ class ActiveParty_LLM(Party_LLM):
         elif self.args.model_type == 'GPT2': # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
                     "logits": result.tolist()
                 }
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
