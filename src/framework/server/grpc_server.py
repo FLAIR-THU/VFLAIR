@@ -113,7 +113,7 @@ def main(main_args):
     else:
         raise ValueError("Please specify --config")
 
-    MAX_MESSAGE_LENGTH = 800 * 1024 * 1000
+    MAX_MESSAGE_LENGTH = 2000 * 1024 * 1000
     server_credentials = grpc.ssl_server_credentials(
         (
             (

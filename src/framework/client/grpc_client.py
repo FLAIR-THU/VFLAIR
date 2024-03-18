@@ -20,7 +20,7 @@ channel_credential = grpc.ssl_channel_credentials(
     credentials.ROOT_CERTIFICATE
 )
 
-MAX_MESSAGE_LENGTH = 800*1024*1000
+MAX_MESSAGE_LENGTH = 2000*1024*1000
 
 class GrpcClient():
     _message_service = None
