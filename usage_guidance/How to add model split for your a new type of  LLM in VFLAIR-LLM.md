@@ -1,4 +1,4 @@
-# How to add model split for your a new type of  LLM in VFLAIR-LLM?
+# How to add model split for a new type of LLM in VFLAIR-LLM?
 
 [TOC]
 
