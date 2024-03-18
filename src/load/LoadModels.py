@@ -480,7 +480,7 @@ padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trai
         local_model = None
         local_model_optimizer = None
         if is_local:
-            local_model = LocalBertModel(full_bert,1, model_type = model_type)
+            local_model = LocalBertModel(full_bert, local_encoders_num , model_type = model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -493,7 +493,6 @@ padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trai
                 param.requires_grad = encoder_trainable[0]
             if encoder_trainable[0]:
                 local_model_optimizer = torch.optim.Adam(list(local_model.encoder_layer.parameters()), lr=main_lr)
-
 
         ########### Global Model ###########
         global_model = None

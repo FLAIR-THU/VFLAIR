@@ -9,7 +9,7 @@ class LocalCommunication(ICommunication):
     def __init__(self, active_party):
         self.__active_party = active_party
 
-    def send_pred_message(self, pred_list, parse_result_fn, use_cache= False,  test="True"):
+    def send_pred_message(self, pred_list, use_cache= False,  test="True"):
         return self.__active_party.aggregate(pred_list, use_cache = use_cache, test=test)
 
     def send_global_backward_message(self):

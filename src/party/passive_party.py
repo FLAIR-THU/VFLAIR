@@ -51,14 +51,15 @@ class PassiveParty_LLM(Party_LLM):
     _communication = None
 
     def __init__(self, args, index, need_data = True):
-        super().__init__(args, index, need_data = need_data)
         print(f'==== initialize PassiveParty_LLM : party {index}======')
-        
-        self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
+        super().__init__(args, index, need_data = need_data)
         if args.device == 'cuda':
             cuda_id = args.gpu
             torch.cuda.set_device(cuda_id)
             print(f'running on cuda{torch.cuda.current_device()}')
+
+        self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
+        
         self.criterion = cross_entropy_for_onehot
         
         # self.encoder = args.encoder
@@ -84,19 +85,6 @@ class PassiveParty_LLM(Party_LLM):
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
         self.encoder_trainable = args.encoder_trainable[index]
-    # def prepare_model(self, args, index):
-    #     (
-    #         args,
-    #         self.local_model,
-    #         self.local_model_optimizer,
-    #         self.global_model,
-    #         self.global_model_optimizer
-    #     ) = load_models_per_party(args, index)
-        
-
-    #     ######## some defense models, add here ########
-    #     if args.apply_defense == True:
-    #         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
     
     def init_communication(self, communication=None):
         if communication is None:
@@ -193,9 +181,6 @@ class PassiveParty_LLM(Party_LLM):
         self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)
         self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label)
 
-    # def prepare_data_loader(self):
-    #     super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
-            
     def update_local_pred(self, pred):
         self.pred_received[self.args.k-1] = pred
     
@@ -265,13 +250,7 @@ class PassiveParty_LLM(Party_LLM):
             
             lm_logits = pred # # [bs, seq_len, vocab_size]
             next_token_logits = lm_logits[:,-1,:]
-            # print('next_token_logits:',next_token_logits.shape) # [bs, vocab_size]
-            
-            # Shift so that tokens < n predict n
-            # shift_logits = lm_logits[..., :-1, :].contiguous()
-            # print('shift_logits:',shift_logits.shape)
-            # shift_labels = label_id #labels[..., 1:].contiguous()
-
+           
             # Flatten the tokens
             loss_fct = CrossEntropyLoss()
             # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
@@ -464,8 +443,7 @@ class PassiveParty_LLM(Party_LLM):
 
             # assert 1>2
             self.local_model_optimizer.step()
-
-        
+     
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "inner"):
 
@@ -526,20 +504,27 @@ class PassiveParty_LLM(Party_LLM):
             if self.local_model_optimizer != None:
                 self.local_model_optimizer.zero_grad()
 
-                self.weights_grad_a = torch.autograd.grad(
-                    self.local_pred,
-                    self.local_model.parameters(),
-                    grad_outputs=self.local_gradient,
-                    retain_graph=True,
-                )
-                for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
-                    if w.requires_grad:
-                        if w.grad != None:
-                            w.grad += g.detach()
-                        else:
-                            w.grad = g.detach()
-                
-                self.local_model_optimizer.step()
+                # local model trainable part
+                local_model_params = []
+                for param in self.local_model.parameters():
+                    if param.requires_grad:
+                        local_model_params.append(param)
+
+                if len(local_model_params) > 0:
+                    self.weights_grad_a = torch.autograd.grad(
+                        self.local_pred,
+                        self.local_model.parameters(),
+                        grad_outputs=self.local_gradient,
+                        retain_graph=True,
+                    )
+                    for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                        if w.requires_grad:
+                            if w.grad != None:
+                                w.grad += g.detach()
+                            else:
+                                w.grad = g.detach()
+                    
+                    self.local_model_optimizer.step()
 
 
     def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
@@ -559,96 +544,6 @@ class PassiveParty_LLM(Party_LLM):
             for ik in range(self.args.k):
                 self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
         # end of calculate_gradient_each_class, return nothing
-
-    def predict(self):
-        data_loader_list = [self.test_loader]
-        # data_loader_list = [self.train_loader]
-
-        exact_score_list = []
-        f1_list = []
-        total_sample_cnt = 0
-        with torch.no_grad():
-            for parties_data in zip(*data_loader_list):
-                _parties_data = []
-                for party_id in range(len(parties_data)): # iter through each passive party
-                    batch_input_ids = []
-                    batch_label = []
-                    batch_attention_mask = []
-                    batch_token_type_ids = []
-                    batch_feature = []
-                    for bs_id in range(len(parties_data[party_id])):
-                        # Input_ids
-                        batch_input_ids.append( parties_data[party_id][bs_id][0].tolist() )
-                        # Attention Mask
-                        batch_attention_mask.append( parties_data[party_id][bs_id][2].tolist()  )
-
-                        # ptoken_type_ids
-                        if parties_data[party_id][bs_id][3] == []:
-                            batch_token_type_ids = None
-                        else:
-                            batch_token_type_ids.append( parties_data[party_id][bs_id][3].tolist()  )
-
-                        # feature (for QuestionAnswering only)
-                        if parties_data[party_id][bs_id][4] == []:
-                            batch_feature = None
-                        else:
-                            batch_feature.append( parties_data[party_id][bs_id][4] )
-
-                        # Label
-                        if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append( parties_data[party_id][bs_id][1].tolist() )
-                        else:
-                            batch_label.append( parties_data[party_id][bs_id][1]  )
-
-                    batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
-                    batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
-                    if batch_token_type_ids != None:
-                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)     
-
-                    if type( batch_label[0] ) != str:
-                        if self.args.task_type == 'QuestionAnswering':
-                            # origin_batch_label_shape [bs, 2, num_of_answers]
-                            # 2*bs, num_of_answers
-                            # print('batch_label:',batch_label)
-                            if type(batch_label[0][0]) == list:
-                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
-                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
-                                batch_label = batch_label.reshape(origin_batch_label_shape)   
-                            else:
-                                batch_label = torch.tensor(batch_label).to(self.device)  
-                        else:
-                            batch_label = torch.tensor(batch_label).to(self.device)
-                    
-
-                    _parties_data.append([batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] )
-
-                parties_data = _parties_data
-
-                if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
-                    gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
-                elif self.args.task_type == "QuestionAnswering":
-                    gt_one_hot_label = list(parties_data[0][1])
-                else:
-                    gt_one_hot_label = parties_data[0][1]
-
-                input_shape = parties_data[0][0].shape[:2]  # batchsize, seq_length
-                self.input_shape = input_shape
-                self.obtain_local_data(parties_data[0][0], parties_data[0][2], parties_data[0][3])
-                self.gt_one_hot_label = gt_one_hot_label
-
-                pred_list = self.pred_transmit()
-                test_logit = self._send_pred_message(pred_list)
-
-                # generate assessment
-                exact_scores, f1s, sample_cnt = self.output(test_logit, gt_one_hot_label, parties_data)
-                exact_score_list.extend(exact_scores)
-                f1_list.extend(f1s)
-                if sample_cnt is not None:
-                    total_sample_cnt += sample_cnt
-                del parties_data
-        
-        return exact_score_list, f1_list, total_sample_cnt
 
     def launch_defense(self, gradients_list, _type):
 
@@ -679,537 +574,209 @@ class PassiveParty_LLM(Party_LLM):
                             self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def pred_transmit(self, use_cache = False):
-        if self.args.model_type in ['Bert','Roberta']:
-            if self.args.task_type == 'SequenceClassification':
-                pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
-            elif self.args.task_type == 'QuestionAnswering':
-                pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
-            else:
-                assert 1 > 2, "task type not supported for finetune"
-        elif self.args.model_type == 'Llama':
-            if self.args.task_type == 'SequenceClassification':
-                pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()  # , _input_shape
-            elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask  = self.give_pred()  # , _input_shape
-            elif self.args.task_type == 'Generation':
-                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
-            elif self.args.task_type == 'QuestionAnswering':
-                pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
-            else:
-                assert 1 > 2, "task type not supported for finetune"
-
-        elif self.args.model_type == 'GPT2':
-            if self.args.task_type == 'SequenceClassification':
-                pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()
-            elif self.args.task_type == 'CausalLM':
-                pred, pred_detach, attention_mask  = self.give_pred()
-            elif self.args.task_type == 'Generation':
-                pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
-            elif self.args.task_type == 'QuestionAnswering':
-                pred, pred_detach, attention_mask = self.give_pred()
-            else:
-                assert 1 > 2, "task type not supported for finetune"
-
-        # Defense
-        if self.args.apply_defense:
-            if (self.index in self.args.defense_configs['party']):
-                # print('Apply DP')
-                pred_detach = self.apply_defense_on_transmission(pred_detach)
-        # Communication Process
-        pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)
-
-        pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-        attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
-
-        # receive pred
-        if self.args.model_type in ['Bert','Roberta']:
-            if self.args.task_type == 'SequenceClassification':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + \
-                                           get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'QuestionAnswering':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-        elif self.args.model_type == 'Llama':
-            if self.args.task_type == 'SequenceClassification':
-                pred_list = [pred_clone, sequence_lengths, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + \
-                                           get_size_of(sequence_lengths) + \
-                                           get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'CausalLM':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + \
-                                           get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'Generation':
-                pred_list = [pred_clone, attention_mask, local_past_key_values]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'QuestionAnswering':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-        elif self.args.model_type == 'GPT2':
-            if self.args.task_type == 'SequenceClassification':
-                pred_list = [pred_clone, sequence_lengths, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask) + get_size_of(
-                    sequence_lengths)  # MB
-            elif self.args.task_type == 'CausalLM':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'Generation':
-                pred_list = [pred_clone, attention_mask, local_past_key_values]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-            elif self.args.task_type == 'QuestionAnswering':
-                pred_list = [pred_clone, attention_mask]
-                self.update_local_pred(pred_clone)
-                self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-
-        return [pred_list]
-
-    def output(self, test_logit, gt_one_hot_label, parties_data):
-        test_preds = []
-        test_targets = []
-        test_predict_labels = []
-        test_actual_labels = []
-        target_word_list = []
-        predict_word_list = []
-        suc_cnt = 0
-        sample_cnt = 0
-
-        if self.args.task_type == "SequenceClassification":
-            if self.args.num_classes == 1:  # regression
-                predict_label = test_logit.detach().cpu()
-                actual_label = gt_one_hot_label.detach().cpu()
-
-                # full_predict_label = full_pred.detach().cpu()
-
-                predict_label = torch.tensor([_.item() for _ in predict_label])
-                actual_label = torch.tensor([_.item() for _ in actual_label])
-                
-                sample_cnt = predict_label.shape[0]
-
-                return list(predict_label), list(actual_label), sample_cnt
-                # test_full_predict_labels.extend( list(full_predict_label) )
-            else:  # Classification
-                enc_predict_prob = test_logit
-                # full_enc_predict_prob = full_pred
-                # enc_predict_prob = F.softmax(test_logit, dim=-1)
-
-                predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                actual_label = torch.argmax(gt_one_hot_label, dim=-1)
-                # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
-
-                test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
-                test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
-                # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
-
-                # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
-
-                sample_cnt = predict_label.shape[0]
-                suc_cnt += torch.sum(predict_label == actual_label).item()
-                # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
-                return list(predict_label.detach().cpu()), list(actual_label.detach().cpu()), sample_cnt
-
-        elif self.args.task_type == "CausalLM":
-            # get logits of last hidden state
-            # print('test_logit:',test_logit.shape) # [batchsize, maxlength512, vocab_size32000]
-            next_token_logits = test_logit[:, -1]  # [bs, 32000]
-
-            if self.args.dataset == "Lambada":
-                # generated, generate_text = self.parties[self.k-1].generate(pred_list, test="True")
-                # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label.shape)
-
-                # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
-                target_word = [normalize_answer(_p) for _p in gt_one_hot_label]  # list of normalized tokens
-                # print('target_word:',type(target_word),len(target_word),target_word) #
-                target_word_list.extend(target_word)
-                # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
-
-                # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-                # target_word = gt_one_hot_label[0]
-                # target_word_list.append(normalize_answer(target_word))
-                # print('target_word:',target_word)
-
-                enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-
-                if self.args.metric_type == "best_pred":
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
-                    predict_word = [normalize_answer(_p) for _p in predict_word]
-                    predict_word_list.extend(predict_word)  # predict_word: bs * best_pred
-                elif self.args.metric_type == "n_best":
-                    logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                    # print('index_list:',index_list.shape)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    # print('predict_label:',predict_label.shape)
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                        # print('predict_word:',predict_word)
-
-                return target_word_list, predict_word_list, None
-
-            else:  # MMLU
-                choice_id_list = []
-                for choice in self.args.label_dict.keys():
-                    choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
-                    _id = self.args.tokenizer(choice).input_ids[-1]
-                enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
-                enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
-
-                predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
-
-                test_predict_labels.extend(predict_label.detach().cpu().tolist())
-                test_actual_labels.extend(actual_label.detach().cpu().tolist())
-                # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
-
-                sample_cnt += predict_label.shape[0]
-                suc_cnt += torch.sum(predict_label == actual_label).item()
-
-                return [], [], 0
-
-        elif self.args.task_type == "QuestionAnswering":
-            start_logits = test_logit.start_logits
-            end_logits = test_logit.end_logits
-            sample_cnt = start_logits.shape[0]
-
-            n_best_size = self.args.n_best_size
-            start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
-            end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
-
-            exact_score_list = []
-            f1_list = []
-            for i in range(start_logits.shape[0]):
-                # for each sample in this batch
-                _start_logits = start_logits[i]
-                _end_logits = end_logits[i]
-                _start_indexes = start_indexes[i]
-                _end_indexes = end_indexes[i]
-
-                ############ Gold ################
-                feature = parties_data[0][4][i]
-                # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
-                feature_tokens = [_token[0] for _token in feature["tokens"]]
-
-                gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
-                if len(gold_start_indexs.shape) == 0:
-                    gold_start_indexs = gold_start_indexs.unsqueeze(0)
-                if len(gold_end_indexs.shape) == 0:
-                    gold_end_indexs = gold_end_indexs.unsqueeze(0)
-
-                gold_ans = []  # gold answers for this sample
-                for _i in range(len(gold_start_indexs)):
-                    gold_start_index = int(gold_start_indexs[_i])
-                    gold_end_index = int(gold_end_indexs[_i])
-                    if gold_start_index == -1:
-                        continue
-
-                    gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
-                    gold_ans_text = normalize_answer(gold_ans_text)
-                    gold_ans.append(gold_ans_text)
-                # print('gold_ans:',gold_ans,feature["orig_answer_text"])
-
-                ############ Pred ################
-                _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                    "PrelimPrediction",
-                    ["start_index", "end_index", "start_logit", "end_logit"])
-                _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                    "NbestPrediction", ["text", "start_logit", "end_logit"])
-
-                # iterate through all possible start-end pairs
-                prelim_predictions = []
-                for start_index in _start_indexes:
-                    for end_index in _end_indexes:
-                        # We could hypothetically create invalid predictions, e.g., predict
-                        # that the start of the span is in the question. We throw out all
-                        # invalid predictions.
-                        if start_index >= len(feature["tokens"]):
-                            continue
-                        if end_index >= len(feature["tokens"]):
-                            continue
-                        if start_index not in feature["token_to_orig_map"]:
-                            continue
-                        if end_index not in feature["token_to_orig_map"]:
-                            continue
-                        if not feature["token_is_max_context"].get(start_index, False):
-                            continue
-                        if end_index < start_index:
-                            continue
-                        length = end_index - start_index + 1
-                        if length > self.args.max_answer_length:
-                            continue
-
-                        prelim_predictions.append(
-                            _PrelimPrediction(
-                                start_index=start_index,
-                                end_index=end_index,
-                                start_logit=_start_logits[start_index],
-                                end_logit=_end_logits[end_index]))
-
-                # Iterate through Sorted Predictions
-                prelim_predictions = sorted(
-                    prelim_predictions,
-                    key=lambda x: (x.start_logit + x.end_logit),
-                    reverse=True)
-                exact_score = 0
-                f1 = 0
-                # Get n best prediction text
-                nbest = []
-                n_best_size = min(n_best_size, len(prelim_predictions))
-                for _id in range(n_best_size):
-                    start_index = prelim_predictions[_id].start_index
-                    end_index = prelim_predictions[_id].end_index
-
-                    pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
-                    pred_ans_text = normalize_answer(pred_ans_text)
-
-                    nbest.append(
-                        _NbestPrediction(
-                            text=pred_ans_text,
-                            start_logit=prelim_predictions[_id].start_logit,
-                            end_logit=prelim_predictions[_id].end_logit))
-
-                # Get best predicted answer
-                total_scores = []
-                best_non_null_entry = None
-
-                if self.args.metric_type == "best_pred":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                    pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                    # Calculate exact_score/f1
-                    # print('best pred:',pred_ans_text)
-                    exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                    f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                elif self.args.metric_type == "n_best":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                        pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-                        # Calculate exact_score/f1
-                        exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                        f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                else:
-                    assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-                return exact_score_list, f1_list, sample_cnt #None
-
-        else:
-            assert 1 > 2, "task_type not supported"
-
-    def parse_pred_message_result(self, test_logit):
-        if self.args.model_type in ['Bert','Roberta']:
-            if self.args.task_type == 'SequenceClassification':
-                logits = torch.Tensor(test_logit['logits'])
-                if test_logit['requires_grad']:
-                    logits.requires_grad_()
-                    # logits.grad = test_logit['grad_fn']
-                return logits.to(self.args.device)
-            elif self.args.task_type == 'QuestionAnswering':
-                start_logits = torch.Tensor(test_logit['start_logits'])
-                end_logits = torch.Tensor(test_logit['end_logits'])
-                return QuestionAnsweringModelOutput(
-                    loss=None,
-                    start_logits=start_logits.to(self.args.device),
-                    end_logits=end_logits.to(self.args.device),
-                    hidden_states=None,
-                    attentions=None,
-                )
-
-    def _send_pred_message(self, pred_list, use_cache=False):
-        return self._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
-
-    def _send_global_backward_message(self):
-        self._communication.send_global_backward_message()
-
-    def _send_global_loss_and_gradients(self, loss, gradients):
-        self._communication.send_global_loss_and_gradients(loss, gradients)
-
-    def _send_cal_passive_local_gradient_message(self, pred):
-        self._communication.send_cal_passive_local_gradient_message(pred)
-
-    def _send_global_lr_decay(self, i_epoch):
-        self._communication.send_global_lr_decay(i_epoch)
-
-    # def _send_global_model_train_message(self):
-    #     self.local_model.train()
-    #     self.args.parties[self.args.k - 1].global_model.train()
-    
-    def _send_global_model_train_message(self):
-        self._communication.send_global_model_train_message()
-
-    # def train(self, i_epoch):
-    #     data_loader_list = [self.train_loader]
-    #     postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
-    #     i = -1
-    #     print_every = 1
-    #     total_time = 0
-
-    #     for parties_data in zip(*data_loader_list):
-    #         ############ Allocate Data #################
-    #         # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
-    #         _parties_data = []
-    #         for party_id in range(len(parties_data)):  # iter through each passive party
-    #             batch_input_ids = []
-    #             batch_label = []
-    #             batch_attention_mask = []
-    #             batch_token_type_ids = []
-    #             batch_feature = []
-    #             for bs_id in range(len(parties_data[party_id])):
-    #                 # Input_ids
-    #                 batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
-    #                 # Attention Mask
-    #                 batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
-
-    #                 # ptoken_type_ids
-    #                 if parties_data[party_id][bs_id][3] == []:
-    #                     batch_token_type_ids = None
-    #                 else:
-    #                     batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
-
-    #                 # feature (for QuestionAnswering only)
-    #                 if parties_data[party_id][bs_id][4] == []:
-    #                     batch_feature = None
-    #                 else:
-    #                     batch_feature.append(parties_data[party_id][bs_id][4])
-
-    #                 # Label
-    #                 if type(parties_data[party_id][bs_id][1]) != str:
-    #                     batch_label.append(parties_data[party_id][bs_id][1].tolist())
-    #                 else:
-    #                     batch_label.append(parties_data[party_id][bs_id][1])
-
-    #             batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
-    #             batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
-    #             if batch_token_type_ids != None:
-    #                 batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
-    #             if type(batch_label[0]) != str:
-    #                 batch_label = torch.tensor(batch_label).to(self.device)
-
-    #             _parties_data.append(
-    #                 [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
-
-    #         parties_data = _parties_data
-
-    #         if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
-    #             gt_one_hot_label = self.label_to_one_hot(parties_data[self.index][1], self.args.num_classes)
+    # def pred_transmit(self, use_cache = False):
+    #     if self.args.model_type in ['Bert','Roberta']:
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
     #         else:
-    #             gt_one_hot_label = parties_data[self.index][1]
+    #             assert 1 > 2, "task type not supported for finetune"
+    #     elif self.args.model_type == 'Llama':
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()  # , _input_shape
+    #         elif self.args.task_type == 'CausalLM':
+    #             pred, pred_detach, attention_mask  = self.give_pred()  # , _input_shape
+    #         elif self.args.task_type == 'Generation':
+    #             pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred, pred_detach, attention_mask = self.give_pred()  # , _input_shape
+    #         else:
+    #             assert 1 > 2, "task type not supported for finetune"
 
-    #         i += 1
-    #         self._send_global_model_train_message() # call global model to a training mode
+    #     elif self.args.model_type == 'GPT2':
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred, pred_detach, sequence_lengths, attention_mask = self.give_pred()
+    #         elif self.args.task_type == 'CausalLM':
+    #             pred, pred_detach, attention_mask  = self.give_pred()
+    #         elif self.args.task_type == 'Generation':
+    #             pred, pred_detach, attention_mask, local_past_key_values  = self.give_pred(use_cache = use_cache)  # , _input_shape
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred, pred_detach, attention_mask = self.give_pred()
+    #         else:
+    #             assert 1 > 2, "task type not supported for finetune"
 
-    #         # ====== train batch (start) ======
-    #         enter_time = time.time()
-    #         self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
-    #         exit_time = time.time()
-    #         total_time += (exit_time - enter_time)
-    #         self.num_total_comms = self.num_total_comms + 1
-    #         # if self.num_total_comms % 10 == 0:
-    #         #     print(f"total time for {self.num_total_comms} communication is {total_time}")
+    #     # Defense
+    #     if self.args.apply_defense:
+    #         if (self.index in self.args.defense_configs['party']):
+    #             # print('Apply DP')
+    #             pred_detach = self.apply_defense_on_transmission(pred_detach)
+    #     # Communication Process
+    #     pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)
 
-    #         # if self.train_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
-    #         #     self.stopping_time = total_time
-    #         #     self.stopping_iter = self.num_total_comms
-    #         #     self.stopping_commu_cost = self.communication_cost
-    #         #     flag = 1
-    #         # ====== train batch (end) ======
+    #     pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+    #     attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
-    #         self.current_step = self.current_step + 1
+    #     # receive pred
+    #     if self.args.model_type in ['Bert','Roberta']:
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + \
+    #                                        get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+    #     elif self.args.model_type == 'Llama':
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred_list = [pred_clone, sequence_lengths, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + \
+    #                                        get_size_of(sequence_lengths) + \
+    #                                        get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'CausalLM':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + \
+    #                                        get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'Generation':
+    #             pred_list = [pred_clone, attention_mask, local_past_key_values]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+    #     elif self.args.model_type == 'GPT2':
+    #         if self.args.task_type == 'SequenceClassification':
+    #             pred_list = [pred_clone, sequence_lengths, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask) + get_size_of(
+    #                 sequence_lengths)  # MB
+    #         elif self.args.task_type == 'CausalLM':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'Generation':
+    #             pred_list = [pred_clone, attention_mask, local_past_key_values]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             pred_list = [pred_clone, attention_mask]
+    #             self.update_local_pred(pred_clone)
+    #             self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
 
-    #         # del(self.parties_data) # remove from cuda
-    #         # del(parties_data)
+    #     return [pred_list]
 
-    #     # if self.args.apply_attack == True:
-    #     #     if (self.args.attack_name in LABEL_INFERENCE_LIST) and i_epoch==1:
-    #     #         print('Launch Label Inference Attack, Only train 1 epoch')
-    #     #         break
+    # def output(self, test_logit, gt_one_hot_label, parties_data):
+    #     test_preds = []
+    #     test_targets = []
+    #     test_predict_labels = []
+    #     test_actual_labels = []
+    #     target_word_list = []
+    #     predict_word_list = []
+    #     suc_cnt = 0
+    #     sample_cnt = 0
 
-    #     # self.trained_models = self.save_state(True)
-    #     # if self.args.save_model == True:
-    #     #     self.save_trained_models()
+    #     if self.args.task_type == "SequenceClassification":
+    #         if self.args.num_classes == 1:  # regression
+    #             predict_label = test_logit.detach().cpu()
+    #             actual_label = gt_one_hot_label.detach().cpu()
 
-    #     # LR decay
-    #     self._send_global_lr_decay(i_epoch)
-    #     # LR record
-    #     # if self.args.k == 2:
-    #     #     LR_passive_list.append(self.parties[0].give_current_lr())
-    #         # LR_active_list.append(self.parties[1].give_current_lr())
-    #     return self.loss, self.train_acc
+    #             # full_predict_label = full_pred.detach().cpu()
 
-    
-    # def train_batch(self, parties_data, batch_label):
-    #     '''
-    #     batch_label: self.gt_one_hot_label   may be noisy
-    #         QA: bs * [start_position, end_position]
-    #     '''
-    #     ############### allocate data ###############
-    #     # encoder = self.args.encoder
-    #     # if self.args.apply_cae:
-    #     #     assert encoder != None, "[error] encoder is None for CAE"
-    #     #     _, gt_one_hot_label = encoder(batch_label)
-    #     # else:
-    #     gt_one_hot_label = batch_label
+    #             predict_label = torch.tensor([_.item() for _ in predict_label])
+    #             actual_label = torch.tensor([_.item() for _ in actual_label])
+                
+    #             sample_cnt = predict_label.shape[0]
 
-    #     # allocate data (data/label/attention_mask/token_type_ids)
-    #     input_shape = parties_data[0][0].shape[:2]  # parties_data[ik][0].size()
-    #     self.input_shape = input_shape
-    #     self.obtain_local_data(parties_data[0][0], parties_data[0][2], parties_data[0][3])
-    #     self.gt_one_hot_label = gt_one_hot_label
-    #     ############### allocate data ###############
+    #             return list(predict_label), list(actual_label), sample_cnt
+    #             # test_full_predict_labels.extend( list(full_predict_label) )
+    #         else:  # Classification
+    #             enc_predict_prob = test_logit
+    #             # full_enc_predict_prob = full_pred
+    #             # enc_predict_prob = F.softmax(test_logit, dim=-1)
 
-    #     ################ normal vertical federated learning ################
-    #     torch.autograd.set_detect_anomaly(True)
+    #             predict_label = torch.argmax(enc_predict_prob, dim=-1)
+    #             actual_label = torch.argmax(gt_one_hot_label, dim=-1)
+    #             # full_predict_label = torch.argmax(full_enc_predict_prob, dim=-1)
 
-    #     # =================== Commu ===================
-    #     # exchange info between party: local_pred/global_pred
-    #     all_pred_list = self.pred_transmit()   # [ pred of this party ]
-    #     final_pred = self._send_pred_message(all_pred_list) # TODO: if there's multiple more passive parties
-    #     # =================== Commu ===================
+    #             test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
+    #             test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
+    #             # full_test_preds.append(list(full_enc_predict_prob.detach().cpu().numpy()))
 
-    #     # passive party -> global gradient -> active party
-    #     self.global_gradient_transmit(final_pred)
+    #             # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
 
-    #     # active party -> local gradient -> passive party
-    #     if self.local_model_optimizer != None:
-    #         self.local_gradient_transmit(all_pred_list)
+    #             sample_cnt = predict_label.shape[0]
+    #             suc_cnt += torch.sum(predict_label == actual_label).item()
+    #             # full_suc_cnt += torch.sum(full_predict_label == actual_label).item()
+    #             return list(predict_label.detach().cpu()), list(actual_label.detach().cpu()), sample_cnt
 
-    #     # ============= Model Update =============
-    #     self._send_global_backward_message()  # update parameters for global trainable part
-    #     # if self.parties[ik].local_model_optimizer != None:
-    #     self.local_backward()
-    #     # ============= Model Update =============
+    #     elif self.args.task_type == "CausalLM":
+    #         # get logits of last hidden state
+    #         # print('test_logit:',test_logit.shape) # [batchsize, maxlength512, vocab_size32000]
+    #         next_token_logits = test_logit[:, -1]  # [bs, 32000]
 
-    #     ################ normal vertical federated learning ################
+    #         if self.args.dataset == "Lambada":
+    #             # generated, generate_text = self.parties[self.k-1].generate(pred_list, test="True")
+    #             # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label.shape)
 
-    #     # print train_acc each batch
-    #     if self.args.task_type == 'QuestionAnswering':
-    #         pred = self.args.parties[self.args.k - 1].global_pred  # QuestionAnsweringModelOutput
-    #         loss = self.args.parties[self.args.k - 1].global_loss
+    #             # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
+    #             target_word = [normalize_answer(_p) for _p in gt_one_hot_label]  # list of normalized tokens
+    #             # print('target_word:',type(target_word),len(target_word),target_word) #
+    #             target_word_list.extend(target_word)
+    #             # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
 
-    #         start_logits = pred.start_logits
-    #         end_logits = pred.end_logits
+    #             # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
+    #             # target_word = gt_one_hot_label[0]
+    #             # target_word_list.append(normalize_answer(target_word))
+    #             # print('target_word:',target_word)
+
+    #             enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
+
+    #             if self.args.metric_type == "best_pred":
+    #                 predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
+    #                 predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
+    #                 predict_word = [normalize_answer(_p) for _p in predict_word]
+    #                 predict_word_list.extend(predict_word)  # predict_word: bs * best_pred
+    #             elif self.args.metric_type == "n_best":
+    #                 logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
+    #                 # print('index_list:',index_list.shape)
+    #                 predict_label = index_list[:, :self.args.n_best_size]
+    #                 # print('predict_label:',predict_label.shape)
+    #                 for _bs in range(predict_label.shape[0]):  # each batch
+    #                     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
+    #                     predict_word = [normalize_answer(_p) for _p in predict_word]
+    #                     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
+    #                     # print('predict_word:',predict_word)
+
+    #             return target_word_list, predict_word_list, None
+
+    #         else:  # MMLU
+    #             choice_id_list = []
+    #             for choice in self.args.label_dict.keys():
+    #                 choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
+    #                 _id = self.args.tokenizer(choice).input_ids[-1]
+    #             enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
+    #             enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
+
+    #             predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
+    #             actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
+
+    #             test_predict_labels.extend(predict_label.detach().cpu().tolist())
+    #             test_actual_labels.extend(actual_label.detach().cpu().tolist())
+    #             # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
+
+    #             sample_cnt += predict_label.shape[0]
+    #             suc_cnt += torch.sum(predict_label == actual_label).item()
+
+    #             return [], [], 0
+
+    #     elif self.args.task_type == "QuestionAnswering":
+    #         start_logits = test_logit.start_logits
+    #         end_logits = test_logit.end_logits
+    #         sample_cnt = start_logits.shape[0]
 
     #         n_best_size = self.args.n_best_size
     #         start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
@@ -1217,8 +784,8 @@ class PassiveParty_LLM(Party_LLM):
 
     #         exact_score_list = []
     #         f1_list = []
-    #         # for each sample in this batch
     #         for i in range(start_logits.shape[0]):
+    #             # for each sample in this batch
     #             _start_logits = start_logits[i]
     #             _end_logits = end_logits[i]
     #             _start_indexes = start_indexes[i]
@@ -1226,6 +793,7 @@ class PassiveParty_LLM(Party_LLM):
 
     #             ############ Gold ################
     #             feature = parties_data[0][4][i]
+    #             # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
     #             feature_tokens = [_token[0] for _token in feature["tokens"]]
 
     #             gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
@@ -1233,10 +801,14 @@ class PassiveParty_LLM(Party_LLM):
     #                 gold_start_indexs = gold_start_indexs.unsqueeze(0)
     #             if len(gold_end_indexs.shape) == 0:
     #                 gold_end_indexs = gold_end_indexs.unsqueeze(0)
+
     #             gold_ans = []  # gold answers for this sample
     #             for _i in range(len(gold_start_indexs)):
     #                 gold_start_index = int(gold_start_indexs[_i])
     #                 gold_end_index = int(gold_end_indexs[_i])
+    #                 if gold_start_index == -1:
+    #                     continue
+
     #                 gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
     #                 gold_ans_text = normalize_answer(gold_ans_text)
     #                 gold_ans.append(gold_ans_text)
@@ -1284,8 +856,9 @@ class PassiveParty_LLM(Party_LLM):
     #                 prelim_predictions,
     #                 key=lambda x: (x.start_logit + x.end_logit),
     #                 reverse=True)
-    #             exact_score = 0
-    #             f1 = 0
+                
+                
+                
     #             # Get n best prediction text
     #             nbest = []
     #             n_best_size = min(n_best_size, len(prelim_predictions))
@@ -1305,7 +878,8 @@ class PassiveParty_LLM(Party_LLM):
     #             # Get best predicted answer
     #             total_scores = []
     #             best_non_null_entry = None
-
+    #             exact_score = 0
+    #             f1 = 0
     #             if self.args.metric_type == "best_pred":
     #                 for entry in nbest:
     #                     total_scores.append(entry.start_logit + entry.end_logit)
@@ -1313,7 +887,7 @@ class PassiveParty_LLM(Party_LLM):
     #                         if entry.text:
     #                             best_non_null_entry = entry
     #                 pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-    #                 # Calculate exact_score/f1 for best pred
+    #                 # Calculate exact_score/f1
     #                 # print('best pred:',pred_ans_text)
     #                 exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
     #                 f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
@@ -1327,7 +901,7 @@ class PassiveParty_LLM(Party_LLM):
     #                         if entry.text:
     #                             best_non_null_entry = entry
     #                     pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-    #                     # Calculate best exact_score/f1 among n best preds
+    #                     # Calculate exact_score/f1
     #                     exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
     #                     f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
     #                 # print('this batch:',exact_score,f1)
@@ -1336,98 +910,51 @@ class PassiveParty_LLM(Party_LLM):
     #             else:
     #                 assert 1 > 2, f"{self.args.metric_type} not provided!"
 
-    #         exact_score = np.mean(exact_score_list)
-    #         f1 = np.mean(f1_list)
+    #             return exact_score_list, f1_list, sample_cnt #None
 
-    #         return loss.item(), exact_score
+    #     else:
+    #         assert 1 > 2, "task_type not supported"
 
-    #     elif self.args.task_type == 'SequenceClassification':
-    #         # ###### Noisy Label Attack #######
-    #         # convert back to clean label to get true acc
-    #         if 'apply_nl' in self.args and self.args.apply_nl:
-    #             real_batch_label = self.clean_one_hot_label
-    #         else:
-    #             real_batch_label = batch_label
-    #         # ###### Noisy Label Attack #######
+    # def parse_pred_message_result(self, test_logit):
+    #     if self.args.model_type in ['Bert','Roberta']:
+    #         if self.args.task_type == 'SequenceClassification':
+    #             logits = torch.Tensor(test_logit['logits'])
+    #             if test_logit['requires_grad']:
+    #                 logits.requires_grad_()
+    #                 # logits.grad = test_logit['grad_fn']
+    #             return logits.to(self.args.device)
+    #         elif self.args.task_type == 'QuestionAnswering':
+    #             start_logits = torch.Tensor(test_logit['start_logits'])
+    #             end_logits = torch.Tensor(test_logit['end_logits'])
+    #             return QuestionAnsweringModelOutput(
+    #                 loss=None,
+    #                 start_logits=start_logits.to(self.args.device),
+    #                 end_logits=end_logits.to(self.args.device),
+    #                 hidden_states=None,
+    #                 attentions=None,
+    #             )
 
-    #         pred = final_pred
-    #         loss = self.global_loss
-    #         predict_prob = F.softmax(pred, dim=-1)
-    #         # if self.args.apply_cae:
-    #         #     predict_prob = encoder.decode(predict_prob)
+    # def _send_pred_message(self, pred_list, use_cache=False):
+    #     return self._communication.send_pred_message(pred_list, use_cache=use_cache)
 
-    #         suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
-    #         batch_train_acc = suc_cnt / predict_prob.shape[0]
+    def _send_global_backward_message(self):
+        self._communication.send_global_backward_message()
 
-    #         return loss.item(), batch_train_acc
+    def _send_global_loss_and_gradients(self, loss, gradients):
+        self._communication.send_global_loss_and_gradients(loss, gradients)
 
-    #     elif self.args.task_type == 'CausalLM':
-    #         pred = self.parties[self.k - 1].global_pred  # logits
-    #         loss = self.parties[self.k - 1].global_loss
-    #         test_logit = pred
-    #         next_token_logits = test_logit[:,
-    #                             -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
+    def _send_cal_passive_local_gradient_message(self, pred):
+        self._communication.send_cal_passive_local_gradient_message(pred)
 
-    #         if self.args.dataset == "Lambada":
-    #             # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-    #             target_word_list = [normalize_answer(_p) for _p in gt_one_hot_label]
-    #             # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
+    def _send_global_lr_decay(self, i_epoch):
+        self._communication.send_global_lr_decay(i_epoch)
 
-    #             # predict_word_list : bs * predicted words
-    #             enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-    #             if self.args.metric_type == "best_pred":
-    #                 predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-    #                 predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
-    #                 predict_word_list = [normalize_answer(_p) for _p in predict_word]
-    #             elif self.args.metric_type == "n_best":
-    #                 logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-    #                 # print('index_list:',index_list.shape)
-    #                 predict_label = index_list[:, :self.args.n_best_size]
-    #                 # print('predict_label:',predict_label.shape)
-    #                 predict_word_list = []
-    #                 for _bs in range(predict_label.shape[0]):  # each batch
-    #                     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-    #                     predict_word = [normalize_answer(_p) for _p in predict_word]
-    #                     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-    #                     # print('predict_word:',predict_word)
-    #             # print('predict_word_list:',type(predict_word_list),len(predict_word_list))
-    #             # print(predict_word_list)
-
-    #             if self.args.metric_type == "best_pred":
-    #                 suc_cnt = 0
-    #                 for i in range(len(target_word_list)):
-    #                     if target_word_list[i] == predict_word_list[i]:
-    #                         suc_cnt += 1
-    #                 batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
-    #             elif self.args.metric_type == "n_best":
-    #                 suc_cnt = 0
-    #                 for i in range(len(target_word_list)):
-    #                     if target_word_list[i] in predict_word_list[i]:
-    #                         suc_cnt += 1
-    #                 batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
-    #             else:
-    #                 assert 1 > 2, 'metric type not supported'
-
-
-    #         else:  # MMLU
-    #             choice_id_list = []
-    #             for choice in self.args.label_dict.keys():
-    #                 choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
-    #                 _id = self.args.tokenizer(choice).input_ids[-1]
-    #             enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
-    #             enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
-
-    #             predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-    #             actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
-
-    #             test_predict_labels.extend(predict_label.detach().cpu().tolist())
-    #             test_actual_labels.extend(actual_label.detach().cpu().tolist())
-    #             # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
-
-    #             sample_cnt += predict_label.shape[0]
-    #             suc_cnt += torch.sum(predict_label == actual_label).item()
-
-    #         return loss.item(), batch_train_acc
+    # def _send_global_model_train_message(self):
+    #     self.local_model.train()
+    #     self.args.parties[self.args.k - 1].global_model.train()
+    
+    def _send_global_model_train_message(self):
+        self._communication.send_global_model_train_message()
 
     def local_gradient_transmit(self, pred):
         if self.local_model_optimizer != None:
@@ -1444,23 +971,3 @@ class PassiveParty_LLM(Party_LLM):
 
         self._send_global_loss_and_gradients(self.global_loss, self.global_gradients)
 
-
-
-# class PassiveParty_LLM(Party_LLM):
-#     def __init__(self, args, index):
-#         super().__init__(args, index)
-
-#     def prepare_data(self, args, index):
-#         super().prepare_data(args, index)
-#         self.train_dst = PassiveDataset_LLM(args, self.train_data)
-
-#         print('Passive self.train_dst:',len(self.train_dst), type(self.train_dst[0]), type(self.train_dst[1]) )
-
-#         self.test_dst = PassiveDataset_LLM(args,self.test_data)
-
-#         # self.train_dst = PassiveDataset(self.train_data)
-#         # self.test_dst = PassiveDataset(self.test_data)
-
-#         # if self.args.need_auxiliary == 1:
-#         #     self.aux_dst = ActiveDataset(self.aux_data, self.aux_label)
-#             # self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size,shuffle=True)

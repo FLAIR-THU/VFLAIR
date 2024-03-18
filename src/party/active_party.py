@@ -225,41 +225,6 @@ class ActiveParty_LLM(Party_LLM):
     def train_model(self):
         self.global_model.train()
 
-    def mean(self, last_task_result):
-        predict_result = json.loads(last_task_result)
-        exact_score_list, f1_list, _ = predict_result
-        self.mean_local((exact_score_list, f1_list))
-
-    def mean_local(self, result):
-        exact_score_list, f1_list = result
-        if self.args.task_type == "QuestionAnswering":
-            exact_score = np.mean(exact_score_list)
-            f1 = np.mean(f1_list)
-            exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
-            return exp_result, exact_score
-        elif self.args.task_type == "SequenceClassification":
-            pass
-            # if self.num_classes == 1:
-            #     self.test_mse = torch.mean(
-            #         (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
-            #
-            #     self.test_pearson_corr = \
-            #     stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            #     self.test_spearmanr_corr = \
-            #     stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            #
-            #     exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
-            #                                                                                               self.test_pearson_corr,
-            #                                                                                               self.test_spearmanr_corr)
-            #     return exp_result, self.test_mse
-            # else:
-            #     self.test_acc = suc_cnt / float(sample_cnt)  # ACC
-            #
-            #     self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
-            #
-            #     exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
-            #     return exp_result, self.test_acc
-
     def _do_aggregate_remote(self, pred_list):
         t1 = torch.Tensor(pred_list[0])
         t2 = torch.Tensor(pred_list[1])

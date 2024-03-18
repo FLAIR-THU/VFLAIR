@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 5,
+    "batch_size": 128,
     "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -54,5 +54,29 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "MID",
+        "parameters": {
+            "party": [0],
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.0001,
+            "lambda": 0.1,
+            "mid_position": "out",
+            "current_bottleneck_scale": 1,
+            "seq_length": 256,
+            "embed_dim": 768
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
     }
 }
