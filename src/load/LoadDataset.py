@@ -1458,14 +1458,14 @@ def load_dataset_per_party_llm(args, index):
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
 
         df = pd.read_csv(train_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])[:100]
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])#[:100]
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
         df = pd.read_csv(test_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])[:10]
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])#[:10]
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
@@ -1493,7 +1493,7 @@ def load_dataset_per_party_llm(args, index):
         test_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/test.csv'
 
         df = pd.read_csv(train_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])[:5000]
+                         names=['label', 'sentence'])#[:5000]
         
         scalar = np.array([-1])
         sentences = df.sentence.values
@@ -1503,7 +1503,7 @@ def load_dataset_per_party_llm(args, index):
 
 
         df = pd.read_csv(test_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])[:500]
+                         names=['label', 'sentence'])#[:500]
         
         sentences = df.sentence.values
         labels = df.label.values

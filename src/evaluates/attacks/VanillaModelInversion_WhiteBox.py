@@ -139,6 +139,9 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
             test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
             flag = 0
+
+            enter_time = time.time()
+
             for origin_input in test_data_loader:
                 batch_input_ids = []
                 batch_label = []
@@ -322,6 +325,9 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         # append_exp_res(self.args.exp_res_path, pred_text)
                     flag += 1
 
+            end_time = time.time()
+        
+        attack_total_time = end_time - enter_time
         Precision = attack_result['Precision'].mean()
         Recall = attack_result['Recall'].mean()
 
@@ -337,4 +343,4 @@ class VanillaModelInversion_WhiteBox(Attacker):
         # print(result_file_name)
         # attack_result.to_csv(result_file_name)
 
-        return Precision, Recall
+        return Precision, Recall, attack_total_time

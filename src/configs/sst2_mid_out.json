@@ -52,7 +52,7 @@
         "name": "MID",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
+            "mid_model_name":"MIDModelCNN_ConvTranspose2d",
             "lr": 0.0001,
             "lambda": 0.01,
             "mid_position": "out",

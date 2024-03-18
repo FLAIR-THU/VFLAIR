@@ -117,10 +117,13 @@ if __name__ == '__main__':
 
         vfl = MainTaskVFL_LLM(args)
 
-
-        # GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        
+        if args.model_type == 'GPT2':
+            GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        elif args.model_type == 'Llama':
+            GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        else:
+            assert 1>2, 'model type not supported for generation'
+            
         ######### define your input text here #########
         input_text = ["Hello, how are you these days?"]
         ######### define your input text here #########

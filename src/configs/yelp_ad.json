@@ -1,9 +1,9 @@
 {
-    "epochs": 1000,
+    "epochs": 5,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 512,
-    "pipeline": "pretrained",
+    "batch_size": 128,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -45,6 +45,19 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.0001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.0001,
+            "lambda": 0.0001,
+            "seq_length": 384,
+            "embed_dim": 768
+        }
     },
     "attack_list": {
         "0":{

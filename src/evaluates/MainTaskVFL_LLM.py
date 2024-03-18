@@ -1110,7 +1110,7 @@ class MainTaskVFL_LLM(object):
 
             data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]  
 
-        exp_result = f'train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
+        exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
         # self.final_state = self.save_state() 
         # self.final_state.update(self.save_state(False)) 
