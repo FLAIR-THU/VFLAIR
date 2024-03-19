@@ -267,7 +267,7 @@ class ActiveParty_LLM(Party_LLM):
         t2 = t2.to(self.args.device)
         result = self.aggregate([[t1, t2]])
 
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
                 return {
                     "requires_grad": result.requires_grad,
@@ -276,6 +276,7 @@ class ActiveParty_LLM(Party_LLM):
                 }
             elif self.args.task_type == 'QuestionAnswering':
                 return {
+                    "requires_grad": True,
                     # "loss": result.total_loss.float(),
                     "start_logits": result.start_logits.tolist(),
                     "end_logits": result.end_logits.tolist(),
@@ -291,6 +292,8 @@ class ActiveParty_LLM(Party_LLM):
                 }
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
                     "logits": result.tolist()
                 }
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
@@ -312,7 +315,7 @@ class ActiveParty_LLM(Party_LLM):
 
         self.passive_pred_list[0][0].requires_grad = True
 
-        if self.args.model_type == 'Bert': # passive_pred_list[0] = [intermediate, attention_mask]
+        if self.args.model_type in ['Bert','Roberta']: # passive_pred_list[0] = [intermediate, attention_mask]
             if self.args.task_type == 'SequenceClassification':# pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],return_dict=True)
                 pred = self.global_output.logits
@@ -401,11 +404,11 @@ class ActiveParty_LLM(Party_LLM):
 
         if self.global_model_optimizer != None: 
             if self.args.task_type == 'QuestionAnswering':
-                _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
-                _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
-                _gradients = _gradients_end+_gradients_start
-                _gradients_clone = _gradients[0].detach().clone()
-                _gradients_clone = _gradients_clone/2
+                # _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
+                # _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
+                # _gradients = _gradients_end+_gradients_start
+                # _gradients_clone = _gradients[0].detach().clone()
+                # _gradients_clone = _gradients_clone/2
                 # print('global_gradients_clone:',_gradients_clone)
                 
                 # update global model
@@ -414,8 +417,10 @@ class ActiveParty_LLM(Party_LLM):
             
                 # trainable layer parameters
                 # load grads into parameters
-                weights_grad_a_start = torch.autograd.grad(self.global_pred.start_logits, self.global_model.head_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
-                weights_grad_a_end = torch.autograd.grad(self.global_pred.end_logits, self.global_model.head_layer.parameters(), grad_outputs=_gradients_clone, retain_graph=True)
+                weights_grad_a_start = torch.autograd.grad(self.global_pred.start_logits, self.global_model.head_layer.parameters(), \
+                    grad_outputs=self.global_gradients, retain_graph=True)
+                weights_grad_a_end = torch.autograd.grad(self.global_pred.end_logits, self.global_model.head_layer.parameters(),\
+                     grad_outputs=self.global_gradients, retain_graph=True)
                 
                 # print('weights_grad_a_start:',len(weights_grad_a_start),type(weights_grad_a_start)) # 2 tuple
                 # print('weights_grad_a_end:',len(weights_grad_a_end),type(weights_grad_a_end))

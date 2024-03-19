@@ -1034,6 +1034,9 @@ class PassiveParty_LLM(Party_LLM):
             elif self.args.task_type == 'QuestionAnswering':
                 start_logits = torch.Tensor(test_logit['start_logits'])
                 end_logits = torch.Tensor(test_logit['end_logits'])
+                if test_logit['requires_grad']:
+                    start_logits.requires_grad_()
+                    end_logits.requires_grad_()
                 return QuestionAnsweringModelOutput(
                     loss=None,
                     start_logits=start_logits.to(self.args.device),
