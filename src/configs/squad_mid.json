@@ -1,9 +1,9 @@
 {
-    "epochs": 1,
-    "lr": 0.0005,
+    "epochs": 5,
+    "lr": 0.0001,
     "k": 2,
     "batch_size": 128,
-    "pipeline": "pretrained",
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

@@ -47,7 +47,7 @@ class PassiveDataset_LLM(Dataset):
 
                 self.labels.append( labels[i] ) # [ [start_position, end_position] ]
                 self.features.append( _feature ) 
-            
+
             # print('self.features:',type(self.features), len(self.features))
             # print(type(self.features[0]), type(self.features[1]))
 

@@ -163,7 +163,7 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
         return False
 
     examples = []
-    for entry in input_data:
+    for entry in input_data[:50]:
         for paragraph in entry["paragraphs"]:
             paragraph_text = paragraph["context"]
             doc_tokens = []
@@ -271,6 +271,13 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                     is_impossible=is_impossible)
                 examples.append(example)
 
+                # print(examples[0].doc_tokens)
+                # print(examples[0].question_text)
+                # print(examples[0].orig_answer_text)
+                # print(examples[0].start_position, train_examples[0].end_position )
+
+
+
     return examples
 
 
@@ -358,8 +365,6 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
 
     unique_id = 1000000000
     features = []
-
-    
 
     for (example_index, example) in enumerate(examples):
         # print(' === convert_examples_to_features === ')
@@ -593,6 +598,15 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
             # output_fn(feature)
             unique_id += 1
             features.append(feature.get_dict())
+
+            # print(len(features[0]['tokens']), features[0]['tokens'] )
+            # print(len(features[0]['input_ids']), features[0]['input_ids'] )
+            # print( features[0]['start_position'], features[0]['end_position'])
+            # print( features[0]['tokens'][start_position: end_position+1])
+            # print( features[0]['orig_answer_text'])
+            # print( features[0]['doc_span_index'])
+            # assert 1>2
+
     return features
 
 

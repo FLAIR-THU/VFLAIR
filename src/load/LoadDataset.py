@@ -1988,9 +1988,10 @@ def load_dataset_per_party_llm(args, index):
                 texts.append(text) # messages.append( )
                 target_word.append(last_word)
 
-                # print('text:',text)
-                # print('last_word:',last_word)
-                # print('-'*25)
+                # if len(target_word) < 3 :
+                #     print('text:',text)
+                #     print('last_word:',last_word)
+                #     print('-'*25)
                 
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
                 start_offset + length + 1 >= len(all_doc_tokens):
@@ -2021,7 +2022,7 @@ def load_dataset_per_party_llm(args, index):
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
-        # print('train_features:',len(train_features),train_features[0].keys())
+
 
         inputs = []
         labels = []
