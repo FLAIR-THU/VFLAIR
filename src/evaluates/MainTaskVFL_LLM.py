@@ -834,8 +834,8 @@ class MainTaskVFL_LLM(object):
             exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
 
-            self.final_state = self.save_state(False)
-            self.final_state.update(self.save_party_data())
+            # self.final_state = self.save_state(False)
+            # self.final_state.update(self.save_party_data())
 
             return exp_result, self.test_acc
 
