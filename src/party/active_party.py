@@ -334,10 +334,22 @@ class ActiveParty_LLM(Party_LLM):
                 param_group['lr'] = eta_t
 
     def cal_passive_local_gradient(self, ik):
-        passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik][0], \
-        grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
-        # print(f'Active Party cal passive pradient {ik}')
-        # print(passive_local_gradient)
+        # print('self.global_pred:',type(self.global_pred))
+        # print(self.global_pred.requires_grad)
+
+        # print('self.passive_pred_list[ik][0]:',type(self.passive_pred_list[ik][0]))
+
+        # print('self.global_gradients:',type(self.global_gradients))
+        # print(self.global_gradients.requires_grad)
+
+        if self.args.task_type == 'QuestionAnswering':
+            passive_local_gradient = torch.autograd.grad(self.global_pred.start_logits+self.global_pred.end_logits, self.passive_pred_list[ik][0], \
+            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+        else:
+            passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik][0], \
+            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+            # print(f'Active Party cal passive pradient {ik}')
+            # print(passive_local_gradient)
 
         return passive_local_gradient
 
@@ -346,12 +358,6 @@ class ActiveParty_LLM(Party_LLM):
 
         if self.global_model_optimizer != None: 
             if self.args.task_type == 'QuestionAnswering':
-                # _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
-                # _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
-                # _gradients = _gradients_end+_gradients_start
-                # _gradients_clone = _gradients[0].detach().clone()
-                # _gradients_clone = _gradients_clone/2
-                # print('global_gradients_clone:',_gradients_clone)
                 
                 # update global model
                 self.global_model_optimizer.zero_grad()

@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 1,
+    "batch_size": 16,
     "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -15,7 +15,7 @@
         "n_shot": 1
     },
     "tokenizer":{
-        "padding": "do_not_pad",
+        "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",

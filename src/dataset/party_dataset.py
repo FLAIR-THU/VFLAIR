@@ -52,6 +52,8 @@ class PassiveDataset_LLM(Dataset):
             # print(type(self.features[0]), type(self.features[1]))
 
         elif args.task_type == 'CausalLM':
+            # flag = 0
+
             for _text in texts:
                 ids = args.tokenizer(_text, \
                     padding=args.padding,truncation=args.truncation ,\
@@ -61,6 +63,13 @@ class PassiveDataset_LLM(Dataset):
                 self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
                 if 'token_type_ids' in list(ids.keys()):
                     self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+                
+                
+                # if flag == 0:
+                #     print('_text:',_text)
+                #     print(torch.tensor(ids['input_ids']).squeeze())
+                #     print('labels:',labels[0])
+                #     flag = 1
 
             self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 

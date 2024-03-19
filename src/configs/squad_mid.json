@@ -1,6 +1,6 @@
 {
-    "epochs": 5,
-    "lr": 0.0001,
+    "epochs": 8,
+    "lr": 0.00001,
     "k": 2,
     "batch_size": 128,
     "pipeline": "finetune",
@@ -60,8 +60,8 @@
         "parameters": {
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.1,
+            "lr": 0.00005,
+            "lambda": 0.2,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 256,

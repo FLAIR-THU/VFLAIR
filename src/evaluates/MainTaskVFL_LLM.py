@@ -702,8 +702,6 @@ class MainTaskVFL_LLM(object):
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
             exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
-            # self.final_state = self.save_state(False)
-            # self.final_state.update(self.save_party_data())
             return exp_result, self.test_acc
 
     def causal_lm_inference(self):
@@ -711,9 +709,9 @@ class MainTaskVFL_LLM(object):
 
         target_word_list, predict_word_list , total_sample_cnt = self.predict()
 
-        # print('target_word_list:\n',target_word_list[:10])
+        print('target_word_list:\n',target_word_list[:5])
 
-        # print('predict_word_list:\n',predict_word_list[:10])
+        print('predict_word_list:\n',predict_word_list[:5])
 
         # prediction result assessment
         if self.args.metric_type == "best_pred":
@@ -736,9 +734,6 @@ class MainTaskVFL_LLM(object):
         exp_result = 'test_acc:{:.2f}'.format(self.test_acc)
         print(exp_result)
 
-        # self.final_state = self.save_state(False)
-        # self.final_state.update(self.save_party_data())
-
         return exp_result, self.test_acc
 
     def qa_inference(self):
@@ -752,12 +747,11 @@ class MainTaskVFL_LLM(object):
         exact_score_list = []
         f1_list = []
 
+        # iterate through each sample
         for nbest, gold_ans in zip( nbest_list ,gold_ans_list ):
-            print('nbest:',nbest)
-            print('gold_ans:',gold_ans)
-
             exact_score = 0
             f1 = 0
+            best_non_null_entry = None
             if self.args.metric_type == "best_pred":
                 for entry in nbest:
                     total_scores.append(entry.start_logit + entry.end_logit)
@@ -765,14 +759,8 @@ class MainTaskVFL_LLM(object):
                         if entry.text:
                             best_non_null_entry = entry
                 pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                print('pred_ans_text:',pred_ans_text)
-                print('gold_ans:',gold_ans)
-                
                 exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
                 f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                print('exact_score:',exact_score)
-                print('-'*100)
-
                 exact_score_list.append(exact_score)
                 f1_list.append(f1)
             elif self.args.metric_type == "n_best":
@@ -794,8 +782,6 @@ class MainTaskVFL_LLM(object):
         exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
         
         self.test_acc = exact_score
-        # self.final_state = self.save_state(False)
-        # self.final_state.update(self.save_party_data())
         print(exp_result)
         return exp_result, self.test_acc
 
@@ -1278,10 +1264,12 @@ class MainTaskVFL_LLM(object):
 
         exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
-        # self.final_state = self.save_state() 
-        # self.final_state.update(self.save_state(False)) 
-        # self.final_state = self.save_state(False) 
-        # self.final_state.update(self.save_party_data()) 
+        self.final_state = self.save_state() 
+        self.final_state.update(self.save_state(False)) 
+        self.final_state.update(self.save_party_data()) 
+
+        # self.final_state = self.save_state(False)
+        # self.final_state.update(self.save_party_data())
 
         result_path = f'exp_result/{self.args.dataset}/Q{str(self.args.Q)}/'
         model_name = self.args.model_list[str(0)]["type"] #.replace('/','-')

@@ -39,7 +39,7 @@ MODEL_PATH = {
 "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
 "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH+"textattackbert-base-uncased-yelp-polarity",
 "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
-"textattackbert-base-uncased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
+"textattackbert-base-cased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
 "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
 "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-MNLI",
 "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-QNLI",

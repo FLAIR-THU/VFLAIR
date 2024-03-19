@@ -163,7 +163,7 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
         return False
 
     examples = []
-    for entry in input_data[:50]:
+    for entry in input_data:
         for paragraph in entry["paragraphs"]:
             paragraph_text = paragraph["context"]
             doc_tokens = []

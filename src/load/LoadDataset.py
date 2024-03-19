@@ -1585,7 +1585,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'STS-B':
         text_path = DATA_PATH + 'STS-B/train.tsv'
-        df = pd.read_csv(text_path, sep='\t', error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t', on_bad_lines = "skip")
         df = df.dropna()
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.score.values
@@ -1594,7 +1594,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'STS-B/dev.tsv'
-        df = pd.read_csv(text_path, sep='\t', error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t', on_bad_lines = "skip")#, error_bad_lines=False)
         df = df.dropna()
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.score.values
@@ -1932,7 +1932,7 @@ def load_dataset_per_party_llm(args, index):
 
                 text = " ".join(text)
                 message = create_chat_prompt(prompt, text)
-                text = args.tokenizer.apply_chat_template(message, tokenize=False)
+                text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
 
                 texts.append(text) # messages.append( )
                 target_word.append(last_word)
@@ -1983,15 +1983,16 @@ def load_dataset_per_party_llm(args, index):
 
                 text = " ".join(text)
                 message = create_chat_prompt(prompt, text)
-                text = args.tokenizer.apply_chat_template(message, tokenize=False)
+                text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
 
                 texts.append(text) # messages.append( )
                 target_word.append(last_word)
 
-                # if len(target_word) < 3 :
+                # if len(target_word) <= 5 :
                 #     print('text:',text)
                 #     print('last_word:',last_word)
                 #     print('-'*25)
+                #     break
                 
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
                 start_offset + length + 1 >= len(all_doc_tokens):
@@ -2007,7 +2008,6 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'SQuAD':
-        print(' === SQuAD === ')
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + '/SQuAD/data/train-v1.1.json'
@@ -2058,8 +2058,8 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-        print(type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
-        print(type(y_train), len(y_train), len(y_test), y_train[0])  #
+        print('X:',type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
+        print('y',type(y_train), len(y_train), len(y_test), y_train[0])  #
 
 
     else:
