@@ -894,17 +894,17 @@ class PassiveParty_LLM(Party_LLM):
 
             exact_score_list = []
             f1_list = []
-            for i in range(start_logits.shape[0]):
-                # for each sample in this batch
+            batch_nbest_list = []
+            batch_gold_ans_list = []
+            for i in range(start_logits.shape[0]):  # for each sample in this batch
                 _start_logits = start_logits[i]
                 _end_logits = end_logits[i]
                 _start_indexes = start_indexes[i]
                 _end_indexes = end_indexes[i]
 
                 ############ Gold ################
-                feature = parties_data[0][4][i]
-                # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
-                feature_tokens = [_token[0] for _token in feature["tokens"]]
+                feature = parties_data[0][4][i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
+                feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
 
                 gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
                 if len(gold_start_indexs.shape) == 0:
@@ -918,11 +918,10 @@ class PassiveParty_LLM(Party_LLM):
                     gold_end_index = int(gold_end_indexs[_i])
                     if gold_start_index == -1:
                         continue
-
                     gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
                     gold_ans_text = normalize_answer(gold_ans_text)
                     gold_ans.append(gold_ans_text)
-                # print('gold_ans:',gold_ans,feature["orig_answer_text"])
+                batch_gold_ans_list.append(gold_ans)
 
                 ############ Pred ################
                 _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
@@ -966,6 +965,7 @@ class PassiveParty_LLM(Party_LLM):
                     prelim_predictions,
                     key=lambda x: (x.start_logit + x.end_logit),
                     reverse=True)
+
                 exact_score = 0
                 f1 = 0
                 # Get n best prediction text
@@ -983,42 +983,9 @@ class PassiveParty_LLM(Party_LLM):
                             text=pred_ans_text,
                             start_logit=prelim_predictions[_id].start_logit,
                             end_logit=prelim_predictions[_id].end_logit))
+                batch_nbest_list.append(nbest)
 
-                # Get best predicted answer
-                total_scores = []
-                best_non_null_entry = None
-
-                if self.args.metric_type == "best_pred":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                    pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                    # Calculate exact_score/f1
-                    # print('best pred:',pred_ans_text)
-                    exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                    f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                elif self.args.metric_type == "n_best":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                        pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-                        # Calculate exact_score/f1
-                        exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                        f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                    # print('this batch:',exact_score,f1)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                else:
-                    assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-                return exact_score_list, f1_list, sample_cnt #None
+            return batch_nbest_list, batch_gold_ans_list, sample_cnt
 
         else:
             assert 1 > 2, "task_type not supported"
