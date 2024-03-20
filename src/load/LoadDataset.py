@@ -1887,6 +1887,19 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'Lambada':
+        def create_chat_prompt(text):
+            return [
+                {"role": "system", "content": "Please complete the passages with the correct next word."}, 
+                {"role": "user", "content": text}
+            ]
+
+        # lambada-dataset/lambada_test_plain_text.txt 
+        df = pd.read_csv('Lambada/lambada_test_plain_text.txt ', sep="\t", names=["text"])
+        df["text"] = df["text"].str.split(" ")
+
+        df["input"], df["ideal"] = df["text"].str[:-1].str.join(" ").apply(create_chat_prompt), df["text"].str[-1]
+        df = df[["input", "ideal"]]
+
         dataset_split = args.model_list[str(index)]
         if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
             data_file = dataset_split['train_set_file']

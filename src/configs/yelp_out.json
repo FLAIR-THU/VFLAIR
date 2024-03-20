@@ -25,7 +25,7 @@
         "0": {
             "type": "nihaldsouza1yelp-rating-classification",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 5,
             "model_type": "Roberta",
             "max_sequence": 512,
@@ -34,7 +34,7 @@
         "1": {
             "type": "nihaldsouza1yelp-rating-classification",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 5,
             "model_type": "Roberta",
             "max_sequence": 512,
@@ -52,7 +52,7 @@
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.0001,
-            "lambda": 0.1,
+            "lambda": 0.01,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 328,

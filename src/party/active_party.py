@@ -275,26 +275,34 @@ class ActiveParty_LLM(Party_LLM):
                 self.global_output = self.global_model(self.passive_pred_list[0][0], \
                  attention_mask=self.passive_pred_list[0][1],\
                  use_cache = use_cache,\
-                  return_dict=True)
+                 return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'Generation':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0], \
                  attention_mask=self.passive_pred_list[0][1],\
-                 local_past_key_values = self.passive_pred_list[0][2],\
+                 local_past_key_values = self.passive_pred_list[0][3],\
                  past_key_values = self.past_key_values,\
                  use_cache = use_cache,\
-                  return_dict=True)
+                 return_dict=True)
                 pred = self.global_output
-            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate,sequence_lengths, attention_mask]
+                self.global_output = self.global_model(self.passive_pred_list[0][0],
+                 attention_mask=self.passive_pred_list[0][1], \
+                 sequence_lengths = self.passive_pred_list[0][2], \
+                 use_cache = use_cache,\
+                 return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0],\
+                 attention_mask=self.passive_pred_list[0][1],\
+                 use_cache = use_cache,\
+                 return_dict=True)
                 pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
+            # [0 intermediate, 1 attention_mask, 2 sequence_lengths, 3 past_key_values]
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
                 pred = self.global_output.logits
@@ -306,7 +314,11 @@ class ActiveParty_LLM(Party_LLM):
                  return_dict=True)
                 pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                    attention_mask=self.passive_pred_list[0][1], \
+                    sequence_lengths = self.passive_pred_list[0][2], \
+                    past_key_values = self.passive_pred_list[0][3],\
+                    return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)

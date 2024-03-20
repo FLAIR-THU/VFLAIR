@@ -1,9 +1,9 @@
 {
-    "epochs": 10,
+    "epochs": 2,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 3,
-    "pipeline": "pretrained",
+    "batch_size": 16,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -47,5 +47,16 @@
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32
+            }
+        }
     }
 }

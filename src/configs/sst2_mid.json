@@ -25,8 +25,8 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 1,
+            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -35,7 +35,7 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -54,8 +54,8 @@
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.0001,
-            "lambda": 0.01,
-            "mid_position": "inner",
+            "lambda": 0.5,
+            "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 70,
             "embed_dim": 768

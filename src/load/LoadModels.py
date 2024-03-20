@@ -754,6 +754,9 @@ def load_basic_models_llm_llama(args,index):
            
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.score.parameters()), lr=args.main_lr)
+        
+        del(full_llama)
+
     else:
         print('load_basic_models_llm pretrained:',current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
@@ -838,9 +841,12 @@ def load_basic_models_llm_llama(args,index):
                 for param in global_model.head_layer.parameters():
                     param.requires_grad = args.head_layer_trainable[1]
                 if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
+                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
             
             global_model = global_model.to(args.device)
+
+            del(full_llama)
+            del(full_model)
     
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

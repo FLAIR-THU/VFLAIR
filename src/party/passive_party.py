@@ -310,7 +310,7 @@ class PassiveParty_LLM(Party_LLM):
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / intermediate.shape[0]
             
             mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2)
-            print(f'main_loss={self.global_loss},mapping_distance={mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
+            # print(f'main_loss={self.global_loss},mapping_distance={mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
 
             # renew global loss function : loss used to update adversarial model mapping
             self.adversarial_model_loss =   self.adversary_lambda * mapping_distance  - self.adversary_attack_loss

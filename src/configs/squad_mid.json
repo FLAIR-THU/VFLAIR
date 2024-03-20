@@ -1,8 +1,8 @@
 {
-    "epochs": 8,
+    "epochs": 20,
     "lr": 0.00001,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 512,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -27,7 +27,7 @@
         "0": {
             "type": "rsvp-aibertserini-bert-base-squad",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -36,7 +36,7 @@
         "1": {
             "type": "rsvp-aibertserini-bert-base-squad",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -60,23 +60,12 @@
         "parameters": {
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
-            "lr": 0.00005,
-            "lambda": 0.2,
+            "lr": 0.00001,
+            "lambda": 0,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 256,
             "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32
-            }
         }
     }
 }
