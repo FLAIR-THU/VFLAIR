@@ -214,7 +214,7 @@ class MainTaskVFL_LLM(object):
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, sequence_lengths, attention_mask = self.parties[ik].give_pred()
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach , attention_mask ,  past_key_values = self.parties[ik].give_pred()
+                    pred, pred_detach, attention_mask, past_key_values = self.parties[ik].give_pred()
                 elif self.args.task_type == 'QuestionAnswering':
                     pred, pred_detach, attention_mask = self.parties[ik].give_pred()
                 else:
@@ -272,7 +272,7 @@ class MainTaskVFL_LLM(object):
                         sequence_lengths)  # MB
                 elif self.args.task_type == 'CausalLM':
                     pred_list = [pred_clone, attention_mask, past_key_values]
-                    self.parties[self.k-1].receive_pred( pred_list, ik)
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
                     self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
@@ -322,8 +322,7 @@ class MainTaskVFL_LLM(object):
             # Passive data local predict
             result = self.parties[ik].predict()
 
-            nbest_list, gold_ans_list , total_sample_cnt = result
-
+            nbest_list, gold_ans_list, total_sample_cnt = result
 
         total_scores = []
         best_non_null_entry = None
@@ -403,13 +402,12 @@ class MainTaskVFL_LLM(object):
         # self.parties[1].encoder_hidden_states = self.parties[0].local_model.encoder_hidden_states
 
         # passive party do local pred
-        pred_list = self.parties[0].pred_transmit(use_cache = True)
-
+        pred_list = self.parties[0].pred_transmit(use_cache=True)
 
         # local_past_key_values = self.parties[0].local_model.past_key_values
 
         # passive party inform active party to do global pred
-        test_logit = self.parties[0]._send_pred_message(pred_list, use_cache = False)
+        test_logit = self.parties[0]._send_pred_message(pred_list, use_cache=False)
 
         final_output = self.parties[1].global_output
         return final_output
@@ -516,7 +514,8 @@ class MainTaskVFL_LLM(object):
                 _end_indexes = end_indexes[i]
 
                 ############ Gold ################
-                feature = parties_data[0][4][i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
+                feature = parties_data[0][4][
+                    i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
                 feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
 
                 gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
@@ -640,8 +639,6 @@ class MainTaskVFL_LLM(object):
         else:
             assert 1 > 2, "task_type not supported"
 
-
-
     def predict(self):
         # passive party dataloader list
         data_loader_list = [self.parties[ik].test_loader for ik in range(self.args.k - 1)]
@@ -704,7 +701,8 @@ class MainTaskVFL_LLM(object):
                             # print('batch_label:',batch_label)
                             if type(batch_label[0][0]) == list:
                                 batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
-                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
+                                                            for position_list in sample_label], batch_first=True,
+                                                           padding_value=-1).to(self.device)
                                 origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
                                 batch_label = batch_label.reshape(origin_batch_label_shape)
                             else:
@@ -748,13 +746,16 @@ class MainTaskVFL_LLM(object):
 
                 # test_logit -> standard output for each task
                 if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
-                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(test_logit,
+                                                                                               gt_one_hot_label,
+                                                                                               parties_data)
                     predict_label_list.extend(batch_predict_label)
                     actual_label_list.extend(batch_actual_label)
                     if sample_cnt is not None:
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "QuestionAnswering":
-                    batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(test_logit, gt_one_hot_label,
+                                                                                   parties_data)
                     nbest_list.extend(batch_nbest)
                     gold_ans_list.extend(batch_gold_ans)
 
@@ -764,7 +765,9 @@ class MainTaskVFL_LLM(object):
                     if sample_cnt is not None:
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "CausalLM":
-                    batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit,
+                                                                                             gt_one_hot_label,
+                                                                                             parties_data)
                     target_word_list.extend(batch_target_word)
                     predict_word_list.extend(batch_predict_word)
                     if sample_cnt is not None:
@@ -844,7 +847,6 @@ class MainTaskVFL_LLM(object):
             raise ValueError('llm_inference only supports k=2')
 
         format_kwargs = self._format_forward_kwargs(**kwargs)
-
         generate_ids = self.e2e_model.generate(format_kwargs.get('input_ids'), max_new_tokens=20)
         generate_ids = [
             output_ids[len(input_ids):] for input_ids, output_ids in zip(format_kwargs['input_ids'], generate_ids)
@@ -852,7 +854,7 @@ class MainTaskVFL_LLM(object):
         resp = self.args.tokenizer.batch_decode(generate_ids, skip_special_tokens=True,
                                                 clean_up_tokenization_spaces=False)
         logger.debug(f"text generation: {resp}")
-        return '',''
+        return '', ''
 
     def _format_forward_kwargs(self, **kwargs):
         if not kwargs:
@@ -869,7 +871,7 @@ class MainTaskVFL_LLM(object):
             add_generation_prompt=True
         )
         model_inputs = tokenizer([text], return_tensors="pt")
-        kwargs.update({'input_ids': model_inputs.input_ids,
+        kwargs.update({'input_ids': model_inputs.input_ids.to(self.parties[0].device),
                        'output_hidden_states': True})
         logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
         base_dict = {'input_ids': None,
@@ -1327,9 +1329,10 @@ class MainTaskVFL_LLM(object):
                             # 2*bs, num_of_answers
                             # print('batch_label:',batch_label)
                             if type(batch_label[0][0]) == list:
-                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
-                                                            for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
+                                batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
+                                                            for position_list in sample_label], batch_first=True,
+                                                           padding_value=-1).to(self.device)
+                                origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
                                 batch_label = batch_label.reshape(origin_batch_label_shape)
                             else:
                                 batch_label = torch.tensor(batch_label).to(self.device)
@@ -1535,4 +1538,6 @@ class MainTaskVFL_LLM(object):
                 break
         if not model_config:
             logger.error(f"No model config for E2E_model")
-        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1], communication_callback, self.reset_barrier)
+        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1], communication_callback,
+                                  self.reset_barrier)
+        # self.e2e_model.to(self.e2e_model.local_model.device)

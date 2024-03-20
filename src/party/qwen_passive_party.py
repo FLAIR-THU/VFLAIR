@@ -16,20 +16,25 @@ class QW_Passive_Party(Party_LLM):
         params = self._format_forward_kwargs(**kwargs)
         for k in params:
             if isinstance(params[k], list):
-                params[k] = torch.tensor(params[k]).to(self.args.device)
+                # params[k] = torch.tensor(params[k]).to(self.args.device)
+                params[k] = torch.tensor(params[k])
+            if isinstance(params[k],torch.Tensor):
+                params[k] = params[k].to(self.local_model.device)
 
-        intermediate = self.local_model.forward(**params)[0]
+        intermediate = self.local_model.forward(**params)
         logger.debug('finish passive party')
         logger.debug(intermediate.hidden_states[-1])
         if isinstance(self._communication, LocalCommunication):
             return intermediate
-        return {
-            "hidden_states": intermediate.hidden_states.tolist(),
-            "attention_mask": intermediate.attention_mask.tolist(),
-            "past_key_values": None,
-            "output_hidden_states": intermediate.output_hidden_states,
-            "position_ids": intermediate.position_ids.tolist()
-        }
+        intermediate.to_json()
+        return intermediate.prepare_for_forward()
+        # return {
+        #     "hidden_states": intermediate.hidden_states.tolist(),
+        #     "attention_mask": intermediate.attention_mask.tolist(),
+        #     "past_key_values": None,
+        #     "output_hidden_states": intermediate.output_hidden_states,
+        #     "position_ids": intermediate.position_ids.tolist()
+        # }
 
     def init_communication(self, communication=None):
         if communication is None:
@@ -69,3 +74,7 @@ class QW_Passive_Party(Party_LLM):
 
     def __call__(self, *args, **kwargs):
         return self.predict(**kwargs)
+
+    @property
+    def device(self):
+        return self.local_model.device

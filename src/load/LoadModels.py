@@ -23,11 +23,12 @@ from transformers.modeling_outputs import (
 import torch.nn as nn
 import torch
 import copy
+from loguru import logger
 
 from models.llm_models.bert import *
 from models.llm_models.gpt2 import *
 from models.llm_models.llama import *
-from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM
+from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM, PipelineVFL2Slice
 
 from models.bottom_models import *
 from models.global_models import *
@@ -70,6 +71,8 @@ MODEL_PATH.update({'Qwen/Qwen1.5-0.5B-Chat': None})
 ROBERTA = ["textattackroberta-base-CoLA", "textattackroberta-base-SST-2"]
 
 LLM_supported = MODEL_PATH.keys()
+
+
 # ['bert-base-uncased','Bert-sequence-classification',"toxic-bert",\
 # "textattackbert-base-uncased-CoLA","textattackbert-base-uncased-SST-2","textattackbert-base-uncased-STS-B",\
 # "textattackbert-base-uncased-MRPC","textattackbert-base-uncased-MNLI","textattackbert-base-uncased-QNLI",\
@@ -490,13 +493,13 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
 
         if pad_token == "default":
             if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token) #
+                tokenizer.pad_token = tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)  #
                 full_model.config.pad_token_id = pad_id
-            pad_token = "default_"+tokenizer.pad_token
+            pad_token = "default_" + tokenizer.pad_token
         else:
-            tokenizer.pad_token = pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = tokenizer.convert_tokens_to_ids(pad_token) #
+            tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = tokenizer.convert_tokens_to_ids(pad_token)  #
             full_model.config.pad_token_id = pad_id
 
         config = full_model.config
@@ -566,22 +569,22 @@ def load_basic_models_llm_gpt2(args, index):
 
         if args.pad_token == "default":
             if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
                 full_gpt.config.pad_token_id = pad_id
-            args.pad_token = "default_"+args.tokenizer.pad_token
+            args.pad_token = "default_" + args.tokenizer.pad_token
         else:
-            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(pad_token) #
+            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(pad_token)  #
             full_gpt.config.pad_token_id = pad_id
 
-        args.config = full_gpt.config #print(full_bert.encoder.layer[0])
+        args.config = full_gpt.config  # print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
         local_model = None
         local_model_optimizer = None
-        if index < args.k-1:
-            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, model_type = args.model_type)
+        if index < args.k - 1:
+            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, model_type=args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -594,14 +597,15 @@ def load_basic_models_llm_gpt2(args, index):
         global_model_optimizer = None
         if index == args.k - 1:
             # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num , model_type = args.model_type) # generation_config = full_gpt.generation_config,
+            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num,
+                                         model_type=args.model_type)  # generation_config = full_gpt.generation_config,
             # add Classification Layer(trainable)
             if args.task_type == "SequenceClassification":
                 global_model = GPT2ForSequenceClassification_forfinetune(global_gpt, current_output_dim)
             elif args.task_type == "CausalLM":
                 global_model = GPT2LMHeadModel_forfinetune(global_gpt)
             elif args.task_type == "Generation":
-                global_model = global_gpt #GPT2LMHeadModel_forfinetune(global_gpt)
+                global_model = global_gpt  # GPT2LMHeadModel_forfinetune(global_gpt)
             # elif args.task_type == "QuestionAnswering":
             #     global_model = GPT2ForQuestionAnswering_forfinetune
             else:
@@ -649,20 +653,21 @@ def load_basic_models_llm_gpt2(args, index):
         if args.pad_token == "default":
             print('Default pad')
             if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
                 full_model.config.pad_token_id = pad_id
-            args.pad_token = "default_"+args.tokenizer.pad_token
+            args.pad_token = "default_" + args.tokenizer.pad_token
         else:
-            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
+            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
             full_model.config.pad_token_id = pad_id
 
         ########### Local Model ###########
         local_model = None
         local_model_optimizer = None
-        if index < args.k-1:
-            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, generation_config=full_model.generation_config, model_type = args.model_type)
+        if index < args.k - 1:
+            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num,
+                                         generation_config=full_model.generation_config, model_type=args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -681,7 +686,7 @@ def load_basic_models_llm_gpt2(args, index):
         global_model_optimizer = None
         if index == args.k - 1:
             # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num ,model_type = args.model_type)
+            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num, model_type=args.model_type)
 
             # add Classification Layer(untrainable)
             if args.task_type == "CausalLM":
@@ -691,7 +696,7 @@ def load_basic_models_llm_gpt2(args, index):
             elif args.task_type == "SequenceClassification":
                 global_model = GPT2ForSequenceClassification_pretrained(global_gpt, head_layer)
             elif args.task_type == "Generation":
-                global_model = GPT2forGeneration_pretrained(global_gpt,head_layer)
+                global_model = GPT2forGeneration_pretrained(global_gpt, head_layer)
             else:
                 assert 1 > 2, "task type not supported"
 
@@ -702,12 +707,13 @@ def load_basic_models_llm_gpt2(args, index):
                 param.requires_grad = False
 
             # Head Layer Trainable/Freeze
-            if head_layer: # head layer exists
-                print('Global Model : head_layer_trainable = ',args.head_layer_trainable[1])
+            if head_layer:  # head layer exists
+                print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
                 for param in global_model.head_layer.parameters():
                     param.requires_grad = args.head_layer_trainable[1]
                 if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()),
+                                                              lr=args.main_lr)
 
             global_model = global_model.to(args.device)
 
@@ -727,22 +733,22 @@ def load_basic_models_llm_llama(args, index):
 
         if args.pad_token == "default":
             if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
                 full_llama.config.pad_token_id = pad_id
-            args.pad_token = "default_"+args.tokenizer.pad_token
+            args.pad_token = "default_" + args.tokenizer.pad_token
         else:
-            args.tokenizer.pad_token = pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
+            args.tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
             full_llama.config.pad_token_id = pad_id
 
-        args.config = full_llama.config #print(full_bert.encoder.layer[0])
+        args.config = full_llama.config  # print(full_bert.encoder.layer[0])
 
         ########### Local Model ###########
         local_model = None
         local_model_optimizer = None
-        if index < args.k-1:
-            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type = args.model_type)
+        if index < args.k - 1:
+            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -755,7 +761,7 @@ def load_basic_models_llm_llama(args, index):
         global_model_optimizer = None
         if index == args.k - 1:
             # global part of llama(frozen)
-            global_llama = GlobalLlamaModel(full_llama, args.local_encoders_num, model_type = args.model_type)
+            global_llama = GlobalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
 
             # add Classification Layer(trainable)
             # if args.task_type == "CausalLM":
@@ -808,17 +814,17 @@ def load_basic_models_llm_llama(args, index):
             head_layer = full_model.score
         else:
             head_layer = None
-            assert 1>2, "task type not supported"
+            assert 1 > 2, "task type not supported"
 
         if args.pad_token == "default":
             if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token) #
+                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
                 full_model.config.pad_token_id = pad_id
-            args.pad_token = "default_"+args.tokenizer.pad_token
+            args.pad_token = "default_" + args.tokenizer.pad_token
         else:
-            args.tokenizer.pad_token = args.pad_token # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token) #
+            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
             full_model.config.pad_token_id = pad_id
 
         args.config = full_model.config
@@ -826,8 +832,8 @@ def load_basic_models_llm_llama(args, index):
         ########### Local Model ###########
         local_model = None
         local_model_optimizer = None
-        if index < args.k-1:
-            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type = args.model_type)
+        if index < args.k - 1:
+            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -840,7 +846,7 @@ def load_basic_models_llm_llama(args, index):
         global_model_optimizer = None
         if index == args.k - 1:
             # global part of llama(frozen)
-            global_llama = GlobalLlamaModel(full_llama, args.local_encoders_num ,model_type = args.model_type)
+            global_llama = GlobalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
 
             # add Classification Layer(untrainable)
             if args.task_type == "CausalLM":
@@ -859,8 +865,8 @@ def load_basic_models_llm_llama(args, index):
                 param.requires_grad = False
 
             # Head Layer Trainable/Freeze
-            if head_layer: # head layer exists
-                print('Global Model : head_layer_trainable = ',args.head_layer_trainable[1])
+            if head_layer:  # head layer exists
+                print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
                 for param in global_model.head_layer.parameters():
                     param.requires_grad = args.head_layer_trainable[1]
                 if args.head_layer_trainable[1]:
@@ -874,14 +880,20 @@ def load_basic_models_llm_llama(args, index):
 
 def load_basic_models_llm_qwen2(args, index):
     model_path = args.model_list[str(index)]['path']
-    split_idx = 2
     args.tokenizer = AutoTokenizer.from_pretrained(model_path)
-    local_model = Qwen2ModelHead.from_pretrained(model_path)
-    local_model.vfl_split(range(0, split_idx))
+    local_model, global_model = None, None
+    if index == 0:
 
-    global_model = Qwen2TailForCausalLM.from_pretrained(model_path)
-    global_model.vfl_split(range(split_idx, 400))
+        local_model = PipelineVFL2Slice(is_server_end=False).from_vfl(model_path,
+                                                                      device_map='auto',
+                                                                      max_memory= {4: '3GB', 5: '3GB',6: '3GB', 7: '3GB'})  # type:Qwen2ModelHead
+        logger.debug(f"model: {type(local_model)}\ndevice_map: {local_model.hf_device_map}")
 
+    if index == 1:
+        global_model = PipelineVFL2Slice(is_server_end=True).from_vfl(model_path,
+                                                                      device_map='auto',
+                                                                      max_memory= {0: '4GB', 1: '4GB',2: '3GB', 3: '3GB'})  # type:Qwen2TailForCausalLM
+        logger.debug(f"model: {type(global_model)}\ndevice_map: {global_model.hf_device_map}")
     local_model_optimizer, global_model_optimizer = None, None
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
