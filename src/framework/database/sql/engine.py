@@ -8,7 +8,7 @@ from framework.database.model.Job import Job
 
 def load():
     dir = os.path.dirname(__file__)
-    config = load_yaml(dir + "/../../server/server_config.yml")
+    config = load_yaml(dir + "/../../client/client_config.yml")
     database = config.get("database")
     return create_engine(database["url"], echo=True)
 

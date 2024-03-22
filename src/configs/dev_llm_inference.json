@@ -35,7 +35,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/Qwen1.5-0.5B-Chat"
+            "path": "/home/shannon/dev/tools/nlp/models/Qwen1.5-0.5B-Chat_vfl_2slice/model_head"
         },
         "1": {
             "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -44,7 +44,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/Qwen1.5-0.5B-Chat"
+            "path": "/dev/data/sunl0/model/Qwen/Qwen1.5-0.5B-Chat_vfl_2slice/model_tail"
         },
         "task":{
             "task_type": "DevLLMInference",

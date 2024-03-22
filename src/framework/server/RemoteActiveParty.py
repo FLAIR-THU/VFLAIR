@@ -41,7 +41,7 @@ class RemoteActiveParty(IParty):
 
     def predict(self, value):
         task = Task()
-        task.run = "predict"
+        task.run = "distributed_predict"
         task.party = "active"
         task.job_id = self._job_id
         task.params = value

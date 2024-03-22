@@ -885,8 +885,7 @@ def load_basic_models_llm_qwen2(args, index):
     if index == 0:
 
         local_model = PipelineVFL2Slice(is_server_end=False).from_vfl(model_path,
-                                                                      device_map='auto',
-                                                                      max_memory= {4: '3GB', 5: '3GB',6: '3GB', 7: '3GB'})  # type:Qwen2ModelHead
+                                                                      device_map='auto')  # type:Qwen2ModelHead
         logger.debug(f"model: {type(local_model)}\ndevice_map: {local_model.hf_device_map}")
 
     if index == 1:

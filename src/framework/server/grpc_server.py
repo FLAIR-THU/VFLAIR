@@ -15,7 +15,6 @@ import queue
 from framework.common import MessageUtil as mu
 import framework.server.ActiveMessageService as fsm
 import framework.credentials.credentials as credentials
-from framework.database.repository.JobRepository import job_repository
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
@@ -56,8 +55,8 @@ class GrpcServer(fps.MessageServiceServicer):
                 msg_type = fpm.PLAIN
                 if not isinstance(task, dict):
                     value.string = json.dumps(task.to_dict())
-                    job = job_repository.get_by_id(task.job_id)
-                    config.string = job.params
+                    # job = job_repository.get_by_id(task.job_id)
+                    # config.string = job.params
                     msg_type = fpm.START_TASK
                 yield mu.MessageUtil.create(self._node, {"task": value, "config": config}, msg_type)
         except GeneratorExit as e:
