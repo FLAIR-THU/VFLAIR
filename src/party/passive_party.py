@@ -29,9 +29,6 @@ from models.mid_model_rapper import *
 
 import time
 import numpy as np
-from sklearn.metrics import roc_auc_score,matthews_corrcoef
-import scipy.stats as stats
-import copy
 from .LocalCommunication import LocalCommunication
 
 
