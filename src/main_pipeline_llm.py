@@ -45,6 +45,8 @@ def evaluate_no_attack_pretrained(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
+    exp_result = f"{args.pad_info}| " + exp_result
+    print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
     return vfl, metric_val
@@ -60,10 +62,12 @@ def evaluate_no_attack_finetune(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}| " \
+    exp_result = f"K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}|{args.pad_info}|headlayer_{args.head_layer_trainable}| " \
         + exp_result
     print(exp_result)
+
     append_exp_res(args.exp_res_path, exp_result)
+
     # append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}==stopping_time:{stopping_time}==stopping_commu_cost:{stopping_commu_cost}")
     
     return vfl, metric_val
@@ -77,13 +81,15 @@ def evaluate_inversion_attack(args):
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
 
-        # args.need_auxiliary = 1
-        args = load_parties_llm(args)
+        # # args.need_auxiliary = 1
+        # args = load_parties_llm(args)
         
         if args.basic_vfl != None:
             vfl = args.basic_vfl
             main_tack_acc = args.main_acc_noattack
         else:
+            # args.need_auxiliary = 1
+            args = load_parties_llm(args)
             vfl = MainTaskVFL_LLM(args)
             if args.pipeline == 'pretrained':
                 _exp_result, metric_val= vfl.train()
@@ -93,20 +99,13 @@ def evaluate_inversion_attack(args):
             print(_exp_result)
             
 
-        # if args.pretrained == 0: # finetune
-        #     _exp_result, metric_val= vfl.train()
-        # else:
-        #     _exp_result, metric_val = vfl.inference()
-        
-
-
         print('=== Begin Attack ===')
-        precision, recall = vfl.evaluate_attack()
+        precision, recall , attack_total_time= vfl.evaluate_attack()
     
         # Save record for different defense method
         # exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
         #     (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
-        exp_result = f"{args.attack_name}|{args.pad_info}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}\n"
+        exp_result = f"{args.attack_name}|K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}|{args.pad_info}|headlayer_{args.head_layer_trainable}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|attack_time={attack_total_time}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
         return exp_result

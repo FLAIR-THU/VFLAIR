@@ -157,7 +157,7 @@ class Party(object):
     def give_pred(self, use_cache = False):
         # print(' in give pred')
 
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             # SequenceClassification & QuestionAnswering
             self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
             # print('self.local_model.origin_output:',self.local_model.origin_output.shape)
@@ -195,12 +195,13 @@ class Party(object):
 
         elif self.args.model_type == 'Llama':
             if self.args.task_type == 'SequenceClassification':
-                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, _ = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values = self.local_model(\
+                    self.local_batch_data, attention_mask = self.local_batch_attention_mask)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
-                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, _  = self.local_model(\
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values  = self.local_model(\
                     self.local_batch_data, attention_mask = self.local_batch_attention_mask)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
@@ -213,7 +214,7 @@ class Party(object):
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
             elif self.args.task_type == 'QuestionAnswering':
-                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, _  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
+                self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
@@ -236,7 +237,7 @@ class Party(object):
         ######### Defense Applied on Local Model Prediction Process ###########
 
 
-        if self.args.model_type == 'Bert':
+        if self.args.model_type in ['Bert','Roberta']:
             return self.local_pred, self.local_pred_clone , self.local_attention_mask
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'SequenceClassification':
@@ -249,7 +250,7 @@ class Party(object):
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
         elif self.args.model_type == 'Llama':
             if self.args.task_type == 'SequenceClassification':
-                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask, self.past_key_values
             elif self.args.task_type == 'CausalLM':
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask
             elif self.args.task_type == 'Generation':

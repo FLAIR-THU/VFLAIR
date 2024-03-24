@@ -3,44 +3,42 @@
     "lr": 0.0001,
     "k": 2,
     "batch_size": 128,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
-    },
-    "dataset":{
-        "dataset_name": "SST-2",
-        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 384,
         "padding_side": "left",
         "add_special_tokens": 1
     },
+    "dataset":{
+        "dataset_name": "yelp-polarity",
+        "num_classes": 5
+    },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "nihaldsouza1yelp-rating-classification",
             "pretrained": 1,
             "head_layer_trainable": 1,
-            "encoder_trainable": 1,
-            "output_dim": 2,
-            "model_type": "Bert",
+            "output_dim": 5,
+            "model_type": "Roberta",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/nihaldsouza1yelp-rating-classification"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "nihaldsouza1yelp-rating-classification",
             "pretrained": 1,
             "head_layer_trainable": 1,
-            "encoder_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Bert",
+            "output_dim": 5,
+            "model_type": "Roberta",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/nihaldsouza1yelp-rating-classification"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -49,16 +47,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.01,
-            "mid_position": "inner",
-            "current_bottleneck_scale": 1,
-            "seq_length": 70,
-            "embed_dim": 768
+            "epsilon": 90
         }
     },
     "attack_list": {

@@ -225,41 +225,6 @@ class ActiveParty_LLM(Party_LLM):
     def train_model(self):
         self.global_model.train()
 
-    def mean(self, last_task_result):
-        predict_result = json.loads(last_task_result)
-        exact_score_list, f1_list, _ = predict_result
-        self.mean_local((exact_score_list, f1_list))
-
-    def mean_local(self, result):
-        exact_score_list, f1_list = result
-        if self.args.task_type == "QuestionAnswering":
-            exact_score = np.mean(exact_score_list)
-            f1 = np.mean(f1_list)
-            exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
-            return exp_result, exact_score
-        elif self.args.task_type == "SequenceClassification":
-            pass
-            # if self.num_classes == 1:
-            #     self.test_mse = torch.mean(
-            #         (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
-            #
-            #     self.test_pearson_corr = \
-            #     stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            #     self.test_spearmanr_corr = \
-            #     stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            #
-            #     exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'.format(self.test_mse,
-            #                                                                                               self.test_pearson_corr,
-            #                                                                                               self.test_spearmanr_corr)
-            #     return exp_result, self.test_mse
-            # else:
-            #     self.test_acc = suc_cnt / float(sample_cnt)  # ACC
-            #
-            #     self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
-            #
-            #     exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
-            #     return exp_result, self.test_acc
-
     def _do_aggregate_remote(self, pred_list):
         t1 = torch.Tensor(pred_list[0])
         t2 = torch.Tensor(pred_list[1])
@@ -328,26 +293,34 @@ class ActiveParty_LLM(Party_LLM):
                 self.global_output = self.global_model(self.passive_pred_list[0][0], \
                  attention_mask=self.passive_pred_list[0][1],\
                  use_cache = use_cache,\
-                  return_dict=True)
+                 return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'Generation':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0], \
                  attention_mask=self.passive_pred_list[0][1],\
-                 local_past_key_values = self.passive_pred_list[0][2],\
+                 local_past_key_values = self.passive_pred_list[0][3],\
                  past_key_values = self.past_key_values,\
                  use_cache = use_cache,\
-                  return_dict=True)
+                 return_dict=True)
                 pred = self.global_output
-            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+            elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate,sequence_lengths, attention_mask]
+                self.global_output = self.global_model(self.passive_pred_list[0][0],
+                 attention_mask=self.passive_pred_list[0][1], \
+                 sequence_lengths = self.passive_pred_list[0][2], \
+                 use_cache = use_cache,\
+                 return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0],\
+                 attention_mask=self.passive_pred_list[0][1],\
+                 use_cache = use_cache,\
+                 return_dict=True)
                 pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
+            # [0 intermediate, 1 attention_mask, 2 sequence_lengths, 3 past_key_values]
             if self.args.task_type == 'CausalLM':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
                 pred = self.global_output.logits
@@ -359,7 +332,11 @@ class ActiveParty_LLM(Party_LLM):
                  return_dict=True)
                 pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  self.passive_pred_list[0][1], attention_mask=self.passive_pred_list[0][2], return_dict=True)
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                    attention_mask=self.passive_pred_list[0][1], \
+                    sequence_lengths = self.passive_pred_list[0][2], \
+                    past_key_values = self.passive_pred_list[0][3],\
+                    return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
@@ -375,10 +352,10 @@ class ActiveParty_LLM(Party_LLM):
     def receive_loss_and_gradients_remote(self, data):
         loss = torch.Tensor([data['loss']]).to(self.args.device)
         gradients = torch.Tensor(data['gradients']).to(self.args.device)
-        self.receive_loss_and_gradients(loss, gradients)
+        self.receive_loss_and_gradients(gradients)
 
-    def receive_loss_and_gradients(self, loss, gradients):
-        self.global_loss = loss
+    def receive_loss_and_gradients(self, gradients):
+        # self.global_loss = loss
         self.global_gradients = gradients
         # print('Active Party receive self.global_gradients:')
         # print(self.global_gradients)
@@ -392,10 +369,22 @@ class ActiveParty_LLM(Party_LLM):
                 param_group['lr'] = eta_t
 
     def cal_passive_local_gradient(self, ik):
-        passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik][0], \
-        grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
-        # print(f'Active Party cal passive pradient {ik}')
-        # print(passive_local_gradient)
+        # print('self.global_pred:',type(self.global_pred))
+        # print(self.global_pred.requires_grad)
+
+        # print('self.passive_pred_list[ik][0]:',type(self.passive_pred_list[ik][0]))
+
+        # print('self.global_gradients:',type(self.global_gradients))
+        # print(self.global_gradients.requires_grad)
+
+        if self.args.task_type == 'QuestionAnswering':
+            passive_local_gradient = torch.autograd.grad(self.global_pred.start_logits+self.global_pred.end_logits, self.passive_pred_list[ik][0], \
+            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+        else:
+            passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik][0], \
+            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+            # print(f'Active Party cal passive pradient {ik}')
+            # print(passive_local_gradient)
 
         return passive_local_gradient
 
@@ -404,12 +393,6 @@ class ActiveParty_LLM(Party_LLM):
 
         if self.global_model_optimizer != None: 
             if self.args.task_type == 'QuestionAnswering':
-                # _gradients_start = torch.autograd.grad(self.global_loss, self.global_pred.start_logits, retain_graph=True)
-                # _gradients_end = torch.autograd.grad(self.global_loss, self.global_pred.end_logits, retain_graph=True)
-                # _gradients = _gradients_end+_gradients_start
-                # _gradients_clone = _gradients[0].detach().clone()
-                # _gradients_clone = _gradients_clone/2
-                # print('global_gradients_clone:',_gradients_clone)
                 
                 # update global model
                 self.global_model_optimizer.zero_grad()

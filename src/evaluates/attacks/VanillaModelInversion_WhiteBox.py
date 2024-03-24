@@ -129,9 +129,13 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
             # collect necessary information
             local_model = self.vfl_info['final_model'][0].to(self.device) # Passive
-            global_model = self.vfl_info['final_global_model'].to(self.device)
-            global_model.eval()
+            # global_model = self.vfl_info['final_global_model'].to(self.device)
+            # global_model.eval()
             local_model.eval()
+
+            del(self.vfl_info['final_global_model'])
+            del(self.vfl_info['train_loader'])
+
 
             batch_size = self.attack_batch_size
 
@@ -139,7 +143,11 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
             test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
             flag = 0
+
+            enter_time = time.time()
+
             for origin_input in test_data_loader:
+                ### origin_input: tuple of 5
                 batch_input_ids = []
                 batch_label = []
                 batch_attention_mask = []
@@ -166,10 +174,30 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     else:
                         batch_label.append( origin_input[bs_id][1]  )
 
-                batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
-                batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
+                # # Input_ids
+                # batch_input_ids = origin_input[0].tolist() 
+                # # Attention Mask
+                # batch_attention_mask = origin_input[2].tolist()  
+                # # token_type_ids
+                # if origin_input[3] == []:
+                #     batch_token_type_ids = None
+                # else:
+                #     batch_token_type_ids = origin_input[3].tolist() 
+                # # feature (for QuestionAnswering only)
+                # if origin_input[4] == []:
+                #     batch_feature = None
+                # else:
+                #     batch_feature = origin_input[4] 
+                # # Label
+                # if type(origin_input[1]) != str:
+                #     batch_label = [ origin_input[1] ]#.tolist()  
+                # else:
+                #     batch_label = [ origin_input[1] ]
+
+                batch_input_ids = torch.tensor(batch_input_ids).to(self.device)#.unsqueeze(0)
+                batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)#.unsqueeze(0)
                 if batch_token_type_ids != None:
-                    batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device) 
+                    batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)#.unsqueeze(0)
                 if type( batch_label[0] ) != str:
                     batch_label = torch.tensor(batch_label).to(self.device)
         
@@ -181,7 +209,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     origin_token_type_ids = None
                 if origin_feature == []:
                     origin_feature = None
-                
+
                 # real received intermediate result
                 input_shape = origin_data.shape[:2]
                 self.top_vfl.parties[0].input_shape = input_shape
@@ -194,30 +222,30 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                 batch_received_intermediate = real_results[0].type(torch.float32).to(self.device)
                 batch_received_attention_mask = real_results[1].to(self.device)
-
+                # print('batch_received_intermediate:',batch_received_intermediate.shape)
+                # print('batch_received_attention_mask:',batch_received_attention_mask.shape)
+                    
                 # each sample in a batch
                 for _id in range(origin_data.shape[0]):
                     sample_origin_data = origin_data[_id].unsqueeze(0) # [1,sequence length]
                     received_intermediate = batch_received_intermediate[_id].unsqueeze(0) # [1,256,768]
                     received_attention_mask = batch_received_attention_mask[_id].unsqueeze(0) # [1,256]
+
                     # initial guess
                     dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
-                    dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
-
-                    # if flag == 0:
-                    #     print('dummy_attention_mask:',dummy_attention_mask.shape,dummy_attention_mask)
-                    #     print('dummy_local_batch_token_type_ids:',dummy_local_batch_token_type_ids.shape,dummy_local_batch_token_type_ids)
-
-
+                    if origin_token_type_ids != None:
+                        dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
+                    else:
+                        dummy_local_batch_token_type_ids = None
 
                     bs, seq_length = sample_origin_data.shape
-                    if self.args.model_type == "Bert":
+                    if self.args.model_type in ['Bert','Roberta']:
                         dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
                     elif self.args.model_type == "GPT2":
                         dummy_embedding = torch.zeros([bs,seq_length,1024]).type(torch.float32).to(self.device)
                     elif self.args.model_type == "Llama":
-                        dummy_embedding = torch.zeros([bs,seq_length,16]).type(torch.float32).to(self.device)
+                        dummy_embedding = torch.zeros([bs,seq_length,4096]).type(torch.float32).to(self.device)
                     else:
                         assert 1>2, f"{self.args.model_type} not supported"
                     dummy_embedding.requires_grad_(True) 
@@ -226,22 +254,25 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     
                     def get_cost(dummy_embedding):
                         # compute dummy result
-                        if self.args.model_type == 'Bert':
-                            dummy_intermediate, _  = local_model(input_ids=dummy_data, attention_mask = dummy_attention_mask, \
-                            token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)                 
+                        if self.args.model_type  in ['Bert','Roberta']:
+                            dummy_intermediate, _a  = local_model(input_ids=dummy_data, \
+                                                                    attention_mask = dummy_attention_mask, \
+                                                                    token_type_ids=dummy_local_batch_token_type_ids,\
+                                                                    embedding_output = dummy_embedding)                 
                         elif self.args.model_type == 'GPT2':
-                            if self.args.task_type == 'SequenceClassification':
-                                dummy_intermediate,  _, _ = local_model(input_ids=dummy_data, attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)    
-                            elif self.args.task_type == 'CausalLM':
-                                dummy_intermediate,  _, __  = local_model(input_ids=dummy_data, attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)    
-                            elif self.args.task_type == 'QuestionAnswering':
-                                dummy_intermediate,  _, __  = local_model(input_ids=dummy_data, attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,embedding_output = dummy_embedding)    
+                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=dummy_data, \
+                                                        attention_mask = dummy_attention_mask, \
+                                                        token_type_ids=dummy_local_batch_token_type_ids,\
+                                                        # past_key_values = received_past_key_values,\
+                                                        embedding_output = dummy_embedding)    
+                        elif self.args.model_type == 'Llama':
+                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=None,\
+                                                        attention_mask = dummy_attention_mask, \
+                                                        # past_key_values = received_past_key_values,\
+                                                        inputs_embeds = dummy_embedding)    
                         else:
                             assert 1>2, 'model type not supported'
-                      
+                    
                         crit = nn.CrossEntropyLoss()
                         _cost = crit(dummy_intermediate, received_intermediate)
                         return _cost
@@ -250,8 +281,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     _iter = 0
                     eps = 0.1#np.sqrt(np.finfo(float).eps)
                     while _iter<self.epochs: # cost_function.item()>=0.1 and 
-                        # dummy_grad = numerical_gradient(get_cost, dummy_data, eps)
-                        # dummy_grad = optimize.approx_fprime(dummy_data, get_cost, eps)
                         optimizer.zero_grad()
                         cost_function = get_cost(dummy_embedding)
                         cost_function.backward()
@@ -260,11 +289,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         # print('dummy_grad:',dummy_grad.shape, dummy_grad[:10]) #(256,) np.array
                         
                         optimizer.step()
-                        # with torch.no_grad():
-                        #     dummy_data = (dummy_data - self.lr * dummy_grad)
-
-                        # print('dummy_data:',dummy_data.shape,dummy_data[:5]) # torch.size[256]
-
                         _iter+=1
                         # if _iter%20 == 0:
                         #     print('=== iter ',_iter,'  cost:',cost_function)
@@ -278,8 +302,14 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     for i in range(dummy_embedding.shape[0]):
                         _dum = dummy_embedding[i]
                         # print(_dum.unsqueeze(0).shape)
-                        cos_similarities = nn.functional.cosine_similarity\
-                                        (local_model.embeddings.word_embeddings.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                        if self.args.model_type  in ['Bert','Roberta']:
+                            cos_similarities = nn.functional.cosine_similarity\
+                                            (local_model.embeddings.word_embeddings.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                        elif self.args.model_type == 'Llama':
+                            cos_similarities = nn.functional.cosine_similarity\
+                                            (local_model.embed_tokens.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                            # print('local_model.embed_tokens.weight:',local_model.embed_tokens.weight.shape)
+                            # [32000, 4096] [vocab_size, embed_dim]
                         # print('cos_similarities:',cos_similarities.shape)
                         _, predicted_index = cos_similarities.max(0)
                         predicted_index = predicted_index.item()
@@ -312,12 +342,24 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                     if flag == 0:
                         print('len:',len(clean_sample_origin_id),'  precision:',precision, ' recall:',recall)
-                        print('origin_text:',origin_text)
-                        print('pred_text:',pred_text)
+                        print('origin_text:\n',origin_text)
+                        print('-'*25)
+                        print('pred_text:\n',pred_text)
+                        print('-'*25)
                         # append_exp_res(self.args.exp_res_path, origin_text)
                         # append_exp_res(self.args.exp_res_path, pred_text)
                     flag += 1
+                
+                    del(dummy_embedding)
+                    del(dummy_data)
+                    del(dummy_attention_mask)
 
+                del(batch_received_intermediate)
+                del(batch_received_attention_mask)
+
+            end_time = time.time()
+        
+        attack_total_time = end_time - enter_time
         Precision = attack_result['Precision'].mean()
         Recall = attack_result['Recall'].mean()
 
@@ -333,4 +375,4 @@ class VanillaModelInversion_WhiteBox(Attacker):
         # print(result_file_name)
         # attack_result.to_csv(result_file_name)
 
-        return Precision, Recall
+        return Precision, Recall, attack_total_time

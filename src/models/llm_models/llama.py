@@ -1,6 +1,13 @@
 from transformers import LlamaPreTrainedModel
 # from transformers.models.llama.modeling_llama import AttnMaskConverter
 from typing import Optional, Tuple, Union, List
+from transformers.cache_utils import Cache, DynamicCache
+from transformers.modeling_attn_mask_utils import (
+    AttentionMaskConverter,
+    _prepare_4d_attention_mask,
+    _prepare_4d_causal_attention_mask,
+    _prepare_4d_causal_attention_mask_for_sdpa,
+)
 from transformers.modeling_outputs import (
     BaseModelOutputWithPast,
     BaseModelOutputWithPastAndCrossAttentions,
@@ -234,7 +241,6 @@ class LlamaforGeneration_pretrained(LlamaPreTrainedModel):
         )
 
 
-
 class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
 
     def __init__(self, global_llama, lm_head):
@@ -413,18 +419,18 @@ def _make_causal_mask(
     return mask[None, None, :, :].expand(bsz, 1, tgt_len, tgt_len + past_key_values_length)
 
 # Copied from transformers.models.bart.modeling_bart._expand_mask
-def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
-    """
-    Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
-    """
-    bsz, src_len = mask.size()
-    tgt_len = tgt_len if tgt_len is not None else src_len
+# def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
+#     """
+#     Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
+#     """
+#     bsz, src_len = mask.size()
+#     tgt_len = tgt_len if tgt_len is not None else src_len
 
-    expanded_mask = mask[:, None, None, :].expand(bsz, 1, tgt_len, src_len).to(dtype)
+#     expanded_mask = mask[:, None, None, :].expand(bsz, 1, tgt_len, src_len).to(dtype)
 
-    inverted_mask = 1.0 - expanded_mask
+#     inverted_mask = 1.0 - expanded_mask
 
-    return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
+#     return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
 
 class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
     def __init__(self, global_llama, score):
@@ -553,35 +559,37 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         self.num_encoders_all = full_llama.config.num_hidden_layers # all hidden layers num
         self.layers = nn.ModuleList([full_llama.layers[i] for i in range(self.num_encoders)])
         
+        self._use_sdpa = full_llama.config._attn_implementation == "sdpa"
+        self._use_flash_attention_2 = full_llama.config._attn_implementation == "flash_attention_2"
         self.norm = full_llama.norm #LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
         self.post_init()
     
-    # Copied from transformers.models.bart.modeling_bart.BartDecoder._prepare_decoder_attention_mask
-    def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
-        # create causal mask
-        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-        combined_attention_mask = None
-        if input_shape[-1] > 1:
-            combined_attention_mask = _make_causal_mask(
-                input_shape,
-                inputs_embeds.dtype,
-                device=inputs_embeds.device,
-                past_key_values_length=past_key_values_length,
-            )
+    # # Copied from transformers.models.bart.modeling_bart.BartDecoder._prepare_decoder_attention_mask
+    # def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
+    #     # create causal mask
+    #     # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+    #     combined_attention_mask = None
+    #     if input_shape[-1] > 1:
+    #         combined_attention_mask = _make_causal_mask(
+    #             input_shape,
+    #             inputs_embeds.dtype,
+    #             device=inputs_embeds.device,
+    #             past_key_values_length=past_key_values_length,
+    #         )
 
-        if attention_mask is not None:
-            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-            expanded_attn_mask = _expand_mask(attention_mask, inputs_embeds.dtype, tgt_len=input_shape[-1]).to(
-                inputs_embeds.device
-            )
-            combined_attention_mask = (
-                expanded_attn_mask if combined_attention_mask is None else expanded_attn_mask + combined_attention_mask
-            )
+    #     if attention_mask is not None:
+    #         # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+    #         expanded_attn_mask = _expand_mask(attention_mask, inputs_embeds.dtype, tgt_len=input_shape[-1]).to(
+    #             inputs_embeds.device
+    #         )
+    #         combined_attention_mask = (
+    #             expanded_attn_mask if combined_attention_mask is None else expanded_attn_mask + combined_attention_mask
+    #         )
 
-        return combined_attention_mask
+    #     return combined_attention_mask
 
     def forward(
         self,
@@ -610,6 +618,7 @@ class LocalLlamaModel(LlamaPreTrainedModel):
             else:
                 sequence_lengths = -1
         ###########################################
+        
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -628,32 +637,45 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        seq_length_with_past = seq_length
         past_key_values_length = 0
-        if past_key_values is not None:
-            past_key_values_length = past_key_values[0][0].shape[2]
+        if use_cache:
+            use_legacy_cache = not isinstance(past_key_values, Cache)
+            if use_legacy_cache:
+                past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            past_key_values_length = past_key_values.get_usable_length(seq_length)
 
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
             position_ids = torch.arange(
                 past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device
             )
-            position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
-        else:
-            position_ids = position_ids.view(-1, seq_length).long()
+            position_ids = position_ids.unsqueeze(0)
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
 
+        # print('before attention_mask:',attention_mask.shape)
+        if len(attention_mask.shape) <= 2: # no need to prepare attention mask
+            if self._use_flash_attention_2:
+                # 2d mask is passed through the layers
+                attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
+            elif self._use_sdpa and not output_attentions:
+                # output_attentions=True can not be supported when using SDPA, and we fall back on
+                # the manual implementation that requires a 4D causal mask in all cases.
+                attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
+                    attention_mask,
+                    (batch_size, seq_length),
+                    inputs_embeds,
+                    past_key_values_length,
+                )
+            else:
+                # 4d mask is passed through the layers
+                attention_mask = _prepare_4d_causal_attention_mask(
+                    attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+                )
+        # print('after attention_mask:',attention_mask.shape)
+        
         # embed positions
-        if attention_mask is None:
-            attention_mask = torch.ones(
-                (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
-            )
-        attention_mask = self._prepare_decoder_attention_mask(
-            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        )
-
         hidden_states = inputs_embeds
 
         if self.gradient_checkpointing and self.training:
@@ -666,32 +688,28 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         # decoder layers
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
-        next_decoder_cache = () if use_cache else None
+        next_decoder_cache = None # next_decoder_cache = () if use_cache else None
 
         for idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
-
-            past_key_value = past_key_values[idx] if past_key_values is not None else None
-
+            
             if self.gradient_checkpointing and self.training:
-
-                def create_custom_forward(module):
-                    def custom_forward(*inputs):
-                        # None for past_key_value
-                        return module(*inputs, past_key_value, output_attentions)
-
-                    return custom_forward
-
-                layer_outputs = torch.utils.checkpoint.checkpoint(
-                    create_custom_forward(decoder_layer), hidden_states, attention_mask, position_ids
+                layer_outputs = self._gradient_checkpointing_func(
+                    decoder_layer.__call__,
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    past_key_values,
+                    output_attentions,
+                    use_cache,
                 )
             else:
                 layer_outputs = decoder_layer(
                     hidden_states,
                     attention_mask=attention_mask,
                     position_ids=position_ids,
-                    past_key_value=past_key_value,
+                    past_key_value=past_key_values,
                     output_attentions=output_attentions,
                     use_cache=use_cache,
                 )
@@ -699,15 +717,10 @@ class LocalLlamaModel(LlamaPreTrainedModel):
             hidden_states = layer_outputs[0]
 
             if use_cache:
-                next_decoder_cache += (layer_outputs[2 if output_attentions else 1],)
+                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
-
-        # print('Local Llama Output')
-        # print('hidden_states:',hidden_states.shape)
-        # print('attention_mask:',attention_mask.shape)
-        # print('sequence_lengths:',sequence_lengths)
 
         return hidden_states, sequence_lengths, attention_mask, past_key_values
 
@@ -730,6 +743,8 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         self.num_encoders_all = full_llama.config.num_hidden_layers # all hidden layers num
         self.layers = nn.ModuleList([full_llama.layers[i] for i in range(self.num_encoders,self.num_encoders_all)])
         
+        self._use_sdpa = full_llama.config._attn_implementation == "sdpa"
+        self._use_flash_attention_2 = full_llama.config._attn_implementation == "flash_attention_2"
         self.norm = full_llama.norm #LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
@@ -756,11 +771,11 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        # load intermediate and input_shape(batchsize)
+        ## load intermediate and input_shape(batchsize)
         input_shape = intermediate.size()[:2]
         batch_size, seq_length = input_shape
         hidden_states = intermediate
-
+        # retrieve input_ids and inputs_embeds
         # if input_ids is not None and inputs_embeds is not None:
         #     raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         # elif input_ids is not None:
@@ -770,31 +785,47 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         # else:
         #     raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        seq_length_with_past = seq_length
         past_key_values_length = 0
-        if past_key_values is not None:
-            past_key_values_length = past_key_values[0][0].shape[2] 
+        if use_cache:
+            use_legacy_cache = not isinstance(past_key_values, Cache)
+            ## no need to initiate past_key_values, use the received past_key_values
+            # if use_legacy_cache:
+            #     past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            # past_key_values_length = past_key_values.get_usable_length(seq_length)
 
         if position_ids is None:
-            device = intermediate.device# if intermediate is not None else inputs_embeds.device
+            device = intermediate.device if intermediate is not None else inputs_embeds.device
             position_ids = torch.arange(
                 past_key_values_length, seq_length + past_key_values_length, dtype=torch.long, device=device
             )
-            position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
-        else:
-            position_ids = position_ids.view(-1, seq_length).long()
+            position_ids = position_ids.unsqueeze(0)
 
+        inputs_embeds = intermediate
+        ## inputs_embeds already received
         # if inputs_embeds is None:
         #     inputs_embeds = self.embed_tokens(input_ids)
-
-        # if attention_mask is None:
-        #     attention_mask = torch.ones(
-        #         (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
+        
+        ## no need to prepare attention mask from scratch, use the received attention mask
+        # if self._use_flash_attention_2:
+        #     # 2d mask is passed through the layers
+        #     attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
+        # elif self._use_sdpa and not output_attentions:
+        #     # output_attentions=True can not be supported when using SDPA, and we fall back on
+        #     # the manual implementation that requires a 4D causal mask in all cases.
+        #     attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
+        #         attention_mask,
+        #         (batch_size, seq_length),
+        #         inputs_embeds,
+        #         past_key_values_length,
         #     )
-        # attention_mask = self._prepare_decoder_attention_mask(
-        #     attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        # )
+        # else:
+        #     # 4d mask is passed through the layers
+        #     attention_mask = _prepare_4d_causal_attention_mask(
+        #         attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+        #     )
 
+        # embed positions
+        hidden_states = inputs_embeds
 
         if self.gradient_checkpointing and self.training:
             if use_cache:
@@ -806,32 +837,35 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         # decoder layers
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
-        next_decoder_cache = () if use_cache else None
+        next_decoder_cache = None # next_decoder_cache = () if use_cache else None
 
         for idx, decoder_layer in enumerate(self.layers):
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
-
-            past_key_value = past_key_values[idx +  self.num_encoders] if past_key_values is not None else None
+            
+            # past_key_value = past_key_values[idx +  self.num_encoders] if past_key_values is not None else None
+            # select the right past_key_value according to layer
+            # if (past_key_values is not None) or (len(past_key_values)==0):
+            #     past_key_value = None
+            # else:
+            #     past_key_value = past_key_values[idx]# +  self.num_encoders
 
             if self.gradient_checkpointing and self.training:
-
-                def create_custom_forward(module):
-                    def custom_forward(*inputs):
-                        # None for past_key_value
-                        return module(*inputs, past_key_value, output_attentions)
-
-                    return custom_forward
-
-                layer_outputs = torch.utils.checkpoint.checkpoint(
-                    create_custom_forward(decoder_layer), hidden_states, attention_mask, position_ids
+                layer_outputs = self._gradient_checkpointing_func(
+                    decoder_layer.__call__,
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    past_key_values,
+                    output_attentions,
+                    use_cache,
                 )
             else:
                 layer_outputs = decoder_layer(
                     hidden_states,
                     attention_mask=attention_mask,
                     position_ids=position_ids,
-                    past_key_value=past_key_value,
+                    past_key_value=past_key_values,
                     output_attentions=output_attentions,
                     use_cache=use_cache,
                 )
@@ -839,7 +873,7 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
             hidden_states = layer_outputs[0]
 
             if use_cache:
-                next_decoder_cache += (layer_outputs[2 if output_attentions else 1],)
+                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
@@ -850,7 +884,9 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         if output_hidden_states:
             all_hidden_states += (hidden_states,)
 
-        next_cache = next_decoder_cache if use_cache else None
+        next_cache = None
+        if use_cache:
+            next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
         return BaseModelOutputWithPast(

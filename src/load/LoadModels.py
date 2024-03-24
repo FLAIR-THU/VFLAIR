@@ -7,8 +7,7 @@ import numpy as np
 import pickle
 from transformers import BertTokenizer, GPT2Tokenizer, LlamaTokenizer
 from transformers import BertModel, GPT2Model, LlamaModel
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM, \
-    AutoModelForQuestionAnswering
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM, AutoModelForQuestionAnswering
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
@@ -41,7 +40,7 @@ MODEL_PATH = {
     "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH + "textattackbert-base-uncased-CoLA",
     "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH + "textattackbert-base-uncased-yelp-polarity",
     "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH + "textattackbert-base-uncased-SST-2",
-    "textattackbert-base-uncased-STS-B": YOUR_MODEL_PATH + "textattackbert-base-cased-STS-B",
+    "textattackbert-base-cased-STS-B": YOUR_MODEL_PATH + "textattackbert-base-cased-STS-B",
     "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH + "textattackbert-base-uncased-MRPC",
     "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-MNLI",
     "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-QNLI",
@@ -52,6 +51,8 @@ MODEL_PATH = {
     "textattackroberta-base-SST-2": YOUR_MODEL_PATH + "textattackroberta-base-SST-2",
     "textattackalbert-base-v2-CoLA": YOUR_MODEL_PATH + "textattackalbert-base-v2-CoLA",
     "textattackroberta-base-MNLI": YOUR_MODEL_PATH + "textattackroberta-base-MNLI",
+    "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH + "nihaldsouza1yelp-rating-classification",
+
     "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH + "rsvp-aibertserini-bert-base-squad",
 
     "gpt2": YOUR_MODEL_PATH + "gpt2",
@@ -103,8 +104,7 @@ def load_models(args):
     for ik in range(args.k):
         current_model_type = args.model_list[str(ik)]['type']
         current_model_path = args.model_list[str(ik)]['path']
-        args.net_list[ik] = pickle.load(
-            open('.././src/models/model_parameters/' + current_model_type + '/' + current_model_path + '.pkl', "rb"))
+        args.net_list[ik] = pickle.load(open('.././src/models/model_parameters/' + current_model_type + '/' + current_model_path + '.pkl', "rb"))
         args.net_list[ik] = args.net_list[ik].to(args.device)
     # important
     return args
@@ -125,9 +125,8 @@ def load_basic_models(args, index):
     if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower() or 'cnn' in current_model_type.lower() or 'alexnet' in current_model_type.lower():
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
-        local_model = globals()[current_model_type](nfeat=current_input_dim, nhid=current_hidden_dim,
-                                                    nclass=current_output_dim, device=args.device, dropout=0.0,
-                                                    lr=args.main_lr)
+        local_model = globals()[current_model_type](nfeat=current_input_dim, nhid=current_hidden_dim, nclass=current_output_dim, device=args.device,
+                                                    dropout=0.0, lr=args.main_lr)
     elif 'lstm' in current_model_type.lower():
         local_model = globals()[current_model_type](current_vocab_size, current_output_dim)
     else:
@@ -172,14 +171,12 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     args.encoder = None
     # some defense need model, add here
     if args.apply_defense == True:
-        current_bottleneck_scale = int(
-            args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
+        current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
 
         if 'std_shift_hyperparameter' in args.defense_configs:
             std_shift_hyperparameter = int(args.defense_configs['std_shift_hyperparameter'])
         else:
-            std_shift_hyperparameter = 5 if (
-                    'mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5
+            std_shift_hyperparameter = 5 if ('mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5
 
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
@@ -198,22 +195,17 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
             if index in args.defense_configs['party']:
                 print(f"begin to load mid model for party {index}")
                 if index == args.k - 1:
-                    print(
-                        f"load global mid model for party {index},std_shift_hyperparameter={std_shift_hyperparameter}")
+                    print(f"load global mid model for party {index},std_shift_hyperparameter={std_shift_hyperparameter}")
                     # add args.k-1 MID model at active party with global_model
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model_list = [MID_model_small(args.model_list[str(_ik)]['output_dim'],
-                                                          args.model_list[str(_ik)]['output_dim'],
-                                                          args.defense_configs['lambda'],
-                                                          bottleneck_scale=current_bottleneck_scale,
-                                                          std_shift=std_shift_hyperparameter) for _ik in
-                                          range(args.k - 1)]
+                        mid_model_list = [
+                            MID_model_small(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'], args.defense_configs['lambda'],
+                                            bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
                     else:
                         mid_model_list = [
-                            MID_model(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'],
-                                      args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale,
-                                      std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
+                            MID_model(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'], args.defense_configs['lambda'],
+                                      bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model, mid_model_list)
                     global_model = global_model.to(args.device)
@@ -239,16 +231,12 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print('lambda for passive party local mid model:', args.defense_configs['lambda'])
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'],
-                                                    args.model_list[str(index)]['output_dim'],
-                                                    args.defense_configs['lambda'],
-                                                    bottleneck_scale=current_bottleneck_scale,
+                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'], args.model_list[str(index)]['output_dim'],
+                                                    args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale,
                                                     std_shift=std_shift_hyperparameter)
                     else:
-                        mid_model = MID_model(args.model_list[str(index)]['output_dim'],
-                                              args.model_list[str(index)]['output_dim'], args.defense_configs['lambda'],
-                                              bottleneck_scale=current_bottleneck_scale,
-                                              std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model(args.model_list[str(index)]['output_dim'], args.model_list[str(index)]['output_dim'],
+                                              args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model, mid_model)
                     local_model = local_model.to(args.device)
@@ -312,8 +300,8 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     args.defense_configs['encode_dim'] = 2 + 6 * args.defense_configs['input_dim']
                     print('[warning] default encode_dim selected as 2+6*input_dim for applying CAE')
                 if args.num_classes > 20:
-                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20,
-                                                encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20, encode_dim=args.defense_configs['encode_dim']).to(
+                        args.device)
                 else:
                     encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'],
                                           encode_dim=args.defense_configs['encode_dim']).to(args.device)
@@ -388,8 +376,7 @@ def load_basic_models_llm_bert(args, index):
     local_encoders_num = args.local_encoders_num
 
     local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-        pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
-        pad_token, \
+        pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, \
         head_layer_trainable, encoder_trainable, local_encoders_num)
 
     args.tokenizer = tokenizer
@@ -397,8 +384,7 @@ def load_basic_models_llm_bert(args, index):
 
 
 def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_output_dim, is_local, device, \
-                                   padding_side, model_path, main_lr, pad_token, head_layer_trainable,
-                                   encoder_trainable, local_encoders_num):
+                                   padding_side, model_path, main_lr, pad_token, head_layer_trainable, encoder_trainable, local_encoders_num):
     # current_model_type = args.model_list[str(index)]['type']
     # current_output_dim = args.model_list[str(index)]['output_dim']
 
@@ -508,7 +494,7 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
         local_model = None
         local_model_optimizer = None
         if is_local:
-            local_model = LocalBertModel(full_bert, 1, model_type=model_type)
+            local_model = LocalBertModel(full_bert, local_encoders_num, model_type=model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -597,8 +583,7 @@ def load_basic_models_llm_gpt2(args, index):
         global_model_optimizer = None
         if index == args.k - 1:
             # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num,
-                                         model_type=args.model_type)  # generation_config = full_gpt.generation_config,
+            global_gpt = GlobalGPT2Model(full_gpt, args.local_encoders_num, model_type=args.model_type)  # generation_config = full_gpt.generation_config,
             # add Classification Layer(trainable)
             if args.task_type == "SequenceClassification":
                 global_model = GPT2ForSequenceClassification_forfinetune(global_gpt, current_output_dim)
@@ -666,8 +651,7 @@ def load_basic_models_llm_gpt2(args, index):
         local_model = None
         local_model_optimizer = None
         if index < args.k - 1:
-            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num,
-                                         generation_config=full_model.generation_config, model_type=args.model_type)
+            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, generation_config=full_model.generation_config, model_type=args.model_type)
             # Freeze Backbone
             for param in local_model.parameters():
                 param.requires_grad = False
@@ -786,6 +770,9 @@ def load_basic_models_llm_llama(args, index):
 
             global_model = global_model.to(args.device)
             global_model_optimizer = torch.optim.Adam(list(global_model.score.parameters()), lr=args.main_lr)
+
+        del (full_llama)
+
     else:
         print('load_basic_models_llm pretrained:', current_model_type)
         args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
@@ -870,13 +857,14 @@ def load_basic_models_llm_llama(args, index):
                 for param in global_model.head_layer.parameters():
                     param.requires_grad = args.head_layer_trainable[1]
                 if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
+                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
             global_model = global_model.to(args.device)
-            global_model_optimizer = None
+
+            del (full_llama)
+            del (full_model)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
-
 
 def load_basic_models_llm_qwen2(args, index):
     model_path = args.model_list[str(index)]['path']
@@ -896,9 +884,8 @@ def load_basic_models_llm_qwen2(args, index):
     local_model_optimizer, global_model_optimizer = None, None
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side,
-                              model_path, main_lr, pad_token, head_layer_trainable):
+def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
+                              head_layer_trainable):
     if model_type in ['Bert', 'Albert', 'Roberta']:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
             pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
@@ -917,14 +904,11 @@ def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_
 
 def load_basic_models_llm(args, index):
     if args.model_type in ['Bert', 'Albert', 'Roberta']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_bert(
-            args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_bert(args, index)
     elif args.model_type in ['GPT2']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(
-            args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args, index)
     elif args.model_type in ['Llama']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(
-            args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args, index)
     elif str(args.model_type).lower() in ['qwen2']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_qwen2(
             args, index)
@@ -933,8 +917,8 @@ def load_basic_models_llm(args, index):
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
-def load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local,
-                              device, padding_side, model_path, main_lr, pad_token, head_layer_trainable):
+def load_models_per_party_new(pretrained, task_type, model_type, current_model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
+                              pad_token, head_layer_trainable):
     if current_model_type in LLM_supported:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_new(
             pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
@@ -951,18 +935,13 @@ def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
     val_model = None
     if current_model_type in LLM_supported:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,
-                                                                                                               index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args, index)
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args, index)
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args,
-                                                                                                             index,
-                                                                                                             local_model,
-                                                                                                             local_model_optimizer,
-                                                                                                             global_model,
-                                                                                                             global_model_optimizer)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer,
+                                                                                                             global_model, global_model_optimizer)
         # important
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
