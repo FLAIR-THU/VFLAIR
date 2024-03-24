@@ -598,14 +598,11 @@ class Qwen2TailForCausalLMExtraCopy(Qwen2ForCausalLM, VFLModel):
 
 
 class E2EModel(Qwen2ForCausalLM):
-    def __init__(self, model_config, local_model: Callable, global_model: Callable, communication: Callable = None,
-                 reset_barrier: Callable = None):
+    def __init__(self, model_config, local_model: Callable, global_model: Callable):
         super().__init__(model_config)
         self.layers = ModuleList()
         self.local_model = local_model
         self.global_model = global_model
-        self.communication = communication
-        self.reset_barrier = reset_barrier
         self.post_init()
 
     def forward(

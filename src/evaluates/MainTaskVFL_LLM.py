@@ -1,4 +1,3 @@
-import json
 import sys, os
 
 sys.path.append(os.pardir)
@@ -15,7 +14,7 @@ import random
 import time
 import copy
 import collections
-import threading
+
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
@@ -121,23 +120,8 @@ class MainTaskVFL_LLM(object):
         self.num_update_per_batch = args.num_update_per_batch
         self.num_batch_per_workset = args.Q  # args.num_batch_per_workset
         self.max_staleness = self.num_update_per_batch * self.num_batch_per_workset
-        self._last_result = None
-        self._barrier = threading.Barrier(args.k)
         self.e2e_model = None  # type:E2EModel
         self._init_e2e_model()
-
-    def set_last_result(self, result, run):
-        if run == 'predict':
-            self._last_result = json.loads(result)
-            self._barrier.wait()
-        else:
-            self._last_result = result
-
-    def get_last_result(self):
-        return self._last_result
-
-    def get_active_party(self):
-        return self.parties[self.k - 1]
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -546,105 +530,6 @@ class MainTaskVFL_LLM(object):
         else:
             assert 1 > 2, "task_type not supported"
 
-    def qa_inference(self):
-        # QA
-        exact_score_list = []
-        f1_list = []
-        for ik in range(self.k - 1):
-            # Passive data local predict
-            result = self.parties[ik].predict()
-
-            nbest_list, gold_ans_list, total_sample_cnt = result
-
-        total_scores = []
-        best_non_null_entry = None
-
-        for nbest, gold_ans in zip(nbest_list, gold_ans_list):
-            print('nbest:', nbest)
-            print('gold_ans:', gold_ans)
-
-            exact_score = 0
-            f1 = 0
-            if self.args.metric_type == "best_pred":
-                for entry in nbest:
-                    total_scores.append(entry.start_logit + entry.end_logit)
-                    if not best_non_null_entry:
-                        if entry.text:
-                            best_non_null_entry = entry
-                pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                print('pred_ans_text:', pred_ans_text)
-                print('gold_ans:', gold_ans)
-
-                exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                print('exact_score:', exact_score)
-                print('-' * 100)
-
-                exact_score_list.append(exact_score)
-                f1_list.append(f1)
-            elif self.args.metric_type == "n_best":
-                for entry in nbest:
-                    total_scores.append(entry.start_logit + entry.end_logit)
-                    if not best_non_null_entry:
-                        if entry.text:
-                            best_non_null_entry = entry
-                    pred_ans_text = entry.text
-                    exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                    f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                exact_score_list.append(exact_score)
-                f1_list.append(f1)
-            else:
-                assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-        exact_score = np.mean(exact_score_list)
-        f1 = np.mean(f1_list)
-        exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
-
-        self.test_acc = exact_score
-        # self.final_state = self.save_state(False)
-        # self.final_state.update(self.save_party_data())
-        print(exp_result)
-        return exp_result, self.test_acc
-
-    def vfl_forward(  self, input_ids, attention_mask, token_type_ids , past_key_values):
-        
-        # print('=== vfl forward ===')
-        # print('input_ids:',input_ids)
-        # print('attention_mask:',attention_mask.shape)
-        # print('token_type_ids:',token_type_ids)
-
-        if past_key_values != None:
-            self.local_past_key_values = past_key_values[:self.args.local_encoders_num]
-            self.global_past_key_values = past_key_values[self.args.local_encoders_num:]
-            self.all_past_key_values = past_key_values
-        else:
-            self.local_past_key_values = None
-            self.global_past_key_values = None
-            self.all_past_key_values = None
-
-        input_shape = input_ids.shape[:2]  # batchsize, seq_length
-        self.input_shape = input_shape
-
-        self.parties[0].obtain_local_data(input_ids, attention_mask, token_type_ids, self.local_past_key_values)
-        self.parties[1].obtain_local_data(None, None, None, past_key_values)
-        
-        # self.gt_one_hot_label = gt_one_hot_label
-
-        # self.parties[1].encoder_attention_mask = self.parties[0].local_model.encoder_attention_mask
-        # self.parties[1].encoder_hidden_states = self.parties[0].local_model.encoder_hidden_states
-
-        # passive party do local pred
-        pred_list = self.parties[0].pred_transmit(use_cache = True)
-
-
-        # local_past_key_values = self.parties[0].local_model.past_key_values
-
-        # passive party inform active party to do global pred
-        test_logit = self.parties[0]._send_pred_message(pred_list, use_cache = False)
-        
-        final_output = self.parties[1].global_output
-        return final_output
-
     def predict(self):
         # passive party dataloader list
         data_loader_list = [self.parties[ik].test_loader for ik in range(self.args.k - 1)]
@@ -910,8 +795,11 @@ class MainTaskVFL_LLM(object):
 
     def qa_inference(self):
         # QA
-        # exact_score_list, f1_list , total_sample_cnt = self.predict()
-        nbest_list, gold_ans_list, total_sample_cnt = self.predict()
+        for ik in range(self.k - 1):
+            # Passive data local predict
+            result = self.parties[ik].predict()
+
+            nbest_list, gold_ans_list, total_sample_cnt = result
 
         # prediction result assessment
         total_scores = []
@@ -1017,7 +905,7 @@ class MainTaskVFL_LLM(object):
 
         elif self.args.task_type == "CausalLM":
             # exp_result, self.test_acc =
-            exp_result, main_task_result = self.causal_lm_inference()
+            exp_result, main_task_result = self.causal_llm_inference()
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
@@ -1612,17 +1500,7 @@ class MainTaskVFL_LLM(object):
         total = dummy_label.shape[0]
         return success / total
 
-    def reset_barrier(self):
-        self._barrier = threading.Barrier(2)
-
     def _init_e2e_model(self):
-        def communication_callback(_intermediate):
-            if _intermediate is None:
-                self._barrier.wait()
-                print('============================================')
-                _intermediate = self._last_result
-            return _intermediate
-
         model_config = None
         if not self.args.task_type == 'DevLLMInference':
             return
@@ -1635,6 +1513,5 @@ class MainTaskVFL_LLM(object):
                 break
         if not model_config:
             logger.error(f"No model config for E2E_model")
-        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1], communication_callback,
-                                  self.reset_barrier)
+        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1])
         # self.e2e_model.to(self.e2e_model.local_model.device)
