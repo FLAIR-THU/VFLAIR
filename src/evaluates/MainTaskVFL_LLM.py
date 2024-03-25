@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.append(os.pardir)
 import torch
 from torch.nn.utils.rnn import pad_sequence
@@ -14,7 +15,7 @@ import time
 import copy
 import collections
 
-from sklearn.metrics import roc_auc_score,matthews_corrcoef
+from sklearn.metrics import roc_auc_score, matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
 import torch
@@ -36,24 +37,22 @@ import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
-from utils.communication_protocol_funcs import compress_pred,Cache,ins_weight
-from utils.squad_utils import  normalize_answer,_get_best_indexes, get_tokens, compute_exact, compute_f1
-
+from utils.communication_protocol_funcs import compress_pred, Cache, ins_weight
+from utils.squad_utils import normalize_answer, _get_best_indexes, get_tokens, compute_exact, compute_f1
 
 from evaluates.attacks.attack_api import AttackerLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification,AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 
 from load.LoadModels import MODEL_PATH
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-torch.backends.cudnn.enable =True
+torch.backends.cudnn.enable = True
 torch.backends.cudnn.benchmark = True
 
-
-STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,\
-'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,\
-'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82, 'news20':0.8,\
- 'cola_public':0.8,'SST-2':0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40, 'diabetes': 0.69, \
+                'nuswide': 0.88, 'breast_cancer_diagnose': 0.88, 'adult_income': 0.84, 'cora': 0.72, \
+                'avazu': 0.83, 'criteo': 0.74, 'nursery': 0.99, 'credit': 0.82, 'news20': 0.8, \
+                'cola_public': 0.8, 'SST-2': 0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
 class MainTaskVFL_LLM(object):
@@ -80,22 +79,22 @@ class MainTaskVFL_LLM(object):
         self.parties = args.parties
         # self.servers = args.servers
 
-        self.Q = args.Q # FedBCD
+        self.Q = args.Q  # FedBCD
 
         self.parties_data = None
         self.gt_one_hot_label = None
-        self.clean_one_hot_label  = None
+        self.clean_one_hot_label = None
         self.pred_list = []
         self.pred_list_clone = []
         self.pred_gradients_list = []
         self.pred_gradients_list_clone = []
-        
+
         # FedBCD related
         self.local_pred_list = []
         self.local_pred_list_clone = []
         self.local_pred_gradients_list = []
         self.local_pred_gradients_list_clone = []
-        
+
         self.loss = None
         self.train_acc = None
         self.flag = 1
@@ -103,7 +102,6 @@ class MainTaskVFL_LLM(object):
         self.stopping_time = 0.0
         self.stopping_commu_cost = 0
         self.communication_cost = 0
-
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
@@ -118,8 +116,8 @@ class MainTaskVFL_LLM(object):
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
         self.num_update_per_batch = args.num_update_per_batch
-        self.num_batch_per_workset = args.Q #args.num_batch_per_workset
-        self.max_staleness = self.num_update_per_batch*self.num_batch_per_workset 
+        self.num_batch_per_workset = args.Q  # args.num_batch_per_workset
+        self.max_staleness = self.num_update_per_batch * self.num_batch_per_workset
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -136,63 +134,63 @@ class MainTaskVFL_LLM(object):
             onehot_target.scatter_(1, target, 1)
         return onehot_target
 
-    def LR_Decay(self,i_epoch):
+    def LR_Decay(self, i_epoch):
         # for ik in range(self.k):
         #     self.parties[ik].LR_decay(i_epoch)
-        self.parties[self.k-1].global_LR_decay(i_epoch)
+        self.parties[self.k - 1].global_LR_decay(i_epoch)
 
     def apply_defense_on_transmission(self, pred_detach):
         ########### Defense applied on pred transmit ###########
-        if self.args.apply_defense == True and self.args.apply_dp == True :
+        if self.args.apply_defense == True and self.args.apply_dp == True:
             # print('pre pred_detach:',type(pred_detach),pred_detach.shape) # torch.size bs,12,768 intermediate
-            pred_detach = torch.stack( self.launch_defense(pred_detach, "pred")  )
+            pred_detach = torch.stack(self.launch_defense(pred_detach, "pred"))
             # print('after pred_detach:',type(pred_detach),pred_detach.shape) # torch.size bs,12,768 intermediate
         return pred_detach
-    
+
     def apply_communication_protocol_on_transmission(self, pred_detach):
         ########### communication_protocols ###########
-        if self.args.communication_protocol in ['Quantization','Topk']:
-            pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
-                            self.current_epoch, self.current_step).to(self.args.device)
+        if self.args.communication_protocol in ['Quantization', 'Topk']:
+            pred_detach = compress_pred(self.args, pred_detach, self.parties[ik].local_gradient, \
+                                        self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-
-    def pred_transmit(self, use_cache = False): 
+    def pred_transmit(self, use_cache=False):
         '''
         Active party gets pred from passive parties
         '''
         all_pred_list = []
-        for ik in range(self.k-1):
+        for ik in range(self.k - 1):
             # give pred
             if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
-                    pred, pred_detach, attention_mask  = self.parties[ik].give_pred(use_cache = use_cache) # , _input_shape
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred, pred_detach, attention_mask  = self.parties[ik].give_pred(use_cache = use_cache) # , _input_shape
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
                 else:
-                    assert 1>2, "task type not supported for finetune"
+                    assert 1 > 2, "task type not supported for finetune"
             elif self.args.model_type == 'Llama':
                 if self.args.task_type == 'SequenceClassification':
-                    pred, pred_detach , sequence_lengths, attention_mask , local_past_key_values = self.parties[ik].give_pred(use_cache = use_cache) # , _input_shape
+                    pred, pred_detach, sequence_lengths, attention_mask, local_past_key_values = self.parties[ik].give_pred(
+                        use_cache=use_cache)  # , _input_shape
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach , attention_mask = self.parties[ik].give_pred(use_cache = use_cache) # , _input_shape
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred, pred_detach , attention_mask = self.parties[ik].give_pred(use_cache = use_cache) # , _input_shape
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
                 elif self.args.task_type == 'Generation':
-                    pred, pred_detach, attention_mask, local_past_key_values  = self.parties[ik].give_pred(use_cache = use_cache) 
+                    pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
                 else:
-                    assert 1>2, "task type not supported for finetune"
+                    assert 1 > 2, "task type not supported for finetune"
             elif self.args.model_type == 'GPT2':
                 if self.args.task_type == 'SequenceClassification':
-                    pred, pred_detach , sequence_lengths, attention_mask = self.parties[ik].give_pred(use_cache = use_cache)
+                    pred, pred_detach, sequence_lengths, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach , attention_mask  = self.parties[ik].give_pred(use_cache = use_cache) 
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'Generation':
-                    pred, pred_detach, attention_mask, local_past_key_values  = self.parties[ik].give_pred(use_cache = use_cache) 
+                    pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred, pred_detach , attention_mask = self.parties[ik].give_pred(use_cache = use_cache) 
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)
                 else:
-                    assert 1>2, "task type not supported for finetune"
+                    assert 1 > 2, "task type not supported for finetune"
 
             # Defense
             if self.args.apply_defense:
@@ -201,72 +199,72 @@ class MainTaskVFL_LLM(object):
                     pred_detach = self.apply_defense_on_transmission(pred_detach)
             # Communication Process
             pred_detach = self.apply_communication_protocol_on_transmission(pred_detach)
-            
+
             pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
             attention_mask = torch.autograd.Variable(attention_mask).to(self.args.device)
 
             # receive pred
             if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
-                    pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    pred_list = [pred_clone, attention_mask]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                        get_size_of(attention_mask) #MB
+                    self.communication_cost += get_size_of(pred_clone) + \
+                                               get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred_list = [pred_clone,attention_mask]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    pred_list = [pred_clone, attention_mask]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.model_type == 'Llama':
                 if self.args.task_type == 'SequenceClassification':
-                    pred_list = [pred_clone,attention_mask, sequence_lengths, local_past_key_values]
-                    self.parties[self.k-1].receive_pred(pred_list, ik) 
+                    pred_list = [pred_clone, attention_mask, sequence_lengths, local_past_key_values]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of(sequence_lengths)+\
-                    get_size_of( attention_mask ) #MB
+                    self.communication_cost += get_size_of(pred_clone) + \
+                                               get_size_of(sequence_lengths) + \
+                                               get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'CausalLM':
-                    pred_list = [pred_clone,attention_mask,None,None]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    pred_list = [pred_clone, attention_mask, None, None]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of( attention_mask ) #MB
+                    self.communication_cost += get_size_of(pred_clone) + \
+                                               get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'Generation':
                     pred_list = [pred_clone, attention_mask, None, local_past_key_values]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of( attention_mask ) #MB
+                    self.communication_cost += get_size_of(pred_clone) + \
+                                               get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred_list = [pred_clone,attention_mask,None,None]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    pred_list = [pred_clone, attention_mask, None, None]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of( attention_mask ) #MB
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
             elif self.args.model_type == 'GPT2':
                 if self.args.task_type == 'SequenceClassification':
-                    pred_list = [pred_clone,attention_mask,sequence_lengths,None]
-                    self.parties[self.k-1].receive_pred(pred_list, ik) 
+                    pred_list = [pred_clone, attention_mask, sequence_lengths, None]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask)+get_size_of(sequence_lengths)  #MB
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask) + get_size_of(sequence_lengths)  # MB
                 elif self.args.task_type == 'CausalLM':
-                    pred_list = [pred_clone, attention_mask,None,None]
-                    self.parties[self.k-1].receive_pred( pred_list, ik) 
+                    pred_list = [pred_clone, attention_mask, None, None]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'Generation':
-                    pred_list = [pred_clone, attention_mask, None,local_past_key_values]
-                    self.parties[self.k-1].receive_pred(pred_list, ik)  
+                    pred_list = [pred_clone, attention_mask, None, local_past_key_values]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+\
-                    get_size_of( attention_mask ) #MB
+                    self.communication_cost += get_size_of(pred_clone) + \
+                                               get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
-                    pred_list = [pred_clone,attention_mask,None,None]
-                    self.parties[self.k-1].receive_pred( pred_list , ik) 
+                    pred_list = [pred_clone, attention_mask, None, None]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)
-                    self.communication_cost += get_size_of(pred_clone)+get_size_of(attention_mask) #MB
-            
-            all_pred_list.append( pred_list )
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+
+            all_pred_list.append(pred_list)
 
         self.all_pred_list = all_pred_list
         return all_pred_list
@@ -278,27 +276,27 @@ class MainTaskVFL_LLM(object):
     # def global_pred_transmit(self):
     #     # active party give global pred to passive party
     #     final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received, test="True")
-        
+
     #     for ik in range(self.k-1):
     #         # self.communication_cost += get_size_of(final_pred)
     #         self.parties[ik].global_pred = final_pred
 
     #     return final_pred
-    
+
     def local_gradient_transmit(self):
-        for ik in range(self.k-1):
+        for ik in range(self.k - 1):
             if self.parties[ik].local_model_optimizer != None:
-                passive_local_gradient= self.parties[self.k-1].cal_passive_local_gradient(ik)
+                passive_local_gradient = self.parties[self.k - 1].cal_passive_local_gradient(ik)
                 self.parties[ik].local_gradient = passive_local_gradient
 
     def global_gradient_transmit(self, final_pred):
-        global_loss = self.parties[0].cal_loss(final_pred)  
+        global_loss = self.parties[0].cal_loss(final_pred)
 
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
 
         self.communication_cost += get_size_of(global_gradients)
-        
-        self.parties[self.k-1].receive_loss_and_gradients(self.parties[0].global_gradients) # self.parties[0].global_loss, 
+
+        self.parties[self.k - 1].receive_loss_and_gradients(self.parties[0].global_gradients)  # self.parties[0].global_loss,
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
@@ -319,7 +317,7 @@ class MainTaskVFL_LLM(object):
 
                 predict_label = torch.tensor([_.item() for _ in predict_label])
                 actual_label = torch.tensor([_.item() for _ in actual_label])
-                
+
                 sample_cnt = predict_label.shape[0]
 
                 return list(predict_label), list(actual_label), sample_cnt
@@ -397,7 +395,7 @@ class MainTaskVFL_LLM(object):
             f1_list = []
             batch_nbest_list = []
             batch_gold_ans_list = []
-            for i in range(start_logits.shape[0]): # for each sample in this batch
+            for i in range(start_logits.shape[0]):  # for each sample in this batch
                 _start_logits = start_logits[i]
                 _end_logits = end_logits[i]
                 _start_indexes = start_indexes[i]
@@ -405,7 +403,7 @@ class MainTaskVFL_LLM(object):
 
                 ############ Gold ################
                 feature = parties_data[0][4][i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
-                feature_tokens = [_token for _token in feature["tokens"]] #[_token[0] for _token in feature["tokens"]]
+                feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
 
                 gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
                 if len(gold_start_indexs.shape) == 0:
@@ -485,54 +483,52 @@ class MainTaskVFL_LLM(object):
                             start_logit=prelim_predictions[_id].start_logit,
                             end_logit=prelim_predictions[_id].end_logit))
                 batch_nbest_list.append(nbest)
- 
+
             return batch_nbest_list, batch_gold_ans_list, sample_cnt
-                
-                # # Get best predicted answer
-                # total_scores = []
-                # best_non_null_entry = None
 
-                # if self.args.metric_type == "best_pred":
-                #     for entry in nbest:
-                #         total_scores.append(entry.start_logit + entry.end_logit)
-                #         if not best_non_null_entry:
-                #             if entry.text:
-                #                 best_non_null_entry = entry
-                #     pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                #     # Calculate exact_score/f1
-                #     # print('best pred:',pred_ans_text)
-                #     exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                #     f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                #     # print('this batch:',exact_score,f1)
-                #     exact_score_list.append(exact_score)
-                #     f1_list.append(f1)
-                # elif self.args.metric_type == "n_best":
-                #     for entry in nbest:
-                #         total_scores.append(entry.start_logit + entry.end_logit)
-                #         if not best_non_null_entry:
-                #             if entry.text:
-                #                 best_non_null_entry = entry
-                #         pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
+            # # Get best predicted answer
+            # total_scores = []
+            # best_non_null_entry = None
 
-                #         # Calculate exact_score/f1
-                #         exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                #         f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                #     # print('this batch:',exact_score,f1)
-                #     exact_score_list.append(exact_score)
-                #     f1_list.append(f1)
-                # else:
-                #     assert 1 > 2, f"{self.args.metric_type} not provided!"
+            # if self.args.metric_type == "best_pred":
+            #     for entry in nbest:
+            #         total_scores.append(entry.start_logit + entry.end_logit)
+            #         if not best_non_null_entry:
+            #             if entry.text:
+            #                 best_non_null_entry = entry
+            #     pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
+            #     # Calculate exact_score/f1
+            #     # print('best pred:',pred_ans_text)
+            #     exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
+            #     f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
+            #     # print('this batch:',exact_score,f1)
+            #     exact_score_list.append(exact_score)
+            #     f1_list.append(f1)
+            # elif self.args.metric_type == "n_best":
+            #     for entry in nbest:
+            #         total_scores.append(entry.start_logit + entry.end_logit)
+            #         if not best_non_null_entry:
+            #             if entry.text:
+            #                 best_non_null_entry = entry
+            #         pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
 
-                # return exact_score_list, f1_list, sample_cnt #None
+            #         # Calculate exact_score/f1
+            #         exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
+            #         f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
+            #     # print('this batch:',exact_score,f1)
+            #     exact_score_list.append(exact_score)
+            #     f1_list.append(f1)
+            # else:
+            #     assert 1 > 2, f"{self.args.metric_type} not provided!"
+
+            # return exact_score_list, f1_list, sample_cnt #None
 
         else:
             assert 1 > 2, "task_type not supported"
-    
-    
 
     def predict(self):
         # passive party dataloader list
-        data_loader_list = [self.parties[ik].test_loader for ik in range(self.args.k-1)]
+        data_loader_list = [self.parties[ik].test_loader for ik in range(self.args.k - 1)]
 
         exact_score_list = []
         f1_list = []
@@ -550,7 +546,7 @@ class MainTaskVFL_LLM(object):
         with torch.no_grad():
             for parties_data in zip(*data_loader_list):
                 _parties_data = []
-                for party_id in range(len(parties_data)): # iter through each passive party
+                for party_id in range(len(parties_data)):  # iter through each passive party
                     batch_input_ids = []
                     batch_label = []
                     batch_attention_mask = []
@@ -558,54 +554,53 @@ class MainTaskVFL_LLM(object):
                     batch_feature = []
                     for bs_id in range(len(parties_data[party_id])):
                         # Input_ids
-                        batch_input_ids.append( parties_data[party_id][bs_id][0].tolist() )
+                        batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
                         # Attention Mask
-                        batch_attention_mask.append( parties_data[party_id][bs_id][2].tolist()  )
+                        batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
 
                         # ptoken_type_ids
                         if parties_data[party_id][bs_id][3] == []:
                             batch_token_type_ids = None
                         else:
-                            batch_token_type_ids.append( parties_data[party_id][bs_id][3].tolist()  )
+                            batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
 
                         # feature (for QuestionAnswering only)
                         if parties_data[party_id][bs_id][4] == []:
                             batch_feature = None
                         else:
-                            batch_feature.append( parties_data[party_id][bs_id][4] )
+                            batch_feature.append(parties_data[party_id][bs_id][4])
 
                         # Label
                         if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append( parties_data[party_id][bs_id][1].tolist() )
+                            batch_label.append(parties_data[party_id][bs_id][1].tolist())
                         else:
-                            batch_label.append( parties_data[party_id][bs_id][1]  )
+                            batch_label.append(parties_data[party_id][bs_id][1])
 
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
-                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)     
+                        batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
 
-                    if type( batch_label[0] ) != str:
+                    if type(batch_label[0]) != str:
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
                             # 2*bs, num_of_answers
                             # print('batch_label:',batch_label)
                             if type(batch_label[0][0]) == list:
-                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                                batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
                                                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
-                                batch_label = batch_label.reshape(origin_batch_label_shape)   
+                                origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
+                                batch_label = batch_label.reshape(origin_batch_label_shape)
                             else:
-                                batch_label = torch.tensor(batch_label).to(self.device)  
+                                batch_label = torch.tensor(batch_label).to(self.device)
                         else:
                             batch_label = torch.tensor(batch_label).to(self.device)
-                    
 
-                    _parties_data.append\
-                        ([batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] )
+                    _parties_data.append \
+                        ([batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
                 parties_data = _parties_data
 
-                if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1: # classification
+                if self.args.task_type == "SequenceClassification" and self.args.num_classes > 1:  # classification
                     gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
                 elif self.args.task_type == "QuestionAnswering":
                     gt_one_hot_label = list(parties_data[0][1])
@@ -613,7 +608,7 @@ class MainTaskVFL_LLM(object):
                     gt_one_hot_label = parties_data[0][1]
 
                 self.input_shape = parties_data[0][0].shape[:2]  # batchsize, seq_length
-                for ik in range(self.args.k-1):
+                for ik in range(self.args.k - 1):
                     # input_ids, local_batch_attention_mask, local_batch_token_type_ids, past_key_values = None
                     self.parties[ik].obtain_local_data(parties_data[0][0], parties_data[0][2], parties_data[0][3])
                 self.gt_one_hot_label = gt_one_hot_label
@@ -627,24 +622,23 @@ class MainTaskVFL_LLM(object):
                 # print(start_position, end_position)
                 # print( 'tokens start_end', parties_data[0][4][0]['tokens'][start_position[0]: end_position[0]+1])
                 # print( 'tokens start_end', parties_data[0][4][0]['tokens'][start_position[1]: end_position[1]+1])
-                
+
                 # print( 'orig_answer_text', parties_data[0][4][0]['orig_answer_text'])
 
-                
                 # Passive Party -> pred_list[local pred]
                 pred_list = self.pred_transmit()
                 # local pred list -> Active Party -> test_logit[final pred]
                 test_logit = self.global_pred_transmit(pred_list)
 
                 # test_logit -> standard output for each task
-                if self.args.task_type == "SequenceClassification":# and self.args.num_classes > 1: # classification
+                if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
                     batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
                     predict_label_list.extend(batch_predict_label)
                     actual_label_list.extend(batch_actual_label)
                     if sample_cnt is not None:
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "QuestionAnswering":
-                    batch_nbest, batch_gold_ans , sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
                     nbest_list.extend(batch_nbest)
                     gold_ans_list.extend(batch_gold_ans)
 
@@ -660,11 +654,11 @@ class MainTaskVFL_LLM(object):
                     if sample_cnt is not None:
                         total_sample_cnt += sample_cnt
                 else:
-                    assert 1>2, 'Task type not supported'
+                    assert 1 > 2, 'Task type not supported'
 
                 del parties_data
-        
-        if self.args.task_type == "SequenceClassification":# and self.args.num_classes > 1: # classification
+
+        if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
             return predict_label_list, actual_label_list, total_sample_cnt
         elif self.args.task_type == "QuestionAnswering":
             # return exact_score_list, f1_list, total_sample_cnt
@@ -672,13 +666,13 @@ class MainTaskVFL_LLM(object):
         elif self.args.task_type == "CausalLM":
             return target_word_list, predict_word_list, total_sample_cnt
         else:
-            assert 1>2, 'Task type not supported'
+            assert 1 > 2, 'Task type not supported'
 
     def seq_inference(self):
         # SequenceClassification / Regression
         postfix = {'test_acc': 0.0}
-        
-        predict_labels, actual_labels , total_sample_cnt = self.predict()
+
+        predict_labels, actual_labels, total_sample_cnt = self.predict()
 
         # prediction result assessment
         if self.num_classes == 1:
@@ -688,13 +682,13 @@ class MainTaskVFL_LLM(object):
             self.test_spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
             postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
             postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}'\
-            .format(self.test_mse,self.test_pearson_corr,self.test_spearmanr_corr)
+            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}' \
+                .format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr)
             print(exp_result)
-            return exp_result, [ self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr ]
+            return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
         else:
             suc_cnt = torch.sum(torch.tensor(predict_labels) == \
-            torch.tensor(actual_labels)).item()
+                                torch.tensor(actual_labels)).item()
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
             self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
@@ -706,11 +700,11 @@ class MainTaskVFL_LLM(object):
     def causal_lm_inference(self):
         postfix = {'test_acc': 0.0}
 
-        target_word_list, predict_word_list , total_sample_cnt = self.predict()
+        target_word_list, predict_word_list, total_sample_cnt = self.predict()
 
-        print('target_word_list:\n',target_word_list[:5])
+        print('target_word_list:\n', target_word_list[:5])
 
-        print('predict_word_list:\n',predict_word_list[:5])
+        print('predict_word_list:\n', predict_word_list[:5])
 
         # prediction result assessment
         if self.args.metric_type == "best_pred":
@@ -718,7 +712,7 @@ class MainTaskVFL_LLM(object):
             for i in range(len(target_word_list)):
                 if target_word_list[i] == predict_word_list[i]:
                     suc_cnt += 1
-            self.test_acc = suc_cnt / float(len(target_word_list))  
+            self.test_acc = suc_cnt / float(len(target_word_list))
         elif self.args.metric_type == "n_best":
             suc_cnt = 0
             for i in range(len(target_word_list)):
@@ -738,8 +732,8 @@ class MainTaskVFL_LLM(object):
     def qa_inference(self):
         # QA
         # exact_score_list, f1_list , total_sample_cnt = self.predict()
-        nbest_list, gold_ans_list , total_sample_cnt = self.predict()
-        
+        nbest_list, gold_ans_list, total_sample_cnt = self.predict()
+
         # prediction result assessment
         total_scores = []
         best_non_null_entry = None
@@ -747,7 +741,7 @@ class MainTaskVFL_LLM(object):
         f1_list = []
 
         # iterate through each sample
-        for nbest, gold_ans in zip( nbest_list ,gold_ans_list ):
+        for nbest, gold_ans in zip(nbest_list, gold_ans_list):
             exact_score = 0
             f1 = 0
             best_non_null_entry = None
@@ -779,13 +773,13 @@ class MainTaskVFL_LLM(object):
         exact_score = np.mean(exact_score_list)
         f1 = np.mean(f1_list)
         exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
-        
+
         self.test_acc = exact_score
         print(exp_result)
         return exp_result, self.test_acc
 
-    def vfl_forward(  self, input_ids, attention_mask, token_type_ids , past_key_values):
-        
+    def vfl_forward(self, input_ids, attention_mask, token_type_ids, past_key_values):
+
         # print('=== vfl forward ===')
         # print('input_ids:',input_ids)
         # print('attention_mask:',attention_mask.shape)
@@ -805,52 +799,50 @@ class MainTaskVFL_LLM(object):
 
         self.parties[0].obtain_local_data(input_ids, attention_mask, token_type_ids, self.local_past_key_values)
         self.parties[1].obtain_local_data(None, None, None, past_key_values)
-        
+
         # self.gt_one_hot_label = gt_one_hot_label
 
         # self.parties[1].encoder_attention_mask = self.parties[0].local_model.encoder_attention_mask
         # self.parties[1].encoder_hidden_states = self.parties[0].local_model.encoder_hidden_states
 
         # passive party do local pred
-        pred_list = self.pred_transmit(use_cache = True)
+        pred_list = self.pred_transmit(use_cache=True)
 
         # passive party inform active party to do global pred
-        test_logit = self.global_pred_transmit(pred_list, use_cache = False)
-        
+        test_logit = self.global_pred_transmit(pred_list, use_cache=False)
+
         final_output = self.parties[1].global_output
         return final_output
 
-
-    def inference(self, inference_data = 'test'):
+    def inference(self, inference_data='test'):
         # print(' ========= Inference ==========')
-        for ik in range(self.k-1):
+        for ik in range(self.k - 1):
             self.parties[ik].prepare_data_loader()
             self.parties[ik].local_model.eval()
-        self.parties[self.k-1].global_model.eval()
+        self.parties[self.k - 1].global_model.eval()
 
         if self.args.task_type == "QuestionAnswering":
             exp_result, main_task_result = self.qa_inference()
-            self.final_state = self.save_state() 
-            self.final_state.update(self.save_state(False)) 
-            self.final_state.update(self.save_party_data()) 
+            self.final_state = self.save_state()
+            self.final_state.update(self.save_state(False))
+            self.final_state.update(self.save_party_data())
             return exp_result, main_task_result
 
         if self.args.task_type == "SequenceClassification":
             # exp_result, self.test_acc =
             exp_result, main_task_result = self.seq_inference()
-            self.final_state = self.save_state() 
-            self.final_state.update(self.save_state(False)) 
-            self.final_state.update(self.save_party_data()) 
+            self.final_state = self.save_state()
+            self.final_state.update(self.save_state(False))
+            self.final_state.update(self.save_party_data())
             return exp_result, main_task_result
 
         if self.args.task_type == "CausalLM":
             # exp_result, self.test_acc =
             exp_result, main_task_result = self.causal_lm_inference()
-            self.final_state = self.save_state() 
-            self.final_state.update(self.save_state(False)) 
-            self.final_state.update(self.save_party_data()) 
+            self.final_state = self.save_state()
+            self.final_state.update(self.save_state(False))
+            self.final_state.update(self.save_party_data())
             return exp_result, main_task_result
-
 
     def train_batch(self, parties_data, batch_label):
         '''
@@ -861,9 +853,9 @@ class MainTaskVFL_LLM(object):
         gt_one_hot_label = batch_label
         self.gt_one_hot_label = gt_one_hot_label
         # allocate data/attention mask to passive party
-        for ik in range(self.k-1):
+        for ik in range(self.k - 1):
             # allocate data (data/label/attention_mask/token_type_ids)
-            input_shape = parties_data[ik][0].shape[:2]# parties_data[ik][0].size()
+            input_shape = parties_data[ik][0].shape[:2]  # parties_data[ik][0].size()
             self.parties[ik].input_shape = input_shape
             self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
@@ -886,13 +878,12 @@ class MainTaskVFL_LLM(object):
 
         # ============= Model Update =============
         # update parameters for global trainable part
-        self.args.parties[self.args.k - 1].global_backward() # self._send_global_backward_message() 
-        for ik in range(self.k-1):
+        self.args.parties[self.args.k - 1].global_backward()  # self._send_global_backward_message()
+        for ik in range(self.k - 1):
             self.parties[ik].local_backward()
         # ============= Model Update =============
 
         ################ normal vertical federated learning ################
-
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
@@ -1050,7 +1041,7 @@ class MainTaskVFL_LLM(object):
 
                 loss = self.parties[0].global_loss
 
-                return loss.item(), [ batch_mse, batch_pearson_corr, batch_test_spearmanr_corr ]
+                return loss.item(), [batch_mse, batch_pearson_corr, batch_test_spearmanr_corr]
             else:
                 real_batch_label = batch_label
 
@@ -1132,14 +1123,12 @@ class MainTaskVFL_LLM(object):
 
             return loss.item(), batch_train_acc
 
-
     def train(self):
 
         print_every = 1
 
         for ik in range(self.k):
             self.parties[ik].prepare_data_loader()
-
 
         test_acc = 0.0
         # Early Stop
@@ -1156,7 +1145,7 @@ class MainTaskVFL_LLM(object):
         last_adversarial_model_loss = 10000
         start_time = time.time()
 
-        data_record = pd.DataFrame(columns = ['Epoch','train_loss','train_acc','test_acc'])
+        data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
         for i_epoch in range(self.epochs):
             self.current_epoch = i_epoch
             postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
@@ -1166,7 +1155,7 @@ class MainTaskVFL_LLM(object):
             print_every = 1
             total_time = 0
 
-            data_loader_list = [self.parties[ik].train_loader for ik in range(self.k-1)]
+            data_loader_list = [self.parties[ik].train_loader for ik in range(self.k - 1)]
             for parties_data in zip(*data_loader_list):
                 ############ Allocate Data #################
                 # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
@@ -1197,36 +1186,35 @@ class MainTaskVFL_LLM(object):
 
                         # Label
                         if type(parties_data[party_id][bs_id][1]) != str:
-                            batch_label.append( parties_data[party_id][bs_id][1].tolist() )
+                            batch_label.append(parties_data[party_id][bs_id][1].tolist())
                         else:
-                            batch_label.append( parties_data[party_id][bs_id][1] )
+                            batch_label.append(parties_data[party_id][bs_id][1])
 
                     batch_input_ids = torch.tensor(batch_input_ids).to(self.device)
                     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)
                     if batch_token_type_ids != None:
                         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)
-                    
-                    if type( batch_label[0] ) != str:
+
+                    if type(batch_label[0]) != str:
                         if self.args.task_type == 'QuestionAnswering':
                             # origin_batch_label_shape [bs, 2, num_of_answers]
                             # 2*bs, num_of_answers
                             # print('batch_label:',batch_label)
                             if type(batch_label[0][0]) == list:
-                                batch_label =  pad_sequence([torch.tensor(position_list) for sample_label in batch_label\
+                                batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
                                                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.device)
-                                origin_batch_label_shape = [int(batch_label.shape[0]/2) , 2, batch_label.shape[1]]
-                                batch_label = batch_label.reshape(origin_batch_label_shape)   
+                                origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
+                                batch_label = batch_label.reshape(origin_batch_label_shape)
                             else:
-                                batch_label = torch.tensor(batch_label).to(self.device) 
+                                batch_label = torch.tensor(batch_label).to(self.device)
                         else:
                             batch_label = torch.tensor(batch_label).to(self.device)
-
 
                     _parties_data.append(
                         [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
                 parties_data = _parties_data
 
-                if self.args.task_type == "SequenceClassification" and self.num_classes > 1: # classification
+                if self.args.task_type == "SequenceClassification" and self.num_classes > 1:  # classification
                     gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                 else:
                     gt_one_hot_label = parties_data[0][1]
@@ -1235,8 +1223,8 @@ class MainTaskVFL_LLM(object):
                 i += 1
 
                 # passive party call active party global model to a training mode
-                self.parties[0]._send_global_model_train_message() 
-                
+                self.parties[0]._send_global_model_train_message()
+
                 # ====== train batch (start) ======
                 enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
@@ -1249,31 +1237,32 @@ class MainTaskVFL_LLM(object):
                 #     print(f"total time for {self.num_total_comms} communication is {total_time}")
                 self.current_step = self.current_step + 1
 
-                del(parties_data)
+                del (parties_data)
 
             # LR decay
             self.LR_Decay(i_epoch)
-            
+
             if self.args.apply_adversarial:
-                print(f'global_loss={self.parties[0].global_loss} adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
+                print(
+                    f'global_loss={self.parties[0].global_loss} adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
             if self.args.apply_mid:
                 print(f'global_loss={self.parties[0].global_loss},mid_loss={self.parties[0].mid_loss}')
 
             # validation
             if (i + 1) % print_every == 0:
                 print("validate and test")
-                self.parties[self.k-1].global_model.eval()
-      
+                self.parties[self.k - 1].global_model.eval()
+
                 with torch.no_grad():
 
                     _exp_result, self.test_acc = self.inference()
-                    
+
                     postfix['train_loss'] = self.loss
                     # postfix['train_acc'] = '{:.2f}%'.format(self.train_acc * 100)
                     # postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
                     # postfix['test_auc'] = '{:.2f}%'.format(self.test_auc * 100)
                     # postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-                    
+
                     if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
                         exp_result = 'Epoch {}% \t train_loss:{:.2f} train_mse:{:.2f} test_mse:{:.2f}'.format(
                             i_epoch, self.loss, self.train_acc[0], self.test_acc[0])
@@ -1291,8 +1280,8 @@ class MainTaskVFL_LLM(object):
 
                     self.final_epoch = i_epoch
 
-            data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]  
-       
+            data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
+
         if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
             exp_result = f'training_time:{total_time} train_loss:{self.loss} \
             train_mse:{self.train_acc[0]} train_pearson_corr:{self.train_acc[1]} train_spearmanr_corr:{self.train_acc[2]} \
@@ -1300,48 +1289,48 @@ class MainTaskVFL_LLM(object):
         else:
             exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
-        self.final_state = self.save_state() 
-        self.final_state.update(self.save_state(False)) 
-        self.final_state.update(self.save_party_data()) 
+        self.final_state = self.save_state()
+        self.final_state.update(self.save_state(False))
+        self.final_state.update(self.save_party_data())
 
         # self.final_state = self.save_state(False)
         # self.final_state.update(self.save_party_data())
 
         result_path = f'exp_result/{self.args.dataset}/Q{str(self.args.Q)}/'
-        model_name = self.args.model_list[str(0)]["type"] #.replace('/','-')
-        if self.args.pipeline=='pretrained':
+        model_name = self.args.model_list[str(0)]["type"]  # .replace('/','-')
+        if self.args.pipeline == 'pretrained':
             filename = f'{self.args.defense_name}_{self.args.defense_param},pretrained_model={self.args.model_list[str(0)]["type"]}'
         else:
             filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={self.args.model_list[str(0)]["type"]}'
         result_file_name = result_path + filename + f'.csv'
-        print('Save csv to:',result_file_name)
+        print('Save csv to:', result_file_name)
         data_record.to_csv(result_file_name)
-                
-        return exp_result, self.test_acc #, self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
+        return exp_result, self.test_acc  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
         if BEFORE_MODEL_UPDATE:
             return {
                 "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
-                # "global_model":copy.deepcopy(self.parties[self.args.k-1].global_model),
-                "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in range(self.args.k)]+[str(type(self.parties[self.args.k-1].global_model)).split('.')[-1].split('\'')[-2]]
-            
+                "global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
+                "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in range(self.args.k)] + [
+                    str(type(self.parties[self.args.k - 1].global_model)).split('.')[-1].split('\'')[-2]]
+
             }
         else:
             return {
                 # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
-                "data": copy.deepcopy(self.parties_data), 
+                "data": copy.deepcopy(self.parties_data),
                 "label": copy.deepcopy(self.gt_one_hot_label),
                 "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
                 "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
                 "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss),
-                "global_pred":self.parties[self.k-1].global_pred,
+                "global_pred": self.parties[self.k - 1].global_pred,
                 "final_model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
-                "final_global_model":copy.deepcopy(self.parties[self.args.k-1].global_model),
-                
+                "final_global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
+
             }
 
     def save_party_data(self):
@@ -1369,8 +1358,7 @@ class MainTaskVFL_LLM(object):
             "batchsize": self.args.batch_size,
             "num_classes": self.args.num_classes
         }
-        
-        
+
     def save_trained_models(self):
         dir_path = self.exp_res_dir + f'trained_models/parties{self.k}_topmodel{self.args.apply_trainable_layer}_epoch{self.epochs}/'
         if not os.path.exists(dir_path):
@@ -1380,8 +1368,8 @@ class MainTaskVFL_LLM(object):
         else:
             file_path = dir_path + 'NoDefense.pkl'
         torch.save(([self.trained_models["model"][i].state_dict() for i in range(len(self.trained_models["model"]))],
-                    self.trained_models["model_names"]), 
-                  file_path)
+                    self.trained_models["model_names"]),
+                   file_path)
 
     def evaluate_attack(self):
         self.attacker = AttackerLoader(self, self.args)
@@ -1390,7 +1378,7 @@ class MainTaskVFL_LLM(object):
         return attack_acc
 
     def launch_defense(self, gradients_list, _type):
-        
+
         if _type == 'gradients':
             return apply_defense(self.args, _type, gradients_list)
         elif _type == 'pred':
