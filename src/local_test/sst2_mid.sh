@@ -11,11 +11,11 @@ python main_pipeline_llm.py --configs sst2_mid
 
 # 0.1
 sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/sst2_mid.json
-# python main_pipeline_llm.py --configs sst2_mid
+python main_pipeline_llm.py --configs sst2_mid
 
 # 0.01
 sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/sst2_mid.json
-# python main_pipeline_llm.py --configs sst2_mid
+python main_pipeline_llm.py --configs sst2_mid
 
 # 0.001
 sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/sst2_mid.json
@@ -31,11 +31,11 @@ python main_pipeline_llm.py --configs sst2_mid
 
 # 0.1
 sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/sst2_mid.json
-# python main_pipeline_llm.py --configs sst2_mid
+python main_pipeline_llm.py --configs sst2_mid
 
 # 0.01
 sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/sst2_mid.json
-# python main_pipeline_llm.py --configs sst2_mid
+python main_pipeline_llm.py --configs sst2_mid
 
 # 0.001
 sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/sst2_mid.json
@@ -55,7 +55,7 @@ python main_pipeline_llm.py --configs sst2_mid
 
 # 0.01
 sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/sst2_mid.json
-# python main_pipeline_llm.py --configs sst2_mid
+python main_pipeline_llm.py --configs sst2_mid
 
 # 0.001
 sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/sst2_mid.json

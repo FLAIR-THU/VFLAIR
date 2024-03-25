@@ -513,11 +513,11 @@ class PassiveParty_LLM(Party_LLM):
                 if len(local_model_params) > 0:
                     self.weights_grad_a = torch.autograd.grad(
                         self.local_pred,
-                        self.local_model.parameters(),
+                        local_model_params, # self.local_model.parameters()
                         grad_outputs=self.local_gradient,
                         retain_graph=True,
                     )
-                    for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                    for w, g in zip(local_model_params, self.weights_grad_a):
                         if w.requires_grad:
                             if w.grad != None:
                                 w.grad += g.detach()

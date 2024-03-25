@@ -51,8 +51,10 @@ MODEL_PATH = {
 "textattackalbert-base-v2-CoLA":YOUR_MODEL_PATH+"textattackalbert-base-v2-CoLA",
 "textattackroberta-base-MNLI":YOUR_MODEL_PATH+"textattackroberta-base-MNLI",
 "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH+"nihaldsouza1yelp-rating-classification",
-
+"deepsetroberta-base-squad2": YOUR_MODEL_PATH+"deepsetroberta-base-squad2",
 "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH+"rsvp-aibertserini-bert-base-squad",
+"FabianWillnerdistilbert-base-uncased-finetuned-squad": YOUR_MODEL_PATH+"FabianWillnerdistilbert-base-uncased-finetuned-squad",
+"google-bertbert-large-uncased-whole-word-masking-finetuned-squad": YOUR_MODEL_PATH+"google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
 
 "gpt2":YOUR_MODEL_PATH+"gpt2",
 "gpt2-medium":YOUR_MODEL_PATH+"gpt2-medium",
@@ -67,7 +69,6 @@ MODEL_PATH = {
 "benayasllama-2-7b-sst2_v0":YOUR_MODEL_PATH+"benayasllama-2-7b-sst2_v0",
 "AudreyTrungNguyenllama-qnli-p-tuning":YOUR_MODEL_PATH+"AudreyTrungNguyenllama-qnli-p-tuning",
 }
-ROBERTA = ["textattackroberta-base-CoLA","textattackroberta-base-SST-2"]
 
 LLM_supported = MODEL_PATH.keys()
 # ['bert-base-uncased','Bert-sequence-classification',"toxic-bert",\

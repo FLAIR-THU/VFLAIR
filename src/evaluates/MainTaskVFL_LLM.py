@@ -1324,7 +1324,7 @@ class MainTaskVFL_LLM(object):
         if BEFORE_MODEL_UPDATE:
             return {
                 "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
-                "global_model":copy.deepcopy(self.parties[self.args.k-1].global_model),
+                # "global_model":copy.deepcopy(self.parties[self.args.k-1].global_model),
                 "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in range(self.args.k)]+[str(type(self.parties[self.args.k-1].global_model)).split('.')[-1].split('\'')[-2]]
             
             }
@@ -1348,19 +1348,23 @@ class MainTaskVFL_LLM(object):
         return {
             # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
             # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
-            
+            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+
+            # "aux_dst": [self.parties[ik].aux_dst for ik in range(self.k)],
+            # "train_dst": [self.parties[ik].train_dst for ik in range(self.k)],
+            # "test_dst": [self.parties[ik].test_dst for ik in range(self.k)],
+
             # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
             # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
             
             # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
             # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
             # "test_attribute": [copy.deepcopy(self.parties[ik].test_attribute) for ik in range(self.k)],
             
-            "aux_loader": [self.parties[ik].aux_loader for ik in range(self.k)],
-            "train_loader": [self.parties[ik].train_loader for ik in range(self.k)],
-            "test_loader": [self.parties[ik].test_loader for ik in range(self.k)],
+            # "aux_loader": [self.parties[ik].aux_loader for ik in range(self.k)],
+            # "train_loader": [self.parties[ik].train_loader for ik in range(self.k)],
+            # "test_loader": [self.parties[ik].test_loader for ik in range(self.k)],
             
             "batchsize": self.args.batch_size,
             "num_classes": self.args.num_classes

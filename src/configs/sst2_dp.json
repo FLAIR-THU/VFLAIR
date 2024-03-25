@@ -2,8 +2,8 @@
     "epochs": 10,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 128,
-    "pipeline": "pretrained",
+    "batch_size": 64,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -48,13 +48,6 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "party": [0],
-            "epsilon": 50
-        }
-    },
     "attack_list": {
         "0":{
             "name": "VanillaModelInversion_WhiteBox",
@@ -62,7 +55,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 100
             }
         }
     }
