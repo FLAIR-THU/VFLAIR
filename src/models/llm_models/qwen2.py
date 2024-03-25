@@ -33,6 +33,7 @@ class Qwen2DecoderLayerParam(object):
         self.output_attentions = output_attentions
         self.output_hidden_states = output_hidden_states
         self.use_cache = use_cache
+        self.labels = None
 
     def prepare_for_forward(self):
         return {
@@ -41,13 +42,15 @@ class Qwen2DecoderLayerParam(object):
             'past_key_values': self.past_key_values,
             'output_hidden_states': self.output_hidden_states,
             'position_ids': self.position_ids,
-            'use_cache': False
+            'use_cache': False,
+            'labels': self.labels
         }
 
     def to(self, device):
         for v in self.__dict__.values():
             if isinstance(v, torch.Tensor):
                 v.to(device)
+        return self
 
     def to_json(self):
         for k, v in self.__dict__.items():
@@ -87,6 +90,7 @@ class Qwen2ModelHead(Qwen2ModelSplitter, VFLModel):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
+            labels: Optional[torch.LongTensor] = None
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
         改写forward方法的输入输出
@@ -598,12 +602,20 @@ class Qwen2TailForCausalLMExtraCopy(Qwen2ForCausalLM, VFLModel):
 
 
 class E2EModel(Qwen2ForCausalLM):
-    def __init__(self, model_config, local_model: Callable, global_model: Callable):
+    def __init__(self, model_config: Qwen2Config, local_model: [Callable, PreTrainedModel],
+                 global_model: [Callable, PreTrainedModel]):
+        model_config.tie_word_embeddings = False
         super().__init__(model_config)
-        self.layers = ModuleList()
+        self.layers = None
+        self.model = None
+        self.lm_head = None
         self.local_model = local_model
         self.global_model = global_model
         self.post_init()
+
+    @property
+    def device(self) -> torch.device:
+        return self.local_model.device
 
     def forward(
             self,
@@ -613,7 +625,7 @@ class E2EModel(Qwen2ForCausalLM):
             past_key_values: Optional[List[torch.FloatTensor]] = None,
             inputs_embeds: Optional[torch.FloatTensor] = None,
             labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
+            use_cache: Optional[bool] = False,
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
@@ -630,16 +642,59 @@ class E2EModel(Qwen2ForCausalLM):
                                         output_hidden_states=output_hidden_states,
                                         return_dict=return_dict)
 
-        if isinstance(intermediate, Qwen2DecoderLayerParam):
-            intermediate.to(self.global_model.device)
-            intermediate = intermediate.prepare_for_forward()
+        if not isinstance(intermediate, Qwen2DecoderLayerParam):
+            intermediate = Qwen2DecoderLayerParam(intermediate)
+        intermediate.labels = labels
+        intermediate.to(self.global_model.device)
+        intermediate = intermediate.prepare_for_forward()
 
+        # logger.debug(str(type(intermediate))+'thread id : '+str(threading.currentThread().ident))
         output = self.global_model(**intermediate)
-        for k,v in output.items():
+
+        for k, v in output.items():
             if isinstance(v, torch.Tensor):
-                v.to(self.local_model.device)
+                output[k]=v.to(self.device)
+            if isinstance(v,tuple) and isinstance(v[0],torch.Tensor):
+                output[k] = tuple(t.to(self.device) for t in v)
         logger.debug(f"finish e2e model forward")
         return output
+
+    def save_pretrained(
+            self,
+            save_directory: Union[str, os.PathLike],
+            is_main_process: bool = True,
+            state_dict: Optional[dict] = None,
+            save_function: Callable = torch.save,
+            push_to_hub: bool = False,
+            max_shard_size: Union[int, str] = "5GB",
+            safe_serialization: bool = True,
+            variant: Optional[str] = None,
+            token: Optional[Union[str, bool]] = None,
+            save_peft_format: bool = True,
+            **kwargs,
+    ):
+        self.local_model.save_pretrained(save_directory=save_directory,
+                                         is_main_process=is_main_process,
+                                         state_dict=state_dict,
+                                         save_function=save_function,
+                                         push_to_hub=push_to_hub,
+                                         max_shard_size=max_shard_size,
+                                         safe_serialization=safe_serialization,
+                                         variant=variant,
+                                         token=token,
+                                         save_peft_format=save_peft_format,
+                                         **kwargs, )
+        # self.global_model.save_pretrained(save_directory=save_directory,
+        #                                   is_main_process=is_main_process,
+        #                                   state_dict=state_dict,
+        #                                   save_function=save_function,
+        #                                   push_to_hub=push_to_hub,
+        #                                   max_shard_size=max_shard_size,
+        #                                   safe_serialization=safe_serialization,
+        #                                   variant=variant,
+        #                                   token=token,
+        #                                   save_peft_format=save_peft_format,
+        #                                   **kwargs, )
 
 
 class PipelineVFL2Slice:
@@ -679,10 +734,9 @@ class PipelineVFL2Slice:
         return model_tail
 
     @staticmethod
-    def save_vfl(model_path, model: [Qwen2ModelHead,Qwen2TailForCausalLM] = None):
+    def save_vfl(model_path, model: [Qwen2ModelHead, Qwen2TailForCausalLM] = None):
         if model:
-            model.save_pretrained(model_path )
-
+            model.save_pretrained(model_path)
 
     def from_vfl(self, model_path, **kwargs):
         if self.is_server_end:

@@ -873,13 +873,14 @@ def load_basic_models_llm_qwen2(args, index):
     if index == 0:
 
         local_model = PipelineVFL2Slice(is_server_end=False).from_vfl(model_path,
-                                                                      device_map='auto')  # type:Qwen2ModelHead
+                                                                      device_map='auto',
+                                                                      torch_dtype=torch.bfloat16)  # type:Qwen2ModelHead
         logger.debug(f"model: {type(local_model)}\ndevice_map: {local_model.hf_device_map}")
 
     if index == 1:
         global_model = PipelineVFL2Slice(is_server_end=True).from_vfl(model_path,
                                                                       device_map='auto',
-                                                                      max_memory= {0: '4GB', 1: '4GB',2: '3GB', 3: '3GB'})  # type:Qwen2TailForCausalLM
+                                                                      torch_dtype=torch.bfloat16)  # type:Qwen2TailForCausalLM
         logger.debug(f"model: {type(global_model)}\ndevice_map: {global_model.hf_device_map}")
     local_model_optimizer, global_model_optimizer = None, None
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
