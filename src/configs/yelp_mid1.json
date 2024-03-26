@@ -1,9 +1,9 @@
 {
-    "epochs": 5,
+    "epochs": 10,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
-    "pipeline": "pretrained",
+    "batch_size": 160,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -47,10 +47,16 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "LaplaceDP",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "epsilon": 80
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.0001,
+            "lambda": 0.5,
+            "mid_position": "out",
+            "current_bottleneck_scale": 1,
+            "seq_length": 328,
+            "embed_dim": 768
         }
     },
     "attack_list": {

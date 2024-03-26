@@ -122,7 +122,11 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in [97]:
-    for seed in [60,61,62,63,64]: # test 5 times 
+    if args.seed != 97:
+        seed_list = [args.seed]
+    else:
+        seed_list = [60,61,62,63,64]
+    for seed in seed_list: #[60,61,62,63,64]: # test 5 times 
         args.current_seed = seed
         set_seed(seed)
         print('================= iter seed ',seed,' =================')

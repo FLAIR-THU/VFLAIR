@@ -687,6 +687,9 @@ class MainTaskVFL_LLM(object):
             print(exp_result)
             return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
         else:
+            print('predict_labels:',predict_labels[:10])
+            print('actual_labels:',actual_labels[:10])
+
             suc_cnt = torch.sum(torch.tensor(predict_labels) == \
                                 torch.tensor(actual_labels)).item()
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
@@ -1305,6 +1308,14 @@ class MainTaskVFL_LLM(object):
         result_file_name = result_path + filename + f'.csv'
         print('Save csv to:', result_file_name)
         data_record.to_csv(result_file_name)
+
+        if self.args.apply_adversarial:
+            print('final')
+            mark = 0
+            for name, param in self.parties[0].adversarial_model.named_parameters():
+                if mark == 0:
+                    print(name, param)
+                    mark = mark + 1
 
         return exp_result, self.test_acc  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 

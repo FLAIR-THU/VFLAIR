@@ -230,7 +230,7 @@ class Party(object):
         
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
-            self.local_pred = self.adversarial_model(self.local_pred)
+            self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
 
