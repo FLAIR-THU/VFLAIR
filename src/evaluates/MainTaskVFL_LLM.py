@@ -1422,9 +1422,9 @@ class MainTaskVFL_LLM(object):
         else:
             exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
-        self.final_state = self.save_state()
-        self.final_state.update(self.save_state(False))
-        self.final_state.update(self.save_party_data())
+        # self.final_state = self.save_state()
+        # self.final_state.update(self.save_state(False))
+        # self.final_state.update(self.save_party_data())
 
         # self.final_state = self.save_state(False)
         # self.final_state.update(self.save_party_data())
@@ -1437,7 +1437,7 @@ class MainTaskVFL_LLM(object):
             filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={self.args.model_list[str(0)]["type"]}'
         result_file_name = result_path + filename + f'.csv'
         print('Save csv to:', result_file_name)
-        data_record.to_csv(result_file_name)
+        # data_record.to_csv(result_file_name)
 
         return exp_result, self.test_acc  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
