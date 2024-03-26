@@ -39,6 +39,8 @@ def evaluate_no_attack_pretrained(args):
     set_seed(args.current_seed)
 
     vfl = MainTaskVFL_LLM(args)
+    vfl.init_communication()
+
     exp_result, metric_val = vfl.inference()
 
     # attack_metric = main_acc_noattack - main_acc
@@ -56,6 +58,8 @@ def evaluate_no_attack_finetune(args):
     set_seed(args.current_seed)
 
     vfl = MainTaskVFL_LLM(args)
+    vfl.init_communication()
+
     exp_result, metric_val= vfl.train()
 
     # attack_metric = main_acc_noattack - main_acc
@@ -91,6 +95,8 @@ def evaluate_inversion_attack(args):
             # args.need_auxiliary = 1
             args = load_parties_llm(args)
             vfl = MainTaskVFL_LLM(args)
+            vfl.init_communication()
+
             if args.pipeline == 'pretrained':
                 _exp_result, metric_val= vfl.train()
             elif args.pipeline == 'finetune':

@@ -60,5 +60,11 @@ class RemoteActiveParty(IParty):
     def train(self, i_epoch):
         pass
 
+    '''
+    compatible with local mode
+    '''
+    def receive_pred(self, pred_list, ik):
+        pass
+
     def __call__(self, *args, **kwargs):
         return self.predict(kwargs)

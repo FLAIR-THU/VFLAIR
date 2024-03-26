@@ -41,11 +41,12 @@ class PassiveTaskService:
         # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
         # self.run_next(job_id)
         main_task = MainTaskVFL_LLM(args, job_id)
+        main_task.init_communication(DistributedCommunication(self._client, job_id))
         self._main_tasks.setdefault(str(job_id), main_task)
         if args.pipeline == 'pretrained':
             result = main_task.inference(messages=params)
         elif args.pipeline == 'finetune':
-            result = main_task.start_train()
+            result = main_task.train()
         else:
             raise NotImplementedError
         self._save_job_result(job_id, result)

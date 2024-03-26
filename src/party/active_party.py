@@ -350,7 +350,6 @@ class ActiveParty_LLM(Party_LLM):
         return pred
 
     def receive_loss_and_gradients_remote(self, data):
-        loss = torch.Tensor([data['loss']]).to(self.args.device)
         gradients = torch.Tensor(data['gradients']).to(self.args.device)
         self.receive_loss_and_gradients(gradients)
 
@@ -368,7 +367,7 @@ class ActiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def cal_passive_local_gradient(self, ik):
+    def cal_passive_local_gradient(self, ik, remote=True):
         # print('self.global_pred:',type(self.global_pred))
         # print(self.global_pred.requires_grad)
 
@@ -376,7 +375,8 @@ class ActiveParty_LLM(Party_LLM):
 
         # print('self.global_gradients:',type(self.global_gradients))
         # print(self.global_gradients.requires_grad)
-
+        if remote:
+            ik = int(ik)
         if self.args.task_type == 'QuestionAnswering':
             passive_local_gradient = torch.autograd.grad(self.global_pred.start_logits+self.global_pred.end_logits, self.passive_pred_list[ik][0], \
             grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
@@ -386,6 +386,8 @@ class ActiveParty_LLM(Party_LLM):
             # print(f'Active Party cal passive pradient {ik}')
             # print(passive_local_gradient)
 
+        if remote:
+            return passive_local_gradient.tolist()
         return passive_local_gradient
 
     def global_backward(self):

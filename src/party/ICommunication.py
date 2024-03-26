@@ -13,11 +13,11 @@ class ICommunication(object):
         pass
 
     @abstractmethod
-    def send_global_loss_and_gradients(self, loss, gradients):
+    def send_global_loss_and_gradients(self, gradients):
         pass
 
     @abstractmethod
-    def send_cal_passive_local_gradient_message(self, pred):
+    def send_cal_passive_local_gradient_message(self, index):
         pass
 
     @abstractmethod

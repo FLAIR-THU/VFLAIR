@@ -44,8 +44,9 @@ from loguru import logger
 from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 
-from load.LoadModels import MODEL_PATH
+from load.LoadModels import QuestionAnsweringModelOutput
 from models.llm_models.qwen2 import E2EModel
+from party.LocalCommunication import LocalCommunication
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable = True
@@ -123,6 +124,11 @@ class MainTaskVFL_LLM(object):
         self.e2e_model = None  # type:E2EModel
         self._init_e2e_model()
 
+    def init_communication(self, communication=None):
+        if communication is None:
+            communication = LocalCommunication(self.args.parties[self.args.k - 1])
+        self._communication = communication
+
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
         # print('label_to_one_hot:', target, type(target),type(target[0]))
@@ -141,7 +147,7 @@ class MainTaskVFL_LLM(object):
     def LR_Decay(self, i_epoch):
         # for ik in range(self.k):
         #     self.parties[ik].LR_decay(i_epoch)
-        self.parties[self.k - 1].global_LR_decay(i_epoch)
+        self._communication.send_global_lr_decay(i_epoch)
 
     def apply_defense_on_transmission(self, pred_detach):
         ########### Defense applied on pred transmit ###########
@@ -188,7 +194,7 @@ class MainTaskVFL_LLM(object):
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, sequence_lengths, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'CausalLM':
-                    pred, pred_detach, attention_mask, past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
+                    pred, pred_detach, attention_mask = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'Generation':
                     pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
                 elif self.args.task_type == 'QuestionAnswering':
@@ -273,8 +279,38 @@ class MainTaskVFL_LLM(object):
         self.all_pred_list = all_pred_list
         return all_pred_list
 
+    def parse_pred_message_result(self, test_logit):
+        if self.args.model_type == 'Bert':
+            if self.args.task_type == 'SequenceClassification':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                    # logits.grad = test_logit['grad_fn']
+                return logits.to(self.args.device)
+            elif self.args.task_type == 'QuestionAnswering':
+                start_logits = torch.Tensor(test_logit['start_logits'])
+                end_logits = torch.Tensor(test_logit['end_logits'])
+                if test_logit['requires_grad']:
+                    start_logits.requires_grad_()
+                    end_logits.requires_grad_()
+                return QuestionAnsweringModelOutput(
+                    loss=None,
+                    start_logits=start_logits.to(self.args.device),
+                    end_logits=end_logits.to(self.args.device),
+                    hidden_states=None,
+                    attentions=None,
+                )
+        elif self.args.model_type == 'GPT2':
+            if self.args.task_type == 'CausalLM':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                return logits.to(self.args.device)
+            else:
+                assert 1>2 , 'Task type no supported'
+
     def global_pred_transmit(self, pred_list, use_cache=False):
-        final_pred = self.parties[0]._communication.send_pred_message(pred_list, use_cache=use_cache)
+        final_pred = self.parties[0]._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
         return final_pred
 
     # def global_pred_transmit(self):
@@ -290,7 +326,9 @@ class MainTaskVFL_LLM(object):
     def local_gradient_transmit(self):
         for ik in range(self.k - 1):
             if self.parties[ik].local_model_optimizer != None:
-                passive_local_gradient = self.parties[self.k - 1].cal_passive_local_gradient(ik)
+                passive_local_gradient = self._communication.send_cal_passive_local_gradient_message(ik)
+                if not isinstance(passive_local_gradient, torch.Tensor):
+                    passive_local_gradient = torch.Tensor(passive_local_gradient).to(self.args.device)
                 self.parties[ik].local_gradient = passive_local_gradient
 
     def global_gradient_transmit(self, final_pred):
@@ -300,7 +338,7 @@ class MainTaskVFL_LLM(object):
 
         self.communication_cost += get_size_of(global_gradients)
 
-        self.parties[self.k - 1].receive_loss_and_gradients(self.parties[0].global_gradients)  # self.parties[0].global_loss,
+        self._communication.send_global_loss_and_gradients(self.parties[0].global_gradients)
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
 
@@ -674,24 +712,16 @@ class MainTaskVFL_LLM(object):
 
     def seq_inference(self):
         # SequenceClassification / Regression
-        test_predict_labels = []
-        test_actual_labels = []
         postfix = {'test_acc': 0.0}
 
-        total_sample_cnt = 0
-        for ik in range(self.k - 1):
-            # Passive data local predict
-            predict_labels, actual_labels, sample_cnt = self.parties[ik].predict()
-            test_predict_labels.extend(predict_labels)
-            test_actual_labels.extend(actual_labels)
-            total_sample_cnt += sample_cnt
+        predict_labels, actual_labels, total_sample_cnt = self.predict()
 
         # prediction result assessment
         if self.num_classes == 1:
             self.test_mse = torch.mean(
-                (torch.tensor(test_predict_labels) - torch.tensor(test_actual_labels)) ** 2).item()
-            self.test_pearson_corr = stats.pearsonr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
-            self.test_spearmanr_corr = stats.spearmanr(torch.tensor(test_predict_labels), torch.tensor(test_actual_labels))[0]
+                (torch.tensor(predict_labels) - torch.tensor(actual_labels)) ** 2).item()
+            self.test_pearson_corr = stats.pearsonr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
+            self.test_spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
             postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
             postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
             exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}' \
@@ -699,10 +729,10 @@ class MainTaskVFL_LLM(object):
             print(exp_result)
             return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
         else:
-            suc_cnt = torch.sum(torch.tensor(test_predict_labels) == \
-                                torch.tensor(test_actual_labels)).item()
+            suc_cnt = torch.sum(torch.tensor(predict_labels) == \
+                                torch.tensor(actual_labels)).item()
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
-            self.test_mcc = matthews_corrcoef(np.array(test_predict_labels), np.array(test_actual_labels))  # MCC
+            self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
             exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
@@ -755,16 +785,10 @@ class MainTaskVFL_LLM(object):
                 base_dict.update({k: kwargs.get(k)})
         return base_dict
 
-    def causal_llm_inference(self):
+    def causal_lm_inference(self):
         postfix = {'test_acc': 0.0}
-        target_word_list = []
-        predict_word_list = []
-        for ik in range(self.k - 1):
-            # Passive data local predict
-            result = self.parties[ik].predict()
-            target_words, predict_words, _ = result
-            target_word_list.extend(target_words)
-            predict_word_list.extend(predict_words)
+
+        target_word_list, predict_word_list, total_sample_cnt = self.predict()
 
         print('target_word_list:\n', target_word_list[:5])
 
@@ -795,11 +819,8 @@ class MainTaskVFL_LLM(object):
 
     def qa_inference(self):
         # QA
-        for ik in range(self.k - 1):
-            # Passive data local predict
-            result = self.parties[ik].predict()
-
-            nbest_list, gold_ans_list, total_sample_cnt = result
+        # exact_score_list, f1_list , total_sample_cnt = self.predict()
+        nbest_list, gold_ans_list, total_sample_cnt = self.predict()
 
         # prediction result assessment
         total_scores = []
@@ -899,13 +920,13 @@ class MainTaskVFL_LLM(object):
             # exp_result, self.test_acc =
             exp_result, main_task_result = self.seq_inference()
             self.final_state = self.save_state()
-            self.final_state.update(self.save_state(False))
-            self.final_state.update(self.save_party_data())
+            # self.final_state.update(self.save_state(False))
+            # self.final_state.update(self.save_party_data())
             return exp_result, main_task_result
 
         elif self.args.task_type == "CausalLM":
             # exp_result, self.test_acc =
-            exp_result, main_task_result = self.causal_llm_inference()
+            exp_result, main_task_result = self.causal_lm_inference()
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
@@ -950,7 +971,7 @@ class MainTaskVFL_LLM(object):
 
         # ============= Model Update =============
         # update parameters for global trainable part
-        self.args.parties[self.args.k - 1].global_backward()  # self._send_global_backward_message()
+        self._communication.send_global_backward_message()
         for ik in range(self.k - 1):
             self.parties[ik].local_backward()
         # ============= Model Update =============
@@ -1363,7 +1384,7 @@ class MainTaskVFL_LLM(object):
             # validation
             if (i + 1) % print_every == 0:
                 print("validate and test")
-                self.parties[self.k - 1].global_model.eval()
+                self.parties[self.k - 1].eval()
 
                 with torch.no_grad():
 

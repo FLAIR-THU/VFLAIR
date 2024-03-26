@@ -36,24 +36,26 @@ class DistributedCommunication(ICommunication):
 
         response = self._client.open_and_send(task)
 
-    def send_global_loss_and_gradients(self, loss, gradients):
+    def send_global_loss_and_gradients(self, gradients):
         task = Task()
         task.run = "receive_loss_and_gradients_remote"
         task.party = "active"
         task.job_id = self._job_id
-        task.params = {"loss": loss.item(), "gradients": gradients.tolist()}
+        task.params = {"gradients": gradients.tolist()}
 
         response = self._client.open_and_send(task)
 
-    def send_cal_passive_local_gradient_message(self, pred):
+    def send_cal_passive_local_gradient_message(self, index):
         task = Task()
         task.run = "cal_passive_local_gradient"
         task.party = "active"
         task.job_id = self._job_id
-        new_list = [item.tolist() for item in pred]
-        task.params = new_list
+        task.params = index
 
         response = self._client.open_and_send(task)
+        result = response.named_values['test_logit'].string
+        test_logit = json.loads(result)
+        return test_logit
 
     def send_global_lr_decay(self, i_epoch):
         task = Task()
