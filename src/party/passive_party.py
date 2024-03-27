@@ -29,8 +29,6 @@ from models.mid_model_rapper import *
 
 import time
 import numpy as np
-from .LocalCommunication import LocalCommunication
-
 
 class PassiveParty(Party):
     def __init__(self, args, index):
@@ -48,8 +46,6 @@ class PassiveParty(Party):
 
 
 class PassiveParty_LLM(Party_LLM):
-    _communication = None
-
     def __init__(self, args, index, need_data = True):
         print(f'==== initialize PassiveParty_LLM : party {index}======')
         super().__init__(args, index, need_data = need_data)
@@ -85,11 +81,6 @@ class PassiveParty_LLM(Party_LLM):
         self.weights_grad_a = None # no gradient for model in passive party(no model update)
 
         self.encoder_trainable = args.encoder_trainable[index]
-    
-    def init_communication(self, communication=None):
-        if communication is None:
-            communication = LocalCommunication(self.args.parties[self.args.k - 1])
-        self._communication = communication
 
     def init_apply_defense(self, need_apply_defense, apply_adversarial, defense_configs, main_lr, device):
         # some defense need model, add here
@@ -589,38 +580,4 @@ class PassiveParty_LLM(Party_LLM):
             pred_detach = compress_pred( self.args ,pred_detach , self.parties[ik].local_gradient,\
                             self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
-
-    def _send_global_backward_message(self):
-        self._communication.send_global_backward_message()
-
-    def _send_global_loss_and_gradients(self, loss, gradients):
-        self._communication.send_global_loss_and_gradients(loss, gradients)
-
-    def _send_cal_passive_local_gradient_message(self, pred):
-        self._communication.send_cal_passive_local_gradient_message(pred)
-
-    def _send_global_lr_decay(self, i_epoch):
-        self._communication.send_global_lr_decay(i_epoch)
-
-    # def _send_global_model_train_message(self):
-    #     self.local_model.train()
-    #     self.args.parties[self.args.k - 1].global_model.train()
-    
-    def _send_global_model_train_message(self):
-        self._communication.send_global_model_train_message()
-
-    def local_gradient_transmit(self, pred):
-        if self.local_model_optimizer != None:
-            passive_local_gradient= self._send_cal_passive_local_gradient_message(pred)
-            self.local_gradient = passive_local_gradient
-        print('Passive Party receive self.local_gradient(passive_local_gradient)')
-        print(self.local_gradient)
-
-    def global_gradient_transmit(self, pred_list):
-        global_loss = self.cal_loss(pred_list)  # raw global loss
-
-        global_gradients = self.cal_global_gradient(global_loss, pred_list)
-        self.communication_cost += get_size_of(global_gradients)
-
-        self._send_global_loss_and_gradients(self.global_loss, self.global_gradients)
 
