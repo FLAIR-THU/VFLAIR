@@ -44,6 +44,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 
 from load.LoadModels import MODEL_PATH
+from party.LocalCommunication import LocalCommunication
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable = True
@@ -119,6 +120,11 @@ class MainTaskVFL_LLM(object):
         self.num_batch_per_workset = args.Q  # args.num_batch_per_workset
         self.max_staleness = self.num_update_per_batch * self.num_batch_per_workset
 
+    def init_communication(self, communication=None):
+        if communication is None:
+            communication = LocalCommunication(self.args.parties[self.args.k - 1])
+        self._communication = communication
+
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
         # print('label_to_one_hot:', target, type(target),type(target[0]))
@@ -137,7 +143,7 @@ class MainTaskVFL_LLM(object):
     def LR_Decay(self, i_epoch):
         # for ik in range(self.k):
         #     self.parties[ik].LR_decay(i_epoch)
-        self.parties[self.k - 1].global_LR_decay(i_epoch)
+        self._communication.send_global_lr_decay(i_epoch)
 
     def apply_defense_on_transmission(self, pred_detach):
         ########### Defense applied on pred transmit ###########
@@ -270,7 +276,7 @@ class MainTaskVFL_LLM(object):
         return all_pred_list
 
     def global_pred_transmit(self, pred_list, use_cache=False):
-        final_pred = self.parties[0]._communication.send_pred_message(pred_list, use_cache=use_cache)
+        final_pred = self._communication.send_pred_message(pred_list, use_cache=use_cache)
         return final_pred
 
     # def global_pred_transmit(self):
@@ -1226,7 +1232,7 @@ class MainTaskVFL_LLM(object):
                 i += 1
 
                 # passive party call active party global model to a training mode
-                self.parties[0]._send_global_model_train_message()
+                self._communication.send_global_model_train_message()
 
                 # ====== train batch (start) ======
                 enter_time = time.time()

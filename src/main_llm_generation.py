@@ -38,6 +38,7 @@ def evaluate_no_attack_pretrained(args):
     set_seed(args.current_seed)
 
     vfl = MainTaskVFL_LLM(args)
+    vfl.init_communication()
     exp_result, metric_val = vfl.inference()
 
     # attack_metric = main_acc_noattack - main_acc

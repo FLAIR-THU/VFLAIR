@@ -33,9 +33,6 @@ def load_parties_llm(args, need_data = True):
     # for active party args.k-1
     args.parties[args.k-1] = ActiveParty_LLM(args, args.k-1, need_data = need_data)
 
-    for ik in range(args.k - 1):
-        args.parties[ik].init_communication()
-
     # # for server party 0,1,2,...,args.k_server-1
     # for ik in range(args.k_server):
     #     args.servers[ik] = Server(args, ik)
