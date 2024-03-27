@@ -1,9 +1,9 @@
 {
-    "epochs": 10,
+    "epochs": 2,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
-    "pipeline": "pretrained",
+    "batch_size": 16,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -31,7 +31,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/rsvp-aibertserini-bert-base-squad"
+            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
         },
         "1": {
             "type": "rsvp-aibertserini-bert-base-squad",
@@ -40,7 +42,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/rsvp-aibertserini-bert-base-squad"
+            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -68,8 +72,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32
+                "epochs": 2,
+                "batch_size": 16,
+                "attack_sample_num": 1000
             }
         }
     }
