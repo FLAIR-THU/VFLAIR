@@ -729,6 +729,9 @@ class MainTaskVFL_LLM(object):
             print(exp_result)
             return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
         else:
+            print('predict_labels:',predict_labels[:10])
+            print('actual_labels:',actual_labels[:10])
+
             suc_cnt = torch.sum(torch.tensor(predict_labels) == \
                                 torch.tensor(actual_labels)).item()
             self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
@@ -1439,6 +1442,14 @@ class MainTaskVFL_LLM(object):
         print('Save csv to:', result_file_name)
         # data_record.to_csv(result_file_name)
 
+        if self.args.apply_adversarial:
+            print('final')
+            mark = 0
+            for name, param in self.parties[0].adversarial_model.named_parameters():
+                if mark == 0:
+                    print(name, param)
+                    mark = mark + 1
+
         return exp_result, self.test_acc  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
@@ -1470,20 +1481,24 @@ class MainTaskVFL_LLM(object):
         return {
             # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
             # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+
+            # "aux_dst": [self.parties[ik].aux_dst for ik in range(self.k)],
+            # "train_dst": [self.parties[ik].train_dst for ik in range(self.k)],
+            # "test_dst": [self.parties[ik].test_dst for ik in range(self.k)],
 
             # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
             # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
-
+            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            
             # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
             # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
             # "test_attribute": [copy.deepcopy(self.parties[ik].test_attribute) for ik in range(self.k)],
-
-            "aux_loader": [self.parties[ik].aux_loader for ik in range(self.k)],
-            "train_loader": [self.parties[ik].train_loader for ik in range(self.k)],
-            "test_loader": [self.parties[ik].test_loader for ik in range(self.k)],
-
+            
+            # "aux_loader": [self.parties[ik].aux_loader for ik in range(self.k)],
+            # "train_loader": [self.parties[ik].train_loader for ik in range(self.k)],
+            # "test_loader": [self.parties[ik].test_loader for ik in range(self.k)],
+            
             "batchsize": self.args.batch_size,
             "num_classes": self.args.num_classes
         }

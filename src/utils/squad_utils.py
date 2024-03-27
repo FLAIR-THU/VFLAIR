@@ -372,7 +372,6 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
         # print('example.orig_answer_text:',example.orig_answer_text) #["ans","ans","ans","ans"]
         # print('example.start_position:',example.start_position) #[28,28,28,28]
         # print('example.doc_tokens:',type(example.doc_tokens))
-        
         query_tokens = tokenizer.tokenize(example.question_text)
         # tokenizer(example.question_text,padding='max_length', # Pad to max_length
         #                             truncation='longest_first',  # Truncate to max_length

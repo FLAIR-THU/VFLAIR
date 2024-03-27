@@ -36,24 +36,26 @@ from utils.optimizers import MaliciousSGD, MaliciousAdam
 
 YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
 MODEL_PATH = {
-    'bert-base-uncased': YOUR_MODEL_PATH + "bert-base-uncased",
-    "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH + "textattackbert-base-uncased-CoLA",
-    "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH + "textattackbert-base-uncased-yelp-polarity",
-    "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH + "textattackbert-base-uncased-SST-2",
-    "textattackbert-base-cased-STS-B": YOUR_MODEL_PATH + "textattackbert-base-cased-STS-B",
-    "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH + "textattackbert-base-uncased-MRPC",
-    "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-MNLI",
-    "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-QNLI",
-    "textattackbert-base-uncased-QQP": YOUR_MODEL_PATH + "textattackbert-base-uncased-QQP",
-    "textattackbert-base-uncased-WNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-WNLI",
-    "textattackbert-base-uncased-RTE": YOUR_MODEL_PATH + "textattackbert-base-uncased-RTE",
-    "textattackroberta-base-CoLA": YOUR_MODEL_PATH + "textattackbert-base-uncased-CoLA",
-    "textattackroberta-base-SST-2": YOUR_MODEL_PATH + "textattackroberta-base-SST-2",
-    "textattackalbert-base-v2-CoLA": YOUR_MODEL_PATH + "textattackalbert-base-v2-CoLA",
-    "textattackroberta-base-MNLI": YOUR_MODEL_PATH + "textattackroberta-base-MNLI",
-    "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH + "nihaldsouza1yelp-rating-classification",
-
-    "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH + "rsvp-aibertserini-bert-base-squad",
+    'bert-base-uncased': YOUR_MODEL_PATH+"bert-base-uncased",
+    "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+    "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH+"textattackbert-base-uncased-yelp-polarity",
+    "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
+    "textattackbert-base-cased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
+    "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
+    "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-MNLI",
+    "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-QNLI",
+    "textattackbert-base-uncased-QQP": YOUR_MODEL_PATH+"textattackbert-base-uncased-QQP",
+    "textattackbert-base-uncased-WNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-WNLI",
+    "textattackbert-base-uncased-RTE": YOUR_MODEL_PATH+"textattackbert-base-uncased-RTE",
+    "textattackroberta-base-CoLA":YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
+    "textattackroberta-base-SST-2":YOUR_MODEL_PATH+"textattackroberta-base-SST-2",
+    "textattackalbert-base-v2-CoLA":YOUR_MODEL_PATH+"textattackalbert-base-v2-CoLA",
+    "textattackroberta-base-MNLI":YOUR_MODEL_PATH+"textattackroberta-base-MNLI",
+    "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH+"nihaldsouza1yelp-rating-classification",
+    "deepsetroberta-base-squad2": YOUR_MODEL_PATH+"deepsetroberta-base-squad2",
+    "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH+"rsvp-aibertserini-bert-base-squad",
+    "FabianWillnerdistilbert-base-uncased-finetuned-squad": YOUR_MODEL_PATH+"FabianWillnerdistilbert-base-uncased-finetuned-squad",
+    "google-bertbert-large-uncased-whole-word-masking-finetuned-squad": YOUR_MODEL_PATH+"google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
 
     "gpt2": YOUR_MODEL_PATH + "gpt2",
     "gpt2-medium": YOUR_MODEL_PATH + "gpt2-medium",
@@ -69,7 +71,6 @@ MODEL_PATH = {
     "AudreyTrungNguyenllama-qnli-p-tuning": YOUR_MODEL_PATH + "AudreyTrungNguyenllama-qnli-p-tuning",
 }
 MODEL_PATH.update({'Qwen/Qwen1.5-0.5B-Chat': None})
-ROBERTA = ["textattackroberta-base-CoLA", "textattackroberta-base-SST-2"]
 
 LLM_supported = MODEL_PATH.keys()
 
@@ -114,11 +115,9 @@ def load_basic_models(args, index):
     current_model_type = args.model_list[str(index)]['type']
     print(f"current_model_type={current_model_type}")
     current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else -1
-    current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[
-        str(index)] else -1
+    current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
-    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[
-        str(index)] else -1
+    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
@@ -303,8 +302,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20, encode_dim=args.defense_configs['encode_dim']).to(
                         args.device)
                 else:
-                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'],
-                                          encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
                 encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
                 args.encoder = encoder
 
@@ -889,8 +887,7 @@ def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_
                               head_layer_trainable):
     if model_type in ['Bert', 'Albert', 'Roberta']:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
-            pad_token, head_layer_trainable
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
         )
     elif model_type in ['GPT2']:
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
@@ -922,8 +919,7 @@ def load_models_per_party_new(pretrained, task_type, model_type, current_model_t
                               pad_token, head_layer_trainable):
     if current_model_type in LLM_supported:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_new(
-            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
-            pad_token, head_layer_trainable
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
         )
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer =
         #  load_defense_models(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)

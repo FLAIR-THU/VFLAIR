@@ -1,8 +1,8 @@
 {
-    "epochs": 20,
+    "epochs": 10,
     "lr": 0.00001,
     "k": 2,
-    "batch_size": 512,
+    "batch_size": 64,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -31,7 +31,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/rsvp-aibertserini-bert-base-squad"
+             "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv"
         },
         "1": {
             "type": "rsvp-aibertserini-bert-base-squad",
@@ -61,11 +63,23 @@
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.00001,
-            "lambda": 0,
+            "lambda": 0.01,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 256,
             "embed_dim": 768
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 1000
+            }
         }
     }
 }

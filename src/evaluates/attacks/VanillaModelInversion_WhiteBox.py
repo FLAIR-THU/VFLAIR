@@ -102,6 +102,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
         self.lr = args.attack_configs['lr']
         self.epochs = args.attack_configs['epochs']
         self.attack_batch_size = args.attack_configs['batch_size']
+        self.attack_sample_num = args.attack_configs['attack_sample_num']
         
         self.criterion = cross_entropy_for_onehot
    
@@ -133,19 +134,30 @@ class VanillaModelInversion_WhiteBox(Attacker):
             # global_model.eval()
             local_model.eval()
 
-            del(self.vfl_info['final_global_model'])
-            del(self.vfl_info['train_loader'])
-
-
             batch_size = self.attack_batch_size
 
             attack_result = pd.DataFrame(columns = ['Pad_Length','Length','Precision', 'Recall'])
 
-            test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
+            # attack_test_dataset = self.top_vfl.parties[0].test_dst
+            test_data = self.vfl_info["test_data"][0] 
+            test_label = self.vfl_info["test_label"][0] 
+            
+            if len(test_data) > self.attack_sample_num:
+                test_data = test_data[:self.attack_sample_num]
+                test_label = test_label[:self.attack_sample_num]
+                # attack_test_dataset = attack_test_dataset[:self.attack_sample_num]
+            
+            attack_test_dataset = PassiveDataset_LLM(self.args, test_data, test_label)
+            attack_info = f'Attack Sample Num:{len(attack_test_dataset)}'
+            print(attack_info)
+            append_exp_res(self.args.exp_res_path, attack_info)
+
+            test_data_loader = DataLoader(attack_test_dataset, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
+            del(self.vfl_info)
+            # test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
+            
             flag = 0
-
             enter_time = time.time()
-
             for origin_input in test_data_loader:
                 ### origin_input: tuple of 5
                 batch_input_ids = []

@@ -254,7 +254,7 @@ class PassiveParty_LLM(Party_LLM):
             
             lm_logits = pred # # [bs, seq_len, vocab_size]
             next_token_logits = lm_logits[:,-1,:]
-
+           
             # Flatten the tokens
             loss_fct = CrossEntropyLoss()
             # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
@@ -313,11 +313,10 @@ class PassiveParty_LLM(Party_LLM):
             real_embedding =  self.local_model.embedding_output
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / intermediate.shape[0]
             
-            mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2)
+            self.mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2)
             # print(f'main_loss={self.global_loss},mapping_distance={mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
-
             # renew global loss function : loss used to update adversarial model mapping
-            self.adversarial_model_loss =   self.adversary_lambda * mapping_distance  - self.adversary_attack_loss
+            self.adversarial_model_loss =   self.adversary_lambda * self.mapping_distance - self.adversary_attack_loss
             self.global_loss = self.global_loss + self.adversarial_model_loss
 
         elif self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
@@ -361,40 +360,68 @@ class PassiveParty_LLM(Party_LLM):
             self.imagined_adversary_optimizer.step()
 
             self.local_model_optimizer.zero_grad()
+            # print('before')
+            # mark = 0
+            # for name, param in self.adversarial_model.named_parameters():
+            #     if mark == 0:
+            #         print(name, param)
+            #         mark = mark + 1
+            # self.adversarial_model_loss.backward(retain_graph = True)
+
+
 
             if self.encoder_trainable:
-                # [bs, seq_len70, embed_dim768]
-                # print('self.local_pred:',self.local_pred.shape)
-                # print('self.origin_pred:',self.origin_pred.shape)
-                # print('self.local_gradient:',self.local_gradient.shape)
-
+                # local model trainable part
+                local_model_params = [self.adversarial_model.parameters()]
+                for param in self.local_model.parameters():
+                    if param.requires_grad:
+                        local_model_params.append(param)
                 weights_grad_a = torch.autograd.grad(
                     self.local_pred,
-                    self.local_model.encoder_layer.parameters(),
+                    local_model_params,
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
                     #allow_unused = True
-                )
-                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                )#self.local_model.encoder_layer.parameters(),
+                for w, g in zip(local_model_params, weights_grad_a):
+                    if w.requires_grad:
+                        if w.grad != None:
+                            w.grad += g.detach()
+                        else:
+                            w.grad = g.detach()
+            else:
+                weights_grad_a = torch.autograd.grad(
+                    self.local_pred,
+                    self.adversarial_model.parameters(),
+                    grad_outputs=self.local_gradient,
+                    retain_graph=True,
+                    #allow_unused = True
+                )#self.local_model.encoder_layer.parameters(),
+
+                # weights_grad_a = torch.autograd.grad(
+                #     self.adversarial_model_loss,
+                #     self.adversarial_model.parameters(),
+                #     retain_graph=True,
+                # )
+                for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
                     if w.requires_grad:
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
                             w.grad = g.detach()
 
-            weights_grad_a = torch.autograd.grad(
-                self.local_pred,
-                self.adversarial_model.parameters(),
-                grad_outputs=self.local_gradient,
-                retain_graph=True,
-            )
-            for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
-                if w.requires_grad:
-                    if w.grad != None:
-                        w.grad += g.detach()
-                    else:
-                        w.grad = g.detach()
             self.local_model_optimizer.step()
+
+            # print('after')
+            # mark = 0
+            # for name, param in self.adversarial_model.named_parameters():
+            #     if mark == 0:
+            #         print(name, param)
+            #         mark = mark + 1
+            # print('weights_grad_a')
+            # for _i in range(len(weights_grad_a)):
+            #     print(weights_grad_a[_i])
+            #     assert 1>2
 
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "out"):
@@ -517,11 +544,11 @@ class PassiveParty_LLM(Party_LLM):
                 if len(local_model_params) > 0:
                     self.weights_grad_a = torch.autograd.grad(
                         self.local_pred,
-                        self.local_model.parameters(),
+                        local_model_params, # self.local_model.parameters()
                         grad_outputs=self.local_gradient,
                         retain_graph=True,
                     )
-                    for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                    for w, g in zip(local_model_params, self.weights_grad_a):
                         if w.requires_grad:
                             if w.grad != None:
                                 w.grad += g.detach()
@@ -626,7 +653,7 @@ class PassiveParty_LLM(Party_LLM):
     # def _send_global_model_train_message(self):
     #     self.local_model.train()
     #     self.args.parties[self.args.k - 1].global_model.train()
-
+    
     def _send_global_model_train_message(self):
         self._communication.send_global_model_train_message()
 
