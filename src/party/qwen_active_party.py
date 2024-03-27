@@ -23,7 +23,7 @@ class QW_Active_Party(Party_LLM):
     def predict(self, **kwargs):
         for k, v in kwargs.items():
             if isinstance(v, (List, Tuple)):
-                kwargs.update({k: torch.tensor(v).to(self.global_model.device)})
+                kwargs.update({k: torch.tensor(v, dtype=torch.bfloat16).to(self.global_model.device)})
         resp = self.global_model.forward(**kwargs)
         return resp
 

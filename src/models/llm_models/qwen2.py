@@ -645,7 +645,6 @@ class E2EModel(Qwen2ForCausalLM):
         if not isinstance(intermediate, Qwen2DecoderLayerParam):
             intermediate = Qwen2DecoderLayerParam(intermediate)
         intermediate.labels = labels
-        intermediate.to(self.global_model.device)
         intermediate = intermediate.prepare_for_forward()
 
         # logger.debug(str(type(intermediate))+'thread id : '+str(threading.currentThread().ident))

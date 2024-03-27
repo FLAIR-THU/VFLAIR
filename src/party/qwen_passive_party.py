@@ -24,17 +24,8 @@ class QW_Passive_Party(Party_LLM):
         intermediate = self.local_model.forward(**params)
         logger.debug('finish passive party')
         logger.debug(intermediate.hidden_states[-1])
-        if isinstance(self._communication, LocalCommunication):
-            return intermediate
-        intermediate.to_json()
-        return intermediate.prepare_for_forward()
-        # return {
-        #     "hidden_states": intermediate.hidden_states.tolist(),
-        #     "attention_mask": intermediate.attention_mask.tolist(),
-        #     "past_key_values": None,
-        #     "output_hidden_states": intermediate.output_hidden_states,
-        #     "position_ids": intermediate.position_ids.tolist()
-        # }
+
+        return intermediate
 
     def init_communication(self, communication=None):
         if communication is None:

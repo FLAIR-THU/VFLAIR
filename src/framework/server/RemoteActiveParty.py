@@ -40,6 +40,10 @@ class RemoteActiveParty(IParty):
         response = self._client.open_and_send(task)
 
     def predict(self, value):
+        for k, v in value.items():
+            if isinstance(v, torch.Tensor):
+                value.update({k: v.tolist()})
+
         task = Task()
         task.run = "distributed_predict"
         task.party = "active"
