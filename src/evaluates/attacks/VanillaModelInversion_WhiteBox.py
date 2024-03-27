@@ -130,8 +130,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
             # collect necessary information
             local_model = self.vfl_info['final_model'][0].to(self.device) # Passive
-            # global_model = self.vfl_info['final_global_model'].to(self.device)
-            # global_model.eval()
             local_model.eval()
 
             batch_size = self.attack_batch_size

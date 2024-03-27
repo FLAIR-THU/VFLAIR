@@ -102,17 +102,15 @@ class PassiveParty_LLM(Party_LLM):
 
             
                 self.adversarial_model_lr = defense_configs['adversarial_model_lr']
-
+                self.adversarial_model_hidden_size = defense_configs['adversarial_model_hidden_size'] if ('adversarial_model_hidden_size' in defense_configs) else 80
                 if not ('adversarial_model' in defense_configs):
                     adversarial_model_name = 'Adversarial_Mapping'
                 else:
                     adversarial_model_name = defense_configs['adversarial_model']
-
                 seq_length = defense_configs['seq_length']
                 embed_dim = defense_configs['embed_dim']
-                
                 # prepare adversarial model --  for adversarial training
-                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim).to(self.args.device)
+                self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim, self.adversarial_model_hidden_size).to(self.args.device)
                 if self.local_model_optimizer == None:
                     self.local_model_optimizer = torch.optim.Adam(self.adversarial_model.parameters(), lr=self.adversarial_model_lr)
                 else:
@@ -123,7 +121,8 @@ class PassiveParty_LLM(Party_LLM):
 
                 # prepare imagined adversary --  for adversarial training
                 imagined_adversary_model_name = defense_configs['imagined_adversary']
-                self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim).to(device)
+                self.imagined_adversary_hidden_size = defense_configs['imagined_adversary_hidden_size'] if ('imagined_adversary_hidden_size' in defense_configs) else 80
+                self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim, self.imagined_adversary_hidden_size).to(device)
                 self.imagined_adversary_lr = defense_configs['imagined_adversary_lr']
                 self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()), lr=self.imagined_adversary_lr)
 
@@ -309,8 +308,11 @@ class PassiveParty_LLM(Party_LLM):
             real_embedding =  self.local_model.embedding_output
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / intermediate.shape[0]
             
-            self.mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2)
-            # print(f'main_loss={self.global_loss},mapping_distance={mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
+            # avrage mapping distance on bs*seq_len   self.origin_pred: bs, seq_len, embed_dim
+            self.mapping_distance = torch.norm( self.origin_pred - self.local_pred , p=2) / (self.origin_pred.shape[0]*self.origin_pred.shape[1])
+
+            # print(f'main_loss={self.global_loss},mapping_distance={self.mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
+
             # renew global loss function : loss used to update adversarial model mapping
             self.adversarial_model_loss =   self.adversary_lambda * self.mapping_distance - self.adversary_attack_loss
             self.global_loss = self.global_loss + self.adversarial_model_loss 
@@ -385,39 +387,26 @@ class PassiveParty_LLM(Party_LLM):
                             w.grad += g.detach()
                         else:
                             w.grad = g.detach()
-            else:
-                weights_grad_a = torch.autograd.grad(
-                    self.local_pred,
-                    self.adversarial_model.parameters(), 
-                    grad_outputs=self.local_gradient,
-                    retain_graph=True,
-                    #allow_unused = True
-                )#self.local_model.encoder_layer.parameters(),
 
-                # weights_grad_a = torch.autograd.grad(
-                #     self.adversarial_model_loss,
-                #     self.adversarial_model.parameters(),
-                #     retain_graph=True,
-                # )
-                for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
-                    if w.requires_grad:
-                        if w.grad != None:
-                            w.grad += g.detach()
-                        else:
-                            w.grad = g.detach()
+            # weights_grad_a = torch.autograd.grad(
+            #     self.local_pred,
+            #     self.adversarial_model.parameters(), 
+            #     grad_outputs=self.local_gradient,
+            #     retain_graph=True
+            # )
+            weights_grad_a = torch.autograd.grad(
+                self.adversarial_model_loss,
+                self.adversarial_model.parameters(),
+                retain_graph=True,
+            )
+            for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
+                if w.requires_grad:
+                    if w.grad != None:
+                        w.grad += g.detach()
+                    else:
+                        w.grad = g.detach()
 
             self.local_model_optimizer.step()
-
-            # print('after')
-            # mark = 0
-            # for name, param in self.adversarial_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
-            # print('weights_grad_a')
-            # for _i in range(len(weights_grad_a)):
-            #     print(weights_grad_a[_i])
-            #     assert 1>2
 
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "out"):

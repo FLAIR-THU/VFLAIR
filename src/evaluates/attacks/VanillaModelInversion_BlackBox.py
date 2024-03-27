@@ -73,21 +73,29 @@ class VanillaModelInversion_BlackBox(Attacker):
 
             # collect necessary information
             local_model = self.vfl_info['final_model'][0].to(self.device) # Passive
-            global_model = self.vfl_info['final_global_model'].to(self.device)
-            global_model.eval()
             local_model.eval()
 
             batch_size = self.attack_batch_size
             
-            # train_data = self.vfl_info["train_data"][attacker_ik]
-            # train_label = self.vfl_info["train_label"][attacker_ik]
-            # train_dst = PassiveDataset_LLM(self.args, train_data, train_label)
-            # train_data_loader = DataLoader(train_dst, batch_size=1)
-
-            # train_data_loader = self.vfl_info["train_loader"][0] # Only Passive party has origin input
-            test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
-            
             attack_result = pd.DataFrame(columns = ['Pad_Length','Length','Precision', 'Recall'])
+            
+            # attack_test_dataset = self.top_vfl.parties[0].test_dst
+            test_data = self.vfl_info["test_data"][0] 
+            test_label = self.vfl_info["test_label"][0] 
+            
+            if len(test_data) > self.attack_sample_num:
+                test_data = test_data[:self.attack_sample_num]
+                test_label = test_label[:self.attack_sample_num]
+                # attack_test_dataset = attack_test_dataset[:self.attack_sample_num]
+            
+            attack_test_dataset = PassiveDataset_LLM(self.args, test_data, test_label)
+            attack_info = f'Attack Sample Num:{len(attack_test_dataset)}'
+            print(attack_info)
+            append_exp_res(self.args.exp_res_path, attack_info)
+
+            test_data_loader = DataLoader(attack_test_dataset, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
+            del(self.vfl_info)
+            
 
             for origin_input in test_data_loader:
                 # print('origin_input:',type(origin_input),len(origin_input)) # list of bs

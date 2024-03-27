@@ -83,7 +83,24 @@ class WhiteBoxInversion(Attacker):
             # print('embedding_matrix:',embedding_matrix.shape)
 
             attack_result = pd.DataFrame(columns = ['Pad_Length','Length','Precision', 'Recall'])
-            test_data_loader = self.vfl_info["test_loader"][0] # Only Passive party has origin input
+
+            # attack_test_dataset = self.top_vfl.parties[0].test_dst
+            test_data = self.vfl_info["test_data"][0] 
+            test_label = self.vfl_info["test_label"][0] 
+            
+            if len(test_data) > self.attack_sample_num:
+                test_data = test_data[:self.attack_sample_num]
+                test_label = test_label[:self.attack_sample_num]
+                # attack_test_dataset = attack_test_dataset[:self.attack_sample_num]
+            
+            attack_test_dataset = PassiveDataset_LLM(self.args, test_data, test_label)
+            attack_info = f'Attack Sample Num:{len(attack_test_dataset)}'
+            print(attack_info)
+            append_exp_res(self.args.exp_res_path, attack_info)
+
+            test_data_loader = DataLoader(attack_test_dataset, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
+            del(self.vfl_info)
+            
             for origin_input in test_data_loader:
                 batch_input_ids = []
                 batch_label = []
