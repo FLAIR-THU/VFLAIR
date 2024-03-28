@@ -310,7 +310,7 @@ class MainTaskVFL_LLM(object):
                 assert 1>2 , 'Task type no supported'
 
     def global_pred_transmit(self, pred_list, use_cache=False):
-        final_pred = self.parties[0]._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
+        final_pred = self._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
         return final_pred
 
     # def global_pred_transmit(self):
@@ -1319,7 +1319,7 @@ class MainTaskVFL_LLM(object):
                 i += 1
 
                 # passive party call active party global model to a training mode
-                self.parties[0]._send_global_model_train_message()
+                self._communication.send_global_model_train_message()
 
                 # ====== train batch (start) ======
                 enter_time = time.time()

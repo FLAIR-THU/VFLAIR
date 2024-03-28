@@ -1,8 +1,8 @@
 {
-    "epochs": 5,
+    "epochs": 15,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 64,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -52,13 +52,27 @@
         "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
-            "adversarial_model": "Mapping_MLP2",
+            "adversarial_model": "Mapping_MLP3",
             "adversarial_model_lr": 0.0001,
+            "adversarial_model_hidden_size": 768,
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.0001,
-            "lambda": 0.001,
+            "imagined_adversary_hidden_size": 768,
+            "lambda": 0.5,
             "seq_length": 70,
             "embed_dim": 768
+        }
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 100
+            }
         }
     }
 }

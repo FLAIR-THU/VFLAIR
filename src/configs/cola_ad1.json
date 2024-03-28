@@ -1,5 +1,5 @@
 {
-    "epochs": 5,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
     "batch_size": 64,

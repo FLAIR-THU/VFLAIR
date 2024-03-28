@@ -9,20 +9,20 @@ class Mapping_MLP2(nn.Module):
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
-    def __init__(self, seq_length, embed_dim):
+    def __init__(self, seq_length, embed_dim, hidden_size=80):
         super(Mapping_MLP2,self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
 
         self.net1 = nn.Sequential(
-            nn.Linear(embed_dim, 80), 
-            nn.LayerNorm(80),
+            nn.Linear(embed_dim, hidden_size), 
+            nn.LayerNorm(hidden_size),
             nn.ReLU(),
         )
 
         self.net2 = nn.Sequential(
-            nn.Linear(80, embed_dim),
+            nn.Linear(hidden_size, embed_dim),
             nn.Sigmoid()
         )
 
@@ -44,7 +44,7 @@ class Mapping_MLP3(nn.Module):
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
-    def __init__(self, seq_length, embed_dim):
+    def __init__(self, seq_length, embed_dim, hidden_size=80):
         super(Mapping_MLP3,self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
@@ -52,19 +52,19 @@ class Mapping_MLP3(nn.Module):
 
         self.net1 = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(seq_length*embed_dim, 80), 
-            nn.LayerNorm(80),
+            nn.Linear(seq_length*embed_dim, hidden_size), 
+            nn.LayerNorm(hidden_size),
             nn.ReLU(),
         )
 
         self.net2 = nn.Sequential(
-            nn.Linear(80, 80), 
-            nn.LayerNorm(80),
+            nn.Linear(hidden_size, hidden_size), 
+            nn.LayerNorm(hidden_size),
             nn.ReLU()
         )
 
         self.net3 = nn.Sequential(
-            nn.Linear(80, seq_length*embed_dim),
+            nn.Linear(hidden_size, seq_length*embed_dim),
             nn.Sigmoid()
         )
 
