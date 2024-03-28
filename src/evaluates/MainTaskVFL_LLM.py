@@ -341,6 +341,7 @@ class MainTaskVFL_LLM(object):
         self._communication.send_global_loss_and_gradients(self.parties[0].global_gradients)
         # self.parties[self.k-1].global_loss = self.parties[0].global_loss
         # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
+        return global_loss
 
     def generate_result(self, test_logit, gt_one_hot_label, parties_data):
         test_preds = []
@@ -915,8 +916,8 @@ class MainTaskVFL_LLM(object):
         if self.args.task_type == "QuestionAnswering":
             exp_result, main_task_result = self.qa_inference()
             self.final_state = self.save_state()
-            self.final_state.update(self.save_state(False))
-            self.final_state.update(self.save_party_data())
+            # self.final_state.update(self.save_state(False))
+            # self.final_state.update(self.save_party_data())
             return exp_result, main_task_result
 
         elif self.args.task_type == "SequenceClassification":
@@ -967,7 +968,7 @@ class MainTaskVFL_LLM(object):
         final_pred = self.global_pred_transmit(pred_list)
 
         # passive party -> global gradient -> active party
-        self.global_gradient_transmit(final_pred)
+        loss = self.global_gradient_transmit(final_pred)
         # active party -> local gradient -> passive party
         self.local_gradient_transmit()
         # =================== Commu ===================
@@ -983,8 +984,7 @@ class MainTaskVFL_LLM(object):
 
         # print train_acc each batch
         if self.args.task_type == 'QuestionAnswering':
-            pred = self.parties[self.k - 1].global_pred  # QuestionAnsweringModelOutput
-            loss = self.parties[0].global_loss
+            pred = final_pred
 
             start_logits = pred.start_logits
             end_logits = pred.end_logits
