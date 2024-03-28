@@ -585,33 +585,3 @@ class PassiveParty_LLM(Party_LLM):
                             self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def parse_pred_message_result(self, test_logit):
-        if self.args.model_type == 'Bert':
-            if self.args.task_type == 'SequenceClassification':
-                logits = torch.Tensor(test_logit['logits'])
-                if test_logit['requires_grad']:
-                    logits.requires_grad_()
-                    # logits.grad = test_logit['grad_fn']
-                return logits.to(self.args.device)
-            elif self.args.task_type == 'QuestionAnswering':
-                start_logits = torch.Tensor(test_logit['start_logits'])
-                end_logits = torch.Tensor(test_logit['end_logits'])
-                if test_logit['requires_grad']:
-                    start_logits.requires_grad_()
-                    end_logits.requires_grad_()
-                return QuestionAnsweringModelOutput(
-                    loss=None,
-                    start_logits=start_logits.to(self.args.device),
-                    end_logits=end_logits.to(self.args.device),
-                    hidden_states=None,
-                    attentions=None,
-                )
-        elif self.args.model_type == 'GPT2':
-            if self.args.task_type == 'CausalLM':
-                logits = torch.Tensor(test_logit['logits'])
-                if test_logit['requires_grad']:
-                    logits.requires_grad_()
-                return logits.to(self.args.device)
-            else:
-                assert 1>2 , 'Task type no supported'
-
