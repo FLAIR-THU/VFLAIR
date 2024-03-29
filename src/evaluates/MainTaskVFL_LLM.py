@@ -1385,9 +1385,9 @@ class MainTaskVFL_LLM(object):
         else:
             exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
 
-        # self.final_state = self.save_state()
-        # self.final_state.update(self.save_state(False))
-        # self.final_state.update(self.save_party_data())
+        self.final_state = self.save_state()
+        self.final_state.update(self.save_state(False))
+        self.final_state.update(self.save_party_data())
 
         # self.final_state = self.save_state(False)
         # self.final_state.update(self.save_party_data())
@@ -1426,14 +1426,14 @@ class MainTaskVFL_LLM(object):
                 # "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)]+[self.parties[self.args.k-1].global_model],
                 "data": copy.deepcopy(self.parties_data),
                 "label": copy.deepcopy(self.gt_one_hot_label),
-                "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
-                "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
-                "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
+                # "predict": [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)],
+                # "gradient": [copy.deepcopy(self.parties[ik].local_gradient) for ik in range(self.k)],
+                # "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss),
-                "global_pred": self.parties[self.k - 1].global_pred,
+                # "global_pred": self.parties[self.k - 1].global_pred,
                 "final_model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
-                "final_global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
+                # "final_global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
 
             }
 
@@ -1441,7 +1441,7 @@ class MainTaskVFL_LLM(object):
         return {
             # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
             # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
 
             # "aux_dst": [self.parties[ik].aux_dst for ik in range(self.k)],
             # "train_dst": [self.parties[ik].train_dst for ik in range(self.k)],
@@ -1449,7 +1449,7 @@ class MainTaskVFL_LLM(object):
 
             # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
             # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
             
             # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
             # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
