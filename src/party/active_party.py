@@ -267,10 +267,7 @@ class ActiveParty_LLM(Party_LLM):
                 assert 1>2 , 'Task type no supported'
 
     def aggregate_remote(self, pred_list):
-        if self.args.head_layer_trainable[1]:
-            return self._do_aggregate_remote(pred_list)
-        with torch.no_grad():
-            return self._do_aggregate_remote(pred_list)
+        return self._do_aggregate_remote(pred_list)
 
     def aggregate(self, pred_list, use_cache = False, test=False):
         # print(' == Active Aggregate == ')
