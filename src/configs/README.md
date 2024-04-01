@@ -63,7 +63,11 @@
   - "input_dim", "output_dim": necessary information to construct a local model
   - "path": specify trained model state dictionary if you want to load pre-trained models
 - "apply_trainable_layer": whether the global model is trainable
+  - in aggVFL, this parameter shall be '0'
+  - in splitVFL, this parameter shall be '0'
 - "global_model": global model
+  - in aggVFL, this parameter shall be the name of a global model with no trainable top layer, e.g 'ClassificationModelHostHead'
+  - in aggVFL, this parameter shall be the name of a global model with a trainable top layer, e.g 'ClassificationModelHostTrainableHead'
 
 
 
