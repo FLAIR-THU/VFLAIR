@@ -24,7 +24,7 @@
             "output_dim": 10,
             "path": "random_14*28_10"
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     }
 }

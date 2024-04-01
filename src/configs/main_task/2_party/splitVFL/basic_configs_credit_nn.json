@@ -1,31 +1,30 @@
 {
-    "epochs": 5,
-    "lr": 0.0001,
+    "epochs": 40,
+    "lr": 0.01,
     "k": 2,
-    "batch_size": 8192,
+    "batch_size": 1024,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
-    "num_exp": 10,
     "dataset":{
-        "dataset_name": "criteo",
+        "dataset_name": "credit",
         "num_classes": 2
     },
     "model_list":{
         "0": {
-            "type": "MLP3_256_sparse",
-            "input_dim": 13,
+            "type": "MLP4_Credit",
+            "input_dim": 12,
             "output_dim": 2,
             "path": ""
         },
         "1": {
-            "type": "MLP3_256_dense",
-            "input_dim": 26,
+            "type": "MLP4_Credit",
+            "input_dim": 11,
             "output_dim": 2,
             "path": ""
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "apply_trainable_layer": 1,
+        "global_model": "ClassificationModelHostTrainableHead"
     }
 }
