@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import random
+
 sys.path.append(os.pardir)
 
 import torch
@@ -9,19 +10,26 @@ from torch.utils.data import DataLoader
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
-from load.LoadDataset import load_dataset_per_party,load_dataset_per_party_llm, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
+from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_llm, load_dataset_per_party_backdoor, \
+    load_dataset_per_party_noisysample
 from load.LoadModels import load_models_per_party
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
-from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
+from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor, pairwise_dist
 from utils.communication_protocol_funcs import Cache
 
 import torch
 import re
 import collections
+from transformers import PreTrainedModel, AutoTokenizer
+from peft import get_peft_model
+from config import vfl_basic_config, _new_pipeline
+from models.llm_models.qwen2 import Qwen2DecoderLayerParam, \
+    E2EModel, PipelineVFL2Slice, PipelineVFL3Slice, E2EModelV2
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
+
 
 class Party(object):
     def __init__(self, args, index, need_data=True):
@@ -69,7 +77,9 @@ class Party(object):
         # attack and defense
         # self.attacker = None
         self.defender = None
-
+        self.models = {}  # type:dict[int,PreTrainedModel]
+        self.optimizers = {}
+        self.lr_schedulers = {}
         self.prepare_model(args, index)
 
         if need_data:
@@ -80,8 +90,8 @@ class Party(object):
         self.local_gradient = None
         self.local_pred = None
         self.local_pred_clone = None
-        
-        self.origin_pred = None # for adversarial training
+
+        self.origin_pred = None  # for adversarial training
 
         self.cache = Cache()
         self.prev_batches = []
@@ -93,13 +103,17 @@ class Party(object):
         self.input_shape = None
         self.global_pred = None
 
-        self.local_attention_mask = None # GPT2
-        self.local_sequence_lengths = None # GPT2 Classification
-        self.local_attention_mask = None # Llama
+        self.local_attention_mask = None  # GPT2
+        self.local_sequence_lengths = None  # GPT2 Classification
+        self.local_attention_mask = None  # Llama
 
         # for adversarial training
         self.adversary_loss = None
         self.mapping_distance = None
+
+    @property
+    def is_active_party(self):
+        return self.index == self.args.k - 1
 
     def eval(self):
         pass
@@ -126,17 +140,44 @@ class Party(object):
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
         self.test_loader = DataLoader(self.test_dst, batch_size=test_batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:
-            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
+            self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size, collate_fn=lambda x: x)
 
     def prepare_model(self, args, index):
         # prepare model and optimizer
-        (
-            args,
-            self.local_model,
-            self.local_model_optimizer,
-            self.global_model,
-            self.global_model_optimizer
-        ) = load_models_per_party(args, index)
+        if _new_pipeline:
+            self._prepare_model_qwen(args, index)
+        else:
+            (
+                args,
+                self.local_model,
+                self.local_model_optimizer,
+                self.global_model,
+                self.global_model_optimizer
+            ) = load_models_per_party(args, index)
+
+    def _prepare_model_qwen(self, args, index):
+        model_path = args.model_list[str(index)]['path']
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        if vfl_basic_config.num_of_slice == 3:
+            p = PipelineVFL3Slice(self.is_active_party)
+            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
+        else:
+            raise ValueError(f"vfl_basic_config.num_of_slice={vfl_basic_config.num_of_slice} is not supported")
+        # 设置训练参数
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            for i in _train_conf.trainable_slice:
+                if i in self.models:
+                    model = self.models[i]
+                    model.enable_input_require_grads()
+                    peft_model = get_peft_model(model, _train_conf.peft_config)
+                    peft_model.print_trainable_parameters()
+                    self.models.update({i: peft_model})
+                    trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+                    # 定义优化器和学习率调度器
+                    optimizer = torch.optim.AdamW(trainable_params, lr=_train_conf.training_args.learning_rate)
+                    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=4)
+                    self.optimizers.update({i: optimizer})
+                    self.lr_schedulers.update({i: scheduler})
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -165,7 +206,7 @@ class Party(object):
                                         use_cache=use_cache)
         self.local_pred = intermediate['inputs_embeds']
         self.local_attention_mask = intermediate['attention_mask'] if ('attention_mask' in intermediate) else None
-        
+
         self.local_pred_clone = self.local_pred.detach().clone()
         if self.local_attention_mask != None:
             self.local_attention_mask = self.local_attention_mask.detach().clone()
@@ -180,10 +221,10 @@ class Party(object):
 
         #     self.local_pred_clone = self.local_pred.detach().clone()
         #     self.local_attention_mask = self.local_attention_mask.detach().clone()
-        
+
         # elif self.args.model_type == 'GPT2':
         #     if self.args.task_type == 'SequenceClassification':
-        #         # self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, _ 
+        #         # self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, _
         #         intermediate = self.local_model(input_ids = self.local_batch_data,\
         #                                         attention_mask = self.local_batch_attention_mask,\
         #                                         token_type_ids = self.local_batch_token_type_ids)
@@ -201,7 +242,7 @@ class Party(object):
         #         self.local_pred = intermediate['local_pred']
         #         self.local_sequence_lengths = intermediate['local_sequence_lengths']
         #         self.local_attention_mask = intermediate['local_attention_mask']
-                
+
         #         self.local_pred_clone = self.local_pred.detach().clone()
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
         #     elif self.args.task_type == 'Generation':
@@ -210,7 +251,7 @@ class Party(object):
         #         #     self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, \
         #         #     token_type_ids = self.local_batch_token_type_ids, \
         #         #     past_key_values = self.past_key_values ,use_cache = use_cache)
-                
+
         #         intermediate = self.local_model(input_ids = self.local_batch_data,\
         #                                         attention_mask = self.local_batch_attention_mask,\
         #                                         token_type_ids = self.local_batch_token_type_ids,\
@@ -222,7 +263,7 @@ class Party(object):
 
         #         self.local_pred_clone = self.local_pred.detach().clone()
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
-            
+
         #     elif self.args.task_type == 'QuestionAnswering':
         #         intermediate = self.local_model(input_ids = self.local_batch_data,\
         #                                         attention_mask = self.local_batch_attention_mask,\
@@ -231,7 +272,7 @@ class Party(object):
         #         self.local_pred = intermediate['local_pred']
         #         self.local_sequence_lengths = intermediate['local_sequence_lengths']
         #         self.local_attention_mask = intermediate['local_attention_mask']
-                
+
         #         self.local_pred_clone = self.local_pred.detach().clone()
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
 
@@ -246,7 +287,7 @@ class Party(object):
         #     self.local_pred_clone = self.local_pred.detach().clone()
         #     if self.local_attention_mask != None:
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
-            
+
         #     # if self.args.task_type == 'SequenceClassification':
         #     #     self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values = self.local_model(\
         #     #         self.local_batch_data, attention_mask = self.local_batch_attention_mask)
@@ -257,7 +298,7 @@ class Party(object):
         #     #         self.local_batch_data, attention_mask = self.local_batch_attention_mask)
         #     #     self.local_pred_clone = self.local_pred.detach().clone()
         #     #     if (self.local_attention_mask!=None):
-        #     #         self.local_attention_mask = self.local_attention_mask.detach().clone() 
+        #     #         self.local_attention_mask = self.local_attention_mask.detach().clone()
         #     # elif self.args.task_type == 'Generation':
         #     #     self.local_pred,  self.local_sequence_lengths, self.local_attention_mask , self.past_key_values = \
         #     #         self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, \
@@ -268,7 +309,7 @@ class Party(object):
         #     #     self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values  = self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask)
         #     #     self.local_pred_clone = self.local_pred.detach().clone()
         #     #     self.local_attention_mask = self.local_attention_mask.detach().clone()
-        
+
         # elif self.args.model_type == 'T5':
         #     if self.args.task_type == 'CausalLM':
         #         self.local_pred,  self.local_attention_mask = \
@@ -278,15 +319,16 @@ class Party(object):
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
         
         ######### Defense Applied on Local Model Prediction Process ###########
-        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
-            self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
+        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out"):
+            self.local_pred, self.mid_loss = self.mid_model(self.local_pred)  # , self.local_attention_mask
             self.local_pred_clone = self.local_pred.detach().clone()
-        
-        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "inner") :
+
+        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (
+                self.mid_position == "inner"):
             # print('inner mid: self.mid_position=',self.mid_position)
             self.mid_loss = self.local_model.mid_loss
             # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
- 
+
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
             # print('self.origin_pred:',self.origin_pred.shape)
@@ -352,7 +394,7 @@ class Party(object):
 
         self.local_pred = intermediate['inputs_embeds']
         self.local_attention_mask = intermediate['attention_mask'] if ('attention_mask' in intermediate) else None
-        
+
         self.local_pred_clone = self.local_pred.detach().clone()
         if self.local_attention_mask != None:
             self.local_attention_mask = self.local_attention_mask.detach().clone()
@@ -361,12 +403,12 @@ class Party(object):
         if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
             self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
             self.local_pred_clone = self.local_pred.detach().clone()
-        
+
         elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "inner") :
             # print('inner mid: self.mid_position=',self.mid_position)
             self.mid_loss = self.local_model.mid_loss
             # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
- 
+
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
             # print('self.origin_pred:',self.origin_pred.shape)
@@ -386,13 +428,13 @@ class Party(object):
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
-    def LR_decay(self,i_epoch):
+    def LR_decay(self, i_epoch):
         eta_0 = self.args.main_lr
-        eta_t = eta_0/(np.sqrt(i_epoch+1))
+        eta_t = eta_0 / (np.sqrt(i_epoch + 1))
         for param_group in self.local_model_optimizer.param_groups:
             param_group['lr'] = eta_t 
             
-    def obtain_local_data_old(self, input_ids=None, 
+    def obtain_local_data_old(self, input_ids=None,
                         inputs_embeds=None,
                         local_batch_attention_mask=None,
                         local_batch_token_type_ids=None,
@@ -403,7 +445,7 @@ class Party(object):
         self.local_batch_token_type_ids = local_batch_token_type_ids
 
         self.past_key_values = past_key_values
-    
+
     def obtain_local_data(self, data_input_dict ,**kwargs):
         # self.local_batch_data = kwargs['input_ids'] # input_ids
         # self.local_batch_attention_mask = kwargs['attention_mask']
@@ -411,9 +453,8 @@ class Party(object):
         # self.past_key_values = past_key_values
         # print('obtain_local_data_dev:',kwargs.keys())
         self.local_data_input = data_input_dict
-    
+
     def local_forward(self):
         # args.local_model()
         pass
 
-   

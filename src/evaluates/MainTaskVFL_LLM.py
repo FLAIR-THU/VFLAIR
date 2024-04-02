@@ -14,7 +14,7 @@ import random
 import time
 import copy
 import collections
-
+from accelerate import init_empty_weights
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
@@ -23,6 +23,10 @@ import torch
 
 import inspect
 from typing import List, Optional, Tuple, Union, Dict, Any
+from torch.utils.tensorboard import SummaryWriter
+
+import warnings
+from typing import List, Optional, Tuple, Union
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 from transformers.generation import GenerationMixin
@@ -51,10 +55,11 @@ from loguru import logger
 from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
 from evaluates.attacks.attack_api import AttackerLoader
-
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
+from config import vfl_basic_config, _new_pipeline
 
 from load.LoadModels import QuestionAnsweringModelOutput
-from models.llm_models.qwen2 import E2EModel
+from models.llm_models.qwen2 import E2EModelV2
 from party.LocalCommunication import LocalCommunication
 
 import warnings
@@ -67,7 +72,8 @@ torch.backends.cudnn.benchmark = True
 STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40, 'diabetes': 0.69, \
                 'nuswide': 0.88, 'breast_cancer_diagnose': 0.88, 'adult_income': 0.84, 'cora': 0.72, \
                 'avazu': 0.83, 'criteo': 0.74, 'nursery': 0.99, 'credit': 0.82, 'news20': 0.8, \
-                'cola_public': 0.8, 'SST-2': 0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
+                'cola_public': 0.8,
+                'SST-2': 0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 def create_main_task(global_model_type):
     print('inherited:',global_model_type)
@@ -804,7 +810,7 @@ def create_main_task(global_model_type):
             pred_list = self.pred_transmit(use_cache=False)
             # passive party inform active party to do global pred
             final_output = self.global_pred_transmit(pred_list, use_cache=False)
-            
+
             global_output = self.parties[1].global_output
             return global_output # dict
 
@@ -1456,20 +1462,28 @@ def create_main_task(global_model_type):
                 self.parties[i].local_model._clear_past_key_values()
             self.parties[-1].global_model._clear_past_key_values()
 
-        def _init_e2e_model(self):
-            model_config = None
-            if not self.args.task_type == 'DevLLMInference':
-                return
-            for party in self.parties:
-                if party.local_model:
-                    model_config = party.local_model.config
+    def _init_e2e_model(self):
+        model_config = None
+        if not self.args.task_type == 'DevLLMInference':
+            return
+        for party in self.parties:
+            try:
+                for model in party.models.values():
+                    model_config = model.config
                     break
-                elif party.global_model:
-                    model_config = party.global_model.config
-                    break
-            if not model_config:
-                logger.error(f"No model config for E2E_model")
-            self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1])
-            # self.e2e_model.to(self.e2e_model.local_model.device)
+                break
+            except Exception as e:
+                continue
+            # if party.models:
+            #     model_config = party.local_model.config
+            #     break
+            # elif party.models:
+            #     model_config = party.global_model.config
+            #     break
+        if not model_config:
+            logger.error(f"No model config for E2E_model")
+        with init_empty_weights():
+            self.e2e_model = E2EModelV2(model_config, {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
+        # self.e2e_model.to(self.e2e_model.local_model.device)
 
     return MainTaskVFL_LLM

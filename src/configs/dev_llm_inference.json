@@ -9,6 +9,7 @@
     "active_party_class": "QW_Active_Party",
     "passive_party_class": "QW_Passive_Party",
     "fl_type": "VFL",
+    "num_model_slice": 3,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -35,7 +36,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/Qwen1___5-72B-Chat_vfl_2slice/model_head"
+            "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat_vfl_(2, -2)"
         },
         "1": {
             "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -44,7 +45,7 @@
             "output_dim": 1,
             "model_type": "Qwen2",
             "max_sequence": 512,
-            "path": "/dev/data/sunl0/model/test/qwen/Qwen1___5-72B-Chat_vfl_2slice/model_tail"
+            "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat_vfl_(2, -2)"
         },
         "task":{
             "task_type": "DevLLMInference",

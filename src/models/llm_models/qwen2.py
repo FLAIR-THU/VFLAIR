@@ -8,13 +8,14 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.models.qwen2.modeling_qwen2 import Qwen2Model, Qwen2ForCausalLM, Qwen2Config, Qwen2DecoderLayer, \
     BaseModelOutputWithPast, Cache, DynamicCache, _prepare_4d_causal_attention_mask_for_sdpa, \
     _prepare_4d_causal_attention_mask, PreTrainedModel
-from torch.nn import ModuleList
-from typing import Iterable, Optional, Union, List, Tuple, Callable
+from torch.nn import ModuleList, Parameter
+from typing import Iterable, Optional, Union, List, Tuple, Callable, Dict, Iterator
 # import logging as logger
 from loguru import logger
 import torch
 import copy
 import os
+from party.party_utils import ProxyModel
 
 
 class Qwen2DecoderLayerParam(object):
@@ -25,7 +26,8 @@ class Qwen2DecoderLayerParam(object):
                  past_key_values: Optional[Tuple[torch.Tensor]] = None,
                  output_attentions: Optional[bool] = False,
                  output_hidden_states: Optional[bool] = False,
-                 use_cache: Optional[bool] = False):
+                 use_cache: Optional[bool] = False,
+                 labels: Optional[torch.Tensor] = None):
         self.hidden_states = hidden_states
         self.attention_mask = attention_mask
         self.position_ids = position_ids
@@ -36,15 +38,17 @@ class Qwen2DecoderLayerParam(object):
         self.labels = None
 
     def prepare_for_forward(self):
-        return {
+        ans = {
             'inputs_embeds': self.hidden_states,
             'attention_mask': self.attention_mask,
             'past_key_values': self.past_key_values,
             'output_hidden_states': self.output_hidden_states,
             'position_ids': self.position_ids,
             'use_cache': False,
-            'labels': self.labels
         }
+        if self.labels is not None:
+            ans.update({'labels': self.labels})
+        return ans
 
     def to(self, device):
         for v in self.__dict__.values():
@@ -56,6 +60,20 @@ class Qwen2DecoderLayerParam(object):
         for k, v in self.__dict__.items():
             if isinstance(v, torch.Tensor):
                 self.__dict__.update({k: v.tolist()})
+
+    def detach(self):
+        new_dict = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, torch.Tensor):
+                v_new = v.detach().clone()
+                v_new.requires_grad = v.requires_grad
+                new_dict.update({k: v_new})
+            else:
+                new_dict.update({k: copy.deepcopy(v)})
+        return Qwen2DecoderLayerParam(**new_dict)
+
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
 
 
 class VFLModel:
@@ -90,7 +108,6 @@ class Qwen2ModelHead(Qwen2ModelSplitter, VFLModel):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
-            labels: Optional[torch.LongTensor] = None
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
         改写forward方法的输入输出
@@ -264,6 +281,7 @@ class Qwen2ModelBody(Qwen2ModelSplitter, VFLModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
     ) -> Union[Tuple, BaseModelOutputWithPast]:
+        logger.debug(f"{self.__class__.__name__} run forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -399,12 +417,13 @@ class Qwen2ModelBody(Qwen2ModelSplitter, VFLModel):
 
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
-        return intermediate_states, BaseModelOutputWithPast(
-            last_hidden_state=hidden_states,
-            past_key_values=next_cache,
-            hidden_states=all_hidden_states,
-            attentions=all_self_attns,
-        )
+        return intermediate_states
+        #         , BaseModelOutputWithPast(
+        #     last_hidden_state=hidden_states,
+        #     past_key_values=next_cache,
+        #     hidden_states=all_hidden_states,
+        #     attentions=all_self_attns,
+        # ))
 
 
 class Qwen2ModelTail(Qwen2ModelSplitter):
@@ -611,11 +630,24 @@ class E2EModel(Qwen2ForCausalLM):
         self.lm_head = None
         self.local_model = local_model
         self.global_model = global_model
-        self.post_init()
+        # todo: test on e2eModel
+        # self.post_init() # affect on lora model, may cause lora weight initialization
 
     @property
     def device(self) -> torch.device:
         return self.local_model.device
+
+    @property
+    def hf_device_map(self) -> dict:
+        """
+        to avoid parallel in trainer
+        :return:
+        """
+        # TODO: check if necessary
+        ans = {}
+        ans.update(self.local_model.hf_device_map)
+        ans.update(self.global_model.hf_device_map)
+        return ans
 
     def forward(
             self,
@@ -652,10 +684,11 @@ class E2EModel(Qwen2ForCausalLM):
 
         for k, v in output.items():
             if isinstance(v, torch.Tensor):
-                output[k]=v.to(self.device)
-            if isinstance(v,tuple) and isinstance(v[0],torch.Tensor):
+                output[k] = v.to(self.device)
+            if isinstance(v, tuple) and isinstance(v[0], torch.Tensor):
                 output[k] = tuple(t.to(self.device) for t in v)
         logger.debug(f"finish e2e model forward")
+        # torch.cuda.empty_cache()
         return output
 
     def save_pretrained(
@@ -672,28 +705,165 @@ class E2EModel(Qwen2ForCausalLM):
             save_peft_format: bool = True,
             **kwargs,
     ):
-        self.local_model.save_pretrained(save_directory=save_directory,
-                                         is_main_process=is_main_process,
-                                         state_dict=state_dict,
-                                         save_function=save_function,
-                                         push_to_hub=push_to_hub,
-                                         max_shard_size=max_shard_size,
-                                         safe_serialization=safe_serialization,
-                                         variant=variant,
-                                         token=token,
-                                         save_peft_format=save_peft_format,
-                                         **kwargs, )
-        # self.global_model.save_pretrained(save_directory=save_directory,
-        #                                   is_main_process=is_main_process,
-        #                                   state_dict=state_dict,
-        #                                   save_function=save_function,
-        #                                   push_to_hub=push_to_hub,
-        #                                   max_shard_size=max_shard_size,
-        #                                   safe_serialization=safe_serialization,
-        #                                   variant=variant,
-        #                                   token=token,
-        #                                   save_peft_format=save_peft_format,
-        #                                   **kwargs, )
+        # self.local_model.save_pretrained(save_directory=os.path.join(save_directory, 'model_0'),
+        #                                  is_main_process=is_main_process,
+        #                                  state_dict=state_dict,
+        #                                  save_function=save_function,
+        #                                  push_to_hub=push_to_hub,
+        #                                  max_shard_size=max_shard_size,
+        #                                  safe_serialization=safe_serialization,
+        #                                  variant=variant,
+        #                                  token=token,
+        #                                  save_peft_format=save_peft_format,
+        #                                  **kwargs, )
+        self.global_model.save_pretrained(save_directory=os.path.join(save_directory, 'model_1'),
+                                          is_main_process=is_main_process,
+                                          state_dict=state_dict,
+                                          save_function=save_function,
+                                          push_to_hub=push_to_hub,
+                                          max_shard_size=max_shard_size,
+                                          safe_serialization=safe_serialization,
+                                          variant=variant,
+                                          token=token,
+                                          save_peft_format=save_peft_format,
+                                          **kwargs, )
+
+    def eval(self):
+        self.local_model.eval()
+        self.global_model.eval()
+
+
+class E2EModelV2(Qwen2ForCausalLM):
+    def __init__(self, model_config: Qwen2Config, models: Dict[int, PreTrainedModel, ProxyModel]):
+        model_config.tie_word_embeddings = False
+        super().__init__(model_config)
+        self.layers = None
+        self.model = None
+        self.lm_head = None
+        self.models = models
+
+    def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
+        for i in range(len(self.models)):
+            if isinstance(self.models[i], PreTrainedModel):
+                yield from self.models[i].parameters()
+            else:
+                logger.warning(f"Parameter type {type(i)} is not supported")
+                continue
+
+    @property
+    def num_of_slice(self):
+        return len(self.models)
+
+    @property
+    def device(self) -> torch.device:
+        return self.models[0].device
+
+    @property
+    def optimizer(self) -> torch.optim.Optimizer:
+        self.__is_vfl()
+        m = self.models[0]  # type:ProxyModel
+        return m.optimizer
+
+    def __is_vfl(self):
+        """
+        some methods only support under vfl structure
+        :return: bool
+        """
+        for model in self.models.items():
+            if not isinstance(model, ProxyModel):
+                raise ValueError(f"Model type {type(model)} is not supported")
+
+    def forward(
+            self,
+            input_ids: torch.LongTensor = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.LongTensor] = None,
+            past_key_values: Optional[List[torch.FloatTensor]] = None,
+            inputs_embeds: Optional[torch.FloatTensor] = None,
+            labels: Optional[torch.LongTensor] = None,
+            use_cache: Optional[bool] = False,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs
+    ) -> Union[Tuple, CausalLMOutputWithPast]:
+        intermediate = None
+        # dev_in = {}
+        # dev_out = {}
+        for i in range(self.num_of_slice):
+            model = self.models[i]
+            if i == 0:
+                _input = {'input_ids': input_ids,
+                          'attention_mask': attention_mask,
+                          'position_ids': position_ids,
+                          'past_key_values': past_key_values,
+                          'inputs_embeds': inputs_embeds,
+                          'use_cache': use_cache,
+                          'output_attentions': output_attentions,
+                          'output_hidden_states': output_hidden_states,
+                          'return_dict': return_dict}
+            else:
+                if not isinstance(intermediate, Qwen2DecoderLayerParam):
+                    intermediate = Qwen2DecoderLayerParam(intermediate)
+                # intermediate = intermediate.detach()
+                if i == len(self.models) - 1:
+                    intermediate.labels = labels
+                intermediate.to(model.device)
+                _input = intermediate.prepare_for_forward()
+            # dev_in[i] = _input
+            intermediate = model(**_input)
+            # dev_out[i] = intermediate
+        for k, v in intermediate.items():
+            if isinstance(v, torch.Tensor):
+                intermediate[k] = v.to(self.device)
+            if isinstance(v, tuple) and isinstance(v[0], torch.Tensor):
+                intermediate[k] = tuple(t.to(self.device) for t in v)
+        logger.debug(f"finish e2e model forward")
+        # model_weights = {}
+        # for i in range(3):
+        #     model_weights.update({i: {k: v for k, v in self.models[i].named_parameters()}})
+        # dev_out[2].loss.backward()
+        # dev_out[1].hidden_states.backward(gradient=dev_in[2]['inputs_embeds'].grad)
+        return intermediate
+
+    def backward(self):
+        self.__is_vfl()
+        pass
+
+    def optimizer_step(self):
+        self.__is_vfl()
+        pass
+
+    def scheduler_step(self):
+        self.__is_vfl()
+        pass
+
+    def save_pretrained(
+            self,
+            save_directory: Union[str, os.PathLike],
+            is_main_process: bool = True,
+            state_dict: Optional[dict] = None,
+            save_function: Callable = torch.save,
+            push_to_hub: bool = False,
+            max_shard_size: Union[int, str] = "5GB",
+            safe_serialization: bool = True,
+            variant: Optional[str] = None,
+            token: Optional[Union[str, bool]] = None,
+            save_peft_format: bool = True,
+            **kwargs,
+    ):
+        for i, model in self.models.items():
+            model.save_pretrained(save_directory=os.path.join(save_directory, f'model_{i}'),
+                                  is_main_process=is_main_process,
+                                  state_dict=state_dict,
+                                  save_function=save_function,
+                                  push_to_hub=push_to_hub,
+                                  max_shard_size=max_shard_size,
+                                  safe_serialization=safe_serialization,
+                                  variant=variant,
+                                  token=token,
+                                  save_peft_format=save_peft_format,
+                                  **kwargs, )
 
 
 class PipelineVFL2Slice:
@@ -729,7 +899,9 @@ class PipelineVFL2Slice:
     def _load_model_tail(self, path_model_tail, split_index=None, **kwargs):
         model_tail = Qwen2TailForCausalLM.from_pretrained(path_model_tail, **kwargs)
         if split_index is not None:
-            model_tail.vfl_split(range(split_index, model_tail.config.num_hidden_layers))
+            model_tail.vfl_split(
+                range(split_index if split_index > 0 else split_index + model_tail.config.num_hidden_layers,
+                      model_tail.config.num_hidden_layers))
         return model_tail
 
     @staticmethod
@@ -744,3 +916,29 @@ class PipelineVFL2Slice:
         else:
             model_head = self._load_model_head(model_path, **kwargs)
             return model_head
+
+
+class PipelineVFL3Slice(PipelineVFL2Slice):
+    def _load_model_body(self, model_path, split_index: Tuple[int] = None, **kwargs):
+        model_body = Qwen2ModelBody.from_pretrained(model_path, **kwargs)
+        if split_index and len(split_index) >= 2:
+            model_body.vfl_split(range(split_index[0],
+                                       split_index[1] if split_index[1] > 0 else split_index[1] +
+                                                                                 model_body.config.num_hidden_layers))
+        return model_body
+
+    def from_pretrained(self, path_pretrain_model, split_index: Tuple[int] = (2, -2), **kwargs):
+        if self.is_server_end:
+            return {1: self._load_model_body(path_pretrain_model, split_index, **kwargs)}
+        else:
+            return {0: self._load_model_head(path_pretrain_model, split_index[0], **kwargs), 2: self._load_model_tail(
+                path_pretrain_model, split_index[1], **kwargs)}
+
+    def from_vfl(self, model_path, **kwargs):
+        if self.is_server_end:
+            model_body = self._load_model_body(os.path.join(model_path, 'model_1'), **kwargs)
+            return {1: model_body}
+        else:
+            model_head = self._load_model_head(os.path.join(model_path, 'model_0'), **kwargs)
+            model_tail = self._load_model_tail(os.path.join(model_path, 'model_2'), **kwargs)
+            return {0: model_head, 2: model_tail}

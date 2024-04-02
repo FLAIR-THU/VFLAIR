@@ -45,6 +45,7 @@ from models.bottom_models import *
 from models.global_models import *
 from models.autoencoder import *
 from utils.optimizers import MaliciousSGD, MaliciousAdam
+from config import vfl_basic_config
 
 YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
 MODEL_PATH = {
