@@ -51,7 +51,10 @@
   - "path": specify trained model state dictionary if you want to load pre-trained models
 
 - "apply_trainable_layer": whether the global model is trainable
+  - in aggVFL, this parameter shall be '0'; while in splitVFL, it shall be '1'
 - "global_model": global model
+  - in aggVFL, this parameter shall be name of a global model with no trainable layer, e.g 'ClassificationModelHostHead'
+  - in splitVFL, this parameter shall be name of a global model with a trainable layer, e.g 'ClassificationModelHostTrainableHead'
 - "attack": attack that is to be evaluated
   - "name": name for the attack, supported attacks list is shown in the bellow
     - TODO: list attack names
