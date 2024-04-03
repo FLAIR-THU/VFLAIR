@@ -1,8 +1,8 @@
 {
-    "epochs": 2,
-    "lr": 0.0001,
+    "epochs": 15,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 64,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -23,24 +23,24 @@
     },
     "model_list":{
         "0": {
-            "type": "benayasllama-2-7b-sst2_v0",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
         },
         "1": {
-            "type": "benayasllama-2-7b-sst2_v0",
-            "pretrained": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -55,7 +55,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 100
             }
         }
     }

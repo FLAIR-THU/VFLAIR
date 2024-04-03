@@ -701,11 +701,13 @@ class GlobalBertModel(BertPreTrainedModel):
         self.num_encoders = num_encoders
         if self.model_type == 'Albert':
             self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders,self.num_encoders_all)])
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders_all - self.num_encoders,self.num_encoders_all)])
         else:
             self.num_encoders_all = len(full_bert.encoder.layer)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders,self.num_encoders_all)])
-        self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.num_encoders) #full_bert.encoder #BertEncoder(config)
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders_all - self.num_encoders,self.num_encoders_all)])
+        
+        self.local_num_encoders = self.num_encoders_all - self.num_encoders
+        self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.local_num_encoders) #full_bert.encoder #BertEncoder(config)
         
     def forward(
         self,

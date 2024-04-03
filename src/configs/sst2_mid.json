@@ -25,8 +25,8 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
             "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -35,7 +35,7 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -45,32 +45,21 @@
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.001,
             "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
             "seq_length": 70,
             "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-            }
         }
     }
 }

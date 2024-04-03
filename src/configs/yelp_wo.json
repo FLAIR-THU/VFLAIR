@@ -1,9 +1,9 @@
 {
-    "epochs": 8,
+    "epochs": 10,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
-    "pipeline": "finetune",
+    "batch_size": 160,
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -13,53 +13,38 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 384,
         "padding_side": "left",
         "add_special_tokens": 1
     },
     "dataset":{
-        "dataset_name": "MRPC",
-        "num_classes": 2
+        "dataset_name": "yelp-polarity",
+        "num_classes": 5
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-MRPC",
+            "type": "Shunianyelp_review_classification",
             "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 1,
-            "output_dim": 2,
+            "head_layer_trainable": 0,
+            "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-MRPC"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
         },
         "1": {
-            "type": "textattackbert-base-uncased-MRPC",
+            "type": "Shunianyelp_review_classification",
             "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 0,
-            "output_dim": 2,
+            "head_layer_trainable": 0,
+            "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-MRPC"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0],
-            "mid_model_name":"MIDModel_SqueezeLinear",
-            "lr": 0.0001,
-            "lambda": 0.0,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 70,
-            "embed_dim": 768
-        }
     },
     "attack_list": {
         "0":{
@@ -68,7 +53,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 1000
             }
         }
     }

@@ -234,27 +234,34 @@ class Party(object):
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
 
+        self.transferred_past_key_values = None
+        if use_cache: # need to transmit past_key_values
+            self.transferred_past_key_values = self.past_key_values
+        else: # no need to transmit past_key_values
+            self.transferred_past_key_values = None
 
         if self.args.model_type in ['Bert','Roberta']:
-            return self.local_pred, self.local_pred_clone , self.local_attention_mask
+            return self.local_pred, self.local_pred_clone , self.local_attention_mask, self.transferred_past_key_values
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'SequenceClassification':
-                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone, self.local_attention_mask ,self.transferred_past_key_values, \
+                        self.local_sequence_lengths
             elif self.args.task_type == 'CausalLM':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
             elif self.args.task_type == 'Generation':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.past_key_values 
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.transferred_past_key_values
             elif self.args.task_type == 'QuestionAnswering':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.transferred_past_key_values
         elif self.args.model_type == 'Llama':
             if self.args.task_type == 'SequenceClassification':
-                return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask, self.past_key_values
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values, \
+                        self.local_sequence_lengths
             elif self.args.task_type == 'CausalLM':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
             elif self.args.task_type == 'Generation':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.past_key_values 
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.transferred_past_key_values
             elif self.args.task_type == 'QuestionAnswering':
-                return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
 
     
     def give_current_lr(self):

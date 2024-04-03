@@ -124,6 +124,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.mid_lambda = self.args.defense_configs['lambda'] 
                 self.mid_model_name = self.args.defense_configs['mid_model_name'] 
                 self.mid_lr = self.args.defense_configs['lr'] 
+                self.squeeze_dim = self.args.defense_configs['squeeze_dim'] if 'squeeze_dim' in self.args.defense_configs else 0
 
                 self.mid_position = self.args.defense_configs['mid_position'] \
                 if 'mid_position' in self.args.defense_configs else "out" # "inner"
@@ -143,7 +144,11 @@ class PassiveParty_LLM(Party_LLM):
 
                 if self.mid_position == "inner":
                     print('init defense: inner mid')
-                    self.local_model.inner_mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                    if 'Squeeze' in self.mid_model_name:
+                        self.local_model.inner_mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                         mid_lambda=self.mid_lambda,squeeze_dim = self.squeeze_dim ,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                    else:
+                        self.local_model.inner_mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
                     mid_lambda=self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
                     
                     if self.local_model_optimizer == None:
@@ -154,8 +159,14 @@ class PassiveParty_LLM(Party_LLM):
 
                 else:
                     print('init defense: out mid')
-                    self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
-                    mid_lambda=self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                    print(self.mid_model_name)
+                    if 'Squeeze' in self.mid_model_name:
+                        print('Squeeze')
+                        self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                         mid_lambda=self.mid_lambda,squeeze_dim = self.squeeze_dim ,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                    else:
+                        self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                        mid_lambda=self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
 
                     if self.local_model_optimizer == None:
                         self.local_model_optimizer = torch.optim.Adam(self.mid_model.parameters(), lr=self.mid_lr)
@@ -361,7 +372,7 @@ class PassiveParty_LLM(Party_LLM):
             
             if self.encoder_trainable:
                 # local model trainable part
-                local_model_params = [self.adversarial_model.parameters()]
+                local_model_params = list(self.adversarial_model.parameters())
                 for param in self.local_model.parameters():
                     if param.requires_grad:
                         local_model_params.append(param)

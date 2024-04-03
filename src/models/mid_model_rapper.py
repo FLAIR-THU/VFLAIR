@@ -210,12 +210,12 @@ class MIDModelCNN_ConvTranspose2d(nn.Module):
 
 
 class MIDModel_SqueezeLinear(nn.Module):
-    def __init__(self, seq_length,embed_dim, mid_lambda, bottleneck_scale=1, std_shift=0.5):
+    def __init__(self, seq_length,embed_dim, mid_lambda, squeeze_dim=124, bottleneck_scale=1, std_shift=0.5):
         super(MIDModel_SqueezeLinear, self).__init__()
         self.bottleneck_scale = bottleneck_scale
         self.input_dim = embed_dim
         self.output_dim = seq_length*embed_dim
-        self.squeeze_dim = 124
+        self.squeeze_dim = squeeze_dim
 
         self.seq_length = seq_length
 

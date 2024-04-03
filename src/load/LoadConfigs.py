@@ -155,6 +155,7 @@ def do_load_basic_configs(config_dict, args):
 
         
         args.encoder_trainable = []
+        args.embedding_trainable = []
         args.head_layer_trainable = []
 
         for ik in range(args.k):
@@ -162,21 +163,20 @@ def do_load_basic_configs(config_dict, args):
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
                     
-                    args.local_encoders_num = config_model_dict[str(ik)]['local_encoders_num'] if  'local_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
-                    # args.all_encoders_num = config_model_dict[str(ik)]['all_encoders_num']
+                    # args.local_encoders_num = config_model_dict[str(ik)]['local_encoders_num'] if  'local_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
+                    # args.global_encoders_num = config_model_dict[str(ik)]['global_encoders_num'] if  'global_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
                     
-                    # args.encoder_trainable = config_model_dict[str(ik)]['encoder_trainable'] if  'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
-                    # if args.encoder_trainable == 1:
-                    #     args.encoder_trainable = True
-                    # else:
-                    #     args.encoder_trainable = False
-                    # args.head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
-                    # if args.head_layer_trainable == 1:
-                    #     args.head_layer_trainable = True
-                    # else:
-                    #     args.head_layer_trainable = False
+                    if ik == args.k-1:
+                        args.embedding_trainable.append(False) # no embedding layer for active parties
+                    else:
+                        embedding_trainable = int(config_model_dict[str(ik)]['embedding_trainable']) if 'embedding_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+                        if embedding_trainable == 1:
+                            embedding_trainable = True
+                        else:
+                            embedding_trainable = False
+                        args.embedding_trainable.append(embedding_trainable)
                     
-                    encoder_trainable = config_model_dict[str(ik)]['encoder_trainable'] if  'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+                    encoder_trainable = int(config_model_dict[str(ik)]['encoder_trainable']) if 'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
                     if encoder_trainable == 1:
                         encoder_trainable = True
                     else:
@@ -186,7 +186,7 @@ def do_load_basic_configs(config_dict, args):
                     if ik != args.k-1:
                         args.head_layer_trainable.append(False) # no head layer for passive parties
                     else:
-                        head_layer_trainable = config_model_dict[str(ik)]['head_layer_trainable']
+                        head_layer_trainable = int(config_model_dict[str(ik)]['head_layer_trainable'])
                         if head_layer_trainable == 1:
                             head_layer_trainable = True
                         else:
@@ -210,9 +210,11 @@ def do_load_basic_configs(config_dict, args):
                 model_dict[str(ik)] = default_dict_element
         
         print('args.encoder_trainable:',args.encoder_trainable)
+        print('args.embedding_trainable:',args.embedding_trainable)
         print('args.head_layer_trainable:',args.head_layer_trainable)
         
         args.model_list = model_dict
+        args.local_encoders_num = config_model_dict['local_encoders_num'] if 'local_encoders_num' in config_model_dict else 1
         args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
         args.global_model = config_model_dict['global_model'] if ('global_model' in config_model_dict) else 'ClassificationModelHostHead'
     else:

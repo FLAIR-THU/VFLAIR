@@ -47,7 +47,7 @@ def evaluate_no_attack_pretrained(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"seed_{args.current_seed}|{args.pad_info}| " + exp_result
+    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}| " + exp_result
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
@@ -60,13 +60,13 @@ def evaluate_no_attack_finetune(args):
     vfl = MainTaskVFL_LLM(args)
     vfl.init_communication()
 
-    exp_result, metric_val= vfl.train()
+    exp_result, metric_val, training_time = vfl.train()
 
     # attack_metric = main_acc_noattack - main_acc
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"seed_{args.current_seed}|K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}|{args.pad_info}|headlayer_{args.head_layer_trainable}| " \
+    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable} " \
         + exp_result
     print(exp_result)
 
@@ -84,9 +84,6 @@ def evaluate_inversion_attack(args):
         args = load_attack_configs(args.configs, args, index)
         print('======= Test Attack',index,': ',args.attack_name,' =======')
         print('attack configs:',args.attack_configs)
-
-        # # args.need_auxiliary = 1
-        # args = load_parties_llm(args)
         
         if args.basic_vfl != None:
             vfl = args.basic_vfl
@@ -97,21 +94,18 @@ def evaluate_inversion_attack(args):
             vfl = MainTaskVFL_LLM(args)
             vfl.init_communication()
 
-            if args.pipeline == 'pretrained':
-                _exp_result, metric_val= vfl.train()
-            elif args.pipeline == 'finetune':
-                _exp_result, metric_val = vfl.inference()
+            if args.pipeline == 'finetune':
+                _exp_result, metric_val, training_time= vfl.train()
+            elif args.pipeline == 'pretrained':
+                _exp_result, metric_val= vfl.inference()
             main_tack_acc = metric_val
             print(_exp_result)
             
-
         print('=== Begin Attack ===')
+        training_time = vfl.training_time 
         precision, recall , attack_total_time= vfl.evaluate_attack()
     
-        # Save record for different defense method
-        # exp_result = f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}" %\
-        #     (args.k,args.batch_size, args.main_lr, args.num_classes, args.Q, args.apply_trainable_layer,args.main_epochs)
-        exp_result = f"{args.attack_name}|seed_{args.current_seed}|K_{args.k}|bs_{args.batch_size}|LR_{args.main_lr}|num_class_{args.num_classes}|Q_{args.Q}|epoch_{args.main_epochs}|{args.pad_info}|headlayer_{args.head_layer_trainable}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|attack_time={attack_total_time}\n"
+        exp_result = f"{args.attack_name}|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|training_time={training_time}|attack_time={attack_total_time}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
         return exp_result
@@ -229,7 +223,6 @@ if __name__ == '__main__':
             elif args.pipeline == 'finetune':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_finetune(args)
 
-      
             # with attack
             if args.inversion_list != []:
                 # torch.cuda.empty_cache()

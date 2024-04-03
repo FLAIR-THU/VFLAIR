@@ -788,11 +788,12 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         past_key_values_length = 0
         if use_cache:
             use_legacy_cache = not isinstance(past_key_values, Cache)
-            ## no need to initiate past_key_values, use the received past_key_values
-            # if use_legacy_cache:
-            #     past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-            # past_key_values_length = past_key_values.get_usable_length(seq_length)
-
+            ## no need to initiate past_key_values, if got the received past_key_values
+            if past_key_values == None:
+                if use_legacy_cache:
+                    past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+                past_key_values_length = past_key_values.get_usable_length(seq_length)
+            
         if position_ids is None:
             device = intermediate.device if intermediate is not None else inputs_embeds.device
             position_ids = torch.arange(
