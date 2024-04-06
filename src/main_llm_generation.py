@@ -127,7 +127,8 @@ if __name__ == '__main__':
             assert 1>2, 'model type not supported for generation'
             
         ######### define your input text here #########
-        input_text = ["Hello, how are you these days?"]
+        input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
+         mouth curved in a confident grin i do n't care about"]
         ######### define your input text here #########
 
         inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
@@ -154,10 +155,15 @@ if __name__ == '__main__':
 
 
         ######### VFL model ########
-        greedy_output = GenerationModel.generate(**inputs, max_length=30)
+        
+        greedy_output = GenerationModel.generate(**inputs, max_length=128)
         print("greedy_output:\n" + 100 * '-')
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
+
+        greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
+        print('greedy_matching:',type(greedy_matching))
+        print(greedy_matching)
 
 
 

@@ -1,16 +1,16 @@
 {
-    "epochs": 40,
-    "lr": 0.0001,
+    "epochs": 1,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 128,
-    "pipeline": "pretrained",
+    "batch_size": 16,
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "STS-B",
-        "num_classes": 1
+        "dataset_name": "SST-2",
+        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
@@ -23,22 +23,28 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-cased-STS-B",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
-            "output_dim": 1,
-            "model_type": "Bert",
+            "type": "llama-2-7b",
+            "pretrained": 0,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-cased-STS-B"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
-            "type": "textattackbert-base-cased-STS-B",
-            "pretrained": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "head_layer_trainable": 1,
-            "output_dim": 1,
-            "model_type": "Bert",
+            "encoder_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-cased-STS-B"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -60,7 +66,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 100
             }
         }
     }

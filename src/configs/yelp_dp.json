@@ -23,22 +23,22 @@
     },
     "model_list":{
         "0": {
-            "type": "nihaldsouza1yelp-rating-classification",
+            "type": "Shunianyelp_review_classification",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 5,
-            "model_type": "Roberta",
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/nihaldsouza1yelp-rating-classification"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
         },
         "1": {
-            "type": "nihaldsouza1yelp-rating-classification",
+            "type": "Shunianyelp_review_classification",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 5,
-            "model_type": "Roberta",
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/nihaldsouza1yelp-rating-classification"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -50,7 +50,7 @@
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "epsilon": 100
+            "epsilon": 50
         }
     },
     "attack_list": {

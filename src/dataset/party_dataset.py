@@ -52,26 +52,40 @@ class PassiveDataset_LLM(Dataset):
             # print(type(self.features[0]), type(self.features[1]))
 
         elif args.task_type == 'CausalLM':
-            # flag = 0
+            print('begin party dataset')
+            flag = 0
+            for i in range(len(texts)):
+                _text = texts[i]
+                
 
-            for _text in texts:
                 ids = args.tokenizer(_text, \
                     padding=args.padding,truncation=args.truncation ,\
                     max_length=args.max_length,return_tensors='pt') 
-            
-                self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
-                self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
+                self.texts.append( torch.tensor(ids['input_ids']).squeeze()[:-1] )
+                self.masks.append( torch.tensor(ids['attention_mask']).squeeze()[:-1] )
+                self.labels.append( int(torch.tensor(ids['input_ids']).squeeze()[-1].item()) )
+                
                 if 'token_type_ids' in list(ids.keys()):
-                    self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
+                    self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze()[:-1] )
                 
-                
-                # if flag == 0:
-                #     print('_text:',_text)
-                #     print(torch.tensor(ids['input_ids']).squeeze())
-                #     print('labels:',labels[0])
-                #     flag = 1
+                if flag == 0:
+                    print('_text:',len(_text),'\n',_text)
+                    print(self.texts[i].shape)
+                    print('label:', self.labels[i])
+                    print('texts:', self.texts[i])
+                    print('masks:', self.masks[i])
 
-            self.labels = labels
+
+                    print('texts:',args.tokenizer.decode(self.texts[i]))
+                    print('label:',args.tokenizer.decode(self.labels[i]))
+
+
+                    print('-'*25)
+                    flag = flag + 1
+           
+             
+
+            # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 
             self.masks=[aa.tolist() for aa in self.masks] 
             if self.token_type_ids != []:

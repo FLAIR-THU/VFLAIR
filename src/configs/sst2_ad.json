@@ -1,8 +1,8 @@
 {
-    "epochs": 15,
-    "lr": 0.0001,
+    "epochs": 10,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 128,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -25,8 +25,8 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
             "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -35,7 +35,7 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -45,6 +45,7 @@
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -54,11 +55,9 @@
             "party": [0],
             "adversarial_model": "Mapping_MLP3",
             "adversarial_model_lr": 0.0001,
-            "adversarial_model_hidden_size": 768,
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.0001,
-            "imagined_adversary_hidden_size": 768,
-            "lambda": 0.5,
+            "lambda": 0.1,
             "seq_length": 70,
             "embed_dim": 768
         }

@@ -238,8 +238,11 @@ class VanillaModelInversion_WhiteBox(Attacker):
                 # each sample in a batch
                 for _id in range(origin_data.shape[0]):
                     sample_origin_data = origin_data[_id].unsqueeze(0) # [1,sequence length]
+                    # print('sample_origin_data:',sample_origin_data.shape)
                     received_intermediate = batch_received_intermediate[_id].unsqueeze(0) # [1,256,768]
+                    # print('received_intermediate:',received_intermediate.shape)
                     received_attention_mask = batch_received_attention_mask[_id].unsqueeze(0) # [1,256]
+                    # print('received_attention_mask:',received_attention_mask.shape)
 
                     # initial guess
                     dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
@@ -319,6 +322,12 @@ class VanillaModelInversion_WhiteBox(Attacker):
                             cos_similarities = nn.functional.cosine_similarity\
                                             (local_model.embed_tokens.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
                             # print('local_model.embed_tokens.weight:',local_model.embed_tokens.weight.shape)
+                            # [32000, 4096] [vocab_size, embed_dim]
+                        elif self.args.model_type == 'GPT2':
+                            cos_similarities = nn.functional.cosine_similarity\
+                                            (local_model.wte.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                            # print('_dum.unsqueeze(0):',_dum.unsqueeze(0).shape)
+                            # print('local_model.wte.weight:',local_model.wte.weight.shape)
                             # [32000, 4096] [vocab_size, embed_dim]
                         # print('cos_similarities:',cos_similarities.shape)
                         _, predicted_index = cos_similarities.max(0)

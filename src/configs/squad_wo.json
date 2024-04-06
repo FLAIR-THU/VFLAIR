@@ -27,7 +27,8 @@
         "0": {
             "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 1,
+            "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -36,7 +37,8 @@
         "1": {
             "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,

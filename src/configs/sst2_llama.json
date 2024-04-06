@@ -1,8 +1,8 @@
 {
-    "epochs": 2,
-    "lr": 0.0001,
+    "epochs": 15,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 64,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -23,30 +23,43 @@
     },
     "model_list":{
         "0": {
-            "type": "benayasllama-2-7b-sst2_v0",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
         },
         "1": {
-            "type": "benayasllama-2-7b-sst2_v0",
-            "pretrained": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/benayasllama-2-7b-sst2_v0"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.001,
+            "lambda": 0.05,
+            "seq_length": 70,
+            "embed_dim": 4096
+        }
     },
     "attack_list": {
         "0":{
@@ -55,7 +68,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 100
             }
         }
     }

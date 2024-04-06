@@ -5,85 +5,25 @@
 
 echo 'MID Yelp'
 
-########## MIDModel_Linear ##########
-# 0.5
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
+for seed in {60,61,62,63,64,65}
+    do
+    ########## MIDModel_Linear ##########
+    # 0.5
+    # python main_pipeline_llm.py --seed $seed --configs yelp_mid1
 
-# 0.1
-sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid1.json
-# python main_pipeline_llm.py --seed 60 --configs yelp_mid1
+    # 0.1
+    sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid1.json
+    python main_pipeline_llm.py --seed $seed --configs yelp_mid1
 
-# 0.01
-sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
+    # 0.01
+    sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid1.json
+    python main_pipeline_llm.py --seed $seed --configs yelp_mid1
 
-# 0.001
-sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
+    # 0.001
+    sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid1.json
+    python main_pipeline_llm.py --seed $seed --configs yelp_mid1
 
-sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid1.json
+    sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid1.json
+    # sed -i 's/"mid_model_name":"MIDModel_Linear"/"mid_model_name":"MIDModel_SqueezeLinear"/g' ./configs/yelp_mid1.json
 
-sed -i 's/"mid_model_name":"MIDModel_Linear"/"mid_model_name":"MIDModel_SqueezeLinear"/g' ./configs/yelp_mid1.json
-
-########## MIDModel_SqueezeLinear ##########
-# 0.5
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.1
-sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.01
-sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.001
-sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid1.json
-
-sed -i 's/"mid_model_name":"MIDModel_SqueezeLinear"/"mid_model_name":"MIDModelCNN_ConvTranspose2d"/g' ./configs/yelp_mid1.json
-
-########## MIDModelCNN_ConvTranspose2d ##########
-# 0.5
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.1
-sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.01
-sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.001
-sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid1.json
-
-sed -i 's/"mid_model_name":"MIDModelCNN_ConvTranspose2d"/"mid_model_name":"MIDModelCNN_MaxUnpool2d"/g' ./configs/yelp_mid1.json
-
-
-########## MIDModelCNN_MaxUnpool2d ##########
-# 0.5
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.1
-sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.01
-sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-# 0.001
-sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid1.json
-python main_pipeline_llm.py --seed 60 --configs yelp_mid1
-
-sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid1.json
-
-sed -i 's/"mid_model_name":"MIDModelCNN_MaxUnpool2d"/"mid_model_name":"MIDModel_Linear"/g' ./configs/yelp_mid1.json
-
-
+done

@@ -788,8 +788,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-        # self.encoder_hidden_states=None
-        # self.encoder_attention_mask=None
+        self.embedding_output = None
 
     def forward(
         self,
@@ -805,9 +804,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        
-        embedding_output = None
+        return_dict: Optional[bool] = None
     ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
         #######################
         if input_ids is not None:
@@ -914,7 +911,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.wte(input_ids)
-
+        self.embedding_output = inputs_embeds
         # if position_ids.max() > self.config.max_position_embeddings-1:
         #     print(self.config.max_position_embeddings)
         #     print("input_ids.size():",input_ids.size())
@@ -1045,9 +1042,11 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
 
         self.embed_dim = full_gpt.config.hidden_size
 
-        self.num_encoders = num_encoders # local model hidden layers
+        self.num_encoders = num_encoders # global model hidden layers
         self.num_encoders_all = full_gpt.config.num_hidden_layers # all hidden layers num
-        self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) for i in range(self.num_encoders,self.num_encoders_all)])
+        self.local_num_encoders = self.num_encoders_all - num_encoders # local model hidden layers
+        self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) \
+            for i in range(self.local_num_encoders,self.num_encoders_all)])
         # self.h = nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders,self.num_encoders_all)])
         
         self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
@@ -1211,7 +1210,7 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
                     hidden_states,
                     None,
                     attention_mask,
-                    head_mask[i+self.num_encoders],
+                    head_mask[i+self.local_num_encoders],
                     encoder_hidden_states,
                     encoder_attention_mask,
                 )
@@ -1224,7 +1223,7 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
                     hidden_states,
                     layer_past=layer_past,
                     attention_mask=attention_mask,
-                    head_mask=head_mask[i+self.num_encoders],
+                    head_mask=head_mask[i+self.local_num_encoders],
                     encoder_hidden_states=encoder_hidden_states,
                     encoder_attention_mask=encoder_attention_mask,
                     use_cache=use_cache,

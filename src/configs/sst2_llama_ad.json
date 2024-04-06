@@ -1,8 +1,8 @@
 {
-    "epochs": 10,
-    "lr": 0.001,
+    "epochs": 1,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 16,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -23,29 +23,32 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
-            "pretrained": 1,
-            "encoder_trainable": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
-            "model_type": "Bert",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
-            "pretrained": 1,
+            "type": "llama-2-7b",
+            "pretrained": 0,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
-            "model_type": "Bert",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
-        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -59,7 +62,7 @@
             "imagined_adversary_lr": 0.001,
             "lambda": 0.05,
             "seq_length": 70,
-            "embed_dim": 768
+            "embed_dim": 4096
         }
     },
     "attack_list": {

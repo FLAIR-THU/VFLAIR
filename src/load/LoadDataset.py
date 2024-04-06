@@ -1560,16 +1560,18 @@ def load_dataset_per_party_llm(args, index):
 
 
     elif args.dataset == 'SST-2':
-        text_path = DATA_PATH + 'SST-2/train.tsv'
-        df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
+        if train_set_file is None or test_set_file is None:
+            train_set_file = DATA_PATH + 'SST-2/train.tsv'
+            test_set_file = DATA_PATH + 'SST-2/dev.tsv'
+        df = pd.read_csv(train_set_file, delimiter='\t')  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
         X_train = np.array(sentences)
         y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
-        text_path = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']
+        df = pd.read_csv(test_set_file, delimiter='\t')  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
@@ -1887,18 +1889,17 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'Lambada':
+        # def create_chat_prompt(prompt, text):
+        #     return [
+        #         {"role": "system", "content": prompt},
+        #         {"role": "user", "content": text}
+        #     ]
+        prompt = "Please complete the passages with the correct next word.\n"
         def create_chat_prompt(text):
             return [
                 {"role": "system", "content": "Please complete the passages with the correct next word."}, 
                 {"role": "user", "content": text}
             ]
-
-        # lambada-dataset/lambada_test_plain_text.txt 
-        df = pd.read_csv('Lambada/lambada_test_plain_text.txt ', sep="\t", names=["text"])
-        df["text"] = df["text"].str.split(" ")
-
-        df["input"], df["ideal"] = df["text"].str[:-1].str.join(" ").apply(create_chat_prompt), df["text"].str[-1]
-        df = df[["input", "ideal"]]
 
         dataset_split = args.model_list[str(index)]
         if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
@@ -1906,6 +1907,7 @@ def load_dataset_per_party_llm(args, index):
         else:
             data_file = DATA_PATH + 'Lambada'
         print(data_file)
+
         dataset = load_dataset(data_file)
 
         doc_stride = args.doc_stride
@@ -1914,19 +1916,13 @@ def load_dataset_per_party_llm(args, index):
         ## train
         train_all_texts = dataset['train'][:]['text']
         train_domain = dataset['train'][:]['domain']
-
         texts = []
         target_word = []
-
         for _all_text in train_all_texts[:1]:
-            # _all_text = _all_text.maketrans('', '', string.punctuation) #_all_text.rstrip(string.punctuation)
-            _all_text = _all_text.strip().split()
-            _all_text = [c for c in _all_text if c not in string.punctuation]
-
-            prompt = "Please answer with the word which is most likely to follow:" + "\n\n" 
+            all_doc_tokens = _all_text.strip().split()
+            all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
             start_offset = 0
-            all_doc_tokens = _all_text
             while start_offset < len(all_doc_tokens):
                 length = len(all_doc_tokens) - start_offset - 1 # max length left
                 if length > max_seq_length:
@@ -1934,31 +1930,22 @@ def load_dataset_per_party_llm(args, index):
                 # doc_spans.append(_DocSpan(start=start_offset, length=length))
                 text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7 
                 # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
-                
-                def create_chat_prompt(prompt, text):
-                    return [
-                        {"role": "system", "content": prompt}, 
-                        {"role": "user", "content": text}
-                    ]
 
                 last_word = all_doc_tokens[ start_offset + length ] 
 
                 text = " ".join(text)
-                message = create_chat_prompt(prompt, text)
+                message = create_chat_prompt(text)
                 text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
 
                 texts.append(text) # messages.append( )
                 target_word.append(last_word)
-
-                # print('text:',text)
-                # print('last_word:',last_word)
-                # print('-'*25)
                 
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
                 start_offset + length + 1 >= len(all_doc_tokens):
                     break
                     
                 start_offset += min(length, doc_stride)
+
 
         X_train = np.array(texts)
         y_train = target_word
@@ -1966,55 +1953,67 @@ def load_dataset_per_party_llm(args, index):
         ## test
         test_all_texts = dataset['test'][:]['text']
         test_domain = dataset['test'][:]['domain']
-
         texts = []
         target_word = []
-        for _all_text in test_all_texts[:1]:
+        for _all_text in test_all_texts[:5]:
             # _all_text = _all_text.maketrans('', '', string.punctuation) #_all_text.rstrip(string.punctuation)
-            _all_text = _all_text.strip().split()
-            _all_text = [c for c in _all_text if c not in string.punctuation]
-
-            prompt = "Please answer with the word which is most likely to follow:" + "\n\n" 
+            all_doc_tokens = _all_text.strip().split()
+            # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
             start_offset = 0
             all_doc_tokens = _all_text
-            while start_offset < len(all_doc_tokens):
-                length = len(all_doc_tokens) - start_offset - 1 # max length left
-                if length > max_seq_length:
-                    length = max_seq_length
-                # doc_spans.append(_DocSpan(start=start_offset, length=length))
-                text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7 
-                # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
-                
-                def create_chat_prompt(prompt, text):
-                    return [
-                        {"role": "system", "content": prompt}, 
-                        {"role": "user", "content": text}
-                    ]
+            # while start_offset < len(all_doc_tokens):
+            #     length = len(all_doc_tokens) - start_offset - 1 # max length left
+            #     if length > max_seq_length:
+            #         length = max_seq_length
+            #     # doc_spans.append(_DocSpan(start=start_offset, length=length))
+            #     text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7
+            #     # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
 
-                last_word = all_doc_tokens[ start_offset + length ] 
+            #     last_word = all_doc_tokens[ start_offset + length ]
 
-                text = " ".join(text)
-                message = create_chat_prompt(prompt, text)
-                text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
+            #     text = " ".join(text)
+            #     message = create_chat_prompt(text)
+            #     text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
+            #     texts.append(text) # messages.append( )
+            #     target_word.append(last_word)
+            #     if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
+            #     start_offset + length + 1 >= len(all_doc_tokens):
+            #         break
 
-                texts.append(text) # messages.append( )
-                target_word.append(last_word)
+            #     start_offset += min(length, doc_stride)
 
-                # if len(target_word) <= 5 :
-                #     print('text:',text)
-                #     print('last_word:',last_word)
-                #     print('-'*25)
-                #     break
-                
-                if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
-                start_offset + length + 1 >= len(all_doc_tokens):
-                    break
-                    
-                start_offset += min(length, doc_stride)
+            text = all_doc_tokens[ : -1] # 0 1...7
+            last_word = all_doc_tokens[ -1 ]
+            text = " ".join(text)
+            text = _all_text
+
+            message = create_chat_prompt(text)
+            text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
+            texts.append(text) # messages.append( )
+            target_word.append(last_word)
+
+
+            # ids = args.tokenizer(all_doc_tokens, \
+            #         padding=args.padding,truncation=args.truncation ,\
+            #         max_length=args.max_length,return_tensors='pt')
+            # input_ids =  torch.tensor(ids['input_ids']).squeeze()
+            # masks = torch.tensor(ids['attention_mask']).squeeze()
+            # print('input_ids:',input_ids.shape,' masks:',masks.shape)
+
+            # print('context:',input_ids[:-1])
+            # print('label:',input_ids[-1])
+            # print(args.tokenizer.decode(input_ids[-1]))
+            # print('mask:',masks[:-1])
+
+            # print('origin text:',text)
+            # print('origin label:',last_word)
+            # print('-'*25)
+            # assert 1>2
 
         X_test = np.array(texts)
         y_test = target_word 
+
 
         print('X_train:',len(X_train),'  X_test:',len(X_test))
         train_dst = (X_train, y_train)
@@ -2031,7 +2030,7 @@ def load_dataset_per_party_llm(args, index):
         max_query_length = args.max_query_length
 
         ## train
-        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)[:128]
+        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
@@ -2047,7 +2046,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = labels
 
         ## test
-        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)[:128]
+        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)
         # test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
         #                     max_seq_length=args.max_length, doc_stride=args.doc_stride, \
         #                     max_query_length=args.max_query_length, is_training=False)
