@@ -566,6 +566,8 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
         self.post_init()
+
+        self.embedding_output = None
     
     # # Copied from transformers.models.bart.modeling_bart.BartDecoder._prepare_decoder_attention_mask
     # def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
@@ -600,7 +602,8 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None
+        return_dict: Optional[bool] = None,
+        embedding_output = None
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         ###########################################
         if input_ids is not None:
@@ -653,6 +656,7 @@ class LocalLlamaModel(LlamaPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+        self.embedding_output = inputs_embeds
 
         # print('before attention_mask:',attention_mask.shape)
         if len(attention_mask.shape) <= 2: # no need to prepare attention mask

@@ -307,6 +307,7 @@ class PassiveParty_LLM(Party_LLM):
 
             intermediate = self.local_pred # pred after adversarial model: bs, seq, embed_dim768
             adversary_recovered_embedding = self.imagined_adversary(intermediate)
+
             real_embedding =  self.local_model.embedding_output
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / intermediate.shape[0]
             

@@ -788,8 +788,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-        # self.encoder_hidden_states=None
-        # self.encoder_attention_mask=None
+        self.embedding_output = None
 
     def forward(
         self,
@@ -805,9 +804,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        
-        embedding_output = None
+        return_dict: Optional[bool] = None
     ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
         #######################
         if input_ids is not None:
@@ -914,7 +911,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.wte(input_ids)
-
+        self.embedding_output = inputs_embeds
         # if position_ids.max() > self.config.max_position_embeddings-1:
         #     print(self.config.max_position_embeddings)
         #     print("input_ids.size():",input_ids.size())

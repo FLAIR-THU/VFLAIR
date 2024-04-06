@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 3,
     "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -26,9 +26,8 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
-            "encoder_trainable": 1,
-            "embedding_trainable": 1,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -37,9 +36,8 @@
         "1": {
             "type": "gpt2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "encoder_trainable": 0,
-            "embedding_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -49,7 +47,7 @@
             "task_type": "CausalLM",
             "doc_stride" : 128,
             "max_seq_length": 128,
-            "metric_type": "n_best",
+            "metric_type": "best_pred",
             "n_best_size": 8
         },
         "local_encoders_num": 1,

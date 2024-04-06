@@ -48,6 +48,19 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.001,
+            "lambda": 0.05,
+            "seq_length": 70,
+            "embed_dim": 4096
+        }
+    },
     "attack_list": {
         "0":{
             "name": "VanillaModelInversion_WhiteBox",

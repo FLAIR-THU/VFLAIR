@@ -347,21 +347,30 @@ class MainTaskVFL_LLM(object):
         elif self.args.task_type == "CausalLM":
             # get logits of last hidden state
             # print('test_logit:',test_logit.shape) # [batchsize, maxlength512, vocab_size32000]
+            print('test_logit:',test_logit.shape) # bs, seq_len, vocab_dim
             next_token_logits = test_logit[:, -1]  # [bs, 32000]
+            print('next_token_logits:',next_token_logits.shape)
 
             print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
             if self.args.dataset == "Lambada":
-                target_word = [normalize_answer(_p) for _p in gt_one_hot_label]  # list of normalized tokens
-                target_word_list.extend(target_word)
-                print('target_word_list:',target_word_list)
+                # target_word = [normalize_answer(_p) for _p in gt_one_hot_label]  # list of normalized tokens
+                # target_word_list.extend(target_word)
+                # print('target_word_list:',target_word_list)
+                
+                target_word_label = [int(_id.item()) for _id in list(gt_one_hot_label)]
+                target_word_list = [self.args.tokenizer.decode(_p) for _p in target_word_label]
+                # print('target_word_label:',target_word_label)
+                # print('target_word_list:',target_word_list)
 
                 enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
+
                 if self.args.metric_type == "best_pred":
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
+                    predict_label_list = predict_label  # predict_word: bs * best_pred
+
+                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
                     predict_word = [normalize_answer(_p) for _p in predict_word]
-                    predict_word_list.extend(predict_word)  # predict_word: bs * best_pred
-                    print('predict_word_list:',predict_word_list) 
+                    predict_word_list = predict_word  # predict_word: bs * best_pred
                 elif self.args.metric_type == "n_best":
                     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
                     predict_label = index_list[:, :self.args.n_best_size]
@@ -369,9 +378,12 @@ class MainTaskVFL_LLM(object):
                         predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
                         predict_word = [normalize_answer(_p) for _p in predict_word]
                         predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                    print('predict_word_list:',predict_word_list) 
-                print('-'*25)
+                
+                # print('predict_label:',predict_label) 
+                # print('predict_word_list:',predict_word_list) 
+                # print('-'*25)
                 # assert 1>2
+
                 return target_word_list, predict_word_list, None
 
             else:  # MMLU
@@ -643,7 +655,6 @@ class MainTaskVFL_LLM(object):
                     if sample_cnt is not None:
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "CausalLM":
-                    print('==generate_result==')
                     batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
                     target_word_list.extend(batch_target_word)
                     predict_word_list.extend(batch_predict_word)
@@ -678,13 +689,13 @@ class MainTaskVFL_LLM(object):
             self.test_spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
             postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
             postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-            exp_result = 'test_mse:{:.4f} test_pearson_corr:{:.4f} test_spearmanr_corr:{:.4f}' \
+            exp_result = '|test_mse={:.4f}|test_pearson_corr={:.4f}|test_spearmanr_corr={:.4f}' \
                 .format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr)
             print(exp_result)
             return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
         else:
-            print('predict_labels:',predict_labels[:10])
-            print('actual_labels:',actual_labels[:10])
+            # print('predict_labels:',predict_labels[:10])
+            # print('actual_labels:',actual_labels[:10])
 
             suc_cnt = torch.sum(torch.tensor(predict_labels) == \
                                 torch.tensor(actual_labels)).item()
@@ -692,7 +703,7 @@ class MainTaskVFL_LLM(object):
             self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-            exp_result = 'test_acc:{:.2f} test_mcc:{:.2f}'.format(self.test_acc, self.test_mcc)
+            exp_result = 'test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
             return exp_result, self.test_acc
 
@@ -722,7 +733,7 @@ class MainTaskVFL_LLM(object):
 
         postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
 
-        exp_result = 'test_acc:{:.2f}'.format(self.test_acc)
+        exp_result = '|test_acc={:.2f}'.format(self.test_acc)
         print(exp_result)
 
         return exp_result, self.test_acc
@@ -770,7 +781,7 @@ class MainTaskVFL_LLM(object):
 
         exact_score = np.mean(exact_score_list)
         f1 = np.mean(f1_list)
-        exp_result = 'exact_score:{:.4f} f1:{:.4f}'.format(exact_score, f1)
+        exp_result = '|exact_score={:.4f}|f1={:.4f}'.format(exact_score, f1)
 
         self.test_acc = exact_score
         print(exp_result)
@@ -1130,6 +1141,7 @@ class MainTaskVFL_LLM(object):
 
         test_acc = 0.0
         # Early Stop
+        early_stop_threshold = self.args.early_stop_threshold
         last_loss = 1000000
         early_stop_count = 0
         LR_passive_list = []
@@ -1276,17 +1288,27 @@ class MainTaskVFL_LLM(object):
                     #             break
                     #         last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
 
-                    self.final_epoch = i_epoch
+                    self.final_epoch = i_epoch + 1
 
             data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
 
+            # Early Stop
+            if self.loss >= last_loss:
+                early_stop_count = early_stop_count + 1
+            if early_stop_count >= early_stop_threshold:
+                self.final_epoch = i_epoch + 1
+                break
+            last_loss = min(last_loss,self.loss)
+
         self.training_time = total_time
         if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
-            exp_result = f'training_time:{total_time} train_loss:{self.loss} \
-            train_mse:{self.train_acc[0]} train_pearson_corr:{self.train_acc[1]} train_spearmanr_corr:{self.train_acc[2]} \
-            test_mse:{self.test_acc[0]} train_pearson_corr:{self.test_acc[1]} test_spearmanr_corr:{self.test_acc[2]} final_epoch:{self.final_epoch}'
+            exp_result = f'training_time={total_time}|train_loss:{self.loss}|\
+            train_mse={self.train_acc[0]}|train_pearson_corr={self.train_acc[1]}|train_spearmanr_corr={self.train_acc[2]}|\
+            test_mse={self.test_acc[0]}|train_pearson_corr={self.test_acc[1]}|test_spearmanr_corr={self.test_acc[2]}|\
+            final_epoch={self.final_epoch}'
         else:
-            exp_result = f'training_time:{total_time} train_loss:{self.loss} train_acc:{self.train_acc} test_acc:{self.test_acc} final_epoch:{self.final_epoch}'
+            exp_result = f'|training_time={total_time}|train_loss={self.loss}|train_acc={self.train_acc}|\
+            test_acc={self.test_acc}|final_epoch={self.final_epoch}'
 
         self.final_state = self.save_state()
         self.final_state.update(self.save_state(False))
@@ -1304,14 +1326,6 @@ class MainTaskVFL_LLM(object):
         result_file_name = result_path + filename + f'.csv'
         print('Save csv to:', result_file_name)
         data_record.to_csv(result_file_name)
-
-        if self.args.apply_adversarial:
-            print('final')
-            mark = 0
-            for name, param in self.parties[0].adversarial_model.named_parameters():
-                if mark == 0:
-                    print(name, param)
-                    mark = mark + 1
 
         return exp_result, self.test_acc, total_time  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
 
