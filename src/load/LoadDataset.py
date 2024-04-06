@@ -1564,14 +1564,14 @@ def load_dataset_per_party_llm(args, index):
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'SST-2/train.tsv'
             test_set_file = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(train_set_file, delimiter='\t')  # names=[  'sentence','label']
+        df = pd.read_csv(train_set_file, delimiter='\t', names=['label','sentence'])  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
         X_train = np.array(sentences)
         y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
-        df = pd.read_csv(test_set_file, delimiter='\t')  # names=[  'sentence','label']
+        df = pd.read_csv(test_set_file, delimiter='\t', names=['label','sentence'])  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
@@ -2030,7 +2030,7 @@ def load_dataset_per_party_llm(args, index):
         max_query_length = args.max_query_length
 
         ## train
-        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)
+        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)[:128]
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
                             max_seq_length=args.max_length, doc_stride=args.doc_stride, \
                             max_query_length=args.max_query_length, is_training=True)
@@ -2046,7 +2046,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = labels
 
         ## test
-        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)
+        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)[:128]
         # test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
         #                     max_seq_length=args.max_length, doc_stride=args.doc_stride, \
         #                     max_query_length=args.max_query_length, is_training=False)
