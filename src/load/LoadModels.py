@@ -748,7 +748,7 @@ def load_basic_models_llm_gpt2(args, index):
 def load_basic_models_llm_llama(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
-    model_path = args.model_path
+    model_path = args.model_list[str(index)]['path']
 
     if args.pretrained == 0:
         args.tokenizer = LlamaTokenizer.from_pretrained(model_path, do_lower_case=True)
