@@ -40,7 +40,11 @@ def load_basic_configs(config_file_name, args):
     # Communication Protocol
     communication_protocol_dict = config_dict['communication'] if ('communication' in config_dict) else None
     
-    args.communication_protocol = communication_protocol_dict['communication_protocol'] if ('communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
+    if communication_protocol_dict is not None:
+        args.communication_protocol = communication_protocol_dict['communication_protocol'] if ('communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
+    else:
+        args.communication_protocol = 'FedBCD_p'
+
     assert (args.communication_protocol in communication_protocol_list), "communication_protocol not available"
     
     args.Q = communication_protocol_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in communication_protocol_dict) else 1

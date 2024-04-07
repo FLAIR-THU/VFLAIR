@@ -8,7 +8,7 @@ import torch.nn.functional as F
     
 class MLP2_ReLu(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP2, self).__init__()
+        super(MLP2_ReLu, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
             nn.Linear(input_dim, 32, bias=True),
@@ -25,28 +25,6 @@ class MLP2_ReLu(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         return x
-
-
-class MLP2_Softmax(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super(MLP2_Softmax, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(input_dim, 32, bias=True),
-            nn.ReLU(inplace=True)
-        )
-
-        self.layer2 = nn.Sequential(
-            nn.Linear(32, output_dim, bias=True),
-            nn.Softmax(dim=1)
-        )
-
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        return x
-
 
 class MLP2(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -203,7 +181,6 @@ class MLP3_Nursery(nn.Module):
         out = self.layer(x)
         return out
 
-
 # for adult income dataset
 class MLP4(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -240,7 +217,6 @@ class MLP4_Credit(nn.Module):
     def forward(self, x):
         out = self.layer(x)
         return out
-
 
 # For news20 dataset
 class MLP5(nn.Module):

@@ -1,8 +1,14 @@
-import sys, os
+import os
+import sys
 from os.path import join
+
 sys.path.append(os.pardir)
 
 import random
+import re
+from collections import Counter
+from copy import copy, deepcopy
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -16,8 +22,17 @@ import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import torch
-from torchvision import datasets
 import torchvision.transforms as transforms
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import (accuracy_score, auc, average_precision_score,
+                             f1_score, log_loss, precision_score, recall_score,
+                             roc_auc_score, roc_curve)
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (LabelEncoder, MinMaxScaler, OneHotEncoder,
+                                   StandardScaler)
+from torchvision import datasets
+
 from utils.noisy_sample_functions import noisy_sample
 
 tp = transforms.ToTensor()
@@ -29,7 +44,9 @@ transform_fn = transforms.Compose([
     transforms.ToTensor()
 ])
 
-from utils.basic_functions import get_class_i, get_labeled_data, fetch_data_and_label, generate_poison_data,label_to_one_hot
+from utils.basic_functions import (fetch_data_and_label, generate_poison_data,
+                                   get_class_i, get_labeled_data,
+                                   label_to_one_hot)
 from utils.cora_utils import *
 from utils.graph_functions import load_data1, split_graph
 
@@ -174,8 +191,9 @@ def dataset_partition(args, index, dst, half_dim):
             return ([args.A_B,args.X_B],dst[1]), args
         else:
             assert index <= 1, 'invalid party index'
+    
     else:
-        assert args.dataset == 'mnist', "dataset not supported"
+        assert args.dataset == 'mnist', f"dataset not supported {args.dataset}"
         return None
 
 def load_dataset_per_party(args, index):
@@ -596,8 +614,11 @@ def load_dataset_per_party(args, index):
                     "PAY_AMT6",
                 ]
             ].values
-            y = df["default payment next month"].values
+            y = df["default.payment.next.month"].values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+            scaler = StandardScaler() # MinMaxScaler(feature_range=(0, 1))
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
 
         elif args.dataset == "nursery":
             df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
@@ -632,6 +653,61 @@ def load_dataset_per_party(args, index):
             X = pd.concat([X_a, X_p], axis=1).values
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, shuffle=False)
         
+        elif args.dataset == "nursery":
+            df = pd.read_csv(DATA_PATH+"tabledata/nursery.data", header=None)
+            print("nursery dataset loaded")
+            df[8] = LabelEncoder().fit_transform(df[8].values)
+            X_d = df.drop(8, axis=1)
+            X_a = pd.get_dummies(
+                X_d[X_d.columns[: int(len(X_d.columns) / 2)]], drop_first=True, dtype=int
+            )
+            print('X_a',X_a.shape)
+            X_p = pd.get_dummies(
+                X_d[X_d.columns[int(len(X_d.columns) / 2) :]], drop_first=True, dtype=int
+            )
+            print('X_p',X_p.shape)
+            X = pd.concat([X_a, X_p], axis=1).values
+            print('X',X.shape)
+            y = df[8].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+
+        elif args.dataset == "credit":
+            df = pd.read_csv(DATA_PATH+"tabledata/UCI_Credit_Card.csv")
+            print("credit dataset loaded")
+
+            X = df[
+                [
+                    "LIMIT_BAL",
+                    "SEX",
+                    "EDUCATION",
+                    "MARRIAGE",
+                    "AGE",
+                    "PAY_0",
+                    "PAY_2",
+                    "PAY_3",
+                    "PAY_4",
+                    "PAY_5",
+                    "PAY_6",
+                    "BILL_AMT1",
+                    "BILL_AMT2",
+                    "BILL_AMT3",
+                    "BILL_AMT4",
+                    "BILL_AMT5",
+                    "BILL_AMT6",
+                    "PAY_AMT1",
+                    "PAY_AMT2",
+                    "PAY_AMT3",
+                    "PAY_AMT4",
+                    "PAY_AMT5",
+                    "PAY_AMT6",
+                ]
+            ].values
+            y = df["default.payment.next.month"].values
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed, stratify=y)
+            scaler = StandardScaler() # MinMaxScaler(feature_range=(0, 1))
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
+
         if args.need_auxiliary == 1:
             X_train, X_aux, y_train, y_aux = train_test_split(X, y, test_size=0.1, random_state=args.current_seed)
             X_aux = torch.tensor(X_aux)

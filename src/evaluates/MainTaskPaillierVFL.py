@@ -30,15 +30,10 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 tf.compat.v1.enable_eager_execution()
 
-STOPPING_ACC = {
-    "mnist": 0.977,
-    "cifar10": 0.80,
-    "cifar100": 0.40,
-}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
-
+STOPPING_ACC = {'mnist': 0.955, 'cifar10': 0.80, 'cifar100': 0.40,'diabetes':0.69,'nuswide': 0.88, 'breast_cancer_diagnose':0.88,'adult_income':0.84,'cora':0.72,'avazu':0.83,'criteo':0.74,'nursery':0.99,'credit':0.82}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 class MainTaskPaillierVFL(object):
-    def __init__(self, args, debug=False):
+    def __init__(self, args, pk, sk, debug=False):
         self.args = args
         self.k = args.k
         self.device = args.device
@@ -77,6 +72,7 @@ class MainTaskPaillierVFL(object):
         self.loss = None
         self.train_acc = None
         self.flag = 1
+        self.stopping_iter = 0
 
         # Early Stop
         self.early_stop_threshold = args.early_stop_threshold
@@ -88,6 +84,8 @@ class MainTaskPaillierVFL(object):
         self.final_state = None
         # self.final_epoch_state = None # <-- this is save in the above parameters
 
+        self.pk = pk
+        self.sk = sk
         self.debug = debug
 
     def pred_transmit(self):  # Active party gets pred from passive parties
@@ -95,26 +93,30 @@ class MainTaskPaillierVFL(object):
             pred, pred_detach = self.parties[ik].give_pred()
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
                 if self.debug:
-                    pred_clone = pred_detach.clone() #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                    pred_clone = pred_detach.clone()
                 else:
                     pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
                 self.parties[self.k - 1].receive_pred(pred_clone, ik)
             else:
-                pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
-                self.parties[ik].update_local_pred(pred_detach)
+                pred_clone = pred_detach #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                self.parties[ik].update_local_pred(pred_clone)
 
     def gradient_transmit(self):  # Active party sends gradient to passive parties
-        gradient = self.parties[self.k - 1].give_gradient()  # gradient_clone
+        gradient = self.parties[self.k - 1].give_gradient(self.debug)  # gradient_clone
 
         # active party update local gradient
         self.parties[self.k - 1].update_local_gradient(gradient[self.k - 1])
         # active party transfer gradient to passive parties
         for ik in range(self.k - 1):
-            if self.debug:
-                self.parties[ik].receive_gradient(gradient[ik].to(self.device))
-            else:
-                self.parties[ik].receive_gradient(gradient[ik].decrypt(self.parties[ik].sk).to(self.device))
-        return
+            self.parties[ik].receive_gradient(gradient[ik])
+
+    def gradient_decrypt(self):
+        if not self.debug:
+            for ik in range(self.k):
+                dg = []
+                for grad in self.parties[ik].local_gradient:
+                    dg.append(grad.decrypt(self.sk))
+                self.parties[ik].local_gradient = dg
 
     def label_to_one_hot(self, target, num_classes=10):
         # print('label_to_one_hot:', target, type(target))
@@ -157,13 +159,14 @@ class MainTaskPaillierVFL(object):
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ============
         if (
-            self.args.BCD_type == "p" or self.Q == 1
+            self.Q == 1
         ):  # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0:
                     # exchange info between parties
                     self.pred_transmit()
                     self.gradient_transmit()
+                    self.gradient_decrypt()
                     # update parameters for all parties
                     for ik in range(self.k):
                         self.parties[ik].local_backward()
@@ -172,9 +175,13 @@ class MainTaskPaillierVFL(object):
                     for ik in range(self.k - 1):
                         _pred, _pred_clone = self.parties[ik].give_pred()
                         self.parties[ik].local_backward()
+                    _pred, _pred_clone = self.parties[self.k-1].give_pred()
+                    _gradient = self.parties[self.k-1].give_gradient()
+                    self.parties[self.k-1].local_backward()
         else:  # Sequential FedBCD
             # active party transmit grad to passive parties
             self.gradient_transmit()
+            self.gradient_decrypt()
 
             # passive party do Q iterations
             for _q in range(self.Q):
@@ -227,6 +234,11 @@ class MainTaskPaillierVFL(object):
         early_stop_count = 0
         LR_passive_list = []
         LR_active_list = []
+
+        communication = 0
+        total_time = 0.0
+        flag = 0
+
         for i_epoch in range(self.epochs):
             postfix = {"train_loss": 0.0, "train_acc": 0.0, "test_acc": 0.0}
             i = -1
@@ -259,11 +271,17 @@ class MainTaskPaillierVFL(object):
                 elif i_epoch == self.epochs // 2 and i == 0:
                     self.middle_epoch_state = self.save_state(True)
 
+                enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(
                     self.parties_data, self.gt_one_hot_label
                 )
-                #  self.gt_one_hot_label
+                exit_time = time.time()
+                total_time += (exit_time-enter_time)
 
+                communication = communication + 1
+                if communication % 10 == 0:
+                    print(f"total time for {communication} communication is {total_time}")
+                
                 if i == 0 and i_epoch == 0:
                     self.first_epoch_state.update(self.save_state(False))
                 elif i_epoch == self.epochs // 2 and i == 0:
@@ -342,8 +360,7 @@ class MainTaskPaillierVFL(object):
                         test_logit, test_loss = self.parties[self.k - 1].aggregate(
                             pred_list, gt_val_one_hot_label, test="True"
                         )
-
-                        enc_predict_prob = test_logit
+                        enc_predict_prob = F.softmax(test_logit, dim=-1)
                         if self.args.apply_cae == True:
                             dec_predict_prob = self.args.encoder.decoder(
                                 enc_predict_prob
@@ -367,6 +384,12 @@ class MainTaskPaillierVFL(object):
                     )
 
                     self.final_epoch = i_epoch
+
+                    if self.test_acc > STOPPING_ACC[str(self.args.dataset)] and flag == 0:
+                        self.stopping_iter = communication
+                        flag = 1
+
+
         self.final_state = self.save_state(True)
         self.final_state.update(self.save_state(False))
         self.final_state.update(self.save_party_data())
@@ -379,7 +402,7 @@ class MainTaskPaillierVFL(object):
         # plt.legend()
         # plt.savefig('./exp_result/LR_Scope.png')
 
-        return self.test_acc
+        return self.test_acc, self.stopping_iter
 
     def save_state(self, BEFORE_MODEL_UPDATE=True):
         if BEFORE_MODEL_UPDATE:
