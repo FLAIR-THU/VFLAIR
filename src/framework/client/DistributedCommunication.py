@@ -17,7 +17,15 @@ class DistributedCommunication(ICommunication):
         task.party = "active"
         task.job_id = self._job_id
 
-        new_list = [item.tolist() for item in pred_list[0]]
+        new_list = []
+
+        for item in pred_list[0]:
+            if item is not None:
+                item = item.tolist()
+                new_list.append(item)
+            else:
+                new_list.append(None)
+
         task.params = new_list
 
         response = self._client.open_and_send(task)

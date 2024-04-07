@@ -228,9 +228,18 @@ class ActiveParty_LLM(Party_LLM):
     def _do_aggregate_remote(self, pred_list):
         t1 = torch.Tensor(pred_list[0])
         t2 = torch.Tensor(pred_list[1])
+        t3 = None
+        t4 = None
+
         t1 = t1.to(self.args.device)
         t2 = t2.to(self.args.device)
-        result = self.aggregate([[t1, t2]])
+        if pred_list[2] is not None:
+            t3 = torch.Tensor(pred_list[2])
+            t3 = t3.to(self.args.device)
+        if pred_list[3] is not None:
+            t4 = torch.Tensor(pred_list[3])
+            t4 = t4.to(self.args.device, dtype=torch.int)
+        result = self.aggregate([[t1, t2, t3, t4]])
 
         if self.args.model_type in ['Bert','Roberta']:
             if self.args.task_type == 'SequenceClassification':
@@ -265,6 +274,24 @@ class ActiveParty_LLM(Party_LLM):
                 pred = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1], return_dict=True)
             else:
                 assert 1>2 , 'Task type no supported'
+        elif self.args.model_type == 'Llama':  # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
+            if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
+                return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+                return {
+                    "requires_grad": result.requires_grad,
+                    "grad_fn": result.grad_fn.name(),
+                    "logits": result.tolist()
+                }
+            elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
+                pred = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],
+                                         return_dict=True)
+            else:
+                assert 1 > 2, 'Task type no supported'
 
     def aggregate_remote(self, pred_list):
         return self._do_aggregate_remote(pred_list)
@@ -312,7 +339,7 @@ class ActiveParty_LLM(Party_LLM):
             else:
                 assert 1>2 , 'Task type no supported'
 
-        elif self.args.model_type == 'Llama': 
+        elif self.args.model_type == 'Llama':
             if self.args.task_type == 'CausalLM':
                 self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1],\
                  past_key_values = self.passive_pred_list[0][2], \

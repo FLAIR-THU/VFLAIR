@@ -288,7 +288,6 @@ class MainTaskVFL_LLM(object):
                 logits = torch.Tensor(test_logit['logits'])
                 if test_logit['requires_grad']:
                     logits.requires_grad_()
-                    # logits.grad = test_logit['grad_fn']
                 return logits.to(self.args.device)
             elif self.args.task_type == 'QuestionAnswering':
                 start_logits = torch.Tensor(test_logit['start_logits'])
@@ -305,6 +304,19 @@ class MainTaskVFL_LLM(object):
                 )
         elif self.args.model_type == 'GPT2':
             if self.args.task_type == 'CausalLM':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                return logits.to(self.args.device)
+            else:
+                assert 1>2 , 'Task type no supported'
+        elif self.args.model_type == 'Llama':
+            if self.args.task_type == 'SequenceClassification':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                return logits.to(self.args.device)
+            elif self.args.task_type == 'CausalLM':
                 logits = torch.Tensor(test_logit['logits'])
                 if test_logit['requires_grad']:
                     logits.requires_grad_()
@@ -1445,7 +1457,7 @@ class MainTaskVFL_LLM(object):
         return {
             # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
             # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-            # "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+            "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
 
             # "aux_dst": [self.parties[ik].aux_dst for ik in range(self.k)],
             # "train_dst": [self.parties[ik].train_dst for ik in range(self.k)],
@@ -1453,7 +1465,7 @@ class MainTaskVFL_LLM(object):
 
             # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
             # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-            # "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+            "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
             
             # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
             # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
