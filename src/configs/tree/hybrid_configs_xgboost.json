@@ -7,8 +7,9 @@
     "subsample_cols": 0.8,
     "max_bin": 16,
     "use_missing_value": false,
-    "use_encryption": true,
-    "key_length": 512,
+    "use_encryption": false,
+    "is_hybrid": true,
+    "key_length": 128,
     "advanced_params":{"learning_rate":0.1, "lam":1.0, "gamma":0.0, "eps":1.0}
 }
 

@@ -74,7 +74,8 @@ class XGBoostNode(Node):
         n_job_: int = 1,
         gradient_encrypted: list = None,
         hessian_encrypted: list = None,
-        y_onehot_encoded_encrypted: list = None
+        y_onehot_encoded_encrypted: list = None,
+        is_hybrid=False,
     ):
         super().__init__()
         self.parties = parties_
@@ -97,6 +98,12 @@ class XGBoostNode(Node):
         self.gradient_encrypted = gradient_encrypted
         self.hessian_encrypted = hessian_encrypted
         self.y_onehot_encoded_encrypted = y_onehot_encoded_encrypted
+        self.is_hybrid = is_hybrid
+
+        if self.is_hybrid and (self.depth > 1):
+            self.use_only_active_party = True
+        else:
+            self.use_only_active_party = False
 
         self.best_entropy = None
         self.left = None
@@ -418,7 +425,8 @@ class XGBoostNode(Node):
             self.n_job,
             self.gradient_encrypted,
             self.hessian_encrypted,
-            self.y_onehot_encoded_encrypted
+            self.y_onehot_encoded_encrypted,
+            self.is_hybrid
         )
         if self.left.is_leaf_flag == 1:
             self.left.party_id = self.party_id
@@ -442,7 +450,8 @@ class XGBoostNode(Node):
             self.n_job,
             self.gradient_encrypted,
             self.hessian_encrypted,
-            self.y_onehot_encoded_encrypted
+            self.y_onehot_encoded_encrypted,
+            self.is_hybrid
         )
         if self.right.is_leaf_flag == 1:
             self.right.party_id = self.party_id

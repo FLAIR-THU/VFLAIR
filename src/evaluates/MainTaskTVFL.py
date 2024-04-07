@@ -26,6 +26,7 @@ class MainTaskTVFL(object):
         self.seed = args.seed
         self.number_of_trees = args.number_of_trees
         self.depth = args.depth
+        self.is_hybrid = args.is_hybrid
 
         self.apply_defense = args.apply_defense
         self.defense_name = args.defense_name
@@ -51,6 +52,7 @@ class MainTaskTVFL(object):
                 depth=self.depth,
                 active_party_id=self.active_party_id,
                 use_encryption=self.use_encryption,
+                is_hybrid=self.is_hybrid,
                 **self.advanced_params
             )
         elif self.model_type == "randomforest":
@@ -82,3 +84,10 @@ class MainTaskTVFL(object):
                 raise ValueError(f"defense_name should be `grafting-ldp`, `id-lmid`, or `lp-mst`")
         else:
             self.clf.fit(self.parties, self.y)
+
+        if self.model_type == "xgboost":
+            for i, p in enumerate(self.parties):
+                print(f" party-{i}: cum_num_addition={p.cum_num_addition}")
+                print(f" party-{i}: num_gss_called={p.num_gss_called}")
+                print(f" party-{i}: cum_num_communicated_ciphertexts={p.cum_num_communicated_ciphertexts}")
+            print(f" time spent for encryption: {self.clf.cum_time_encryption}")

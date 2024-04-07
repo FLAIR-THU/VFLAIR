@@ -17,7 +17,7 @@ class RandomForestParty(Party):
         seed: int = 0,
     ):
         super().__init__(
-            x, num_classes, feature_id, party_id, min_leaf, subsample_cols, False, seed
+            x, num_classes, feature_id, party_id, min_leaf, subsample_cols, False, True, seed
         )
 
     def get_threshold_candidates(self, x_col: List[float]) -> List[float]:
@@ -97,6 +97,7 @@ class XGBoostParty(Party):
         subsample_cols,
         num_precentile_bin,
         use_missing_value=False,
+        use_encrypted_label=True,
         seed=0,
     ):
         super().__init__(
@@ -107,9 +108,13 @@ class XGBoostParty(Party):
             min_leaf,
             subsample_cols,
             use_missing_value,
+            use_encrypted_label,
             seed,
         )
         self.num_precentile_bin = num_precentile_bin
+        self.cum_num_addition = 0
+        self.cum_num_communicated_ciphertexts = 0
+        self.num_gss_called = 0
 
     def get_threshold_candidates(self, x_col):
         if len(x_col) > self.num_precentile_bin:
@@ -133,6 +138,7 @@ class XGBoostParty(Party):
 
         split_candidates_grad_hess = [[] for _ in range(num_thresholds)]
         self.temp_thresholds = [[] for _ in range(num_thresholds)]
+        self.num_gss_called += 1
 
         row_count = len(idxs)
         grad_dim = len(gradient[0])
@@ -164,11 +170,13 @@ class XGBoostParty(Party):
 
                 for r in range(current_min_idx, not_missing_values_count):
                     if x_col[r] <= percentiles[p]:
-                        for c in range(self.num_classes):
-                            temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
+                        if self.use_encrypted_label:
+                            for c in range(self.num_classes):
+                                temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                         for c in range(grad_dim):
                             temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                             temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
+                            self.cum_num_addition += 2
                         temp_left_size += 1
                         cumulative_left_size += 1
                     else:
@@ -182,6 +190,7 @@ class XGBoostParty(Party):
                         (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
                     )
                     self.temp_thresholds[i].append(percentiles[p])
+                    self.cum_num_communicated_ciphertexts += 2 * self.num_classes
 
             if self.use_missing_value:
                 current_max_idx = not_missing_values_count - 1
@@ -195,11 +204,13 @@ class XGBoostParty(Party):
 
                     for r in range(current_max_idx, 0, -1):
                         if x_col[r] <= percentiles[p]:
-                            for c in range(self.num_classes):
-                                temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
+                            if self.use_encrypted_label:
+                                for c in range(self.num_classes):
+                                    temp_left_y_class_cnt[c] += y[idxs[x_col_idxs[r]]][c]
                             for c in range(grad_dim):
                                 temp_grad[c] += gradient[idxs[x_col_idxs[r]]][c]
                                 temp_hess[c] += hessian[idxs[x_col_idxs[r]]][c]
+                                self.cum_num_addition += 2
                             temp_left_size += 1
                             cumulative_right_size += 1
                         else:
