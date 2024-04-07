@@ -2,7 +2,10 @@
     "epochs": 1,
     "lr": 0.0005,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 64,
+    "device": "cuda",
+    "gpu": 0,
+    "fl_type": "VFL",
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
