@@ -1560,16 +1560,18 @@ def load_dataset_per_party_llm(args, index):
 
 
     elif args.dataset == 'SST-2':
-        text_path = DATA_PATH + 'SST-2/train.tsv'
-        df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']
+        train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
+        if train_set_file is None or test_set_file is None:
+            train_set_file = DATA_PATH + 'SST-2/train.tsv'
+            test_set_file = DATA_PATH + 'SST-2/dev.tsv'
+        df = pd.read_csv(train_set_file, delimiter='\t')  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
         X_train = np.array(sentences)
         y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
-        text_path = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(text_path, delimiter='\t')  # names=[  'sentence','label']
+        df = pd.read_csv(test_set_file, delimiter='\t')  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
 
