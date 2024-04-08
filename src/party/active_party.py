@@ -233,10 +233,10 @@ class ActiveParty_LLM(Party_LLM):
 
         t1 = t1.to(self.args.device)
         t2 = t2.to(self.args.device)
-        if pred_list[2] is not None:
+        if len(pred_list) > 2 and pred_list[2] is not None:
             t3 = torch.Tensor(pred_list[2])
             t3 = t3.to(self.args.device)
-        if pred_list[3] is not None:
+        if len(pred_list) > 3 and pred_list[3] is not None:
             t4 = torch.Tensor(pred_list[3])
             t4 = t4.to(self.args.device, dtype=torch.int)
         result = self.aggregate([[t1, t2, t3, t4]])
