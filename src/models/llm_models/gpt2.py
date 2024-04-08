@@ -508,6 +508,7 @@ class GPT2ForSequenceClassification_forfinetune(GPT2PreTrainedModel):
         hidden_states = transformer_outputs[0]
         logits = self.head_layer(hidden_states)
 
+        input_shape = input_ids.shape[:2]
         batch_size  = input_shape[0]
         # print('GPT2ForSequenceClassification_pretrained input_shape:',input_shape)
         # if input_ids is not None:
@@ -822,18 +823,14 @@ class LocalGPT2Model(GPT2PreTrainedModel):
             sequence_lengths = -1
         else:
             if input_ids is not None:
-                # print('self.config.pad_token_id:',self.config.pad_token_id)
-                # print('input_ids:',input_ids)
-                # print(torch.eq(input_ids, self.config.pad_token_id).long())
-                # print(torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1))
                 sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1)
                 # print(sequence_lengths)
             else:
                 sequence_lengths = -1
-                logger.warning(
-                    f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
-                    "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
-                )
+                # logger.warning(
+                #     f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
+                #     "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
+                # )
         #####################
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions

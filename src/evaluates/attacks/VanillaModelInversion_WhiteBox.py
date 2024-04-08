@@ -184,26 +184,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     else:
                         batch_label.append( origin_input[bs_id][1]  )
 
-                # # Input_ids
-                # batch_input_ids = origin_input[0].tolist() 
-                # # Attention Mask
-                # batch_attention_mask = origin_input[2].tolist()  
-                # # token_type_ids
-                # if origin_input[3] == []:
-                #     batch_token_type_ids = None
-                # else:
-                #     batch_token_type_ids = origin_input[3].tolist() 
-                # # feature (for QuestionAnswering only)
-                # if origin_input[4] == []:
-                #     batch_feature = None
-                # else:
-                #     batch_feature = origin_input[4] 
-                # # Label
-                # if type(origin_input[1]) != str:
-                #     batch_label = [ origin_input[1] ]#.tolist()  
-                # else:
-                #     batch_label = [ origin_input[1] ]
-
                 batch_input_ids = torch.tensor(batch_input_ids).to(self.device)#.unsqueeze(0)
                 batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)#.unsqueeze(0)
                 if batch_token_type_ids != None:
@@ -232,9 +212,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                 batch_received_intermediate = real_results[0].type(torch.float32).to(self.device)
                 batch_received_attention_mask = real_results[1].to(self.device)
-                # print('batch_received_intermediate:',batch_received_intermediate.shape)
-                # print('batch_received_attention_mask:',batch_received_attention_mask.shape)
-                    
+
                 # each sample in a batch
                 for _id in range(origin_data.shape[0]):
                     sample_origin_data = origin_data[_id].unsqueeze(0) # [1,sequence length]
@@ -269,15 +247,15 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         # compute dummy result
                         if self.args.model_type  in ['Bert','Roberta']:
                             dummy_intermediate, _a  = local_model(input_ids=dummy_data, \
-                                                                    attention_mask = dummy_attention_mask, \
-                                                                    token_type_ids=dummy_local_batch_token_type_ids,\
-                                                                    embedding_output = dummy_embedding)                 
+                                                            attention_mask = dummy_attention_mask, \
+                                                            token_type_ids=dummy_local_batch_token_type_ids,\
+                                                            embedding_output = dummy_embedding)                 
                         elif self.args.model_type == 'GPT2':
-                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=dummy_data, \
+                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
                                                         attention_mask = dummy_attention_mask, \
                                                         token_type_ids=dummy_local_batch_token_type_ids,\
                                                         # past_key_values = received_past_key_values,\
-                                                        embedding_output = dummy_embedding)    
+                                                        inputs_embeds = dummy_embedding)    
                         elif self.args.model_type == 'Llama':
                             dummy_intermediate,  _a, _b, _c = local_model(input_ids=None,\
                                                         attention_mask = dummy_attention_mask, \
@@ -292,7 +270,6 @@ class VanillaModelInversion_WhiteBox(Attacker):
         
                     cost_function = torch.tensor(10000000)
                     _iter = 0
-                    eps = 0.1#np.sqrt(np.finfo(float).eps)
                     while _iter<self.epochs: # cost_function.item()>=0.1 and 
                         optimizer.zero_grad()
                         cost_function = get_cost(dummy_embedding)

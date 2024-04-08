@@ -47,7 +47,7 @@ def evaluate_no_attack_pretrained(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}" + exp_result
+    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}|" + exp_result
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
