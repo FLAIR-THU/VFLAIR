@@ -35,6 +35,8 @@ class PassiveDataset_LLM(Dataset):
         self.token_type_ids = [] # token_type_ids
         self.labels = []
         self.features = []
+        
+        max_token_len = 0
 
         if args.task_type == 'QuestionAnswering':
             # labels : bs * [start_position, end_position]
@@ -94,16 +96,6 @@ class PassiveDataset_LLM(Dataset):
         elif args.task_type == 'SequenceClassification':
             if len( texts.shape) == 1: # input: single sentence
                 for _text in texts:
-                    # flag+=1
-                    # ids = args.tokenizer(_text, \
-                    #     padding=args.padding,truncation=args.truncation ,\
-                    #     max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
-                    # print('std attention_mask:',torch.tensor(ids['attention_mask']).squeeze().shape, torch.tensor(ids['attention_mask']).squeeze())
-                    # print('std token_type_ids:',torch.tensor(ids['token_type_ids']).squeeze().shape, torch.tensor(ids['token_type_ids']).squeeze())
-                    # decode_text = [args.tokenizer.decode([_tok]) for _tok in torch.tensor(ids['input_ids']).squeeze().tolist() ]
-                    # decode_text = " ".join(decode_text)
-                    # print('decode_text:',decode_text)
-
                     if args.padding != "do_not_pad" and args.padding_type == "inside": # [PAD] between [CLS][SEP]
                         text_tokens = args.tokenizer.tokenize(_text)
 
@@ -130,13 +122,11 @@ class PassiveDataset_LLM(Dataset):
                         ids = args.tokenizer(_text, \
                         padding=args.padding,truncation=args.truncation ,\
                         max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
-                   
-                    # decode_text = [args.tokenizer.decode([_tok]) for _tok in torch.tensor(ids['input_ids']).squeeze().tolist() ]
-                    # decode_text = " ".join(decode_text)
-                    # print('decode_text:',decode_text)
-                    # print('attention_mask:',torch.tensor(ids['attention_mask']).squeeze().shape, torch.tensor(ids['attention_mask']).squeeze())
-                    # print('token_type_ids:',torch.tensor(ids['token_type_ids']).squeeze().shape, torch.tensor(ids['token_type_ids']).squeeze())
 
+                        # _len = torch.tensor(ids['input_ids']).shape[1]
+                        # max_token_len = max(max_token_len,_len)
+                    # print('max_token_len:',max_token_len)
+                    
                     self.texts.append( torch.tensor(ids['input_ids']).squeeze() )
                     # avoid performing attention on padding token indices.
                     self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )

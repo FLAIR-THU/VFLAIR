@@ -2,7 +2,7 @@
     "epochs": 10,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 96,
+    "batch_size": 64,
     "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -64,8 +64,20 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 10
             }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 10
         }
+    }
     }
 }

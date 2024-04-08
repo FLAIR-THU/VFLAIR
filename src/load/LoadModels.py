@@ -578,7 +578,7 @@ def load_basic_models_llm_gpt2(args, index):
             args.pad_token = "default_" + args.tokenizer.pad_token
         else:
             args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(pad_token)  #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
             full_gpt.config.pad_token_id = pad_id
 
         args.config = full_gpt.config  # print(full_bert.encoder.layer[0])

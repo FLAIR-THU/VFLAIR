@@ -361,42 +361,25 @@ class PassiveParty_LLM(Party_LLM):
             self.imagined_adversary_optimizer.step()
 
             self.local_model_optimizer.zero_grad()
-            # print('before')
-            # mark = 0
-            # for name, param in self.adversarial_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
-            # self.adversarial_model_loss.backward(retain_graph = True)
-            
-            
-            
-            if self.encoder_trainable:
-                # local model trainable part
-                local_model_params = list(self.adversarial_model.parameters())
-                for param in self.local_model.parameters():
-                    if param.requires_grad:
-                        local_model_params.append(param)
-                weights_grad_a = torch.autograd.grad(
-                    self.local_pred,
-                    local_model_params, 
-                    grad_outputs=self.local_gradient,
-                    retain_graph=True,
-                    #allow_unused = True
-                )#self.local_model.encoder_layer.parameters(),
-                for w, g in zip(local_model_params, weights_grad_a):
-                    if w.requires_grad:
-                        if w.grad != None:
-                            w.grad += g.detach()
-                        else:
-                            w.grad = g.detach()
+            # local model trainable part
+            local_model_params = list(self.adversarial_model.parameters())
+            for param in self.local_model.parameters():
+                if param.requires_grad:
+                    local_model_params.append(param)
+            weights_grad_a = torch.autograd.grad(
+                self.local_pred,
+                local_model_params, 
+                grad_outputs=self.local_gradient,
+                retain_graph=True,
+                #allow_unused = True
+            )
+            for w, g in zip(local_model_params, weights_grad_a):
+                if w.requires_grad:
+                    if w.grad != None:
+                        w.grad += g.detach()
+                    else:
+                        w.grad = g.detach()
 
-            # weights_grad_a = torch.autograd.grad(
-            #     self.local_pred,
-            #     self.adversarial_model.parameters(), 
-            #     grad_outputs=self.local_gradient,
-            #     retain_graph=True
-            # )
             weights_grad_a = torch.autograd.grad(
                 self.adversarial_model_loss,
                 self.adversarial_model.parameters(),
@@ -422,7 +405,7 @@ class PassiveParty_LLM(Party_LLM):
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
 
-            # update mid_model/local_encoder with mid_loss.backward
+            # update with mid_loss.backward
             self.mid_loss.backward(retain_graph=True)
 
             # update local encoder with global_loss
@@ -439,28 +422,25 @@ class PassiveParty_LLM(Party_LLM):
                     else:
                         w.grad = g.detach()
         
-            if self.encoder_trainable:
-                weights_grad_a = torch.autograd.grad(
+            # local model trainable part
+            local_model_params = []
+            for param in self.local_model.parameters():
+                if param.requires_grad:
+                    local_model_params.append(param)
+            if len(local_model_params) > 0:
+                self.weights_grad_a = torch.autograd.grad(
                     self.local_pred,
-                    self.local_model.encoder_layer.parameters(),
+                    local_model_params, # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
                 )
-                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                for w, g in zip(local_model_params, self.weights_grad_a):
                     if w.requires_grad:
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
-                            w.grad = g.detach()
+                            w.grad = g.detach()     
             
-            # print('Backward MID Model:')
-            # mark = 0
-            # for name, param in self.mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param)
-            #         mark = mark + 1
-
-            # assert 1>2
             self.local_model_optimizer.step()
      
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
@@ -486,31 +466,24 @@ class PassiveParty_LLM(Party_LLM):
                         w.grad = g.detach()
             
             ###########  update local encoder  ###########
-            #  with cross_entropy_loss + mid_loss -> local_gradient
-            if self.encoder_trainable:
-                weights_grad_a = torch.autograd.grad(
+            local_model_params = []
+            for param in self.local_model.parameters():
+                if param.requires_grad:
+                    local_model_params.append(param)
+            if len(local_model_params) > 0:
+                self.weights_grad_a = torch.autograd.grad(
                     self.local_pred,
-                    self.local_model.encoder_layer.parameters(),
+                    local_model_params, # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
                 )
-                for w, g in zip(self.local_model.encoder_layer.parameters(), weights_grad_a):
+                for w, g in zip(local_model_params, self.weights_grad_a):
                     if w.requires_grad:
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
                             w.grad = g.detach()
-
             self.local_model_optimizer.step()
-
-            # self.mid_loss = self.local_model.mid_loss
-            # print('self.mid_loss:',self.mid_loss)
-
-            # mark = 0
-            # for name, param in self.local_model.inner_mid_model.named_parameters():
-            #     if mark == 0:
-            #         print(name, param.grad)
-            #         mark = mark + 1
 
             # print('after')
             # mark = 0
