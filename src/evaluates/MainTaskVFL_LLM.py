@@ -308,6 +308,11 @@ class MainTaskVFL_LLM(object):
                 if test_logit['requires_grad']:
                     logits.requires_grad_()
                 return logits.to(self.args.device)
+            elif self.args.task_type == 'SequenceClassification':
+                logits = torch.Tensor(test_logit['logits'])
+                if test_logit['requires_grad']:
+                    logits.requires_grad_()
+                return logits.to(self.args.device)
             else:
                 assert 1>2 , 'Task type no supported'
         elif self.args.model_type == 'Llama':
