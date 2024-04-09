@@ -112,7 +112,6 @@ def evaluate_inversion_attack(args):
         training_time={training_time}|attack_time={attack_total_time}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
-        return exp_result
 
 
 if __name__ == '__main__':

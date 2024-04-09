@@ -1891,7 +1891,7 @@ def load_dataset_per_party_llm(args, index):
     elif args.dataset == 'Lambada':
         # def create_chat_prompt(prompt, text):
         #     return [
-        #         {"role": "system", "content": prompt},
+        #         {"role": "system", "content": prompt}, 
         #         {"role": "user", "content": text}
         #     ]
         prompt = "Please complete the passages with the correct next word.\n"
@@ -1918,7 +1918,7 @@ def load_dataset_per_party_llm(args, index):
         train_domain = dataset['train'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in train_all_texts[:1]:
+        for _all_text in train_all_texts:
             all_doc_tokens = _all_text.strip().split()
             all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1930,7 +1930,7 @@ def load_dataset_per_party_llm(args, index):
                 # doc_spans.append(_DocSpan(start=start_offset, length=length))
                 text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7 
                 # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
-
+                
                 last_word = all_doc_tokens[ start_offset + length ] 
 
                 text = " ".join(text)
@@ -1955,36 +1955,16 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts[:5]:
+        for _all_text in test_all_texts:
             # _all_text = _all_text.maketrans('', '', string.punctuation) #_all_text.rstrip(string.punctuation)
             all_doc_tokens = _all_text.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
-
+            
             start_offset = 0
             all_doc_tokens = _all_text
-            # while start_offset < len(all_doc_tokens):
-            #     length = len(all_doc_tokens) - start_offset - 1 # max length left
-            #     if length > max_seq_length:
-            #         length = max_seq_length
-            #     # doc_spans.append(_DocSpan(start=start_offset, length=length))
-            #     text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7
-            #     # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
 
-            #     last_word = all_doc_tokens[ start_offset + length ]
-
-            #     text = " ".join(text)
-            #     message = create_chat_prompt(text)
-            #     text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
-            #     texts.append(text) # messages.append( )
-            #     target_word.append(last_word)
-            #     if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
-            #     start_offset + length + 1 >= len(all_doc_tokens):
-            #         break
-
-            #     start_offset += min(length, doc_stride)
-
-            text = all_doc_tokens[ : -1] # 0 1...7
-            last_word = all_doc_tokens[ -1 ]
+            text = all_doc_tokens[ : -1] # 0 1...7 
+            last_word = all_doc_tokens[ -1 ] 
             text = " ".join(text)
             text = _all_text
 
@@ -1996,11 +1976,11 @@ def load_dataset_per_party_llm(args, index):
 
             # ids = args.tokenizer(all_doc_tokens, \
             #         padding=args.padding,truncation=args.truncation ,\
-            #         max_length=args.max_length,return_tensors='pt')
+            #         max_length=args.max_length,return_tensors='pt')  
             # input_ids =  torch.tensor(ids['input_ids']).squeeze()
             # masks = torch.tensor(ids['attention_mask']).squeeze()
             # print('input_ids:',input_ids.shape,' masks:',masks.shape)
-
+            
             # print('context:',input_ids[:-1])
             # print('label:',input_ids[-1])
             # print(args.tokenizer.decode(input_ids[-1]))

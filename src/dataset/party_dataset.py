@@ -85,8 +85,6 @@ class PassiveDataset_LLM(Dataset):
                     print('-'*25)
                     flag = flag + 1
            
-             
-
             # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 
             self.masks=[aa.tolist() for aa in self.masks] 

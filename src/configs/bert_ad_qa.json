@@ -1,0 +1,71 @@
+{
+    "epochs": 1,
+    "lr": 0.001,
+    "k": 2,
+    "batch_size": 64,
+    "pipeline": "finetune",
+    "device": "cuda",
+    "gpu": 0,
+    "fl_type": "VFL",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "SQuAD",
+        "num_classes": 1,
+        "use_prompt": 1,
+        "n_shot": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 256,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+        },
+        "task":{
+            "task_type": "QuestionAnswering"
+        },
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.001,
+            "lambda": 0.05,
+            "seq_length": 30,
+            "embed_dim": 768
+        }
+    }
+}

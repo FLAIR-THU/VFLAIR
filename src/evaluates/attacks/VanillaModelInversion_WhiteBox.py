@@ -234,7 +234,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     if self.args.model_type in ['Bert','Roberta']:
                         dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
                     elif self.args.model_type == "GPT2":
-                        dummy_embedding = torch.zeros([bs,seq_length,1024]).type(torch.float32).to(self.device)
+                        dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
                     elif self.args.model_type == "Llama":
                         dummy_embedding = torch.zeros([bs,seq_length,4096]).type(torch.float32).to(self.device)
                     else:
