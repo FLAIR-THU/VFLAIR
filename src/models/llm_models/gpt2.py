@@ -207,6 +207,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        use_cache: Optional[bool] = None,
     ) -> Union[Tuple, QuestionAnsweringModelOutput]:
         r"""
         start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -230,6 +231,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            use_cache=use_cache
         )
 
         sequence_output = outputs[0]

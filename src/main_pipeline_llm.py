@@ -42,12 +42,10 @@ def evaluate_no_attack_pretrained(args):
     vfl.init_communication()
 
     exp_result, metric_val = vfl.inference()
-
-    # attack_metric = main_acc_noattack - main_acc
-    # attack_metric_name = 'acc_loss'
+    inference_party_time = vfl.inference_party_time
 
     # # Save record 
-    exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}|" + exp_result
+    exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}|inference_party_time={inference_party_time}|" + exp_result
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
@@ -72,8 +70,6 @@ def evaluate_no_attack_finetune(args):
 
     append_exp_res(args.exp_res_path, exp_result)
 
-    # append_exp_res(args.exp_res_path, f"==stopping_iter:{stopping_iter}==stopping_time:{stopping_time}==stopping_commu_cost:{stopping_commu_cost}")
-    
     return vfl, metric_val
 
 def evaluate_inversion_attack(args):
@@ -103,10 +99,11 @@ def evaluate_inversion_attack(args):
             
         print('=== Begin Attack ===')
         training_time = vfl.training_time 
-        party_time = vfl.party_time
+        train_party_time = vfl.train_party_time
+        inference_party_time = vfl.inference_party_time
         precision, recall , attack_total_time= vfl.evaluate_attack()
     
-        exp_result = f"{args.attack_name}|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|final_epoch={vfl.final_epoch}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|training_time={training_time}|attack_time={attack_total_time}|party_time={party_time}|\n"
+        exp_result = f"{args.attack_name}|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|final_epoch={vfl.final_epoch}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|training_time={training_time}|attack_time={attack_total_time}|train_party_time={train_party_time}|inference_party_time={inference_party_time}|\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
 

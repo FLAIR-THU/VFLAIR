@@ -648,9 +648,9 @@ class MainTaskVFL_LLM(object):
                 self.gt_one_hot_label = gt_one_hot_label
 
                 # Passive Party -> pred_list[local pred]
-                pred_list = self.pred_transmit()
+                pred_list = self.pred_transmit(count_time = 'inference')
                 # local pred list -> Active Party -> test_logit[final pred]
-                test_logit = self.global_pred_transmit(pred_list)
+                test_logit = self.global_pred_transmit(pred_list, count_time = 'inference')
 
                 # test_logit -> standard output for each task
                 if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
@@ -714,7 +714,7 @@ class MainTaskVFL_LLM(object):
             self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-            exp_result = 'test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
+            exp_result = '|test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
             return exp_result, self.test_acc
 

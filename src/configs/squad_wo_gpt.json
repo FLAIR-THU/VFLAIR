@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 16,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -19,7 +19,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 256,
+        "max_length": 128,
         "padding_side": "left",
         "add_special_tokens": 1
     },
