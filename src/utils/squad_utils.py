@@ -456,8 +456,16 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
             "DocSpan", ["start", "length"])
         doc_spans = []
         start_offset = 0
+
+        # print('all_doc_tokens:',len(all_doc_tokens))
+        # print('max_tokens_for_doc:',max_tokens_for_doc)
+        # print('doc_stride:',doc_stride)
+        # print('-'*25)
         while start_offset < len(all_doc_tokens):
+            # print('start_offset:',start_offset)
             length = len(all_doc_tokens) - start_offset
+            # print('length:',length)
+
             if length > max_tokens_for_doc:
                 length = max_tokens_for_doc
             doc_spans.append(_DocSpan(start=start_offset, length=length))

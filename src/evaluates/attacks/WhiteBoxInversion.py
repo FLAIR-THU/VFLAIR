@@ -78,7 +78,14 @@ class WhiteBoxInversion(Attacker):
             local_model = self.vfl_info['final_model'][0].to(self.device) # Passive
             local_model.eval()
             batch_size = self.attack_batch_size
-            embedding_matrix = local_model.embeddings.word_embeddings.weight # 30522, 768
+
+            if self.args.model_type in ['Bert','Roberta']:
+                embedding_matrix = local_model.embeddings.word_embeddings.weight # 30522, 768               
+            elif self.args.model_type == 'GPT2':
+                embedding_matrix = local_model.wte.weight # 30522, 768  
+            elif self.args.model_type == 'Llama':
+                embedding_matrix = local_model.embed_tokens.weight # 30522, 768  
+            
             # print('embedding_matrix:',embedding_matrix.shape)
 
             attack_result = pd.DataFrame(columns = ['Pad_Length','Length','Precision', 'Recall'])
@@ -148,8 +155,7 @@ class WhiteBoxInversion(Attacker):
                 # real result
                 input_shape = origin_data.shape[:2]
                 self.top_vfl.parties[0].input_shape = input_shape
-                self.top_vfl.parties[0].obtain_local_data(origin_data.to(self.args.device), \
-                origin_attention_mask.to(self.args.device), origin_token_type_ids.to(self.args.device))
+                self.top_vfl.parties[0].obtain_local_data(origin_data, origin_attention_mask, origin_token_type_ids)
                 self.top_vfl.parties[0].gt_one_hot_label = origin_label
                 
                 # real_results = self.top_vfl.parties[0].give_pred()
@@ -160,11 +166,13 @@ class WhiteBoxInversion(Attacker):
                 batch_received_attention_mask = real_results[1]
                 
                 bs, seq_length = input_shape # 10,30
+                # print('seq_length:',seq_length) # 70
 
                 embedding_shape = batch_received_intermediate.shape
                 _, seq_length, embed_dim = embedding_shape # bs , seq_length, embed_dim 768
 
                 vocab_size = local_model.config.vocab_size # 30522
+                # print('vocab_size:',vocab_size) # 50257
         
                 # each sample in a batch
                 for _id in range(origin_data.shape[0]):
@@ -197,8 +205,13 @@ class WhiteBoxInversion(Attacker):
 
                     def get_cost(Z, received_intermediate):
                         soft_z = nn.functional.softmax(Z/self.T, dim=-1) # 30(seq_length), 30522(vocab_size)
+                        # print('soft_z:',soft_z.shape,Z.shape)
+                        # print('embedding_matrix:',embedding_matrix.shape)
+
                         relaxed_Z =  torch.mm(soft_z, embedding_matrix).unsqueeze(0) # 1, seq_length, 768(embed_dim)
                         dummy_embedding = relaxed_Z
+                        
+                        # print('dummy_embedding:',dummy_embedding.shape)
 
                         # compute dummy result
                         if self.args.model_type == 'Bert':
@@ -207,14 +220,14 @@ class WhiteBoxInversion(Attacker):
                             token_type_ids=dummy_local_batch_token_type_ids,\
                             embedding_output = dummy_embedding)                 
                         elif self.args.model_type == 'GPT2':
-                            dummy_intermediate, _a, _b, _c = local_model(input_ids=dummy_data,\
-                                attention_mask = dummy_attention_mask, \
-                                token_type_ids=dummy_local_batch_token_type_ids,\
-                                embedding_output = dummy_embedding)    
+                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
+                                                        attention_mask = dummy_attention_mask, \
+                                                        token_type_ids=dummy_local_batch_token_type_ids,\
+                                                        inputs_embeds = dummy_embedding)
                         elif self.args.model_type == 'Llama':
                             dummy_intermediate, _a, _b, _c = local_model(input_ids=dummy_data,\
-                                attention_mask = dummy_attention_mask, \
-                                inputs_embeds = dummy_embedding)    
+                                                attention_mask = dummy_attention_mask, \
+                                                inputs_embeds = dummy_embedding)    
                         else:
                             assert 1>2, 'model type not supported'
 

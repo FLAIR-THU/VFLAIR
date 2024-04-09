@@ -64,16 +64,6 @@
     },
     "attack_list": {
         "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-            }
-        },
-        "1":{
             "name": "WhiteBoxInversion",
             "parameters": {
                 "party": [1],
@@ -82,7 +72,17 @@
                 "epochs": 100,
                 "batch_size": 32,
                 "attack_sample_num": 100
-        }
+            }
+        },
+        "1":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 100
+            }
         }
     }
 }

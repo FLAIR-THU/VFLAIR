@@ -346,12 +346,11 @@ class MainTaskVFL_LLM(object):
 
         elif self.args.task_type == "CausalLM":
             # get logits of last hidden state
-            # print('test_logit:',test_logit.shape) # [batchsize, maxlength512, vocab_size32000]
-            print('test_logit:',test_logit.shape) # bs, seq_len, vocab_dim
             next_token_logits = test_logit[:, -1]  # [bs, 32000]
-            print('next_token_logits:',next_token_logits.shape)
-
-            print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
+            # print('test_logit:',test_logit.shape) # bs, seq_len, vocab_dim
+            # print('next_token_logits:',next_token_logits.shape)
+            # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label) # list of target tokens
+            
             if self.args.dataset == "Lambada":
                 # target_word = [normalize_answer(_p) for _p in gt_one_hot_label]  # list of normalized tokens
                 # target_word_list.extend(target_word)
@@ -367,7 +366,6 @@ class MainTaskVFL_LLM(object):
                 if self.args.metric_type == "best_pred":
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
                     predict_label_list = predict_label  # predict_word: bs * best_pred
-
                     predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
                     predict_word = [normalize_answer(_p) for _p in predict_word]
                     predict_word_list = predict_word  # predict_word: bs * best_pred
@@ -380,6 +378,7 @@ class MainTaskVFL_LLM(object):
                         predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
                 
                 # print('predict_label:',predict_label) 
+                # print('target_word_label:',target_word_label) 
                 # print('predict_word_list:',predict_word_list) 
                 # print('-'*25)
                 # assert 1>2
