@@ -3,7 +3,7 @@
     "lr": 0.001,
     "k": 2,
     "batch_size": 160,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "early_stop_threshold": 1,
     "communication":{
         "communication_protocol": "FedSGD",

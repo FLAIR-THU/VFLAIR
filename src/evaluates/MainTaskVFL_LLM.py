@@ -835,6 +835,9 @@ class MainTaskVFL_LLM(object):
         return final_output
 
     def inference(self, inference_data='test'):
+        # set inference time back to 0
+        self.inference_party_time = [0 for i in range(self.k)]
+
         # print(' ========= Inference ==========')
         for ik in range(self.k - 1):
             self.parties[ik].prepare_data_loader()

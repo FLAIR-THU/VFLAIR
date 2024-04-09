@@ -42,10 +42,9 @@ def evaluate_no_attack_pretrained(args):
     vfl.init_communication()
 
     exp_result, metric_val = vfl.inference()
-    inference_party_time = vfl.inference_party_time
 
     # # Save record 
-    exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}|inference_party_time={inference_party_time}|" + exp_result
+    exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}" + exp_result
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
     
