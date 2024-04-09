@@ -1,24 +1,25 @@
 {
-    "epochs": 30,
-    "lr": 0.005,
+    "epochs": 10,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 160,
-    "pipeline": "finetune",
-    "early_stop_threshold": 2,
+    "batch_size": 64,
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SST-2",
-        "num_classes": 2
+        "dataset_name": "SQuAD",
+        "num_classes": 1,
+        "use_prompt": 1,
+        "n_shot": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 256,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -44,7 +45,14 @@
             "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
         },
         "task":{
-            "task_type": "SequenceClassification"
+            "task_type": "QuestionAnswering",
+            "metric_type": "best_pred",
+            "doc_stride" : 128,
+            "max_seq_length": 512,
+            "max_query_length" : 64,
+            "max_answer_length": 30,
+            "n_best_size": 2
+
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"

@@ -27,107 +27,6 @@ import torch.nn as nn
 import torch
 import copy
 
-#### Finetune
-class LlamaForSequenceClassification_forfinetune(LlamaPreTrainedModel):
-    def __init__(self, global_llama, output_dim):
-        super().__init__(global_llama.config)
-        self.num_labels = output_dim
-        self.model = global_llama #LlamaModel(config)
-        self.head_layer = nn.Linear(global_llama.config.hidden_size, self.num_labels, bias=False)
-
-        # Initialize weights and apply final processing
-        self.post_init()
-
-    def forward(
-        self,intermediate , sequence_lengths, attention_mask: Optional[torch.Tensor] = None,
-        
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-    ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-            config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-            `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        transformer_outputs = self.model(
-            intermediate,attention_mask=attention_mask,
-
-            position_ids=position_ids,
-            past_key_values=past_key_values,
-            inputs_embeds=inputs_embeds,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        hidden_states = transformer_outputs[0]
-        logits = self.head_layer(hidden_states)
-
-        input_shape = intermediate.size()[:2]
-        batch_size = input_shape[0]
-        # if input_ids is not None:
-        #     batch_size = input_ids.shape[0]
-        # else:
-        #     batch_size = inputs_embeds.shape[0]
-
-        # if self.config.pad_token_id is None and batch_size != 1:
-        #     raise ValueError("Cannot handle batch sizes > 1 if no padding token is defined.")
-        # if self.config.pad_token_id is None:
-        #     sequence_lengths = -1
-        # else:
-        #     if input_ids is not None:
-        #         sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1).to(
-        #             logits.device
-        #         )
-        #     else:
-        #         sequence_lengths = -1
-
-        pooled_logits = logits[torch.arange(batch_size, device=logits.device), sequence_lengths]
-
-        loss = None
-        if labels is not None:
-            labels = labels.to(logits.device)
-            if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                    self.config.problem_type = "single_label_classification"
-                else:
-                    self.config.problem_type = "multi_label_classification"
-
-            if self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                if self.num_labels == 1:
-                    loss = loss_fct(pooled_logits.squeeze(), labels.squeeze())
-                else:
-                    loss = loss_fct(pooled_logits, labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(pooled_logits, labels)
-        if not return_dict:
-            output = (pooled_logits,) + transformer_outputs[1:]
-            return ((loss,) + output) if loss is not None else output
-
-        return SequenceClassifierOutputWithPast(
-            loss=loss,
-            logits=pooled_logits,
-            past_key_values=transformer_outputs.past_key_values,
-            hidden_states=transformer_outputs.hidden_states,
-            attentions=transformer_outputs.attentions,
-        )
-
 
 #### Pretrained
 class LlamaforGeneration_pretrained(LlamaPreTrainedModel):
@@ -239,7 +138,6 @@ class LlamaforGeneration_pretrained(LlamaPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
-
 
 class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
 
@@ -402,36 +300,6 @@ class LlamaForCausalLM_pretrained(LlamaPreTrainedModel):
             )
         return reordered_past
 
-# Copied from transformers.models.bart.modeling_bart._make_causal_mask
-def _make_causal_mask(
-    input_ids_shape: torch.Size, dtype: torch.dtype, device: torch.device, past_key_values_length: int = 0):
-    """
-    Make causal mask used for bi-directional self-attention.
-    """
-    bsz, tgt_len = input_ids_shape
-    mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
-    mask_cond = torch.arange(mask.size(-1), device=device)
-    mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 0)
-    mask = mask.to(dtype)
-
-    if past_key_values_length > 0:
-        mask = torch.cat([torch.zeros(tgt_len, past_key_values_length, dtype=dtype, device=device), mask], dim=-1)
-    return mask[None, None, :, :].expand(bsz, 1, tgt_len, tgt_len + past_key_values_length)
-
-# Copied from transformers.models.bart.modeling_bart._expand_mask
-# def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
-#     """
-#     Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
-#     """
-#     bsz, src_len = mask.size()
-#     tgt_len = tgt_len if tgt_len is not None else src_len
-
-#     expanded_mask = mask[:, None, None, :].expand(bsz, 1, tgt_len, src_len).to(dtype)
-
-#     inverted_mask = 1.0 - expanded_mask
-
-#     return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
-
 class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
     def __init__(self, global_llama, score):
         super().__init__(global_llama.config)
@@ -536,6 +404,125 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
         )
+
+
+# # Copied from transformers.models.bart.modeling_bart._make_causal_mask
+# def _make_causal_mask(
+#     input_ids_shape: torch.Size, dtype: torch.dtype, device: torch.device, past_key_values_length: int = 0):
+#     """
+#     Make causal mask used for bi-directional self-attention.
+#     """
+#     bsz, tgt_len = input_ids_shape
+#     mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
+#     mask_cond = torch.arange(mask.size(-1), device=device)
+#     mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 0)
+#     mask = mask.to(dtype)
+
+#     if past_key_values_length > 0:
+#         mask = torch.cat([torch.zeros(tgt_len, past_key_values_length, dtype=dtype, device=device), mask], dim=-1)
+#     return mask[None, None, :, :].expand(bsz, 1, tgt_len, tgt_len + past_key_values_length)
+
+
+# #### Finetune
+# class LlamaForSequenceClassification_forfinetune(LlamaPreTrainedModel):
+#     def __init__(self, global_llama, output_dim):
+#         super().__init__(global_llama.config)
+#         self.num_labels = output_dim
+#         self.model = global_llama #LlamaModel(config)
+#         self.head_layer = nn.Linear(global_llama.config.hidden_size, self.num_labels, bias=False)
+
+#         # Initialize weights and apply final processing
+#         self.post_init()
+
+#     def forward(
+#         self,intermediate , sequence_lengths, attention_mask: Optional[torch.Tensor] = None,
+        
+#         position_ids: Optional[torch.LongTensor] = None,
+#         past_key_values: Optional[List[torch.FloatTensor]] = None,
+#         inputs_embeds: Optional[torch.FloatTensor] = None,
+#         labels: Optional[torch.LongTensor] = None,
+#         use_cache: Optional[bool] = None,
+#         output_attentions: Optional[bool] = None,
+#         output_hidden_states: Optional[bool] = None,
+#         return_dict: Optional[bool] = None,
+#     ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
+#         r"""
+#         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+#             Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+#             config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+#             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+#         """
+#         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+#         transformer_outputs = self.model(
+#             intermediate,attention_mask=attention_mask,
+
+#             position_ids=position_ids,
+#             past_key_values=past_key_values,
+#             inputs_embeds=inputs_embeds,
+#             use_cache=use_cache,
+#             output_attentions=output_attentions,
+#             output_hidden_states=output_hidden_states,
+#             return_dict=return_dict,
+#         )
+#         hidden_states = transformer_outputs[0]
+#         logits = self.head_layer(hidden_states)
+
+#         input_shape = intermediate.size()[:2]
+#         batch_size = input_shape[0]
+#         # if input_ids is not None:
+#         #     batch_size = input_ids.shape[0]
+#         # else:
+#         #     batch_size = inputs_embeds.shape[0]
+
+#         # if self.config.pad_token_id is None and batch_size != 1:
+#         #     raise ValueError("Cannot handle batch sizes > 1 if no padding token is defined.")
+#         # if self.config.pad_token_id is None:
+#         #     sequence_lengths = -1
+#         # else:
+#         #     if input_ids is not None:
+#         #         sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1).to(
+#         #             logits.device
+#         #         )
+#         #     else:
+#         #         sequence_lengths = -1
+
+#         pooled_logits = logits[torch.arange(batch_size, device=logits.device), sequence_lengths]
+
+#         loss = None
+#         if labels is not None:
+#             labels = labels.to(logits.device)
+#             if self.config.problem_type is None:
+#                 if self.num_labels == 1:
+#                     self.config.problem_type = "regression"
+#                 elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+#                     self.config.problem_type = "single_label_classification"
+#                 else:
+#                     self.config.problem_type = "multi_label_classification"
+
+#             if self.config.problem_type == "regression":
+#                 loss_fct = MSELoss()
+#                 if self.num_labels == 1:
+#                     loss = loss_fct(pooled_logits.squeeze(), labels.squeeze())
+#                 else:
+#                     loss = loss_fct(pooled_logits, labels)
+#             elif self.config.problem_type == "single_label_classification":
+#                 loss_fct = CrossEntropyLoss()
+#                 loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels.view(-1))
+#             elif self.config.problem_type == "multi_label_classification":
+#                 loss_fct = BCEWithLogitsLoss()
+#                 loss = loss_fct(pooled_logits, labels)
+#         if not return_dict:
+#             output = (pooled_logits,) + transformer_outputs[1:]
+#             return ((loss,) + output) if loss is not None else output
+
+#         return SequenceClassifierOutputWithPast(
+#             loss=loss,
+#             logits=pooled_logits,
+#             past_key_values=transformer_outputs.past_key_values,
+#             hidden_states=transformer_outputs.hidden_states,
+#             attentions=transformer_outputs.attentions,
+#         )
 
 
 ##################### Functional Global Models ######################

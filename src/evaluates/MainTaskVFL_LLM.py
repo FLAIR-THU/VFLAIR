@@ -368,9 +368,9 @@ class MainTaskVFL_LLM(object):
                 # target_word_list.extend(target_word)
                 # print('target_word_list:',target_word_list)
                 
-                target_word_label = [int(_id.item()) for _id in list(gt_one_hot_label)]
-                target_word_list = [self.args.tokenizer.decode(_p) for _p in target_word_label]
-                # print('target_word_label:',target_word_label)
+                target_label_list = [int(_id.item()) for _id in list(gt_one_hot_label)]
+                # target_word_list = [self.args.tokenizer.decode(_p) for _p in target_label_list]
+                # print('target_label_list:',target_label_list)
                 # print('target_word_list:',target_word_list)
 
                 enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
@@ -378,24 +378,20 @@ class MainTaskVFL_LLM(object):
                 if self.args.metric_type == "best_pred":
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
                     predict_label_list = predict_label  # predict_word: bs * best_pred
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
-                    predict_word = [normalize_answer(_p) for _p in predict_word]
-                    predict_word_list = predict_word  # predict_word: bs * best_pred
+                    # predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
+                    # predict_word = [normalize_answer(_p) for _p in predict_word]
+                    # predict_word_list = predict_word  # predict_word: bs * best_pred
                 elif self.args.metric_type == "n_best":
                     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
+                    predict_label_list = index_list[:, :self.args.n_best_size]
+                    # for _bs in range(predict_label.shape[0]):  # each batch
+                    #     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
+                    #     predict_word = [normalize_answer(_p) for _p in predict_word]
+                    #     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
                 
-                # print('predict_label:',predict_label) 
-                # print('target_word_label:',target_word_label) 
-                # print('predict_word_list:',predict_word_list) 
-                # print('-'*25)
-                # assert 1>2
+                # print('predict_label_list:',predict_label_list)
 
-                return target_word_list, predict_word_list, None
+                return target_label_list, predict_label_list, None #target_word_list, predict_word_list, None
 
             else:  # MMLU
                 choice_id_list = []
@@ -417,13 +413,14 @@ class MainTaskVFL_LLM(object):
                 return [], [], 0
 
         elif self.args.task_type == "QuestionAnswering":
-            start_logits = test_logit.start_logits
-            end_logits = test_logit.end_logits
-            sample_cnt = start_logits.shape[0]
+            start_logits = test_logit.start_logits # bs, 512
+            end_logits = test_logit.end_logits # bs, 512
+            sample_cnt = start_logits.shape[0] # bs
 
             n_best_size = self.args.n_best_size
             start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
             end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
+            # start_indexes: list bs * n_nest_size
 
             exact_score_list = []
             f1_list = []
@@ -432,19 +429,17 @@ class MainTaskVFL_LLM(object):
             for i in range(start_logits.shape[0]):  # for each sample in this batch
                 _start_logits = start_logits[i]
                 _end_logits = end_logits[i]
-                _start_indexes = start_indexes[i]
-                _end_indexes = end_indexes[i]
+                _start_indexes = start_indexes[i] # list  n_best_size
+                _end_indexes = end_indexes[i] # list  n_best_size
 
                 ############ Gold ################
                 feature = parties_data[0][4][i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
                 feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
-
                 gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
                 if len(gold_start_indexs.shape) == 0:
                     gold_start_indexs = gold_start_indexs.unsqueeze(0)
                 if len(gold_end_indexs.shape) == 0:
                     gold_end_indexs = gold_end_indexs.unsqueeze(0)
-
                 gold_ans = []  # gold answers for this sample
                 for _i in range(len(gold_start_indexs)):
                     gold_start_index = int(gold_start_indexs[_i])
@@ -462,7 +457,6 @@ class MainTaskVFL_LLM(object):
                     ["start_index", "end_index", "start_logit", "end_logit"])
                 _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
                     "NbestPrediction", ["text", "start_logit", "end_logit"])
-
                 # iterate through all possible start-end pairs
                 prelim_predictions = []
                 for start_index in _start_indexes:
@@ -492,25 +486,22 @@ class MainTaskVFL_LLM(object):
                                 end_index=end_index,
                                 start_logit=_start_logits[start_index],
                                 end_logit=_end_logits[end_index]))
-
                 # Iterate through Sorted Predictions
                 prelim_predictions = sorted(
                     prelim_predictions,
                     key=lambda x: (x.start_logit + x.end_logit),
-                    reverse=True)
+                    reverse=True) # length=2
+                # print('prelim_predictions:',len(prelim_predictions)) 
 
                 exact_score = 0
                 f1 = 0
-                # Get n best prediction text
-                nbest = []
+                nbest = [] # Get n best prediction text
                 n_best_size = min(n_best_size, len(prelim_predictions))
                 for _id in range(n_best_size):
                     start_index = prelim_predictions[_id].start_index
                     end_index = prelim_predictions[_id].end_index
-
                     pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
                     pred_ans_text = normalize_answer(pred_ans_text)
-
                     nbest.append(
                         _NbestPrediction(
                             text=pred_ans_text,
@@ -518,44 +509,10 @@ class MainTaskVFL_LLM(object):
                             end_logit=prelim_predictions[_id].end_logit))
                 batch_nbest_list.append(nbest)
 
+            # print('batch_nbest_list:',batch_nbest_list)
+            # print('batch_gold_ans_list:',batch_gold_ans_list)
+
             return batch_nbest_list, batch_gold_ans_list, sample_cnt
-
-            # # Get best predicted answer
-            # total_scores = []
-            # best_non_null_entry = None
-
-            # if self.args.metric_type == "best_pred":
-            #     for entry in nbest:
-            #         total_scores.append(entry.start_logit + entry.end_logit)
-            #         if not best_non_null_entry:
-            #             if entry.text:
-            #                 best_non_null_entry = entry
-            #     pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-            #     # Calculate exact_score/f1
-            #     # print('best pred:',pred_ans_text)
-            #     exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-            #     f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-            #     # print('this batch:',exact_score,f1)
-            #     exact_score_list.append(exact_score)
-            #     f1_list.append(f1)
-            # elif self.args.metric_type == "n_best":
-            #     for entry in nbest:
-            #         total_scores.append(entry.start_logit + entry.end_logit)
-            #         if not best_non_null_entry:
-            #             if entry.text:
-            #                 best_non_null_entry = entry
-            #         pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-
-            #         # Calculate exact_score/f1
-            #         exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-            #         f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-            #     # print('this batch:',exact_score,f1)
-            #     exact_score_list.append(exact_score)
-            #     f1_list.append(f1)
-            # else:
-            #     assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-            # return exact_score_list, f1_list, sample_cnt #None
 
         else:
             assert 1 > 2, "task_type not supported"
@@ -667,6 +624,7 @@ class MainTaskVFL_LLM(object):
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "CausalLM":
                     batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    # target_label_list, predict_label_list, None 
                     target_word_list.extend(batch_target_word)
                     predict_word_list.extend(batch_predict_word)
                     if sample_cnt is not None:
@@ -722,6 +680,7 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
 
         target_word_list, predict_word_list, total_sample_cnt = self.predict()
+        # target_label_list, predict_label_list, None 
 
         print('target_word_list:\n', target_word_list[:5])
         print('predict_word_list:\n', predict_word_list[:5])
@@ -751,23 +710,24 @@ class MainTaskVFL_LLM(object):
 
     def qa_inference(self):
         # QA
-        # exact_score_list, f1_list , total_sample_cnt = self.predict()
+        start_time = time.time()
         nbest_list, gold_ans_list, total_sample_cnt = self.predict()
+        end_time = time.time()
+        print('predict:',end_time-start_time)
 
+        start_time = time.time()
         # prediction result assessment
-        total_scores = []
+        # total_scores = []
         best_non_null_entry = None
         exact_score_list = []
         f1_list = []
-
-        # iterate through each sample
-        for nbest, gold_ans in zip(nbest_list, gold_ans_list):
+        for nbest, gold_ans in zip(nbest_list, gold_ans_list): # iterate through each sample
             exact_score = 0
             f1 = 0
             best_non_null_entry = None
             if self.args.metric_type == "best_pred":
                 for entry in nbest:
-                    total_scores.append(entry.start_logit + entry.end_logit)
+                    # total_scores.append(entry.start_logit + entry.end_logit)
                     if not best_non_null_entry:
                         if entry.text:
                             best_non_null_entry = entry
@@ -789,6 +749,9 @@ class MainTaskVFL_LLM(object):
                 f1_list.append(f1)
             else:
                 assert 1 > 2, f"{self.args.metric_type} not provided!"
+
+        end_time = time.time()
+        print('assess:',end_time-start_time)
 
         exact_score = np.mean(exact_score_list)
         f1 = np.mean(f1_list)

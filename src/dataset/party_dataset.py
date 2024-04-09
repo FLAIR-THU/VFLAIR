@@ -58,8 +58,6 @@ class PassiveDataset_LLM(Dataset):
             flag = 0
             for i in range(len(texts)):
                 _text = texts[i]
-                
-
                 ids = args.tokenizer(_text, \
                     padding=args.padding,truncation=args.truncation ,\
                     max_length=args.max_length,return_tensors='pt') 
@@ -70,20 +68,19 @@ class PassiveDataset_LLM(Dataset):
                 if 'token_type_ids' in list(ids.keys()):
                     self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze()[:-1] )
                 
-                if flag == 0:
-                    print('_text:',len(_text),'\n',_text)
-                    print(self.texts[i].shape)
-                    print('label:', self.labels[i])
-                    print('texts:', self.texts[i])
-                    print('masks:', self.masks[i])
+                # if flag == 0:
+                #     print('_text:',len(_text),'\n',_text)
+                #     print(self.texts[i].shape)
+                #     print('label:', self.labels[i])
+                #     print('texts:', self.texts[i])
+                #     print('masks:', self.masks[i])
+
+                #     print('texts:',args.tokenizer.decode(self.texts[i]))
+                #     print('label:',args.tokenizer.decode(self.labels[i]))
 
 
-                    print('texts:',args.tokenizer.decode(self.texts[i]))
-                    print('label:',args.tokenizer.decode(self.labels[i]))
-
-
-                    print('-'*25)
-                    flag = flag + 1
+                #     print('-'*25)
+                #     flag = flag + 1
            
             # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 

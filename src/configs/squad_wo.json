@@ -51,7 +51,7 @@
             "max_seq_length": 512,
             "max_query_length" : 64,
             "max_answer_length": 30,
-            "n_best_size": 20
+            "n_best_size": 1
 
         },
         "apply_trainable_layer": 0,
@@ -65,7 +65,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 100
             }
         },
         "1":{
@@ -76,7 +76,7 @@
                 "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 100
         }
     }
     }

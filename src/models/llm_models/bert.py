@@ -106,7 +106,7 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-class BertForSequenceClassification_pretrained(nn.Module):
+class BertForSequenceClassification_pretrained(BertPreTrainedModel):
     def __init__(self, globalbert, classifier,dropout=0.5):
         super(BertForSequenceClassification_pretrained, self).__init__()
         self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
@@ -192,120 +192,65 @@ class BertForSequenceClassification_pretrained(nn.Module):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
- 
 
-##### Finetune #####
-class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
-    def __init__(self, global_bert):
+class BertLMHeadModel_pretrained(BertPreTrainedModel):
+    def __init__(self, global_bert, cls):
         super().__init__(global_bert.config)
-        self.num_labels = global_bert.config.num_labels
-        self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
-        self.head_layer = nn.Linear(global_bert.config.hidden_size, 2) # qa_outputs
 
-        torch.nn.init.xavier_uniform_(self.head_layer.weight)
-        torch.nn.init.zeros_(self.head_layer.bias)
-        # # Initialize weights and apply final processing
-        # self.post_init()
+        if not global_bert.config.is_decoder:
+            logger.warning("If you want to use `BertLMHeadModel` as a standalone, add `is_decoder=True.`")
+
+        self.bert = global_bert # BertModel(config, add_pooling_layer=False)
+        self.head_layer = cls #BertOnlyMLMHead(config)
+
+        # Initialize weights and apply final processing
+        self.post_init()
 
     def forward(
         self,
-        input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None,
-
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
         token_type_ids: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
-        start_positions: Optional[torch.Tensor] = None,
-        end_positions: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        past_key_values: Optional[List[torch.Tensor]] = None,
+        use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-    ) -> Union[Tuple[torch.Tensor], QuestionAnsweringModelOutput]:
+    ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
         r"""
-        start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for position (index) of the start of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
-            are not taken into account for computing the loss.
-        end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for position (index) of the end of the labelled span for computing the token classification loss.
-            Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
-            are not taken into account for computing the loss.
+        encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+            Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
+            the model is configured as a decoder.
+        encoder_attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
+            Mask to avoid performing attention on the padding token indices of the encoder input. This mask is used in
+            the cross-attention if the model is configured as a decoder. Mask values selected in `[0, 1]`:
+
+            - 1 for tokens that are **not masked**,
+            - 0 for tokens that are **masked**.
+        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+            Labels for computing the left-to-right language modeling loss (next word prediction). Indices should be in
+            `[-100, 0, ..., config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are
+            ignored (masked), the loss is only computed for the tokens with labels n `[0, ..., config.vocab_size]`
+        past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4 tensors of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
+            Contains precomputed key and value hidden states of the attention blocks. Can be used to speed up decoding.
+
+            If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
+            don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
+            `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+        use_cache (`bool`, *optional*):
+            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
+            `past_key_values`).
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        if labels is not None:
+            use_cache = False
 
-        outputs = self.bert(
-            input_ids, attention_mask=attention_mask,
-            
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-
-        logits = self.head_layer(sequence_output)
-        start_logits, end_logits = logits.split(1, dim=-1)
-        start_logits = start_logits.squeeze(-1).contiguous()
-        end_logits = end_logits.squeeze(-1).contiguous()
-
-        total_loss = None
-        if start_positions is not None and end_positions is not None:
-            # If we are on multi-GPU, split add a dimension
-            if len(start_positions.size()) > 1:
-                start_positions = start_positions.squeeze(-1)
-            if len(end_positions.size()) > 1:
-                end_positions = end_positions.squeeze(-1)
-            # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
-            start_positions = start_positions.clamp(0, ignored_index)
-            end_positions = end_positions.clamp(0, ignored_index)
-
-            loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
-            start_loss = loss_fct(start_logits, start_positions)
-            end_loss = loss_fct(end_logits, end_positions)
-            total_loss = (start_loss + end_loss) / 2
-
-        if not return_dict:
-            output = (start_logits, end_logits) + outputs[2:]
-            return ((total_loss,) + output) if total_loss is not None else output
-
-        return QuestionAnsweringModelOutput(
-            loss=total_loss,
-            start_logits=start_logits,
-            end_logits=end_logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
-
-class BertForSequenceClassification_forfinetune(nn.Module):
-    def __init__(self, globalbert, output_dim,dropout=0.5):
-        super(BertForSequenceClassification_forfinetune, self).__init__()
-        self.bert = globalbert 
-        self.model_type = globalbert.model_type
-
-        self.head_layer = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(768, output_dim)
-        ) # Classifier in a SequenceClassification case
-
-        torch.nn.init.xavier_uniform_(self.head_layer[1].weight)
-        torch.nn.init.zeros_(self.head_layer[1].bias)
-
-    def forward(self, input_ids, attention_mask,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = True): # 
-
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         outputs = self.bert(
             input_ids,
             attention_mask=attention_mask,
@@ -313,55 +258,207 @@ class BertForSequenceClassification_forfinetune(nn.Module):
             position_ids=position_ids,
             head_mask=head_mask,
             inputs_embeds=inputs_embeds,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+            past_key_values=past_key_values,
+            use_cache=use_cache,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        
-        if self.model_type == 'Bert':
-            pooled_output = outputs[1]
-            logits = self.head_layer(pooled_output)
-        elif self.model_type == 'Roberta':
-            sequence_output = outputs[0]
-            logits = self.head_layer(sequence_output)
-        elif self.model_type == 'Albert':
-            pooled_output = outputs[1]
-            logits = self.head_layer(pooled_output)
 
-        # logits = self.head_layer(pooled_output)
- 
-        loss = None
+        sequence_output = outputs[0]
+        prediction_scores = self.head_layer(sequence_output)
+
+        lm_loss = None
         if labels is not None:
-            if self.config.problem_type is None:
-                if self.num_labels == 1:
-                    self.config.problem_type = "regression"
-                elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-                    self.config.problem_type = "single_label_classification"
-                else:
-                    self.config.problem_type = "multi_label_classification"
+            # we are doing next-token prediction; shift prediction scores and input ids by one
+            shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
+            labels = labels[:, 1:].contiguous()
+            loss_fct = CrossEntropyLoss()
+            lm_loss = loss_fct(shifted_prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
 
-            if self.config.problem_type == "regression":
-                loss_fct = MSELoss()
-                if self.num_labels == 1:
-                    loss = loss_fct(logits.squeeze(), labels.squeeze())
-                else:
-                    loss = loss_fct(logits, labels)
-            elif self.config.problem_type == "single_label_classification":
-                loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            elif self.config.problem_type == "multi_label_classification":
-                loss_fct = BCEWithLogitsLoss()
-                loss = loss_fct(logits, labels)
         if not return_dict:
-            output = (logits,) + outputs[2:]
-            return ((loss,) + output) if loss is not None else output
+            output = (prediction_scores,) + outputs[2:]
+            return ((lm_loss,) + output) if lm_loss is not None else output
 
-        return SequenceClassifierOutput(
-            loss=loss,
-            logits=logits,
+        return CausalLMOutputWithCrossAttentions(
+            loss=lm_loss,
+            logits=prediction_scores,
+            past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
+            cross_attentions=outputs.cross_attentions,
         )
+
+# ##### Finetune #####
+# class BertForQuestionAnswering_forfinetune(BertPreTrainedModel):
+#     def __init__(self, global_bert):
+#         super().__init__(global_bert.config)
+#         self.num_labels = global_bert.config.num_labels
+#         self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
+#         self.head_layer = nn.Linear(global_bert.config.hidden_size, 2) # qa_outputs
+
+#         torch.nn.init.xavier_uniform_(self.head_layer.weight)
+#         torch.nn.init.zeros_(self.head_layer.bias)
+#         # # Initialize weights and apply final processing
+#         # self.post_init()
+
+#     def forward(
+#         self,
+#         input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None,
+
+#         token_type_ids: Optional[torch.Tensor] = None,
+#         position_ids: Optional[torch.Tensor] = None,
+#         head_mask: Optional[torch.Tensor] = None,
+#         inputs_embeds: Optional[torch.Tensor] = None,
+#         start_positions: Optional[torch.Tensor] = None,
+#         end_positions: Optional[torch.Tensor] = None,
+#         output_attentions: Optional[bool] = None,
+#         output_hidden_states: Optional[bool] = None,
+#         return_dict: Optional[bool] = None,
+#     ) -> Union[Tuple[torch.Tensor], QuestionAnsweringModelOutput]:
+#         r"""
+#         start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+#             Labels for position (index) of the start of the labelled span for computing the token classification loss.
+#             Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+#             are not taken into account for computing the loss.
+#         end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+#             Labels for position (index) of the end of the labelled span for computing the token classification loss.
+#             Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+#             are not taken into account for computing the loss.
+#         """
+#         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+#         outputs = self.bert(
+#             input_ids, attention_mask=attention_mask,
+            
+#             token_type_ids=token_type_ids,
+#             position_ids=position_ids,
+#             head_mask=head_mask,
+#             inputs_embeds=inputs_embeds,
+#             output_attentions=output_attentions,
+#             output_hidden_states=output_hidden_states,
+#             return_dict=return_dict,
+#         )
+
+#         sequence_output = outputs[0]
+
+#         logits = self.head_layer(sequence_output)
+#         start_logits, end_logits = logits.split(1, dim=-1)
+#         start_logits = start_logits.squeeze(-1).contiguous()
+#         end_logits = end_logits.squeeze(-1).contiguous()
+
+#         total_loss = None
+#         if start_positions is not None and end_positions is not None:
+#             # If we are on multi-GPU, split add a dimension
+#             if len(start_positions.size()) > 1:
+#                 start_positions = start_positions.squeeze(-1)
+#             if len(end_positions.size()) > 1:
+#                 end_positions = end_positions.squeeze(-1)
+#             # sometimes the start/end positions are outside our model inputs, we ignore these terms
+#             ignored_index = start_logits.size(1)
+#             start_positions = start_positions.clamp(0, ignored_index)
+#             end_positions = end_positions.clamp(0, ignored_index)
+
+#             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
+#             start_loss = loss_fct(start_logits, start_positions)
+#             end_loss = loss_fct(end_logits, end_positions)
+#             total_loss = (start_loss + end_loss) / 2
+
+#         if not return_dict:
+#             output = (start_logits, end_logits) + outputs[2:]
+#             return ((total_loss,) + output) if total_loss is not None else output
+
+#         return QuestionAnsweringModelOutput(
+#             loss=total_loss,
+#             start_logits=start_logits,
+#             end_logits=end_logits,
+#             hidden_states=outputs.hidden_states,
+#             attentions=outputs.attentions,
+#         )
+
+# class BertForSequenceClassification_forfinetune(nn.Module):
+#     def __init__(self, globalbert, output_dim,dropout=0.5):
+#         super(BertForSequenceClassification_forfinetune, self).__init__()
+#         self.bert = globalbert 
+#         self.model_type = globalbert.model_type
+
+#         self.head_layer = nn.Sequential(
+#             nn.Dropout(dropout),
+#             nn.Linear(768, output_dim)
+#         ) # Classifier in a SequenceClassification case
+
+#         torch.nn.init.xavier_uniform_(self.head_layer[1].weight)
+#         torch.nn.init.zeros_(self.head_layer[1].bias)
+
+#     def forward(self, input_ids, attention_mask,
+#         token_type_ids: Optional[torch.Tensor] = None,
+#         position_ids: Optional[torch.Tensor] = None,
+#         head_mask: Optional[torch.Tensor] = None,
+#         inputs_embeds: Optional[torch.Tensor] = None,
+#         labels: Optional[torch.Tensor] = None,
+#         output_attentions: Optional[bool] = None,
+#         output_hidden_states: Optional[bool] = None,
+#         return_dict: Optional[bool] = True): # 
+
+#         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+#         outputs = self.bert(
+#             input_ids,
+#             attention_mask=attention_mask,
+#             token_type_ids=token_type_ids,
+#             position_ids=position_ids,
+#             head_mask=head_mask,
+#             inputs_embeds=inputs_embeds,
+#             output_attentions=output_attentions,
+#             output_hidden_states=output_hidden_states,
+#             return_dict=return_dict,
+#         )
+        
+#         if self.model_type == 'Bert':
+#             pooled_output = outputs[1]
+#             logits = self.head_layer(pooled_output)
+#         elif self.model_type == 'Roberta':
+#             sequence_output = outputs[0]
+#             logits = self.head_layer(sequence_output)
+#         elif self.model_type == 'Albert':
+#             pooled_output = outputs[1]
+#             logits = self.head_layer(pooled_output)
+
+#         # logits = self.head_layer(pooled_output)
+ 
+#         loss = None
+#         if labels is not None:
+#             if self.config.problem_type is None:
+#                 if self.num_labels == 1:
+#                     self.config.problem_type = "regression"
+#                 elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
+#                     self.config.problem_type = "single_label_classification"
+#                 else:
+#                     self.config.problem_type = "multi_label_classification"
+
+#             if self.config.problem_type == "regression":
+#                 loss_fct = MSELoss()
+#                 if self.num_labels == 1:
+#                     loss = loss_fct(logits.squeeze(), labels.squeeze())
+#                 else:
+#                     loss = loss_fct(logits, labels)
+#             elif self.config.problem_type == "single_label_classification":
+#                 loss_fct = CrossEntropyLoss()
+#                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+#             elif self.config.problem_type == "multi_label_classification":
+#                 loss_fct = BCEWithLogitsLoss()
+#                 loss = loss_fct(logits, labels)
+#         if not return_dict:
+#             output = (logits,) + outputs[2:]
+#             return ((loss,) + output) if loss is not None else output
+
+#         return SequenceClassifierOutput(
+#             loss=loss,
+#             logits=logits,
+#             hidden_states=outputs.hidden_states,
+#             attentions=outputs.attentions,
+#         )
 
 
 ##################### Functional Global Models ######################
