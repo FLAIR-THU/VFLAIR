@@ -87,6 +87,8 @@ class Party(object):
         self.prev_batches = []
         self.num_local_updates = 0
 
+        self.party_time = 0
+
         ####### predict results ######
         self.input_shape = None
         self.global_pred = None

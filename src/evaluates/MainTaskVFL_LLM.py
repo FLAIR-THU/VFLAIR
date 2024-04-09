@@ -61,7 +61,6 @@ class MainTaskVFL_LLM(object):
     def __init__(self, args):
         self.args = args
         self.k = args.k
-        # self.k_server = args.k_server
         self.device = args.device
         self.dataset_name = args.dataset
         # self.train_dataset = args.train_dst
@@ -81,6 +80,10 @@ class MainTaskVFL_LLM(object):
         # self.servers = args.servers
 
         self.Q = args.Q  # FedBCD
+
+        self.train_party_time = [0 for i in range(self.k)]
+        self.inference_party_time = [0 for i in range(self.k)]
+
 
         self.parties_data = None
         self.gt_one_hot_label = None
@@ -161,15 +164,13 @@ class MainTaskVFL_LLM(object):
                                         self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def pred_transmit(self, use_cache=False):
+    def pred_transmit(self, use_cache=False, count_time=False):
         '''
         Active party gets pred from passive parties
         '''
         all_pred_list = []
         for ik in range(self.k - 1):
-            # give pred
-            # self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values, 
-            # self.local_sequence_lengths
+            start_time = time.time()
             if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
@@ -274,34 +275,45 @@ class MainTaskVFL_LLM(object):
                     self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
 
             all_pred_list.append(pred_list)
+            
+            end_time = time.time()
+            if count_time=='train':
+                self.train_party_time[ik] += end_time-start_time
+            elif count_time=='inference':
+                self.inference_party_time[ik] += end_time-start_time
 
         self.all_pred_list = all_pred_list
         return all_pred_list
 
-    def global_pred_transmit(self, pred_list, use_cache=False):
+    def global_pred_transmit(self, pred_list, use_cache=False, count_time=False):
+        start_time = time.time()
         final_pred = self._communication.send_pred_message(pred_list, use_cache=use_cache)
+        end_time = time.time()
+        if count_time=='train':
+            self.train_party_time[-1] += end_time-start_time
+        elif count_time=='inference':
+            self.inference_party_time[-1] += end_time-start_time
         return final_pred
 
-    # def global_pred_transmit(self):
-    #     # active party give global pred to passive party
-    #     final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received, test="True")
-
-    #     for ik in range(self.k-1):
-    #         # self.communication_cost += get_size_of(final_pred)
-    #         self.parties[ik].global_pred = final_pred
-
-    #     return final_pred
-
-    def local_gradient_transmit(self):
+    def local_gradient_transmit(self, count_time='train'):
         for ik in range(self.k - 1):
             if self.parties[ik].local_model_optimizer != None:
+                start_time = time.time()
                 passive_local_gradient = self.parties[self.k - 1].cal_passive_local_gradient(ik)
+                end_time = time.time()
+
+                if count_time=='train':
+                    self.train_party_time[self.k - 1] += end_time - start_time
+
                 self.parties[ik].local_gradient = passive_local_gradient
 
-    def global_gradient_transmit(self, final_pred):
+    def global_gradient_transmit(self, final_pred, count_time='train'):
+        start_time = time.time()
         global_loss = self.parties[0].cal_loss(final_pred)
-
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
+        end_time = time.time()
+        if count_time=='train':
+            self.train_party_time[0] += end_time - start_time
 
         self.communication_cost += get_size_of(global_gradients)
 
@@ -834,6 +846,7 @@ class MainTaskVFL_LLM(object):
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
         if self.args.task_type == "SequenceClassification":
@@ -842,6 +855,7 @@ class MainTaskVFL_LLM(object):
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
         if self.args.task_type == "CausalLM":
@@ -850,6 +864,7 @@ class MainTaskVFL_LLM(object):
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
     def train_batch(self, parties_data, batch_label):
@@ -867,29 +882,31 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].input_shape = input_shape
             self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
-        ############### allocate data ###############
 
         ################ normal vertical federated learning ################
         # torch.autograd.set_detect_anomaly(True)
         # =================== Commu ===================
-        # exchange info between party: local_pred/global_pred
         # Passive Party -> pred_list[local pred]
-        pred_list = self.pred_transmit()
-        # local pred list -> Active Party -> test_logit[final pred]
-        final_pred = self.global_pred_transmit(pred_list)
+        pred_list = self.pred_transmit(count_time = 'train')
+        # pred_list[local pred] -> Active Party -> test_logit[final pred]
+        final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
 
         # passive party -> global gradient -> active party
-        self.global_gradient_transmit(final_pred)
+        self.global_gradient_transmit(final_pred, count_time = 'train')
         # active party -> local gradient -> passive party
-        self.local_gradient_transmit()
-        # =================== Commu ===================
+        self.local_gradient_transmit(count_time = 'train')
 
         # ============= Model Update =============
-        # update parameters for global trainable part
+        start_time = time.time()
         self.args.parties[self.args.k - 1].global_backward()  # self._send_global_backward_message()
+        end_time = time.time()
+        self.train_party_time[self.args.k - 1] += end_time - start_time
+        
         for ik in range(self.k - 1):
+            start_time = time.time()
             self.parties[ik].local_backward()
-        # ============= Model Update =============
+            end_time = time.time()
+            self.train_party_time[ik] += end_time - start_time
 
         ################ normal vertical federated learning ################
 
@@ -1238,9 +1255,8 @@ class MainTaskVFL_LLM(object):
                 enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
                 exit_time = time.time()
-                # ====== train batch (end) ======
-
                 total_time += (exit_time - enter_time)
+                # ====== train batch (end) ======
                 self.num_total_comms = self.num_total_comms + 1
                 # if self.num_total_comms % 10 == 0:
                 #     print(f"total time for {self.num_total_comms} communication is {total_time}")
@@ -1280,13 +1296,6 @@ class MainTaskVFL_LLM(object):
                             i_epoch, self.loss, self.train_acc, self.test_acc)
                     print(exp_result)
 
-                    # if (i+1) % 10 == 0:
-                    #     if self.args.apply_adversarial:
-                    #         if last_adversarial_model_loss < self.parties[0].adversarial_model_loss.item():
-                    #             self.final_epoch = i_epoch
-                    #             break
-                    #         last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
-
                     self.final_epoch = i_epoch + 1
 
             data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
@@ -1301,12 +1310,12 @@ class MainTaskVFL_LLM(object):
 
         self.training_time = total_time
         if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
-            exp_result = f'training_time={total_time}|train_loss:{self.loss}|\
+            exp_result = f'|train_party_time={self.train_party_time}|training_time={total_time}|train_loss:{self.loss}|\
             train_mse={self.train_acc[0]}|train_pearson_corr={self.train_acc[1]}|train_spearmanr_corr={self.train_acc[2]}|\
             test_mse={self.test_acc[0]}|train_pearson_corr={self.test_acc[1]}|test_spearmanr_corr={self.test_acc[2]}|\
             final_epoch={self.final_epoch}'
         else:
-            exp_result = f'|training_time={total_time}|train_loss={self.loss}|train_acc={self.train_acc}|\
+            exp_result = f'|train_party_time={self.train_party_time}|training_time={total_time}|train_loss={self.loss}|train_acc={self.train_acc}|\
             test_acc={self.test_acc}|final_epoch={self.final_epoch}'
 
         self.final_state = self.save_state()

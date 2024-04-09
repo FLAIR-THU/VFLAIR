@@ -66,7 +66,7 @@ def evaluate_no_attack_finetune(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}" \
+    exp_result = f"NoAttack|{args.pad_info}|seed_{args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}" \
         + exp_result
     print(exp_result)
 
@@ -107,12 +107,11 @@ def evaluate_inversion_attack(args):
     
         exp_result = f"{args.attack_name}|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|\
         num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|final_epoch={vfl.final_epoch}|\
-        headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|\
+        headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|\
         main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|\
         training_time={training_time}|attack_time={attack_total_time}\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
-        return exp_result
 
 
 if __name__ == '__main__':
@@ -158,7 +157,7 @@ if __name__ == '__main__':
         print('inversion:',args.inversion_list,args.inversion_index)
 
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}_wmi/Q{str(args.Q)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')

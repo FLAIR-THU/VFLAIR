@@ -881,19 +881,15 @@ def load_basic_models_llm_llama(args, index):
 
             local_trainable_params = []
             print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-            for param in local_model.wte.parameters():
+            for param in local_model.embed_tokens.parameters():
                 param.requires_grad = args.embedding_trainable[0]
             if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wte.parameters()))
-            for param in local_model.wpe.parameters():
-                param.requires_grad = embedding_trainable[0]
-            if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wpe.parameters()))
+                local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
             print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-            for param in local_model.h.parameters():
+            for param in local_model.layers.parameters():
                 param.requires_grad = args.encoder_trainable[0]
             if args.encoder_trainable[0]:
-                local_trainable_params.extend(list(local_model.h.parameters()))
+                local_trainable_params.extend(list(local_model.layers.parameters()))
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
         ########### Global Model ###########

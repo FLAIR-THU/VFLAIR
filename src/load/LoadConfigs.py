@@ -217,6 +217,8 @@ def do_load_basic_configs(config_dict, args):
         args.local_encoders_num = config_model_dict['local_encoders_num'] if 'local_encoders_num' in config_model_dict else 1
         args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
         args.global_model = config_model_dict['global_model'] if ('global_model' in config_model_dict) else 'ClassificationModelHostHead'
+        print('args.local_encoders_num:',args.local_encoders_num)
+
     else:
         default_model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': '../models/MLP2/random'}

@@ -286,7 +286,6 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,attention_mask: Optional[torch.FloatTensor] = None,
-        # local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
 
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
