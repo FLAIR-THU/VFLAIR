@@ -56,6 +56,7 @@ class PassiveDataset_LLM(Dataset):
         elif args.task_type == 'CausalLM':
             print('begin party dataset')
             flag = 0
+            length = 0
             for i in range(len(texts)):
                 _text = texts[i]
                 ids = args.tokenizer(_text, \
@@ -69,6 +70,8 @@ class PassiveDataset_LLM(Dataset):
                 if 'token_type_ids' in list(ids.keys()):
                     self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze()[:-1] )
                 
+                ids = args.tokenizer(_text,return_tensors='pt')
+                length = max( length, len( torch.tensor(ids['input_ids']).squeeze() ) )
                 # if flag == 0:
                 #     ids = args.tokenizer(_text,return_tensors='pt')
                 #     print(torch.tensor(ids['input_ids']).squeeze()[:-1])
@@ -80,7 +83,7 @@ class PassiveDataset_LLM(Dataset):
                 #     print(torch.tensor(ids['input_ids']).squeeze()[:-1])
                 #     print('-'*25)
                 #     flag = flag + 1
-           
+            print('length=',length)
             # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 
             self.masks=[aa.tolist() for aa in self.masks] 
@@ -190,8 +193,11 @@ class PassiveDataset_LLM(Dataset):
                 print(texts.shape)
                 assert 1>2, 'text input shape not supported'
             
-
-            self.labels = torch.tensor(labels) 
+            
+            if self.args.num_classes == 1:
+                self.labels = torch.tensor(labels, dtype=torch.float32)
+            else:
+                self.labels = torch.tensor(labels) 
 
             self.texts=[aa.tolist() for aa in self.texts] 
 
@@ -211,10 +217,11 @@ class PassiveDataset_LLM(Dataset):
         mask_i = torch.tensor(mask_i, dtype=torch.long).to(self.args.device)
         
         if not type(target_i) == str:
-            if self.args.num_classes == 1:
-                target_i = torch.tensor(target_i, dtype=torch.float32).to(self.args.device)
-            else:
-                target_i = torch.tensor(target_i, dtype=torch.long).to(self.args.device)
+            target_i = torch.tensor(target_i, dtype=torch.long).to(self.args.device)
+            # if self.args.num_classes == 1:
+            #     target_i = torch.tensor(target_i, dtype=torch.float32).to(self.args.device)
+            # else:
+            #     target_i = torch.tensor(target_i, dtype=torch.long).to(self.args.device)
 
         if self.token_type_ids == []:
             token_type_ids_i = []

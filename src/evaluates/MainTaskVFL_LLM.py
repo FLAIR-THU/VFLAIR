@@ -1050,46 +1050,33 @@ class MainTaskVFL_LLM(object):
             pred = self.parties[self.k - 1].global_pred  # logits
             loss = self.parties[0].global_loss
             test_logit = pred
-            next_token_logits = test_logit[:,
-                                -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
+            next_token_logits = test_logit[:,-1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
 
             if self.args.dataset == "Lambada":
                 # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-                target_word_list = [normalize_answer(_p) for _p in gt_one_hot_label]
-                # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
+                target_label_list = [int(_p) for _p in gt_one_hot_label]
 
                 # predict_word_list : bs * predicted words
                 enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
                 if self.args.metric_type == "best_pred":
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
-                    predict_word_list = [normalize_answer(_p) for _p in predict_word]
+                    predict_label_list = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
                 elif self.args.metric_type == "n_best":
                     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
                     # print('index_list:',index_list.shape)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    # print('predict_label:',predict_label.shape)
-                    predict_word_list = []
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                        # print('predict_word:',predict_word)
-                # print('predict_word_list:',type(predict_word_list),len(predict_word_list))
-                # print(predict_word_list)
-
+                    predict_label_list = index_list[:, :self.args.n_best_size]
+                
                 if self.args.metric_type == "best_pred":
                     suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] == predict_word_list[i]:
+                    for i in range(len(target_label_list)):
+                        if target_label_list[i] == predict_label_list[i]:
                             suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
+                    batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
                 elif self.args.metric_type == "n_best":
                     suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] in predict_word_list[i]:
+                    for i in range(len(target_label_list)):
+                        if target_label_list[i] in predict_label_list[i]:
                             suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
+                    batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
                 else:
                     assert 1 > 2, 'metric type not supported'
 

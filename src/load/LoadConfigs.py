@@ -110,6 +110,8 @@ def do_load_basic_configs(config_dict, args):
         # "only first"  "only_second"  "longest_first"  "do_not_truncate"
         if args.truncation == "True":
             args.truncation = True
+        elif args.truncation == "False":
+            args.truncation = False
             
         args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
         args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
