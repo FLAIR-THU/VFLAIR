@@ -108,7 +108,7 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
 
 class BertForSequenceClassification_pretrained(BertPreTrainedModel):
     def __init__(self, globalbert, classifier,dropout=0.5):
-        super(BertForSequenceClassification_pretrained, self).__init__()
+        super().__init__(globalbert.config)
         self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 

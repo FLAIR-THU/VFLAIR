@@ -5,7 +5,7 @@
 
 echo 'DP SST2'
 
-for seed in {60,61,62,63,64,65}
+for seed in {65}
     do
     # 50
     # python main_pipeline_llm.py --seed $seed --configs sst2_dp
