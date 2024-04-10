@@ -1,10 +1,10 @@
 {
     "epochs": 30,
-    "lr": 0.001,
+    "lr": 0.005,
     "k": 2,
     "batch_size": 160,
     "pipeline": "finetune",
-    "early_stop_threshold": 1,
+    "early_stop_threshold": 2,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -25,7 +25,7 @@
     "model_list":{
         "0": {
             "type": "llama-2-7b",
-            "pretrained": 0,
+            "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 2,
@@ -37,7 +37,7 @@
         },
         "1": {
             "type": "llama-2-7b",
-            "pretrained": 0,
+            "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,

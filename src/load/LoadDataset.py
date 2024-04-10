@@ -1918,7 +1918,7 @@ def load_dataset_per_party_llm(args, index):
         train_domain = dataset['train'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in train_all_texts:
+        for _all_text in train_all_texts[:1]:
             all_doc_tokens = _all_text.strip().split()
             all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1962,7 +1962,7 @@ def load_dataset_per_party_llm(args, index):
             
             start_offset = 0
             all_doc_tokens = _all_text
-
+            
             text = all_doc_tokens[ : -1] # 0 1...7 
             last_word = all_doc_tokens[ -1 ] 
             text = " ".join(text)
@@ -2027,11 +2027,6 @@ def load_dataset_per_party_llm(args, index):
 
         ## test
         test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)[:128]
-        # test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer, \
-        #                     max_seq_length=args.max_length, doc_stride=args.doc_stride, \
-        #                     max_query_length=args.max_query_length, is_training=False)
-        # print('test_features:',len(test_features),test_features[0].keys())
-
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer,
                                                      max_seq_length=max_seq_length,
                                                      doc_stride=doc_stride, max_query_length=max_query_length,

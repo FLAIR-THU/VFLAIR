@@ -1,61 +1,61 @@
 {
-    "epochs": 1,
+    "epochs": 10,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 16,
-    "pipeline": "finetune",
+    "batch_size": 128,
+    "pipeline": "pretrained",
+    "early_stop_threshold": 1,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SQuAD",
-        "num_classes": 1,
-        "use_prompt": 1,
-        "n_shot": 1
+        "dataset_name": "SST-2",
+        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 128,
+        "max_length": 70,
         "padding_side": "left",
         "add_special_tokens": 1
     },
     "model_list":{
         "0": {
-            "type": "gpt2-medium",
-            "pretrained": 1,
-            "encoder_trainable": 1,
-            "embedding_trainable": 0,
-            "output_dim": 2,
-            "model_type": "GPT2",
-            "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-medium"
-        },
-        "1": {
-            "type": "gpt2-medium",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "encoder_trainable": 0,
-            "head_layer_trainable": 1,
+            "embedding_trainable": 0,
             "output_dim": 2,
-            "model_type": "GPT2",
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-medium"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-SST-2",
+            "pretrained": 1,
+            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "task":{
-            "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
-            "doc_stride" : 128,
-            "max_seq_length": 512,
-            "max_query_length" : 64,
-            "max_answer_length": 30,
-            "n_best_size": 20
-
+            "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    },
+    "defense": {
+        "name": "LaplaceDP",
+        "parameters": {
+            "party": [0],
+            "epsilon": 70
+        }
     },
     "attack_list": {
         "0":{
@@ -65,7 +65,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 100
             }
         },
         "1":{
@@ -76,8 +76,8 @@
                 "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 100
+            }
         }
-    }
     }
 }

@@ -332,8 +332,9 @@ class ActiveParty_LLM(Party_LLM):
                  use_cache = use_cache,return_dict=True)
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],\
-                 past_key_values = self.passive_pred_list[0][2],\
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                 attention_mask=self.passive_pred_list[0][1],\
+                #  past_key_values = self.passive_pred_list[0][2],\
                  use_cache = use_cache, return_dict=True)
                 pred = self.global_output
             else:

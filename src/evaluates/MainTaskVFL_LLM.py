@@ -64,7 +64,6 @@ class MainTaskVFL_LLM(object):
         self.job_id = job_id
         self.args = args
         self.k = args.k
-        # self.k_server = args.k_server
         self.device = args.device
         # self.train_dataset = args.train_dst
         # self.val_dataset = args.test_dst
@@ -83,6 +82,10 @@ class MainTaskVFL_LLM(object):
         # self.servers = args.servers
 
         self.Q = args.Q  # FedBCD
+
+        self.train_party_time = [0 for i in range(self.k)]
+        self.inference_party_time = [0 for i in range(self.k)]
+
 
         self.parties_data = None
         self.gt_one_hot_label = None
@@ -165,15 +168,13 @@ class MainTaskVFL_LLM(object):
                                         self.current_epoch, self.current_step).to(self.args.device)
         return pred_detach
 
-    def pred_transmit(self, use_cache=False):
+    def pred_transmit(self, use_cache=False, count_time=False):
         '''
         Active party gets pred from passive parties
         '''
         all_pred_list = []
         for ik in range(self.k - 1):
-            # give pred
-            # self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values, 
-            # self.local_sequence_lengths
+            start_time = time.time()
             if self.args.model_type in ['Bert', 'Roberta']:
                 if self.args.task_type == 'SequenceClassification':
                     pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
@@ -279,6 +280,12 @@ class MainTaskVFL_LLM(object):
 
             all_pred_list.append(pred_list)
 
+            end_time = time.time()
+            if count_time=='train':
+                self.train_party_time[ik] += end_time-start_time
+            elif count_time=='inference':
+                self.inference_party_time[ik] += end_time-start_time
+
         self.all_pred_list = all_pred_list
         return all_pred_list
 
@@ -329,32 +336,37 @@ class MainTaskVFL_LLM(object):
             else:
                 assert 1>2 , 'Task type no supported'
 
-    def global_pred_transmit(self, pred_list, use_cache=False):
+    def global_pred_transmit(self, pred_list, use_cache=False, count_time=False):
+        start_time = time.time()
         final_pred = self._communication.send_pred_message(pred_list, self.parse_pred_message_result, use_cache=use_cache)
+        end_time = time.time()
+        if count_time == 'train':
+            self.train_party_time[-1] += end_time - start_time
+        elif count_time == 'inference':
+            self.inference_party_time[-1] += end_time - start_time
         return final_pred
 
-    # def global_pred_transmit(self):
-    #     # active party give global pred to passive party
-    #     final_pred = self.parties[self.k-1].aggregate(self.parties[self.k-1].pred_received, test="True")
-
-    #     for ik in range(self.k-1):
-    #         # self.communication_cost += get_size_of(final_pred)
-    #         self.parties[ik].global_pred = final_pred
-
-    #     return final_pred
-
-    def local_gradient_transmit(self):
+    def local_gradient_transmit(self, count_time='train'):
         for ik in range(self.k - 1):
             if self.parties[ik].local_model_optimizer != None:
+                start_time = time.time()
                 passive_local_gradient = self._communication.send_cal_passive_local_gradient_message(ik)
                 if not isinstance(passive_local_gradient, torch.Tensor):
                     passive_local_gradient = torch.Tensor(passive_local_gradient).to(self.args.device)
+                end_time = time.time()
+
+                if count_time=='train':
+                    self.train_party_time[self.k - 1] += end_time - start_time
+
                 self.parties[ik].local_gradient = passive_local_gradient
 
-    def global_gradient_transmit(self, final_pred):
+    def global_gradient_transmit(self, final_pred, count_time='train'):
+        start_time = time.time()
         global_loss = self.parties[0].cal_loss(final_pred)
-
         global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
+        end_time = time.time()
+        if count_time=='train':
+            self.train_party_time[0] += end_time - start_time
 
         self.communication_cost += get_size_of(global_gradients)
 
@@ -410,9 +422,9 @@ class MainTaskVFL_LLM(object):
                 # target_word_list.extend(target_word)
                 # print('target_word_list:',target_word_list)
                 
-                target_word_label = [int(_id.item()) for _id in list(gt_one_hot_label)]
-                target_word_list = [self.args.tokenizer.decode(_p) for _p in target_word_label]
-                # print('target_word_label:',target_word_label)
+                target_label_list = [int(_id.item()) for _id in list(gt_one_hot_label)]
+                # target_word_list = [self.args.tokenizer.decode(_p) for _p in target_label_list]
+                # print('target_label_list:',target_label_list)
                 # print('target_word_list:',target_word_list)
 
                 enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
@@ -420,24 +432,20 @@ class MainTaskVFL_LLM(object):
                 if self.args.metric_type == "best_pred":
                     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
                     predict_label_list = predict_label  # predict_word: bs * best_pred
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
-                    predict_word = [normalize_answer(_p) for _p in predict_word]
-                    predict_word_list = predict_word  # predict_word: bs * best_pred
+                    # predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
+                    # predict_word = [normalize_answer(_p) for _p in predict_word]
+                    # predict_word_list = predict_word  # predict_word: bs * best_pred
                 elif self.args.metric_type == "n_best":
                     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
+                    predict_label_list = index_list[:, :self.args.n_best_size]
+                    # for _bs in range(predict_label.shape[0]):  # each batch
+                    #     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
+                    #     predict_word = [normalize_answer(_p) for _p in predict_word]
+                    #     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
                 
-                # print('predict_label:',predict_label) 
-                # print('target_word_label:',target_word_label) 
-                # print('predict_word_list:',predict_word_list) 
-                # print('-'*25)
-                # assert 1>2
+                # print('predict_label_list:',predict_label_list)
 
-                return target_word_list, predict_word_list, None
+                return target_label_list, predict_label_list, None #target_word_list, predict_word_list, None
 
             else:  # MMLU
                 choice_id_list = []
@@ -459,13 +467,14 @@ class MainTaskVFL_LLM(object):
                 return [], [], 0
 
         elif self.args.task_type == "QuestionAnswering":
-            start_logits = test_logit.start_logits
-            end_logits = test_logit.end_logits
-            sample_cnt = start_logits.shape[0]
+            start_logits = test_logit.start_logits # bs, 512
+            end_logits = test_logit.end_logits # bs, 512
+            sample_cnt = start_logits.shape[0] # bs
 
             n_best_size = self.args.n_best_size
             start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
             end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
+            # start_indexes: list bs * n_nest_size
 
             exact_score_list = []
             f1_list = []
@@ -474,19 +483,17 @@ class MainTaskVFL_LLM(object):
             for i in range(start_logits.shape[0]):  # for each sample in this batch
                 _start_logits = start_logits[i]
                 _end_logits = end_logits[i]
-                _start_indexes = start_indexes[i]
-                _end_indexes = end_indexes[i]
+                _start_indexes = start_indexes[i] # list  n_best_size
+                _end_indexes = end_indexes[i] # list  n_best_size
 
                 ############ Gold ################
                 feature = parties_data[0][4][i]  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
                 feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
-
                 gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
                 if len(gold_start_indexs.shape) == 0:
                     gold_start_indexs = gold_start_indexs.unsqueeze(0)
                 if len(gold_end_indexs.shape) == 0:
                     gold_end_indexs = gold_end_indexs.unsqueeze(0)
-
                 gold_ans = []  # gold answers for this sample
                 for _i in range(len(gold_start_indexs)):
                     gold_start_index = int(gold_start_indexs[_i])
@@ -504,7 +511,6 @@ class MainTaskVFL_LLM(object):
                     ["start_index", "end_index", "start_logit", "end_logit"])
                 _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
                     "NbestPrediction", ["text", "start_logit", "end_logit"])
-
                 # iterate through all possible start-end pairs
                 prelim_predictions = []
                 for start_index in _start_indexes:
@@ -534,25 +540,22 @@ class MainTaskVFL_LLM(object):
                                 end_index=end_index,
                                 start_logit=_start_logits[start_index],
                                 end_logit=_end_logits[end_index]))
-
                 # Iterate through Sorted Predictions
                 prelim_predictions = sorted(
                     prelim_predictions,
                     key=lambda x: (x.start_logit + x.end_logit),
-                    reverse=True)
+                    reverse=True) # length=2
+                # print('prelim_predictions:',len(prelim_predictions))
 
                 exact_score = 0
                 f1 = 0
-                # Get n best prediction text
-                nbest = []
+                nbest = [] # Get n best prediction text
                 n_best_size = min(n_best_size, len(prelim_predictions))
                 for _id in range(n_best_size):
                     start_index = prelim_predictions[_id].start_index
                     end_index = prelim_predictions[_id].end_index
-
                     pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
                     pred_ans_text = normalize_answer(pred_ans_text)
-
                     nbest.append(
                         _NbestPrediction(
                             text=pred_ans_text,
@@ -560,44 +563,10 @@ class MainTaskVFL_LLM(object):
                             end_logit=prelim_predictions[_id].end_logit))
                 batch_nbest_list.append(nbest)
 
+            # print('batch_nbest_list:',batch_nbest_list)
+            # print('batch_gold_ans_list:',batch_gold_ans_list)
+
             return batch_nbest_list, batch_gold_ans_list, sample_cnt
-
-            # # Get best predicted answer
-            # total_scores = []
-            # best_non_null_entry = None
-
-            # if self.args.metric_type == "best_pred":
-            #     for entry in nbest:
-            #         total_scores.append(entry.start_logit + entry.end_logit)
-            #         if not best_non_null_entry:
-            #             if entry.text:
-            #                 best_non_null_entry = entry
-            #     pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-            #     # Calculate exact_score/f1
-            #     # print('best pred:',pred_ans_text)
-            #     exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-            #     f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-            #     # print('this batch:',exact_score,f1)
-            #     exact_score_list.append(exact_score)
-            #     f1_list.append(f1)
-            # elif self.args.metric_type == "n_best":
-            #     for entry in nbest:
-            #         total_scores.append(entry.start_logit + entry.end_logit)
-            #         if not best_non_null_entry:
-            #             if entry.text:
-            #                 best_non_null_entry = entry
-            #         pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-
-            #         # Calculate exact_score/f1
-            #         exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-            #         f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-            #     # print('this batch:',exact_score,f1)
-            #     exact_score_list.append(exact_score)
-            #     f1_list.append(f1)
-            # else:
-            #     assert 1 > 2, f"{self.args.metric_type} not provided!"
-
-            # return exact_score_list, f1_list, sample_cnt #None
 
         else:
             assert 1 > 2, "task_type not supported"
@@ -690,9 +659,9 @@ class MainTaskVFL_LLM(object):
                 self.gt_one_hot_label = gt_one_hot_label
 
                 # Passive Party -> pred_list[local pred]
-                pred_list = self.pred_transmit()
+                pred_list = self.pred_transmit(count_time = 'inference')
                 # local pred list -> Active Party -> test_logit[final pred]
-                test_logit = self.global_pred_transmit(pred_list)
+                test_logit = self.global_pred_transmit(pred_list, count_time = 'inference')
 
                 # test_logit -> standard output for each task
                 if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
@@ -709,6 +678,7 @@ class MainTaskVFL_LLM(object):
                         total_sample_cnt += sample_cnt
                 elif self.args.task_type == "CausalLM":
                     batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                    # target_label_list, predict_label_list, None
                     target_word_list.extend(batch_target_word)
                     predict_word_list.extend(batch_predict_word)
                     if sample_cnt is not None:
@@ -756,7 +726,7 @@ class MainTaskVFL_LLM(object):
             self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
             postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
             postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-            exp_result = 'test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
+            exp_result = '|test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
             print(exp_result)
             return exp_result, self.test_acc
 
@@ -810,6 +780,7 @@ class MainTaskVFL_LLM(object):
         postfix = {'test_acc': 0.0}
 
         target_word_list, predict_word_list, total_sample_cnt = self.predict()
+        # target_label_list, predict_label_list, None
 
         print('target_word_list:\n', target_word_list[:5])
         print('predict_word_list:\n', predict_word_list[:5])
@@ -839,23 +810,24 @@ class MainTaskVFL_LLM(object):
 
     def qa_inference(self):
         # QA
-        # exact_score_list, f1_list , total_sample_cnt = self.predict()
+        start_time = time.time()
         nbest_list, gold_ans_list, total_sample_cnt = self.predict()
+        end_time = time.time()
+        print('predict:',end_time-start_time)
 
+        start_time = time.time()
         # prediction result assessment
-        total_scores = []
+        # total_scores = []
         best_non_null_entry = None
         exact_score_list = []
         f1_list = []
-
-        # iterate through each sample
-        for nbest, gold_ans in zip(nbest_list, gold_ans_list):
+        for nbest, gold_ans in zip(nbest_list, gold_ans_list): # iterate through each sample
             exact_score = 0
             f1 = 0
             best_non_null_entry = None
             if self.args.metric_type == "best_pred":
                 for entry in nbest:
-                    total_scores.append(entry.start_logit + entry.end_logit)
+                    # total_scores.append(entry.start_logit + entry.end_logit)
                     if not best_non_null_entry:
                         if entry.text:
                             best_non_null_entry = entry
@@ -877,6 +849,9 @@ class MainTaskVFL_LLM(object):
                 f1_list.append(f1)
             else:
                 assert 1 > 2, f"{self.args.metric_type} not provided!"
+
+        end_time = time.time()
+        print('assess:',end_time-start_time)
 
         exact_score = np.mean(exact_score_list)
         f1 = np.mean(f1_list)
@@ -924,6 +899,9 @@ class MainTaskVFL_LLM(object):
 
     def inference(self, **kwargs):
         # print(' ========= Inference ==========')
+        # set inference time back to 0
+        self.inference_party_time = [0 for i in range(self.k)]
+
         for ik in range(self.k - 1):
             self.parties[ik].prepare_data_loader()
             self.parties[ik].eval()
@@ -932,16 +910,18 @@ class MainTaskVFL_LLM(object):
         if self.args.task_type == "QuestionAnswering":
             exp_result, main_task_result = self.qa_inference()
             self.final_state = self.save_state()
-            # self.final_state.update(self.save_state(False))
-            # self.final_state.update(self.save_party_data())
+            self.final_state.update(self.save_state(False))
+            self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
         elif self.args.task_type == "SequenceClassification":
             # exp_result, self.test_acc =
             exp_result, main_task_result = self.seq_inference()
             self.final_state = self.save_state()
-            # self.final_state.update(self.save_state(False))
-            # self.final_state.update(self.save_party_data())
+            self.final_state.update(self.save_state(False))
+            self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
         elif self.args.task_type == "CausalLM":
@@ -950,6 +930,7 @@ class MainTaskVFL_LLM(object):
             self.final_state = self.save_state()
             self.final_state.update(self.save_state(False))
             self.final_state.update(self.save_party_data())
+            exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
             return exp_result, main_task_result
 
         elif self.args.task_type == "DevLLMInference":
@@ -972,29 +953,31 @@ class MainTaskVFL_LLM(object):
             self.parties[ik].input_shape = input_shape
             self.parties[ik].obtain_local_data(parties_data[ik][0], parties_data[ik][2], parties_data[ik][3])
             self.parties[ik].gt_one_hot_label = gt_one_hot_label
-        ############### allocate data ###############
 
         ################ normal vertical federated learning ################
         # torch.autograd.set_detect_anomaly(True)
         # =================== Commu ===================
-        # exchange info between party: local_pred/global_pred
         # Passive Party -> pred_list[local pred]
-        pred_list = self.pred_transmit()
-        # local pred list -> Active Party -> test_logit[final pred]
-        final_pred = self.global_pred_transmit(pred_list)
+        pred_list = self.pred_transmit(count_time = 'train')
+        # pred_list[local pred] -> Active Party -> test_logit[final pred]
+        final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
 
         # passive party -> global gradient -> active party
-        loss = self.global_gradient_transmit(final_pred)
+        loss = self.global_gradient_transmit(final_pred, count_time = 'train')
         # active party -> local gradient -> passive party
-        self.local_gradient_transmit()
-        # =================== Commu ===================
+        self.local_gradient_transmit(count_time = 'train')
 
         # ============= Model Update =============
-        # update parameters for global trainable part
+        start_time = time.time()
         self._communication.send_global_backward_message()
+        end_time = time.time()
+        self.train_party_time[self.args.k - 1] += end_time - start_time
+
         for ik in range(self.k - 1):
+            start_time = time.time()
             self.parties[ik].local_backward()
-        # ============= Model Update =============
+            end_time = time.time()
+            self.train_party_time[ik] += end_time - start_time
 
         ################ normal vertical federated learning ################
 
@@ -1171,46 +1154,33 @@ class MainTaskVFL_LLM(object):
             pred = self.parties[self.k - 1].global_pred  # logits
             loss = self.parties[0].global_loss
             test_logit = pred
-            next_token_logits = test_logit[:,
-                                -1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
+            next_token_logits = test_logit[:,-1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
 
             if self.args.dataset == "Lambada":
                 # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-                target_word_list = [normalize_answer(_p) for _p in gt_one_hot_label]
-                # print('target_word_list:',type(target_word_list),len(target_word_list),target_word_list)
+                target_label_list = [int(_p) for _p in gt_one_hot_label]
 
                 # predict_word_list : bs * predicted words
                 enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
                 if self.args.metric_type == "best_pred":
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label.tolist()]
-                    predict_word_list = [normalize_answer(_p) for _p in predict_word]
+                    predict_label_list = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
                 elif self.args.metric_type == "n_best":
                     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
                     # print('index_list:',index_list.shape)
-                    predict_label = index_list[:, :self.args.n_best_size]
-                    # print('predict_label:',predict_label.shape)
-                    predict_word_list = []
-                    for _bs in range(predict_label.shape[0]):  # each batch
-                        predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        predict_word = [normalize_answer(_p) for _p in predict_word]
-                        predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                        # print('predict_word:',predict_word)
-                # print('predict_word_list:',type(predict_word_list),len(predict_word_list))
-                # print(predict_word_list)
+                    predict_label_list = index_list[:, :self.args.n_best_size]
 
                 if self.args.metric_type == "best_pred":
                     suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] == predict_word_list[i]:
+                    for i in range(len(target_label_list)):
+                        if target_label_list[i] == predict_label_list[i]:
                             suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
+                    batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
                 elif self.args.metric_type == "n_best":
                     suc_cnt = 0
-                    for i in range(len(target_word_list)):
-                        if target_word_list[i] in predict_word_list[i]:
+                    for i in range(len(target_label_list)):
+                        if target_label_list[i] in predict_label_list[i]:
                             suc_cnt += 1
-                    batch_train_acc = suc_cnt / float(len(target_word_list))  # ACC
+                    batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
                 else:
                     assert 1 > 2, 'metric type not supported'
 
@@ -1342,9 +1312,8 @@ class MainTaskVFL_LLM(object):
                 enter_time = time.time()
                 self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
                 exit_time = time.time()
-                # ====== train batch (end) ======
-
                 total_time += (exit_time - enter_time)
+                # ====== train batch (end) ======
                 self.num_total_comms = self.num_total_comms + 1
                 # if self.num_total_comms % 10 == 0:
                 #     print(f"total time for {self.num_total_comms} communication is {total_time}")
@@ -1384,13 +1353,6 @@ class MainTaskVFL_LLM(object):
                             i_epoch, self.loss, self.train_acc, self.test_acc)
                     print(exp_result)
 
-                    # if (i+1) % 10 == 0:
-                    #     if self.args.apply_adversarial:
-                    #         if last_adversarial_model_loss < self.parties[0].adversarial_model_loss.item():
-                    #             self.final_epoch = i_epoch
-                    #             break
-                    #         last_adversarial_model_loss = self.parties[0].adversarial_model_loss.item()
-
                     self.final_epoch = i_epoch + 1
 
             data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
@@ -1405,12 +1367,12 @@ class MainTaskVFL_LLM(object):
 
         self.training_time = total_time
         if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
-            exp_result = f'training_time={total_time}|train_loss:{self.loss}|\
+            exp_result = f'|train_party_time={self.train_party_time}|training_time={total_time}|train_loss:{self.loss}|\
             train_mse={self.train_acc[0]}|train_pearson_corr={self.train_acc[1]}|train_spearmanr_corr={self.train_acc[2]}|\
             test_mse={self.test_acc[0]}|train_pearson_corr={self.test_acc[1]}|test_spearmanr_corr={self.test_acc[2]}|\
             final_epoch={self.final_epoch}'
         else:
-            exp_result = f'|training_time={total_time}|train_loss={self.loss}|train_acc={self.train_acc}|\
+            exp_result = f'|train_party_time={self.train_party_time}|training_time={total_time}|train_loss={self.loss}|train_acc={self.train_acc}|\
             test_acc={self.test_acc}|final_epoch={self.final_epoch}'
 
         self.final_state = self.save_state()

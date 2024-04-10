@@ -225,7 +225,7 @@ class WhiteBoxInversion(Attacker):
                                                         token_type_ids=dummy_local_batch_token_type_ids,\
                                                         inputs_embeds = dummy_embedding)
                         elif self.args.model_type == 'Llama':
-                            dummy_intermediate, _a, _b, _c = local_model(input_ids=dummy_data,\
+                            dummy_intermediate, _a, _b, _c = local_model(input_ids=None,\
                                                 attention_mask = dummy_attention_mask, \
                                                 inputs_embeds = dummy_embedding)    
                         else:

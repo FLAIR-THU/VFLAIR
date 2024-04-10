@@ -374,7 +374,7 @@ def load_basic_models_llm_bert(args, index):
     encoder_trainable = args.encoder_trainable
     embedding_trainable = args.embedding_trainable
     local_encoders_num = args.local_encoders_num
-
+    
     local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
         pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, \
         head_layer_trainable, encoder_trainable, embedding_trainable, local_encoders_num)
@@ -390,173 +390,175 @@ def load_basic_models_llm_bert_new(pretrained, task_type, model_type, current_ou
     # current_model_type = args.model_list[str(index)]['type']
     # current_output_dim = args.model_list[str(index)]['output_dim']
 
-    if pretrained == 0:  # finetune your own LLM based on base models(bert-base-uncased)
-        tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=True)
-        tokenizer.padding_side = padding_side if (padding_side in ["left", "right"]) else "left"
-        full_bert = BertModel.from_pretrained(model_path)
+    # if pretrained == 0:  # finetune your own LLM based on base models(bert-base-uncased)
+    #     tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=True)
+    #     tokenizer.padding_side = padding_side if (padding_side in ["left", "right"]) else "left"
+    #     full_bert = BertModel.from_pretrained(model_path)
 
-        if pad_token == "default":
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)  #
-                full_bert.config.pad_token_id = pad_id
-            pad_token = "default_" + tokenizer.pad_token
-        else:
-            tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = tokenizer.convert_tokens_to_ids(pad_token)  #
-            full_bert.config.pad_token_id = pad_id
+    #     if pad_token == "default":
+    #         if tokenizer.pad_token is None:
+    #             tokenizer.pad_token = tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #             pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)  #
+    #             full_bert.config.pad_token_id = pad_id
+    #         pad_token = "default_" + tokenizer.pad_token
+    #     else:
+    #         tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #         pad_id = tokenizer.convert_tokens_to_ids(pad_token)  #
+    #         full_bert.config.pad_token_id = pad_id
 
-        config = full_bert.config  # print(full_bert.encoder.layer[0])
-        all_encoder_num = config.num_hidden_layers
-        print('all_encoder_num:',all_encoder_num)
+    #     config = full_bert.config  # print(full_bert.encoder.layer[0])
+    #     all_encoder_num = config.num_hidden_layers
+    #     print('all_encoder_num:',all_encoder_num)
 
-        ########### Local Model ###########
-        local_model = None
+    #     ########### Local Model ###########
+    #     local_model = None
+    #     local_model_optimizer = None
+    #     if is_local:  # passive
+    #         print('local_encoders_num:',local_encoders_num)
+    #         local_model = LocalBertModel(full_bert, local_encoders_num, model_type=model_type)
+    #         # Freeze Backbone
+    #         for param in local_model.parameters():
+    #             param.requires_grad = False
+    #         local_model = local_model.to(device)
+    #         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+    #         local_model_optimizer = None
+
+    #     ########### Global Model ###########
+    #     global_model = None
+    #     global_model_optimizer = None
+    #     if not is_local:
+    #         global_encoders_num = all_encoder_num - local_encoders_num
+    #         print('global_encoders_num:',global_encoders_num)
+    #         # global part of bert(frozen)
+    #         global_bert = GlobalBertModel(full_bert, global_encoders_num, model_type=model_type)
+
+    #         # finetune from checkpoint / base models
+    #         # add Classification Layer(trainable)
+    #         if task_type == "SequenceClassification":
+    #             global_model = BertForSequenceClassification_forfinetune(global_bert, current_output_dim)
+    #         elif task_type == "QuestionAnswering":
+    #             global_model = BertForQuestionAnswering_forfinetune(global_bert)
+    #         # elif args.task_type == "CausalLM":
+    #         #     global_model = BertForQuestionAnswering_forfinetune(global_bert)
+    #         else:
+    #             assert 1 > 2, f"task type {task_type} not supported for finetune"
+    #         print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+
+    #         # Freeze Backbone
+    #         for param in global_model.bert.parameters():
+    #             param.requires_grad = False
+
+    #         # Trainable Part for finetuning
+    #         for param in global_model.head_layer.parameters():
+    #             param.requires_grad = True
+    #         global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
+
+    #         global_model = global_model.to(device)
+    # else:  # load third party pretrained LLM
+
+    print('load_basic_models_llm pretrained:', model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
+    tokenizer.padding_side = padding_side if (padding_side in ["left", "right"]) else "left"
+
+    if task_type == 'QuestionAnswering':
+        full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    else:
+        full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+
+    # for name, param in full_model.named_parameters():
+    #     print("-----full_model--{}:{}".format(name, param.shape))
+
+    if model_type == 'Roberta':
+        full_bert = full_model.roberta
+    elif model_type == 'Albert':
+        full_bert = full_model.albert
+    else:  # Bert
+        full_bert = full_model.bert
+
+    if task_type == 'QuestionAnswering':
+        head_layer = full_model.qa_outputs
+    elif task_type == "SequenceClassification":
+        head_layer = full_model.classifier
+    elif task_type == "CausalLM":
+        head_layer = full_model.cls
+    else:
+        assert 1 > 2, "task type not supported"
+
+    if pad_token == "default":
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)  #
+            full_model.config.pad_token_id = pad_id
+        pad_token = "default_" + tokenizer.pad_token
+    else:
+        tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+        pad_id = tokenizer.convert_tokens_to_ids(pad_token)  #
+        full_model.config.pad_token_id = pad_id
+
+    config = full_model.config
+    all_encoder_num = config.num_hidden_layers
+
+    ########### Local Model ###########
+    local_model = None
+    local_model_optimizer = None
+    if is_local:
+        print('=== prepare local model')
+        print('all_encoder_num:',all_encoder_num,'  local_encoders_num:',local_encoders_num)
+        local_model = LocalBertModel(full_bert, local_encoders_num, model_type=model_type)
+        # Freeze Backbone
+        for param in local_model.parameters():
+            param.requires_grad = False
+        local_model = local_model.to(device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
         local_model_optimizer = None
-        if is_local:  # passive
-            print('local_encoders_num:',local_encoders_num)
-            local_model = LocalBertModel(full_bert, local_encoders_num, model_type=model_type)
-            # Freeze Backbone
-            for param in local_model.parameters():
-                param.requires_grad = False
-            local_model = local_model.to(device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-            local_model_optimizer = None
+        local_trainable_params = []
+        print('Local Model: embedding_trainable = ', embedding_trainable[0])
+        for param in local_model.encoder_layer.parameters():
+            param.requires_grad = embedding_trainable[0]
+        if embedding_trainable[0]:
+            local_trainable_params.extend(list(local_model.embeddings.parameters()))
+            print('yes embedding')
+        print('Local Model: encoder_trainable = ', encoder_trainable[0])
+        for param in local_model.encoder_layer.parameters():
+            param.requires_grad = encoder_trainable[0]
+        if encoder_trainable[0]:
+            local_trainable_params.extend(list(local_model.encoder_layer.parameters()))
+        if len(local_trainable_params) > 0:
+            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=main_lr)
 
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if not is_local:
-            global_encoders_num = all_encoder_num - local_encoders_num
-            print('global_encoders_num:',global_encoders_num)
-            # global part of bert(frozen)
-            global_bert = GlobalBertModel(full_bert, global_encoders_num, model_type=model_type)
-
-            # finetune from checkpoint / base models
-            # add Classification Layer(trainable)
-            if task_type == "SequenceClassification":
-                global_model = BertForSequenceClassification_forfinetune(global_bert, current_output_dim)
-            elif task_type == "QuestionAnswering":
-                global_model = BertForQuestionAnswering_forfinetune(global_bert)
-            # elif args.task_type == "CausalLM":
-            #     global_model = BertForQuestionAnswering_forfinetune(global_bert)
-            else:
-                assert 1 > 2, f"task type {task_type} not supported for finetune"
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-            # Freeze Backbone
-            for param in global_model.bert.parameters():
-                param.requires_grad = False
-
-            # Trainable Part for finetuning
-            for param in global_model.head_layer.parameters():
-                param.requires_grad = True
-            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
-
-            global_model = global_model.to(device)
-
-    else:  # load third party pretrained LLM
-        print('load_basic_models_llm pretrained:', model_path)
-        tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
-        tokenizer.padding_side = padding_side if (padding_side in ["left", "right"]) else "left"
-
-        if task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-        else:
-            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
-
-        # for name, param in full_model.named_parameters():
-        #     print("-----full_model--{}:{}".format(name, param.shape))
-
-        if model_type == 'Roberta':
-            full_bert = full_model.roberta
-        elif model_type == 'Albert':
-            full_bert = full_model.albert
-        else:  # Bert
-            full_bert = full_model.bert
-
-        if task_type == 'QuestionAnswering':
-            head_layer = full_model.qa_outputs
+    ########### Global Model ###########
+    global_model = None
+    global_model_optimizer = None
+    if not is_local:
+        print('=== prepare global model')
+        global_encoders_num = all_encoder_num - local_encoders_num
+        print('all_encoder_num:',all_encoder_num,'  global_encoders_num:',global_encoders_num)
+        # global part of bert(frozen)
+        global_bert = GlobalBertModel(full_bert, global_encoders_num, model_type=model_type)
+        # add Classification Layer(untrainable)
+        if task_type == "QuestionAnswering":
+            global_model = BertForQuestionAnswering_pretrained(global_bert, head_layer)
         elif task_type == "SequenceClassification":
-            head_layer = full_model.classifier
+            global_model = BertForSequenceClassification_pretrained(global_bert, head_layer)
         elif task_type == "CausalLM":
-            head_layer = full_model.lm_head
+            global_model = BertLMHeadModel_pretrained(global_bert, head_layer)
         else:
             assert 1 > 2, "task type not supported"
+        print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
 
-        if pad_token == "default":
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)  #
-                full_model.config.pad_token_id = pad_id
-            pad_token = "default_" + tokenizer.pad_token
-        else:
-            tokenizer.pad_token = pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = tokenizer.convert_tokens_to_ids(pad_token)  #
-            full_model.config.pad_token_id = pad_id
+        # Freeze Backbone
+        for param in global_model.bert.parameters():
+            param.requires_grad = False
 
-        config = full_model.config
-        all_encoder_num = config.num_hidden_layers
+        # Head Layer Trainable/Freeze
+        print('Global Model : head_layer_trainable = ', head_layer_trainable[1])
+        for param in global_model.head_layer.parameters():
+            param.requires_grad = head_layer_trainable[1]
+        if head_layer_trainable[1]:
+            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
 
-        ########### Local Model ###########
-        local_model = None
-        local_model_optimizer = None
-        if is_local:
-            print('=== prepare local model')
-            print('all_encoder_num:',all_encoder_num,'  local_encoders_num:',local_encoders_num)
-            local_model = LocalBertModel(full_bert, local_encoders_num, model_type=model_type)
-            # Freeze Backbone
-            for param in local_model.parameters():
-                param.requires_grad = False
-            local_model = local_model.to(device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-
-            local_model_optimizer = None
-            local_trainable_params = []
-            print('Local Model: embedding_trainable = ', embedding_trainable[0])
-            for param in local_model.encoder_layer.parameters():
-                param.requires_grad = embedding_trainable[0]
-            if embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.embeddings.parameters()))
-                print('yes embedding')
-            print('Local Model: encoder_trainable = ', encoder_trainable[0])
-            for param in local_model.encoder_layer.parameters():
-                param.requires_grad = encoder_trainable[0]
-            if encoder_trainable[0]:
-                local_trainable_params.extend(list(local_model.encoder_layer.parameters()))
-            if len(local_trainable_params) > 0:
-                local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=main_lr)
-
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if not is_local:
-            print('=== prepare global model')
-            global_encoders_num = all_encoder_num - local_encoders_num
-            print('all_encoder_num:',all_encoder_num,'  global_encoders_num:',global_encoders_num)
-            # global part of bert(frozen)
-            global_bert = GlobalBertModel(full_bert, global_encoders_num, model_type=model_type)
-            # add Classification Layer(untrainable)
-            if task_type == "QuestionAnswering":
-                global_model = BertForQuestionAnswering_pretrained(global_bert, head_layer)
-            elif task_type == "SequenceClassification":
-                global_model = BertForSequenceClassification_pretrained(global_bert, head_layer)
-            else:
-                assert 1 > 2, "task type not supported"
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-            # Freeze Backbone
-            for param in global_model.bert.parameters():
-                param.requires_grad = False
-
-            # Head Layer Trainable/Freeze
-            print('Global Model : head_layer_trainable = ', head_layer_trainable[1])
-            for param in global_model.head_layer.parameters():
-                param.requires_grad = head_layer_trainable[1]
-            if head_layer_trainable[1]:
-                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=main_lr)
-
-            global_model = global_model.to(device)
+        global_model = global_model.to(device)
 
     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
 
@@ -566,184 +568,184 @@ def load_basic_models_llm_gpt2(args, index):
     current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
-    if args.pretrained == 0:  # load from base LLM with randomly initialized head layer
-        print('finetune gpt path:', model_path)
-        args.tokenizer = GPT2Tokenizer.from_pretrained(model_path, do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+    # if args.pretrained == 0:  # load from base LLM with randomly initialized head layer
+    #     print('finetune gpt path:', model_path)
+    #     args.tokenizer = GPT2Tokenizer.from_pretrained(model_path, do_lower_case=True)
+    #     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-        full_gpt = GPT2Model.from_pretrained(model_path)
+    #     full_gpt = GPT2Model.from_pretrained(model_path)
 
-        if args.pad_token == "default":
-            if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-                full_gpt.config.pad_token_id = pad_id
-            args.pad_token = "default_" + args.tokenizer.pad_token
-        else:
-            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-            full_gpt.config.pad_token_id = pad_id
+    #     if args.pad_token == "default":
+    #         if args.tokenizer.pad_token is None:
+    #             args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+    #             full_gpt.config.pad_token_id = pad_id
+    #         args.pad_token = "default_" + args.tokenizer.pad_token
+    #     else:
+    #         args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #         pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+    #         full_gpt.config.pad_token_id = pad_id
 
-        args.config = full_gpt.config  # print(full_bert.encoder.layer[0])
-        all_encoder_num = args.config.num_hidden_layers
-        print('all_encoder_num:',all_encoder_num)
+    #     args.config = full_gpt.config  # print(full_bert.encoder.layer[0])
+    #     all_encoder_num = args.config.num_hidden_layers
+    #     print('all_encoder_num:',all_encoder_num)
 
-        ########### Local Model ###########
-        local_model = None
-        local_model_optimizer = None
-        if index < args.k - 1:
-            print('args.local_encoders_num:',args.local_encoders_num)
-            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, model_type=args.model_type)
-            # Freeze Backbone
-            for param in local_model.parameters():
-                param.requires_grad = False
-            local_model = local_model.to(args.device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-            local_model_optimizer = None
+    #     ########### Local Model ###########
+    #     local_model = None
+    #     local_model_optimizer = None
+    #     if index < args.k - 1:
+    #         print('args.local_encoders_num:',args.local_encoders_num)
+    #         local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, model_type=args.model_type)
+    #         # Freeze Backbone
+    #         for param in local_model.parameters():
+    #             param.requires_grad = False
+    #         local_model = local_model.to(args.device)
+    #         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+    #         local_model_optimizer = None
 
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if index == args.k - 1:
-            global_encoders_num = all_encoder_num - args.local_encoders_num
-            print('global_encoders_num:',global_encoders_num)
-            # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt, global_encoders_num, model_type=args.model_type)  # generation_config = full_gpt.generation_config,
+    #     ########### Global Model ###########
+    #     global_model = None
+    #     global_model_optimizer = None
+    #     if index == args.k - 1:
+    #         global_encoders_num = all_encoder_num - args.local_encoders_num
+    #         print('global_encoders_num:',global_encoders_num)
+    #         # global part of gpt2(frozen)
+    #         global_gpt = GlobalGPT2Model(full_gpt, global_encoders_num, model_type=args.model_type)  # generation_config = full_gpt.generation_config,
 
-            # add Classification Layer(trainable)
-            if args.task_type == "SequenceClassification":
-                global_model = GPT2ForSequenceClassification_forfinetune(global_gpt, current_output_dim)
-            elif args.task_type == "CausalLM":
-                global_model = GPT2LMHeadModel_forfinetune(global_gpt)
-            elif args.task_type == "Generation":
-                global_model = global_gpt  # GPT2LMHeadModel_forfinetune(global_gpt)
-            # elif args.task_type == "QuestionAnswering":
-            #     global_model = GPT2ForQuestionAnswering_forfinetune
-            else:
-                assert 1 > 2, "task type not supported for finetune"
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+    #         # add Classification Layer(trainable)
+    #         if args.task_type == "SequenceClassification":
+    #             global_model = GPT2ForSequenceClassification_forfinetune(global_gpt, current_output_dim)
+    #         elif args.task_type == "CausalLM":
+    #             global_model = GPT2LMHeadModel_forfinetune(global_gpt)
+    #         elif args.task_type == "Generation":
+    #             global_model = global_gpt  # GPT2LMHeadModel_forfinetune(global_gpt)
+    #         # elif args.task_type == "QuestionAnswering":
+    #         #     global_model = GPT2ForQuestionAnswering_forfinetune
+    #         else:
+    #             assert 1 > 2, "task type not supported for finetune"
+    #         print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
 
-            # Freeze Backbone
-            for param in global_model.transformer.parameters():
-                param.requires_grad = False
-            # Trainable Part for finetuning
-            for param in global_model.head_layer.parameters():
-                param.requires_grad = True
-            global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+    #         # Freeze Backbone
+    #         for param in global_model.transformer.parameters():
+    #             param.requires_grad = False
+    #         # Trainable Part for finetuning
+    #         for param in global_model.head_layer.parameters():
+    #             param.requires_grad = True
+    #         global_model = global_model.to(args.device)
+    #         global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+    # else:
+    print('load_basic_models_llm from:', current_model_type)
+    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
+    args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+
+    if args.task_type == 'CausalLM':
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif args.task_type == "Generation":
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif args.task_type == 'QuestionAnswering':
+        full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    elif args.task_type == 'SequenceClassification':
+        full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
-        print('load_basic_models_llm pretrained:', current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+        assert 1 > 2, "task type not supported"
 
-        if args.task_type == 'CausalLM':
-            full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    full_gpt = full_model.transformer
+    if args.task_type == 'CausalLM':
+        head_layer = full_model.lm_head
+    elif args.task_type == 'Generation':
+        head_layer = full_model.lm_head
+    elif args.task_type == 'QuestionAnswering':
+        head_layer = full_model.qa_outputs
+    elif args.task_type == 'SequenceClassification':
+        head_layer = full_model.score
+    else:
+        head_layer = None
+
+    args.config = full_model.config
+    all_encoder_num = args.config.num_hidden_layers
+    print('all_encoder_num:',all_encoder_num)
+
+    if args.pad_token == "default":
+        print('Default pad')
+        if args.tokenizer.pad_token is None:
+            args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+            full_model.config.pad_token_id = pad_id
+        args.pad_token = "default_" + args.tokenizer.pad_token
+    else:
+        args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+        pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+        full_model.config.pad_token_id = pad_id
+
+    ########### Local Model ###########
+    local_model = None
+    local_model_optimizer = None
+    if index < args.k - 1:
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, generation_config=full_model.generation_config, model_type=args.model_type)
+
+        # Freeze Backbone
+        for param in local_model.parameters():
+            param.requires_grad = False
+        local_model = local_model.to(args.device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
+        local_model_optimizer = None
+        local_trainable_params = []
+        print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
+        for param in local_model.wte.parameters():
+            param.requires_grad = args.embedding_trainable[0]
+        if args.embedding_trainable[0]:
+            local_trainable_params.extend(list(local_model.wte.parameters()))
+        for param in local_model.wpe.parameters():
+            param.requires_grad = args.embedding_trainable[0]
+        if args.embedding_trainable[0]:
+            local_trainable_params.extend(list(local_model.wpe.parameters()))
+        print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
+        for param in local_model.h.parameters():
+            param.requires_grad = args.encoder_trainable[0]
+        if args.encoder_trainable[0]:
+            local_trainable_params.extend(list(local_model.h.parameters()))
+        if len(local_trainable_params)>0:
+            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+    ########### Global Model ###########
+    global_model = None
+    global_model_optimizer = None
+    if index == args.k - 1:
+        global_encoders_num = all_encoder_num - args.local_encoders_num
+        print('global_encoders_num:',global_encoders_num)
+
+        # global part of gpt2(frozen)
+        global_gpt = GlobalGPT2Model(full_gpt, global_encoders_num, model_type=args.model_type)
+
+        # add Classification Layer(untrainable)
+        if args.task_type == "CausalLM":
+            global_model = GPT2LMHeadModel_pretrained(global_gpt, head_layer)
+        elif args.task_type == "QuestionAnswering":
+            global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, head_layer)
+        elif args.task_type == "SequenceClassification":
+            global_model = GPT2ForSequenceClassification_pretrained(global_gpt, head_layer)
         elif args.task_type == "Generation":
-            full_model = AutoModelForCausalLM.from_pretrained(model_path)
-        elif args.task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-        elif args.task_type == 'SequenceClassification':
-            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+            global_model = GPT2forGeneration_pretrained(global_gpt, head_layer)
         else:
             assert 1 > 2, "task type not supported"
 
-        full_gpt = full_model.transformer
-        if args.task_type == 'CausalLM':
-            head_layer = full_model.lm_head
-        elif args.task_type == 'Generation':
-            head_layer = full_model.lm_head
-        elif args.task_type == 'QuestionAnswering':
-            head_layer = full_model.qa_outputs
-        elif args.task_type == 'SequenceClassification':
-            head_layer = full_model.score
-        else:
-            head_layer = None
+        print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
 
-        args.config = full_model.config
-        all_encoder_num = args.config.num_hidden_layers
-        print('all_encoder_num:',all_encoder_num)
+        # Freeze Backbone
+        for param in global_model.transformer.parameters():
+            param.requires_grad = False
 
-        if args.pad_token == "default":
-            print('Default pad')
-            if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-                full_model.config.pad_token_id = pad_id
-            args.pad_token = "default_" + args.tokenizer.pad_token
-        else:
-            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-            full_model.config.pad_token_id = pad_id
+        # Head Layer Trainable/Freeze
+        if head_layer:  # head layer exists
+            print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
+            for param in global_model.head_layer.parameters():
+                param.requires_grad = args.head_layer_trainable[1]
+            if args.head_layer_trainable[1]:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
-        ########### Local Model ###########
-        local_model = None
-        local_model_optimizer = None
-        if index < args.k - 1:
-            print('args.local_encoders_num:',args.local_encoders_num)
-            local_model = LocalGPT2Model(full_gpt, args.local_encoders_num, generation_config=full_model.generation_config, model_type=args.model_type)
-
-            # Freeze Backbone
-            for param in local_model.parameters():
-                param.requires_grad = False
-            local_model = local_model.to(args.device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-
-            local_model_optimizer = None
-            local_trainable_params = []
-            print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
-            for param in local_model.wte.parameters():
-                param.requires_grad = args.embedding_trainable[0]
-            if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wte.parameters()))
-            for param in local_model.wpe.parameters():
-                param.requires_grad = args.embedding_trainable[0]
-            if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wpe.parameters()))
-            print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
-            for param in local_model.h.parameters():
-                param.requires_grad = args.encoder_trainable[0]
-            if args.encoder_trainable[0]:
-                local_trainable_params.extend(list(local_model.h.parameters()))
-            if len(local_trainable_params)>0:
-                local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
-
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if index == args.k - 1:
-            global_encoders_num = all_encoder_num - args.local_encoders_num
-            print('global_encoders_num:',global_encoders_num)
-
-            # global part of gpt2(frozen)
-            global_gpt = GlobalGPT2Model(full_gpt, global_encoders_num, model_type=args.model_type)
-
-            # add Classification Layer(untrainable)
-            if args.task_type == "CausalLM":
-                global_model = GPT2LMHeadModel_pretrained(global_gpt, head_layer)
-            elif args.task_type == "QuestionAnswering":
-                global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, head_layer)
-            elif args.task_type == "SequenceClassification":
-                global_model = GPT2ForSequenceClassification_pretrained(global_gpt, head_layer)
-            elif args.task_type == "Generation":
-                global_model = GPT2forGeneration_pretrained(global_gpt, head_layer)
-            else:
-                assert 1 > 2, "task type not supported"
-
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-            # Freeze Backbone
-            for param in global_model.transformer.parameters():
-                param.requires_grad = False
-
-            # Head Layer Trainable/Freeze
-            if head_layer:  # head layer exists
-                print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
-                for param in global_model.head_layer.parameters():
-                    param.requires_grad = args.head_layer_trainable[1]
-                if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
-
-            global_model = global_model.to(args.device)
+        global_model = global_model.to(args.device)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
@@ -753,190 +755,185 @@ def load_basic_models_llm_llama(args, index):
     current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
-    if args.pretrained == 0:
-        args.tokenizer = LlamaTokenizer.from_pretrained(model_path, do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+    # if args.pretrained == 0:
+    #     args.tokenizer = LlamaTokenizer.from_pretrained(model_path, do_lower_case=True)
+    #     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-        full_llama = LlamaModel.from_pretrained(model_path)
+    #     full_llama = LlamaModel.from_pretrained(model_path)
 
-        if args.pad_token == "default":
-            if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-                full_llama.config.pad_token_id = pad_id
-            args.pad_token = "default_" + args.tokenizer.pad_token
+    #     if args.pad_token == "default":
+    #         if args.tokenizer.pad_token is None:
+    #             args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+    #             full_llama.config.pad_token_id = pad_id
+    #         args.pad_token = "default_" + args.tokenizer.pad_token
+    #     else:
+    #         if args.tokenizer.pad_token != None:
+    #             print(f'Note:Origin pad token: {args.tokenizer.pad_token}  --> {args.pad_token}')
+    #         args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+    #         pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+    #         full_llama.config.pad_token_id = pad_id
+
+    #     args.config = full_llama.config  # print(full_bert.encoder.layer[0])
+    #     all_encoder_num = args.config.num_hidden_layers
+    #     print('all_encoder_num:',all_encoder_num)
+
+    #     ########### Local Model ###########
+    #     local_model = None
+    #     local_model_optimizer = None
+    #     if index < args.k - 1:
+    #         print('args.local_encoders_num:',args.local_encoders_num)
+    #         local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
+    #         # Freeze Backbone
+    #         for param in local_model.parameters():
+    #             param.requires_grad = False
+    #         local_model = local_model.to(args.device)
+    #         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+    #         local_model_optimizer = None
+
+    #     ########### Global Model ###########
+    #     global_model = None
+    #     global_model_optimizer = None
+    #     if index == args.k - 1:
+    #         global_encoders_num = all_encoder_num - args.local_encoders_num
+    #         print('global_encoders_num:',global_encoders_num)
+
+    #         # global part of llama(frozen)
+    #         global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
+
+    #         # add Classification Layer(trainable)
+    #         # if args.task_type == "CausalLM":
+    #         #     global_model = LlamaForCausalLM_forfinetune(global_llama, head_layer)
+    #         # elif args.task_type == "QuestionAnswering":
+    #         #     global_model = LlamaForQuestionAnswering_forfinetune(global_llama, head_layer)
+    #         if args.task_type == "SequenceClassification":
+    #             global_model = LlamaForSequenceClassification_forfinetune(global_llama, current_output_dim)
+    #         else:
+    #             assert 1 > 2, "task type not supported"
+
+    #         print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+
+    #         # Freeze Backbone
+    #         for param in global_model.model.parameters():
+    #             param.requires_grad = False
+
+    #         # Trainable Part for finetuning
+    #         for param in global_model.head_layer.parameters():
+    #             param.requires_grad = True
+
+    #         global_model = global_model.to(args.device)
+    #         global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+
+    #     del (full_llama)
+    # else:
+    print('load_basic_models_llm from:', current_model_type)
+    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
+    args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+
+    if args.task_type == 'CausalLM':
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif args.task_type == 'Generation':
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif args.task_type == 'QuestionAnswering':
+        full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    elif args.task_type == 'SequenceClassification':
+        full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    else:
+        assert 1 > 2, "task type not supported"
+
+    full_llama = full_model.model
+
+    if args.task_type == 'CausalLM':
+        head_layer = full_model.lm_head
+    elif args.task_type == 'Generation':
+        head_layer = full_model.lm_head
+    elif args.task_type == 'QuestionAnswering':
+        head_layer = full_model.qa_outputs
+    elif args.task_type == 'SequenceClassification':
+        head_layer = full_model.score
+    else:
+        head_layer = None
+        assert 1 > 2, "task type not supported"
+
+    if args.pad_token == "default":
+        if args.tokenizer.pad_token is None:
+            args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+            full_model.config.pad_token_id = pad_id
+        args.pad_token = "default_" + args.tokenizer.pad_token
+    else:
+        args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+        pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+        full_model.config.pad_token_id = pad_id
+
+    args.config = full_model.config
+    all_encoder_num = args.config.num_hidden_layers
+    print('all_encoder_num:',all_encoder_num)
+
+    ########### Local Model ###########
+    local_model = None
+    local_model_optimizer = None
+    if index < args.k - 1:
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
+
+        local_model = local_model.to(args.device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
+        for param in local_model.parameters():
+            param.requires_grad = False
+
+        local_trainable_params = []
+        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
+        for param in local_model.embed_tokens.parameters():
+            param.requires_grad = args.embedding_trainable[0]
+        if args.embedding_trainable[0]:
+            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
+        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
+        for param in local_model.layers.parameters():
+            param.requires_grad = args.encoder_trainable[0]
+        if args.encoder_trainable[0]:
+            local_trainable_params.extend(list(local_model.layers.parameters()))
+        local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+    ########### Global Model ###########
+    global_model = None
+    global_model_optimizer = None
+    if index == args.k - 1:
+        global_encoders_num = all_encoder_num - args.local_encoders_num
+        print('global_encoders_num:',global_encoders_num)
+
+        # global part of llama(frozen)
+        global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
+
+        # add Classification Layer(untrainable)
+        if args.task_type == "CausalLM":
+            global_model = LlamaForCausalLM_pretrained(global_llama, head_layer)
+        elif args.task_type == "Generation":
+            global_model = LlamaforGeneration_pretrained(global_llama, head_layer)
+        elif args.task_type == "SequenceClassification":
+            global_model = LlamaForSequenceClassification_pretrained(global_llama, head_layer)
         else:
-            if args.tokenizer.pad_token != None:
-                print(f'Note:Origin pad token: {args.tokenizer.pad_token}  --> {args.pad_token}')
-            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-            full_llama.config.pad_token_id = pad_id
+            assert 1 > 2, "task type not supported"
 
-        args.config = full_llama.config  # print(full_bert.encoder.layer[0])
-        all_encoder_num = args.config.num_hidden_layers
-        print('all_encoder_num:',all_encoder_num)
+        print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
 
-        ########### Local Model ###########
-        local_model = None
-        local_model_optimizer = None
-        if index < args.k - 1:
-            print('args.local_encoders_num:',args.local_encoders_num)
-            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
-            # Freeze Backbone
-            for param in local_model.parameters():
-                param.requires_grad = False
-            local_model = local_model.to(args.device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-            local_model_optimizer = None
+        # Freeze Backbone
+        for param in global_model.model.parameters():
+            param.requires_grad = False
 
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if index == args.k - 1:
-            global_encoders_num = all_encoder_num - args.local_encoders_num
-            print('global_encoders_num:',global_encoders_num)
-
-            # global part of llama(frozen)
-            global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
-
-            # add Classification Layer(trainable)
-            # if args.task_type == "CausalLM":
-            #     global_model = LlamaForCausalLM_forfinetune(global_llama, head_layer)
-            # elif args.task_type == "QuestionAnswering":
-            #     global_model = LlamaForQuestionAnswering_forfinetune(global_llama, head_layer)
-            if args.task_type == "SequenceClassification":
-                global_model = LlamaForSequenceClassification_forfinetune(global_llama, current_output_dim)
-            else:
-                assert 1 > 2, "task type not supported"
-
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-            # Freeze Backbone
-            for param in global_model.model.parameters():
-                param.requires_grad = False
-
-            # Trainable Part for finetuning
+        # Head Layer Trainable/Freeze
+        if head_layer:  # head layer exists
+            print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
             for param in global_model.head_layer.parameters():
-                param.requires_grad = True
+                param.requires_grad = args.head_layer_trainable[1]
+            if args.head_layer_trainable[1]:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
-            global_model = global_model.to(args.device)
-            global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+        global_model = global_model.to(args.device)
 
         del (full_llama)
-
-    else:
-        print('load_basic_models_llm pretrained:', current_model_type)
-        args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
-        args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
-
-        if args.task_type == 'CausalLM':
-            full_model = AutoModelForCausalLM.from_pretrained(model_path)
-        elif args.task_type == 'Generation':
-            full_model = AutoModelForCausalLM.from_pretrained(model_path)
-        elif args.task_type == 'QuestionAnswering':
-            full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-        elif args.task_type == 'SequenceClassification':
-            full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
-        else:
-            assert 1 > 2, "task type not supported"
-
-        full_llama = full_model.model
-
-        if args.task_type == 'CausalLM':
-            head_layer = full_model.lm_head
-        elif args.task_type == 'Generation':
-            head_layer = full_model.lm_head
-        elif args.task_type == 'QuestionAnswering':
-            head_layer = full_model.qa_outputs
-        elif args.task_type == 'SequenceClassification':
-            head_layer = full_model.score
-        else:
-            head_layer = None
-            assert 1 > 2, "task type not supported"
-
-        if args.pad_token == "default":
-            if args.tokenizer.pad_token is None:
-                args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-                pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-                full_model.config.pad_token_id = pad_id
-            args.pad_token = "default_" + args.tokenizer.pad_token
-        else:
-            args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-            full_model.config.pad_token_id = pad_id
-
-        args.config = full_model.config
-        all_encoder_num = args.config.num_hidden_layers
-        print('all_encoder_num:',all_encoder_num)
-
-        ########### Local Model ###########
-        local_model = None
-        local_model_optimizer = None
-        if index < args.k - 1:
-            print('args.local_encoders_num:',args.local_encoders_num)
-            local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
-
-            local_model = local_model.to(args.device)
-            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-
-            for param in local_model.parameters():
-                param.requires_grad = False
-
-            local_trainable_params = []
-            print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-            for param in local_model.wte.parameters():
-                param.requires_grad = args.embedding_trainable[0]
-            if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wte.parameters()))
-            for param in local_model.wpe.parameters():
-                param.requires_grad = embedding_trainable[0]
-            if args.embedding_trainable[0]:
-                local_trainable_params.extend(list(local_model.wpe.parameters()))
-            print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-            for param in local_model.h.parameters():
-                param.requires_grad = args.encoder_trainable[0]
-            if args.encoder_trainable[0]:
-                local_trainable_params.extend(list(local_model.h.parameters()))
-            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
-
-        ########### Global Model ###########
-        global_model = None
-        global_model_optimizer = None
-        if index == args.k - 1:
-            global_encoders_num = all_encoder_num - args.local_encoders_num
-            print('global_encoders_num:',global_encoders_num)
-
-            # global part of llama(frozen)
-            global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
-
-            # add Classification Layer(untrainable)
-            if args.task_type == "CausalLM":
-                global_model = LlamaForCausalLM_pretrained(global_llama, head_layer)
-            elif args.task_type == "Generation":
-                global_model = LlamaforGeneration_pretrained(global_llama, head_layer)
-            elif args.task_type == "SequenceClassification":
-                global_model = LlamaForSequenceClassification_pretrained(global_llama, head_layer)
-            else:
-                assert 1 > 2, "task type not supported"
-
-            print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-            # Freeze Backbone
-            for param in global_model.model.parameters():
-                param.requires_grad = False
-
-            # Head Layer Trainable/Freeze
-            if head_layer:  # head layer exists
-                print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
-                for param in global_model.head_layer.parameters():
-                    param.requires_grad = args.head_layer_trainable[1]
-                if args.head_layer_trainable[1]:
-                    global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
-
-            global_model = global_model.to(args.device)
-
-            del (full_llama)
-            del (full_model)
+        del (full_model)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

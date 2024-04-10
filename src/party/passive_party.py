@@ -248,11 +248,9 @@ class PassiveParty_LLM(Party_LLM):
         elif self.args.task_type == 'CausalLM':
             #  GPT2
             labels = gt_one_hot_label
-            # print('labels:',type(labels),labels)  # list of target_tokens
-            label_id = [ self.args.tokenizer.convert_tokens_to_ids( label_text ) for label_text in labels ]
-            label_id = torch.tensor(label_id).to(self.args.device)
-            # print('label_id:', label_id.shape ) # torch.size([bs])
             
+            label_id = torch.tensor(gt_one_hot_label.long()).to(self.args.device)
+
             lm_logits = pred # # [bs, seq_len, vocab_size]
             next_token_logits = lm_logits[:,-1,:]
            
