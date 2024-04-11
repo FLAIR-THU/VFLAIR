@@ -782,8 +782,8 @@ class MainTaskVFL_LLM(object):
         target_word_list, predict_word_list, total_sample_cnt = self.predict()
         # target_label_list, predict_label_list, None
 
-        print('target_word_list:\n', target_word_list[:5])
-        print('predict_word_list:\n', predict_word_list[:5])
+        # print('target_word_list:\n', target_word_list[:5])
+        # print('predict_word_list:\n', predict_word_list[:5])
 
         # prediction result assessment
         if self.args.metric_type == "best_pred":

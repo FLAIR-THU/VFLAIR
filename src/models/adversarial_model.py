@@ -71,6 +71,8 @@ class Mapping_MLP3(nn.Module):
     def forward(self, x):
         origin_shape = x.shape
         # print('x:',x.shape,origin_shape)
+        # print(self.seq_length,'  ',self.embed_dim)
+        # print(self.seq_length*self.embed_dim)
 
         # x = torch.tensor(x,dtype=torch.float32)
         x1 = self.net1(x)
