@@ -1,6 +1,6 @@
 {
     "epochs": 1,
-    "lr": 0.0001,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 128,
     "pipeline": "finetune",
