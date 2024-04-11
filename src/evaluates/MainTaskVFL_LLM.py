@@ -320,6 +320,19 @@ class MainTaskVFL_LLM(object):
                 if test_logit['requires_grad']:
                     logits.requires_grad_()
                 return logits.to(self.args.device)
+            elif self.args.task_type == 'QuestionAnswering':
+                start_logits = torch.Tensor(test_logit['start_logits'])
+                end_logits = torch.Tensor(test_logit['end_logits'])
+                if test_logit['requires_grad']:
+                    start_logits.requires_grad_()
+                    end_logits.requires_grad_()
+                return QuestionAnsweringModelOutput(
+                    loss=None,
+                    start_logits=start_logits.to(self.args.device),
+                    end_logits=end_logits.to(self.args.device),
+                    hidden_states=None,
+                    attentions=None,
+                )
             else:
                 assert 1>2 , 'Task type no supported'
         elif self.args.model_type == 'Llama':
@@ -333,6 +346,19 @@ class MainTaskVFL_LLM(object):
                 if test_logit['requires_grad']:
                     logits.requires_grad_()
                 return logits.to(self.args.device)
+            elif self.args.task_type == 'QuestionAnswering':
+                start_logits = torch.Tensor(test_logit['start_logits'])
+                end_logits = torch.Tensor(test_logit['end_logits'])
+                if test_logit['requires_grad']:
+                    start_logits.requires_grad_()
+                    end_logits.requires_grad_()
+                return QuestionAnsweringModelOutput(
+                    loss=None,
+                    start_logits=start_logits.to(self.args.device),
+                    end_logits=end_logits.to(self.args.device),
+                    hidden_states=None,
+                    attentions=None,
+                )
             else:
                 assert 1>2 , 'Task type no supported'
 
@@ -1151,7 +1177,7 @@ class MainTaskVFL_LLM(object):
                 return loss.item(), batch_train_acc
 
         elif self.args.task_type == 'CausalLM':
-            pred = self.parties[self.k - 1].global_pred  # logits
+            pred = final_pred  # logits
             loss = self.parties[0].global_loss
             test_logit = pred
             next_token_logits = test_logit[:,-1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
