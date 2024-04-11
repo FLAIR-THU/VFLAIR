@@ -645,26 +645,23 @@ class LocalLlamaModel(LlamaPreTrainedModel):
             inputs_embeds = self.embed_tokens(input_ids)
         self.embedding_output = inputs_embeds
 
-        # print('before attention_mask:',attention_mask.shape)
-        if len(attention_mask.shape) <= 2: # no need to prepare attention mask
-            if self._use_flash_attention_2:
-                # 2d mask is passed through the layers
-                attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
-            elif self._use_sdpa and not output_attentions:
-                # output_attentions=True can not be supported when using SDPA, and we fall back on
-                # the manual implementation that requires a 4D causal mask in all cases.
-                attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
-                    attention_mask,
-                    (batch_size, seq_length),
-                    inputs_embeds,
-                    past_key_values_length,
-                )
-            else:
-                # 4d mask is passed through the layers
-                attention_mask = _prepare_4d_causal_attention_mask(
-                    attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-                )
-        # print('after attention_mask:',attention_mask.shape)
+        if self._use_flash_attention_2:
+            # 2d mask is passed through the layers
+            attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
+        elif self._use_sdpa and not output_attentions:
+            # output_attentions=True can not be supported when using SDPA, and we fall back on
+            # the manual implementation that requires a 4D causal mask in all cases.
+            attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
+                attention_mask,
+                (batch_size, seq_length),
+                inputs_embeds,
+                past_key_values_length,
+            )
+        else:
+            # 4d mask is passed through the layers
+            attention_mask = _prepare_4d_causal_attention_mask(
+                attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+            )
         
         # embed positions
         hidden_states = inputs_embeds
@@ -712,7 +709,6 @@ class LocalLlamaModel(LlamaPreTrainedModel):
 
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
-
         return hidden_states, sequence_lengths, attention_mask, past_key_values
 
 class GlobalLlamaModel(LlamaPreTrainedModel):
@@ -797,24 +793,24 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
         # if inputs_embeds is None:
         #     inputs_embeds = self.embed_tokens(input_ids)
         
-        ## no need to prepare attention mask from scratch, use the received attention mask
-        # if self._use_flash_attention_2:
-        #     # 2d mask is passed through the layers
-        #     attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
-        # elif self._use_sdpa and not output_attentions:
-        #     # output_attentions=True can not be supported when using SDPA, and we fall back on
-        #     # the manual implementation that requires a 4D causal mask in all cases.
-        #     attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
-        #         attention_mask,
-        #         (batch_size, seq_length),
-        #         inputs_embeds,
-        #         past_key_values_length,
-        #     )
-        # else:
-        #     # 4d mask is passed through the layers
-        #     attention_mask = _prepare_4d_causal_attention_mask(
-        #         attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        #     )
+        ## no need to prepare attention mask from scratch, use the received attention masks        
+        if self._use_flash_attention_2:
+            # 2d mask is passed through the layers
+            attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
+        elif self._use_sdpa and not output_attentions:
+            # output_attentions=True can not be supported when using SDPA, and we fall back on
+            # the manual implementation that requires a 4D causal mask in all cases.
+            attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
+                attention_mask,
+                (batch_size, seq_length),
+                inputs_embeds,
+                past_key_values_length,
+            )
+        else:
+            # 4d mask is passed through the layers
+            attention_mask = _prepare_4d_causal_attention_mask(
+                attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+            )
 
         # embed positions
         hidden_states = inputs_embeds
