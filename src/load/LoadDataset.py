@@ -1918,7 +1918,7 @@ def load_dataset_per_party_llm(args, index):
         train_domain = dataset['train'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in train_all_texts:
+        for _all_text in train_all_texts[:1]:
             all_doc_tokens = _all_text.strip().split()
             all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
