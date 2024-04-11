@@ -56,7 +56,7 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
-   "defense": {
+    "defense": {
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],

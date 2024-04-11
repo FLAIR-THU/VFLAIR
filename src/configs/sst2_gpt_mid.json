@@ -1,8 +1,8 @@
 {
     "epochs": 1,
-    "lr": 0.0001,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 32,
     "pipeline": "finetune",
     "early_stop_threshold": 1,
     "device": "cuda",
@@ -71,22 +71,11 @@
     },
     "attack_list": {
         "0":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-            }
-        },
-        "1":{
             "name": "VanillaModelInversion_WhiteBox",
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
+                "epochs": 1,
                 "batch_size": 32,
                 "attack_sample_num": 100
             }

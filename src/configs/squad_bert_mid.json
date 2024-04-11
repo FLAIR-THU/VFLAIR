@@ -3,6 +3,7 @@
     "lr": 0.0001,
     "k": 2,
     "batch_size": 16,
+    "early_stop_threshold": 2,
     "pipeline": "finetune",
     "device": "cuda",
     "gpu": 0,
@@ -28,26 +29,26 @@
     },
     "model_list":{
         "0": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
+            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2",
             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
             "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
         },
         "1": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "encoder_trainable": 0,
             "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
+            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2",
             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
             "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
         },
@@ -65,10 +66,16 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "LaplaceDP",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "epsilon": 50
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.0001,
+            "lambda": 0.5,
+            "mid_position": "out",
+            "current_bottleneck_scale": 1,
+            "seq_length": 256,
+            "embed_dim": 768
         }
     },
     "attack_list": {
@@ -78,8 +85,19 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 1,
-                "batch_size": 16,
-                "attack_sample_num": 1000
+                "batch_size": 32,
+                "attack_sample_num": 100
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 1,
+                "batch_size": 32,
+                "attack_sample_num": 100
             }
         }
     }

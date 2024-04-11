@@ -522,7 +522,7 @@ def GradPerturb(args, original_object):
 
 
 ############ LLM defense ##############
-DELTAF = {'Bert':81.82, 'Roberta':4.15, 'GPT2':110.2}
+DELTAF = {'Bert':81.82, 'Roberta':4.15, 'GPT2':110.2, "Llama": 88.8} #todo need to change Llama's value
 def LaplaceDP_for_llm(args, original_object):
     # print('LaplaceDP_for_llm:',type(original_object),original_object[0].shape)
     original_object = original_object[0] # bs, 12, 768

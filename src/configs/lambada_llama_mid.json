@@ -1,10 +1,10 @@
 {
     "epochs": 1,
-    "lr": 0.005,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
-    "pipeline": "finetune",
+    "batch_size": 16,
     "early_stop_threshold": 2,
+    "pipeline": "finetune",
     "device": "cuda",
     "gpu": 0,
     "fl_type": "VFL",
@@ -13,15 +13,16 @@
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SST-2",
-        "num_classes": 2
+        "dataset_name": "Lambada",
+        "num_classes": 1,
+        "use_prompt": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 70,
+        "truncation": "True",
+        "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -31,11 +32,11 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
             "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
@@ -43,29 +44,34 @@
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
             "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
-            "task_type": "SequenceClassification"
+            "task_type": "CausalLM",
+            "doc_stride" : 128,
+            "max_seq_length": 128,
+            "metric_type": "best_pred",
+            "n_best_size": 8
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "AdversarialTraining",
+        "name": "MID",
         "parameters": {
             "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.001,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.001,
-            "lambda": 0.05,
-            "seq_length": 70,
+            "mid_model_name":"MIDModel_Linear",
+            "lr": 0.0001,
+            "lambda": 0.5,
+            "mid_position": "out",
+            "current_bottleneck_scale": 1,
+            "seq_length": 256,
             "embed_dim": 4096
         }
     },
@@ -77,7 +83,18 @@
                 "lr": 0.01,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 500
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 1,
+                "batch_size": 32,
+                "attack_sample_num": 500
             }
         }
     }

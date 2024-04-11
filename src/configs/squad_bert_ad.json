@@ -28,28 +28,28 @@
     },
     "model_list":{
         "0": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json",
+            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2"
         },
         "1": {
-            "type": "rsvp-aibertserini-bert-base-squad",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "encoder_trainable": 0,
             "head_layer_trainable": 1,
+            "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bertserini-bert-base-squad",
             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json",
+            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -58,17 +58,23 @@
             "max_seq_length": 512,
             "max_query_length" : 64,
             "max_answer_length": 30,
-            "n_best_size": 20
+            "n_best_size": 2
 
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "LaplaceDP",
+        "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
-            "epsilon": 50
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.001,
+            "lambda": 0.1,
+            "seq_length": 256,
+            "embed_dim": 768
         }
     },
     "attack_list": {
@@ -77,9 +83,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 1,
+                "epochs": 2,
                 "batch_size": 16,
-                "attack_sample_num": 1000
+                "attack_sample_num": 100
             }
         }
     }

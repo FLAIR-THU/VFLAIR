@@ -2,8 +2,11 @@
     "epochs": 1,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 3,
-    "pipeline": "pretrained",
+    "batch_size": 16,
+    "pipeline": "finetune",
+    "device": "cuda",
+    "gpu": 0,
+    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -31,7 +34,9 @@
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
             "type": "llama-2-7b",
@@ -41,7 +46,9 @@
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
             "task_type": "CausalLM",
