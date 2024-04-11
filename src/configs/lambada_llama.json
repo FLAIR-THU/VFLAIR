@@ -2,8 +2,8 @@
     "epochs": 1,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 3,
-    "pipeline": "finetune",
+    "batch_size": 1,
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -14,11 +14,11 @@
         "use_prompt": 1
     },
     "tokenizer":{
-        "padding": "max_length",
+        "padding": "do_not_pad",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 256,
+        "max_length": 512,
         "padding_side": "left",
         "add_special_tokens": 1
     },

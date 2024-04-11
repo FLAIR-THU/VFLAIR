@@ -199,13 +199,12 @@ class Party(object):
                     self.local_batch_data, attention_mask = self.local_batch_attention_mask)
                 self.local_pred_clone = self.local_pred.detach().clone()
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
-                # return self.local_pred, self.local_pred_clone,self.local_sequence_lengths,self.local_attention_mask
             elif self.args.task_type == 'CausalLM':
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask, self.past_key_values  = self.local_model(\
                     self.local_batch_data, attention_mask = self.local_batch_attention_mask)
                 self.local_pred_clone = self.local_pred.detach().clone()
-                self.local_attention_mask = self.local_attention_mask.detach().clone()
-                # return self.local_pred, self.local_pred_clone,self.local_attention_mask
+                if (self.local_attention_mask!=None):
+                    self.local_attention_mask = self.local_attention_mask.detach().clone() 
             elif self.args.task_type == 'Generation':
                 # renew and transmit past_key_values
                 self.local_pred,  self.local_sequence_lengths, self.local_attention_mask , self.past_key_values = \
@@ -232,6 +231,7 @@ class Party(object):
         
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
+            print('self.origin_pred:',self.origin_pred.shape)
             self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########

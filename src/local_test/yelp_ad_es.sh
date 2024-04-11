@@ -6,7 +6,7 @@
 echo 'SST2 Ad'
 
 
-for seed in {60,61,62,63,64,65}
+for seed in {61,62,63,64,65}
     do
     # 0.001
     python main_pipeline_llm.py --seed $seed --configs yelp_ad_es

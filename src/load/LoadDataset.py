@@ -1918,7 +1918,7 @@ def load_dataset_per_party_llm(args, index):
         train_domain = dataset['train'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in train_all_texts[:1]:
+        for _all_text in train_all_texts:
             all_doc_tokens = _all_text.strip().split()
             all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1928,9 +1928,8 @@ def load_dataset_per_party_llm(args, index):
                 if length > max_seq_length:
                     length = max_seq_length
                 # doc_spans.append(_DocSpan(start=start_offset, length=length))
-                text = all_doc_tokens[ start_offset : start_offset + length ] # 0 1...7 
-                # print(f'start_offset:{start_offset} length:{length}  len(all_doc_tokens):{len(all_doc_tokens)}')
                 
+                text = all_doc_tokens[ start_offset : start_offset + length + 1 ] # 0 1...7 
                 last_word = all_doc_tokens[ start_offset + length ] 
 
                 text = " ".join(text)
@@ -1946,7 +1945,6 @@ def load_dataset_per_party_llm(args, index):
                     
                 start_offset += min(length, doc_stride)
 
-
         X_train = np.array(texts)
         y_train = target_word
 
@@ -1960,36 +1958,14 @@ def load_dataset_per_party_llm(args, index):
             all_doc_tokens = _all_text.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
             
-            start_offset = 0
             all_doc_tokens = _all_text
-            
-            text = all_doc_tokens[ : -1] # 0 1...7 
-            last_word = all_doc_tokens[ -1 ] 
-            text = " ".join(text)
-            text = _all_text
 
+            text = _all_text
             message = create_chat_prompt(text)
             text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
-            texts.append(text) # messages.append( )
-            target_word.append(last_word)
-
-
-            # ids = args.tokenizer(all_doc_tokens, \
-            #         padding=args.padding,truncation=args.truncation ,\
-            #         max_length=args.max_length,return_tensors='pt')  
-            # input_ids =  torch.tensor(ids['input_ids']).squeeze()
-            # masks = torch.tensor(ids['attention_mask']).squeeze()
-            # print('input_ids:',input_ids.shape,' masks:',masks.shape)
             
-            # print('context:',input_ids[:-1])
-            # print('label:',input_ids[-1])
-            # print(args.tokenizer.decode(input_ids[-1]))
-            # print('mask:',masks[:-1])
-
-            # print('origin text:',text)
-            # print('origin label:',last_word)
-            # print('-'*25)
-            # assert 1>2
+            texts.append(text) # messages.append( )
+            # target_word.append(last_word)
 
         X_test = np.array(texts)
         y_test = target_word 

@@ -54,36 +54,36 @@ class PassiveDataset_LLM(Dataset):
             # print(type(self.features[0]), type(self.features[1]))
 
         elif args.task_type == 'CausalLM':
-            print('begin party dataset')
             flag = 0
-            length = 0
             for i in range(len(texts)):
-                _text = texts[i]
-                ids = args.tokenizer(_text, \
+                ids = args.tokenizer(texts[i],return_tensors='pt')
+                # truncation
+                if torch.tensor(ids['input_ids']).squeeze().shape[0] > args.max_length:
+                    ids['input_ids'] = ids['input_ids'][...,-(args.max_length+1):] # torch.size([max_length])
+                    ids['attention_mask'] = ids['attention_mask'][...,-(args.max_length+1):] # torch.size([max_length])
+                    if 'token_type_ids' in list(ids.keys()):
+                        ids['token_type_ids'] = ids['token_type_ids'][...,-(args.max_length+1):] # torch.size([max_length])
+                # padding
+                else:
+                    ids = args.tokenizer(texts[i], \
                     padding=args.padding,truncation=args.truncation ,\
-                    max_length=args.max_length,return_tensors='pt') 
+                    max_length=args.max_length+1,return_tensors='pt') 
 
                 self.texts.append( torch.tensor(ids['input_ids']).squeeze()[:-1] )
                 self.masks.append( torch.tensor(ids['attention_mask']).squeeze()[:-1] )
                 self.labels.append( int(torch.tensor(ids['input_ids']).squeeze()[-1].item()) )
-                
                 if 'token_type_ids' in list(ids.keys()):
                     self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze()[:-1] )
                 
-                ids = args.tokenizer(_text,return_tensors='pt')
-                length = max( length, len( torch.tensor(ids['input_ids']).squeeze() ) )
                 # if flag == 0:
-                #     ids = args.tokenizer(_text,return_tensors='pt')
-                #     print(torch.tensor(ids['input_ids']).squeeze()[:-1])
-
+                #     ids = args.tokenizer(texts[i],return_tensors='pt')
+                #     print(torch.tensor(ids['input_ids']).squeeze())
                 #     print()
-                #     ids = args.tokenizer(_text, \
-                #         padding=args.padding,truncation=args.truncation ,\
-                #         max_length=args.max_length,return_tensors='pt') 
-                #     print(torch.tensor(ids['input_ids']).squeeze()[:-1])
+                #     print(self.texts[-1])
+                #     print()
+                #     print(self.labels[-1])
                 #     print('-'*25)
                 #     flag = flag + 1
-            print('length=',length)
             # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 
             self.masks=[aa.tolist() for aa in self.masks] 
