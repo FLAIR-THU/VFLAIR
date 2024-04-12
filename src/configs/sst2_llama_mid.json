@@ -1,9 +1,10 @@
 {
     "epochs": 1,
-    "lr": 0.0005,
+    "lr": 0.005,
     "k": 2,
     "batch_size": 64,
     "pipeline": "finetune",
+    "early_stop_threshold": 2,
     "device": "cuda",
     "gpu": 0,
     "fl_type": "VFL",
@@ -27,8 +28,8 @@
     "model_list":{
         "0": {
             "type": "llama-2-7b",
-            "pretrained": 0,
-            "encoder_trainable": 0,
+            "pretrained": 1,
+            "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Llama",
@@ -39,7 +40,7 @@
         },
         "1": {
             "type": "llama-2-7b",
-            "pretrained": 0,
+            "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
@@ -74,7 +75,7 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
+                "epochs": 1,
                 "batch_size": 32,
                 "attack_sample_num": 100
             }
