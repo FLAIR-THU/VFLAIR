@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 16,
     "pipeline": "finetune",
     "early_stop_threshold": 1,
     "device": "cuda",
@@ -52,7 +52,7 @@
         },
         "task":{
             "task_type": "CausalLM",
-             "doc_stride" : 128,
+            "doc_stride" : 128,
             "max_seq_length": 128,
             "metric_type": "best_pred",
             "n_best_size": 8
