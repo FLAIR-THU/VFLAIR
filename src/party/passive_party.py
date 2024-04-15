@@ -346,7 +346,7 @@ class PassiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def local_backward(self):
+    def local_backward(self): # model head 1
         # print(' === passive local backward === ')
 
         self.num_local_updates += 1 # another update
@@ -437,7 +437,7 @@ class PassiveParty_LLM(Party_LLM):
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
-                            w.grad = g.detach()     
+                            w.grad = g.detach()  
             
             self.local_model_optimizer.step()
      

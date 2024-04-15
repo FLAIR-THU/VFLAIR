@@ -28,29 +28,6 @@ class Llama_VFLGeneration(LlamaForCausalLM):
         super().__init__(top_vfl.args.config)
 
         self.top_vfl = top_vfl
-        
-        # self.transformer = GPT2Model(config)
-        # self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
-        # # Model parallel
-        # self.model_parallel = False
-        # self.device_map = None
-
-        # # Initialize weights and apply final processing
-        # self.post_init()
-
-    # def __init__(self, config):
-    #     super().__init__(config)
-    #     self.transformer = GPT2Model(config)
-    #     self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
-    #     # Model parallel
-    #     self.model_parallel = False
-    #     self.device_map = None
-
-    #     # Initialize weights and apply final processing
-    #     self.post_init()
-    
 
     def forward(
         self,

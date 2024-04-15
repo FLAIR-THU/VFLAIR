@@ -153,10 +153,8 @@ class Party(object):
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
         return
-
+    
     def give_pred(self, use_cache = False):
-        # print(' in give pred')
-
         if self.args.model_type in ['Bert','Roberta']:
             # SequenceClassification & QuestionAnswering
             self.local_pred, self.local_attention_mask  = self.local_model(input_ids = self.local_batch_data, attention_mask = self.local_batch_attention_mask, token_type_ids=self.local_batch_token_type_ids)
@@ -218,6 +216,13 @@ class Party(object):
                 self.local_attention_mask = self.local_attention_mask.detach().clone()
                 # return self.local_pred, self.local_pred_clone,self.local_attention_mask
         
+        elif self.args.model_type == 'T5':
+            if self.args.task_type == 'CausalLM':
+                self.local_pred,  self.local_attention_mask = \
+                    self.local_model(self.local_batch_data, attention_mask = self.local_batch_attention_mask, \
+                    use_cache = use_cache)
+                self.local_pred_clone = self.local_pred.detach().clone()
+                self.local_attention_mask = self.local_attention_mask.detach().clone()
         
         ######### Defense Applied on Local Model Prediction Process ###########
         if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
@@ -228,10 +233,10 @@ class Party(object):
             # print('inner mid: self.mid_position=',self.mid_position)
             self.mid_loss = self.local_model.mid_loss
             # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
-        
+ 
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
-            print('self.origin_pred:',self.origin_pred.shape)
+            # print('self.origin_pred:',self.origin_pred.shape)
             self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
@@ -264,7 +269,10 @@ class Party(object):
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask , self.transferred_past_key_values
             elif self.args.task_type == 'QuestionAnswering':
                 return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
-
+        elif self.args.model_type == 'T5':
+            if self.args.task_type == 'CausalLM':
+                return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
+            
     
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])

@@ -259,14 +259,14 @@ class ActiveParty_LLM(Party_LLM):
 
         self.passive_pred_list = pred_list
         # print('self.passive_pred_list[0][0]:',self.passive_pred_list[0][0])
-
         self.passive_pred_list[0][0].requires_grad = True
 
         # passive_pred_list[0] = [pred_clone, attention_mask, local_past_key_values, sequence_lengths]
         if self.args.model_type in ['Bert','Roberta']: 
             if self.args.task_type == 'SequenceClassification':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],\
-                 return_dict=True) # past_key_values = self.passive_pred_list[0][2],
+                self.global_output = self.global_model(self.passive_pred_list[0][0],\
+                 attention_mask = self.passive_pred_list[0][1],\
+                 return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':
                 self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],\
@@ -321,6 +321,15 @@ class ActiveParty_LLM(Party_LLM):
                     past_key_values = self.passive_pred_list[0][2],\
                     use_cache = use_cache, return_dict=True)
                 pred = self.global_output
+            else:
+                assert 1>2 , 'Task type no supported'
+
+        elif self.args.model_type == 'T5': 
+            if self.args.task_type == 'CausalLM':
+                self.global_output = self.global_model(self.passive_pred_list[0][0], \
+                 attention_mask=self.passive_pred_list[0][1],\
+                 use_cache = use_cache,return_dict=True)
+                pred = self.global_output.logits
             else:
                 assert 1>2 , 'Task type no supported'
 
@@ -402,7 +411,8 @@ class ActiveParty_LLM(Party_LLM):
             else:                
                 # update global model
                 self.global_model_optimizer.zero_grad()  
-                weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.head_layer.parameters(), grad_outputs=self.global_gradients, retain_graph=True)
+                weights_grad_a = torch.autograd.grad(self.global_pred, self.global_model.head_layer.parameters(), \
+                grad_outputs=self.global_gradients, retain_graph=True)
                 self.weights_grad_a = weights_grad_a
                 for w, g in zip(self.global_model.head_layer.parameters(), weights_grad_a):
                     if w.requires_grad:

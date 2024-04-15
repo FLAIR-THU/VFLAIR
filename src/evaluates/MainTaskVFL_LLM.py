@@ -200,6 +200,11 @@ class MainTaskVFL_LLM(object):
                     pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
                 else:
                     assert 1 > 2, "task type not supported for finetune"
+            elif self.args.model_type == 'T5':
+                if self.args.task_type == 'CausalLM':
+                    pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
+                else:
+                    assert 1 > 2, "task type not supported for finetune"
 
             # Defense
             if self.args.apply_defense:
@@ -269,6 +274,12 @@ class MainTaskVFL_LLM(object):
                     self.communication_cost += get_size_of(pred_clone) + \
                                                get_size_of(attention_mask)  # MB
                 elif self.args.task_type == 'QuestionAnswering':
+                    pred_list = [pred_clone, attention_mask, local_past_key_values]
+                    self.parties[self.k - 1].receive_pred(pred_list, ik)
+                    self.parties[ik].update_local_pred(pred_clone)
+                    self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
+            elif self.args.model_type == 'T5':
+                if self.args.task_type == 'CausalLM':
                     pred_list = [pred_clone, attention_mask, local_past_key_values]
                     self.parties[self.k - 1].receive_pred(pred_list, ik)
                     self.parties[ik].update_local_pred(pred_clone)

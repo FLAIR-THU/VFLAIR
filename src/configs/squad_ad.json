@@ -3,6 +3,7 @@
     "lr": 0.0001,
     "k": 2,
     "batch_size": 64,
+    "early_stop_threshold": 2,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -25,24 +26,24 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "encoder_trainable": 0,
+            "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "head_layer_trainable": 1,
             "encoder_trainable": 0,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -51,7 +52,7 @@
             "max_seq_length": 512,
             "max_query_length" : 64,
             "max_answer_length": 30,
-            "n_best_size": 2
+            "n_best_size": 20
 
         },
         "apply_trainable_layer": 0,
@@ -62,12 +63,12 @@
         "parameters": {
             "party": [0],
             "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.001,
+            "adversarial_model_lr": 0.0001,
             "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.001,
-            "lambda": 0.05,
+            "imagined_adversary_lr": 0.0001,
+            "lambda": 0.1,
             "seq_length": 256,
-            "embed_dim": 768
+            "embed_dim": 1024
         }
     },
     "attack_list": {
@@ -78,7 +79,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 1000
             }
         },
         "1":{
@@ -89,8 +90,8 @@
                 "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 1000
+            }
         }
-    }
     }
 }
