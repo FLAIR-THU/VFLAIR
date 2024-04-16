@@ -6,7 +6,7 @@
 echo 'SST2 Ad'
 
 
-for seed in {61,62,63,64,65}
+for seed in {60,61,62,63,64,65}
     do
     # 0.001
     python main_pipeline_llm.py --seed $seed --configs yelp_ad_es
@@ -21,7 +21,7 @@ for seed in {61,62,63,64,65}
 
     # 0.5
     sed -i 's/"lambda": 0.1/"lambda": 0.5/g' ./configs/yelp_ad_es.json
-    python main_pipeline_llm.py --seed $seed --configs yelp_ad_es
+    # python main_pipeline_llm.py --seed $seed --configs yelp_ad_es
 
     # 1
     sed -i 's/"lambda": 0.5/"lambda": 1.0/g' ./configs/yelp_ad_es.json
@@ -31,7 +31,11 @@ for seed in {61,62,63,64,65}
     sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/yelp_ad_es.json
     python main_pipeline_llm.py --seed $seed --configs yelp_ad_es
 
+    # 10
+    sed -i 's/"lambda": 5.0/"lambda": 10.0/g' ./configs/yelp_ad_es.json
+    python main_pipeline_llm.py --seed $seed --configs yelp_ad_es
 
-    sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/yelp_ad_es.json
+
+    sed -i 's/"lambda": 10.0/"lambda": 0.001/g' ./configs/yelp_ad_es.json
 
 done

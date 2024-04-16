@@ -1,25 +1,25 @@
 {
-    "epochs": 20,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
-    "early_stop_threshold": 2,
+    "batch_size": 16,
     "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "Lambada",
-        "num_classes": 1,
-        "use_prompt": 1
+        "dataset_name": "MMLU",
+        "num_classes": 4,
+        "use_prompt": 1,
+        "n_shot": 0
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "True",
-        "max_length": 64,
+        "truncation": "longest_first",
+        "max_length": 256,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -47,13 +47,12 @@
         "task":{
             "task_type": "CausalLM",
             "doc_stride" : 128,
-            "max_seq_length": 64,
+            "max_seq_length": 128,
             "metric_type": "best_pred",
             "n_best_size": 8
         },
-        "local_encoders_num": 1,
+        "local_encoders_num": 4,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     }
-    
 }

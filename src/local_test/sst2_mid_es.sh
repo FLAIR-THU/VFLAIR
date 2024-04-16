@@ -3,9 +3,9 @@
 #SBATCH --gres gpu:a100:1                   # 每个子任务都用一张 A100 GPU
 #SBATCH --time 3-1:00:00                    # 子任务 1 天 1 小时就能跑完
 
-echo 'MID SST2 es new dots'
+echo 'MID SST2 es dots'
 
-for seed in {60,61,62,63,64,65}
+for seed in {64,65,66,67,68,69}
     do
     ########## MIDModel_Linear ##########
     # 0.5

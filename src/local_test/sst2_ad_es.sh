@@ -5,35 +5,7 @@
 
 echo 'SST2 Ad'
 
-
-# 0.001
-# python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
-
-# 0.01
-sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/sst2_ad_es.json
-# python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
-
-# 0.1
-sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/sst2_ad_es.json
-# python main_pipeline_llm.py --seed 61 --configs sst2_ad_es
-
-# 0.5
-sed -i 's/"lambda": 0.1/"lambda": 0.5/g' ./configs/sst2_ad_es.json
-python main_pipeline_llm.py --seed 62 --configs sst2_ad_es
-
-# 1
-sed -i 's/"lambda": 0.5/"lambda": 1.0/g' ./configs/sst2_ad_es.json
-python main_pipeline_llm.py --seed 61 --configs sst2_ad_es
-python main_pipeline_llm.py --seed 62 --configs sst2_ad_es
-
-# 5
-sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/sst2_ad_es.json
-python main_pipeline_llm.py --seed 62 --configs sst2_ad_es
-
-sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/sst2_ad_es.json
-
-
-for seed in {63,64,65}
+for seed in {64,65,66,67,68,69}
     do
     # 0.001
     python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
@@ -48,7 +20,7 @@ for seed in {63,64,65}
 
     # 0.5
     sed -i 's/"lambda": 0.1/"lambda": 0.5/g' ./configs/sst2_ad_es.json
-    python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
+    # python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
 
     # 1
     sed -i 's/"lambda": 0.5/"lambda": 1.0/g' ./configs/sst2_ad_es.json
@@ -56,6 +28,10 @@ for seed in {63,64,65}
 
     # 5
     sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/sst2_ad_es.json
+    python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
+
+    # 10
+    sed -i 's/"lambda": 10.0/"lambda": 10.0/g' ./configs/sst2_ad_es.json
     python main_pipeline_llm.py --seed $seed --configs sst2_ad_es
 
     sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/sst2_ad_es.json

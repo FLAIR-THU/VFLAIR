@@ -49,6 +49,7 @@
             "metric_type": "n_best",
             "n_best_size": 8
         },
+        "local_encoders_num": 3,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     }

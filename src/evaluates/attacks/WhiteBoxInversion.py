@@ -162,8 +162,10 @@ class WhiteBoxInversion(Attacker):
                 all_pred_list = self.top_vfl.pred_transmit()
                 real_results = all_pred_list[0]
 
-                batch_received_intermediate = real_results[0].type(torch.float32)# real intermediate
-                batch_received_attention_mask = real_results[1]
+                # batch_received_intermediate = real_results[0].type(torch.float32)# real intermediate
+                # batch_received_attention_mask = real_results[1]
+                batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
+                batch_received_attention_mask = real_results['attention_mask'].to(self.device)
                 
                 bs, seq_length = input_shape # 10,30
                 # print('seq_length:',seq_length) # 70
@@ -214,22 +216,28 @@ class WhiteBoxInversion(Attacker):
                         # print('dummy_embedding:',dummy_embedding.shape)
 
                         # compute dummy result
-                        if self.args.model_type == 'Bert':
-                            dummy_intermediate, _  = local_model(input_ids=dummy_data, \
-                            attention_mask = dummy_attention_mask, \
-                            token_type_ids=dummy_local_batch_token_type_ids,\
-                            embedding_output = dummy_embedding)                 
-                        elif self.args.model_type == 'GPT2':
-                            dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
+                        dummy_intermediate  = local_model(input_ids=None, \
                                                         attention_mask = dummy_attention_mask, \
                                                         token_type_ids=dummy_local_batch_token_type_ids,\
-                                                        inputs_embeds = dummy_embedding)
-                        elif self.args.model_type == 'Llama':
-                            dummy_intermediate, _a, _b, _c = local_model(input_ids=None,\
-                                                attention_mask = dummy_attention_mask, \
-                                                inputs_embeds = dummy_embedding)    
-                        else:
-                            assert 1>2, 'model type not supported'
+                                                        inputs_embeds=dummy_embedding)     
+                        dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        
+                        # if self.args.model_type == 'Bert':
+                        #     dummy_intermediate, _  = local_model(input_ids=dummy_data, \
+                        #     attention_mask = dummy_attention_mask, \
+                        #     token_type_ids=dummy_local_batch_token_type_ids,\
+                        #     embedding_output = dummy_embedding)                 
+                        # elif self.args.model_type == 'GPT2':
+                        #     dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
+                        #                                 attention_mask = dummy_attention_mask, \
+                        #                                 token_type_ids=dummy_local_batch_token_type_ids,\
+                        #                                 inputs_embeds = dummy_embedding)
+                        # elif self.args.model_type == 'Llama':
+                        #     dummy_intermediate, _a, _b, _c = local_model(input_ids=None,\
+                        #                         attention_mask = dummy_attention_mask, \
+                        #                         inputs_embeds = dummy_embedding)    
+                        # else:
+                        #     assert 1>2, 'model type not supported'
 
                         # # Defense
                         # dummy_intermediate = self.top_vfl.apply_defense_on_transmission(dummy_intermediate)

@@ -403,10 +403,10 @@ class PassiveParty_LLM(Party_LLM):
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
 
-            # update with mid_loss.backward
+            # update mid+local_model with mid_loss
             self.mid_loss.backward(retain_graph=True)
 
-            # update local encoder with global_loss
+            # update mid with global_loss
             weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.mid_model.parameters(),
@@ -420,7 +420,7 @@ class PassiveParty_LLM(Party_LLM):
                     else:
                         w.grad = g.detach()
         
-            # local model trainable part
+            # update local model trainable part with global_loss
             local_model_params = []
             for param in self.local_model.parameters():
                 if param.requires_grad:

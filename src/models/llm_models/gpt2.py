@@ -76,11 +76,11 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
     def forward(
-        self,input_ids, sequence_lengths,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        
-        token_type_ids: Optional[torch.LongTensor] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
@@ -89,6 +89,7 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -100,8 +101,8 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
 
         # intermediate,attention_mask
         transformer_outputs = self.transformer(
-            input_ids,attention_mask=attention_mask,
-
+            input_ids=input_ids,
+            attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             past_key_values=past_key_values,
             position_ids=position_ids,
@@ -115,32 +116,30 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         hidden_states = transformer_outputs[0]
         logits = self.head_layer(hidden_states)
 
-        input_shape = input_ids.size()[:2]
-        batch_size  = input_shape[0]
-        # print('GPT2ForSequenceClassification_pretrained input_shape:',input_shape)
-        # if input_ids is not None:
-        #     batch_size, sequence_length = input_ids.shape[:2]
-        # else:
-        #     batch_size, sequence_length = inputs_embeds.shape[:2]
-        # assert (
-        #     self.config.pad_token_id is not None or batch_size == 1
-        # ), "Cannot handle batch sizes > 1 if no padding token is defined."
-        # if self.config.pad_token_id is None:
-        #     sequence_lengths = -1
-        # else:
-        #     if input_ids is not None:
-        #         sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1).to(
-        #             logits.device
-        #         )
-        #     else:
-        #         sequence_lengths = -1
-        #         logger.warning(
-        #             f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
-        #             "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
-        #         )
+        if input_ids is not None:
+            batch_size, sequence_length = input_ids.shape[:2]
+        else:
+            batch_size, sequence_length = inputs_embeds.shape[:2]
 
-        # print('sequence_lengths:',sequence_lengths)
-        # print('logits:',logits.shape)
+        assert (
+            self.config.pad_token_id is not None or batch_size == 1
+        ), "Cannot handle batch sizes > 1 if no padding token is defined."
+        if self.config.pad_token_id is None:
+            sequence_lengths = -1
+        else:
+            if input_ids is not None:
+                sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).int().argmax(-1) - 1).to(
+                    logits.device
+                )
+            else:
+                sequence_lengths = -1
+                logger.warning(
+                    f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
+                    "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
+                )
+
+        # input_shape = input_ids.size()[:2]
+        # batch_size  = input_shape[0]
 
         pooled_logits = logits[torch.arange(batch_size, device=logits.device), sequence_lengths]
 
@@ -196,8 +195,8 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
 
     def forward(
         self,
-        input_ids: Optional[torch.LongTensor] = None,attention_mask: Optional[torch.FloatTensor] = None,
-
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
@@ -208,6 +207,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         use_cache: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple, QuestionAnsweringModelOutput]:
         r"""
         start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -222,7 +222,8 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         outputs = self.transformer(
-            input_ids, attention_mask=attention_mask,
+            input_ids=input_ids, 
+            attention_mask=attention_mask,
             
             token_type_ids=token_type_ids,
             position_ids=position_ids,
@@ -272,7 +273,7 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
 
 class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
-    def __init__(self, global_gpt, lm_head):
+    def __init__(self, global_gpt, lm_head, generation_config=None):
         super().__init__(global_gpt.config)
         # print(' == init GPT2LMHeadModel_pretrained == ')
         self.transformer = global_gpt #GPT2Model(config)
@@ -287,8 +288,8 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
 
     def forward(
         self,
-        input_ids: Optional[torch.LongTensor] = None,attention_mask: Optional[torch.FloatTensor] = None,
-
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
@@ -301,6 +302,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple, CausalLMOutputWithCrossAttentions]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -311,13 +313,14 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         transformer_outputs = self.transformer(
-            input_ids,attention_mask=attention_mask,
+            inputs_embeds = inputs_embeds,
+            attention_mask=attention_mask,
 
             past_key_values=past_key_values,
             token_type_ids=token_type_ids,
             position_ids=position_ids,
             head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
+            input_ids=input_ids,
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask,
             use_cache=use_cache,
@@ -361,7 +364,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         )
 
 class GPT2forGeneration_pretrained(GPT2PreTrainedModel):
-    def __init__(self, global_gpt, lm_head):
+    def __init__(self, global_gpt, lm_head, generation_config=None):
         super().__init__(global_gpt.config, lm_head)
         # print(' == init GPT2LMHeadModel_pretrained == ')
         self.transformer = global_gpt #GPT2Model(config)
@@ -376,9 +379,8 @@ class GPT2forGeneration_pretrained(GPT2PreTrainedModel):
 
     def forward(
         self,
-        input_ids: Optional[torch.LongTensor] = None,attention_mask: Optional[torch.FloatTensor] = None,
-        local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
@@ -391,6 +393,9 @@ class GPT2forGeneration_pretrained(GPT2PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+
+        local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        **kwargs
     ) -> Union[Tuple, CausalLMOutputWithCrossAttentions]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -400,9 +405,10 @@ class GPT2forGeneration_pretrained(GPT2PreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
+        # past_key_values: local model past_key_values, no need to give to global gpt
         transformer_outputs = self.transformer(
-            input_ids,attention_mask=attention_mask,
-
+            input_ids=input_ids,
+            attention_mask=attention_mask,
             past_key_values=past_key_values,
             token_type_ids=token_type_ids,
             position_ids=position_ids,
@@ -440,17 +446,14 @@ class GPT2forGeneration_pretrained(GPT2PreTrainedModel):
             output = (lm_logits,) + transformer_outputs[1:]
             return ((loss,) + output) if loss is not None else output
 
-
+        ### add
         if use_cache:
             past_key_values = local_past_key_values + transformer_outputs.past_key_values
-            # print('local_past_key_values:',len(local_past_key_values))
-            # print('global transformer_outputs.past_key_values:',len(transformer_outputs.past_key_values))
-            # print('final past_key_values:',len(past_key_values))
 
         return CausalLMOutputWithCrossAttentions(
             loss=loss,
             logits=lm_logits,
-            past_key_values=past_key_values, #transformer_outputs.past_key_values,
+            past_key_values= past_key_values, #transformer_outputs.past_key_values, # 
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
             cross_attentions=transformer_outputs.cross_attentions,
@@ -471,10 +474,10 @@ class LocalGPT2Model(GPT2PreTrainedModel):
 
         self.drop = full_gpt.drop #nn.Dropout(config.embd_pdrop)
 
-        self.num_encoders = num_encoders # local model hidden layers
+        self.local_num_encoders = num_encoders # local model hidden layers
         self.num_encoders_all = full_gpt.config.num_hidden_layers # all hidden layers num
         
-        self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) for i in range(self.num_encoders)])
+        self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) for i in range(self.local_num_encoders)])
         #nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders)])
 
         # Model parallel
@@ -486,6 +489,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         self.post_init()
 
         self.embedding_output = None
+        self.past_key_values = None
 
     def forward(
         self,
@@ -501,33 +505,34 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None
+        return_dict: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
-        #######################
-        if input_ids is not None:
-            batch_size, sequence_length = input_ids.shape[:2]
-        else:
-            batch_size, sequence_length = inputs_embeds.shape[:2]
+        # #######################
+        # if input_ids is not None:
+        #     batch_size, sequence_length = input_ids.shape[:2]
+        # else:
+        #     batch_size, sequence_length = inputs_embeds.shape[:2]
 
-        assert (
-            self.config.pad_token_id is not None or batch_size == 1
-        ), "Cannot handle batch sizes > 1 if no padding token is defined."
+        # assert (
+        #     self.config.pad_token_id is not None or batch_size == 1
+        # ), "Cannot handle batch sizes > 1 if no padding token is defined."
 
         
-        # sequence_lengths: length of the actual text(no padding)
-        if self.config.pad_token_id is None:
-            sequence_lengths = -1
-        else:
-            if input_ids is not None:
-                sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1)
-                # print(sequence_lengths)
-            else:
-                sequence_lengths = -1
-                # logger.warning(
-                #     f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
-                #     "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
-                # )
-        #####################
+        # # sequence_lengths: length of the actual text(no padding)
+        # if self.config.pad_token_id is None:
+        #     sequence_lengths = -1
+        # else:
+        #     if input_ids is not None:
+        #         sequence_lengths = (torch.eq(input_ids, self.config.pad_token_id).long().argmax(-1) - 1)
+        #         # print(sequence_lengths)
+        #     else:
+        #         sequence_lengths = -1
+        #         # logger.warning(
+        #         #     f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
+        #         #     "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
+        #         # )
+        # #####################
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -553,13 +558,19 @@ class LocalGPT2Model(GPT2PreTrainedModel):
 
         if token_type_ids is not None:
             token_type_ids = token_type_ids.view(-1, input_shape[-1])
-
+        
+        # print('==Local==')
+        # print('Receive past_key_values:', type(past_key_values))
+        # if past_key_values != None:
+        #     print(len(past_key_values))
+        
         if past_key_values is None:
             past_length = 0
-            past_key_values = tuple([None] * len(self.h))
+            past_key_values = tuple([None] * len(self.h)) 
             # past_key_values = tuple([None] * self.num_encoders_all)
         else:
             past_length = past_key_values[0][0].size(-2)
+
         if position_ids is None:
             position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
             position_ids = position_ids.unsqueeze(0)
@@ -602,16 +613,11 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         # head_mask has shape n_layer x batch x n_heads x N x N
         head_mask = self.get_head_mask(head_mask, self.config.n_layer)
 
+
         if inputs_embeds is None:
             inputs_embeds = self.wte(input_ids)
-        self.embedding_output = inputs_embeds
-        # if position_ids.max() > self.config.max_position_embeddings-1:
-        #     print(self.config.max_position_embeddings)
-        #     print("input_ids.size():",input_ids.size())
-        #     print("position_ids:",position_ids.max(),position_ids.min())
-        #     assert 1>2
-        # position_ids = torch.clamp(position_ids, min=0, max=self.config.max_position_embeddings-1) 
         position_embeds = self.wpe(position_ids)
+        self.embedding_output = inputs_embeds # add
 
         hidden_states = inputs_embeds + position_embeds
 
@@ -635,7 +641,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         all_self_attentions = () if output_attentions else None
         all_cross_attentions = () if output_attentions and self.config.add_cross_attention else None
         all_hidden_states = () if output_hidden_states else None
-        
+
         for i, (block, layer_past) in enumerate(zip(self.h, past_key_values)): #[:self.num_encoders]
             # Model parallel
             if self.model_parallel:
@@ -700,33 +706,19 @@ class LocalGPT2Model(GPT2PreTrainedModel):
                 for k, v in self.device_map.items():
                     if i == v[-1] and "cuda:" + str(k) != self.last_device:
                         hidden_states = hidden_states.to("cuda:" + str(k + 1))
-        
-        
 
-        # past_key_values = presents
-        # print('local presents:',type(presents),len(presents))
-        # if presents[0]!= None:
-        #     print('   presents[0]:',type(presents[0]), len(presents[0]))
-        #     print('   ',presents[0][0].shape , presents[0][1].shape)
-        # else:
-        #     print(presents[0])
-
-        # past_key_values = list(past_key_values)
-        # past_key_values[0] = presents[0]
-        # past_key_values = tuple(past_key_values)
-        # print('local past_key_values:',type(past_key_values),len(past_key_values))
-        # if past_key_values[0]!= None:
-        #     print('   past_key_values[0]:',type(past_key_values[0]), len(past_key_values[0]))
-        #     print('   ',past_key_values[0][0].shape , past_key_values[0][1].shape)
-        # else:
-        #     print(past_key_values[0])
-        # if past_key_values[1]!= None:
-        #     print('   past_key_values[1]:',type(past_key_values[1]), len(past_key_values[1]))
-        #     print('   ',past_key_values[1][0].shape , past_key_values[1][1].shape)
-        # else:
-        #     print(past_key_values[1])
         self.past_key_values = presents
-        return hidden_states,sequence_lengths, attention_mask, presents
+        return {'inputs_embeds':hidden_states,
+                'attention_mask':attention_mask,
+                'local_past_key_values':presents,
+                # 'past_key_values':global_past_key_values,
+
+                # 'sequence_lengths':sequence_lengths,
+                # 'use_cache': use_cache,
+                # 'output_attentions':output_attentions,
+                # 'output_hidden_states': output_attentions,
+                # 'return_dict': return_dict,
+                }
     
 class GlobalGPT2Model(GPT2PreTrainedModel):
     def __init__(self, full_gpt, num_encoders, model_type):
@@ -734,9 +726,9 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
 
         self.embed_dim = full_gpt.config.hidden_size
 
-        self.num_encoders = num_encoders # global model hidden layers
+        self.global_num_encoders = num_encoders # global model hidden layers
         self.num_encoders_all = full_gpt.config.num_hidden_layers # all hidden layers num
-        self.local_num_encoders = self.num_encoders_all - num_encoders # local model hidden layers
+        self.local_num_encoders = self.num_encoders_all - self.global_num_encoders # local model hidden layers
         self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) \
             for i in range(self.local_num_encoders,self.num_encoders_all)])
         # self.h = nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders,self.num_encoders_all)])
@@ -751,22 +743,25 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.past_key_values = None
+
     def forward(
         self,
-        intermediate, 
-        attention_mask: Optional[torch.FloatTensor] = None,
-        token_type_ids: Optional[torch.LongTensor] = None,
-        
+        input_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        attention_mask: Optional[torch.FloatTensor] = None, # attention mask
+        token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None, # intermediate
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_attention_mask: Optional[torch.FloatTensor] = None,
+        
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        # local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         **kwargs
     ) -> Union[Tuple, BaseModelOutputWithPastAndCrossAttentions]:
 
@@ -777,27 +772,21 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        ######### input_shape loaded from local
-        # if input_ids is not None and inputs_embeds is not None:
-        #     raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
-        # elif input_ids is not None:
-        #     self.warn_if_padding_and_no_attention_mask(input_ids, attention_mask)
-        #     input_shape = input_ids.size()
-        #     input_ids = input_ids.view(-1, input_shape[-1])
-        #     batch_size = input_ids.shape[0]
-        # elif inputs_embeds is not None:
-        #     input_shape = inputs_embeds.size()[:-1]
-        #     batch_size = inputs_embeds.shape[0]
-        # else:
-        #     raise ValueError("You have to specify either input_ids or inputs_embeds")
+        if input_ids is not None and inputs_embeds is not None:
+            raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        elif input_ids is not None:
+            self.warn_if_padding_and_no_attention_mask(input_ids, attention_mask)
+            input_shape = input_ids.size()
+            input_ids = input_ids.view(-1, input_shape[-1])
+            batch_size = input_ids.shape[0]
+        elif inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+            batch_size = inputs_embeds.shape[0]
+        else:
+            raise ValueError("You have to specify either input_ids or inputs_embeds")
 
-        # load intermediate and input_shape(batchsize)
-        input_shape = intermediate.size()[:2]
-        batch_size = input_shape[0]
-        hidden_states = intermediate
-        device = intermediate.device # if intermediate is not None else inputs_embeds.device
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
 
-        ###### token_type_ids not needed
         # if token_type_ids is not None:
         #     token_type_ids = token_type_ids.view(-1, input_shape[-1])
 
@@ -807,12 +796,12 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
             # past_key_values = tuple([None] * self.num_encoders_all)
         else:
             past_length = past_key_values[0][0].size(-2)
-
+    
         if position_ids is None:
             position_ids = torch.arange(past_length, input_shape[-1] + past_length, dtype=torch.long, device=device)
             position_ids = position_ids.unsqueeze(0)
         
-        ####### attention mask already loaded from local model
+        # GPT2Attention mask. no need to change again , already done in Local GPT
         # if attention_mask is not None:
         #     if batch_size <= 0:
         #         raise ValueError("batch_size has to be defined and > 0")
@@ -832,7 +821,6 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         #     attention_mask = attention_mask.to(dtype=self.dtype)  # fp16 compatibility
         #     attention_mask = (1.0 - attention_mask) * torch.finfo(self.dtype).min
 
-
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]
         if self.config.add_cross_attention and encoder_hidden_states is not None:
@@ -849,7 +837,8 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         # attention_probs has shape bsz x n_heads x N x N
         # head_mask has shape n_layer x batch x n_heads x N x N
         head_mask = self.get_head_mask(head_mask, self.config.n_layer)
-
+        
+        ### already done in local gpt ###
         # if inputs_embeds is None:
         #     inputs_embeds = self.wte(input_ids)
         # position_embeds = self.wpe(position_ids)
@@ -860,6 +849,7 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         #     hidden_states = hidden_states + token_type_embeds
 
         # hidden_states = self.drop(hidden_states)
+        hidden_states = inputs_embeds
 
         output_shape = (-1,) + input_shape[1:] + (hidden_states.size(-1),)
 
@@ -874,7 +864,6 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         all_self_attentions = () if output_attentions else None
         all_cross_attentions = () if output_attentions and self.config.add_cross_attention else None
         all_hidden_states = () if output_hidden_states else None
-
         for i, (block, layer_past) in enumerate(zip(self.h, past_key_values)): # [self.num_encoders:]
             # Model parallel
             if self.model_parallel:
@@ -909,10 +898,6 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
                     encoder_attention_mask,
                 )
             else:
-                # print('layer_past:',type(layer_past))
-                # if layer_past != None:
-                #     print(len(layer_past), layer_past[0].shape, layer_past[1].shape)
-
                 outputs = block(
                     hidden_states,
                     layer_past=layer_past,
@@ -925,8 +910,6 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
                 )
 
             hidden_states = outputs[0]
-
-
             if use_cache is True:
                 presents = presents + (outputs[1],)
 
@@ -954,22 +937,8 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
                 for v in [hidden_states, presents, all_hidden_states, all_self_attentions, all_cross_attentions]
                 if v is not None
             )
-        
-        # print('global_past_key_values:',len(presents))
 
-        # print('final global past_key_values:',type(presents),len(presents))
-        # if presents[0]!= None:
-        #     print('   presents[0]:',type(presents[0]), len(presents[0]))
-        #     print('   ',presents[0][0].shape , presents[0][1].shape)
-        # else:
-        #     print(presents[0])
-        
-        # if presents[1]!= None:
-        #     print('   presents[1]:',type(presents[1]), len(presents[1]))
-        #     print('   ',presents[1][0].shape , presents[1][1].shape)
-        # else:
-        #     print(presents[1])
-        
+
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
             past_key_values=presents,

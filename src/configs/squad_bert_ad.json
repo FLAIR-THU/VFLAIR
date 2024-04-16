@@ -48,7 +48,7 @@
             "task_type": "QuestionAnswering",
             "metric_type": "best_pred",
             "doc_stride" : 128,
-            "max_seq_length": 512,
+            "max_seq_length": 256,
             "max_query_length" : 64,
             "max_answer_length": 30,
             "n_best_size": 2

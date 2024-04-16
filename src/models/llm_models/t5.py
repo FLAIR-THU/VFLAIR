@@ -1,5 +1,5 @@
-from transformers import T5PreTrainedModel
-from transformers.models.t5.modeling_t5 import T5Stack, T5LayerNorm
+# from transformers import T5PreTrainedModel
+from transformers.models.t5.modeling_t5 import T5Stack, T5LayerNorm,T5PreTrainedModel
 from typing import Optional, Tuple, Union, List
 import warnings
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -76,24 +76,25 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
 
     def forward(
         self,
-        inputs_embeds: Optional[torch.FloatTensor] = None, #encoder_intermediate
-        position_bias = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-
         input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
         decoder_input_ids: Optional[torch.LongTensor] = None,
         decoder_attention_mask: Optional[torch.BoolTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
         decoder_head_mask: Optional[torch.FloatTensor] = None,
-        encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         cross_attn_head_mask: Optional[torch.Tensor] = None,
+        encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
         decoder_inputs_embeds: Optional[torch.FloatTensor] = None,
         labels: Optional[torch.LongTensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+
+        position_bias = None,
+        **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -733,6 +734,7 @@ class LocalT5Model(T5PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqModelOutput]:
         r"""
         Returns:
@@ -794,7 +796,9 @@ class LocalT5Model(T5PreTrainedModel):
                 return_dict=return_dict,
             )
 
-        return hidden_states, position_bias , attention_mask # encoder intermediate
+        return {'inputs_embeds':hidden_states,  # encoder intermediate
+                'position_bias':position_bias , 
+                'attention_mask':attention_mask}
 
 class GlobalT5Model(T5PreTrainedModel):
     def __init__(self, full_t5 ,num_encoders, generation_config=None):
@@ -828,45 +832,45 @@ class GlobalT5Model(T5PreTrainedModel):
 
     def forward(
         self,
-        inputs_embeds: Optional[torch.Tensor] = None,#encoder_intermediate
-        position_bias = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-
         input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
         decoder_input_ids: Optional[torch.LongTensor] = None,
         decoder_attention_mask: Optional[torch.BoolTensor] = None,
         head_mask: Optional[torch.FloatTensor] = None,
         decoder_head_mask: Optional[torch.FloatTensor] = None,
         cross_attn_head_mask: Optional[torch.Tensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
         encoder_outputs: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+        past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
         decoder_inputs_embeds: Optional[torch.Tensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+
+        position_bias = None,
+        **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqModelOutput]:
 
         # global part of encoder: GlobalT5Stack
         encoder_outputs = self.encoder(
             inputs_embeds = inputs_embeds,
+            attention_mask = attention_mask,
             position_bias = position_bias,
-            attention_mask=attention_mask,
-
-            input_ids=None,
-            encoder_hidden_states=None,
-            encoder_attention_mask=None,
-            head_mask=None,
-            cross_attn_head_mask=None,
-            past_key_values=None,
-            use_cache=None,
-            output_attentions=None,
-            output_hidden_states=None,
-            return_dict=None,
+            
+            input_ids=input_ids,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+            head_mask=head_mask,
+            cross_attn_head_mask=cross_attn_head_mask,
+            past_key_values=past_key_values,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
         )
 
         hidden_states = encoder_outputs[0]
-        # print('Split after encoder:',hidden_states)
 
         # Set device for model parallelism
         if self.model_parallel:
@@ -895,7 +899,8 @@ class GlobalT5Model(T5PreTrainedModel):
             return_dict=return_dict,
         )
         
-        return decoder_outputs, encoder_outputs
+        return {'decoder_outputs':decoder_outputs, 
+                'encoder_outputs':encoder_outputs}
         # if not return_dict:
         #     return decoder_outputs + encoder_outputs
 

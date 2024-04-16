@@ -258,77 +258,97 @@ class ActiveParty_LLM(Party_LLM):
         # print(' == Active Aggregate == ')
 
         self.passive_pred_list = pred_list
-        # print('self.passive_pred_list[0][0]:',self.passive_pred_list[0][0])
-        self.passive_pred_list[0][0].requires_grad = True
 
+        # print('self.passive_pred_list:',type(self.passive_pred_list))
+        # print('===transmit :',self.passive_pred_list[0].keys())
+        # print(len(self.passive_pred_list[0]['past_key_values']) )
         # passive_pred_list[0] = [pred_clone, attention_mask, local_past_key_values, sequence_lengths]
+        self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
+
         if self.args.model_type in ['Bert','Roberta']: 
             if self.args.task_type == 'SequenceClassification':
-                self.global_output = self.global_model(self.passive_pred_list[0][0],\
-                 attention_mask = self.passive_pred_list[0][1],\
-                 return_dict=True) 
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask = self.passive_pred_list[0][1],\
-                 return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  return_dict=True) 
                 pred = self.global_output
         
         elif self.args.model_type == 'GPT2': 
             if self.args.task_type == 'CausalLM':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],\
-                 past_key_values = self.passive_pred_list[0][2], use_cache = use_cache,return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'Generation':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],\
-                 local_past_key_values = self.passive_pred_list[0][2],\
-                #  past_key_values = self.past_key_values,\
-                 use_cache = use_cache,return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  local_past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1], \
-                 past_key_values = self.passive_pred_list[0][2],sequence_lengths = self.passive_pred_list[0][3], \
-                 use_cache = use_cache,return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  sequence_lengths = self.passive_pred_list['local_sequence_lengths'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], \
-                 attention_mask=self.passive_pred_list[0][1],\
-                #  past_key_values = self.passive_pred_list[0][2],\
-                 use_cache = use_cache, return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  sequence_lengths = self.passive_pred_list['local_sequence_lengths'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'Llama': 
             if self.args.task_type == 'CausalLM':
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1],\
-                 past_key_values = self.passive_pred_list[0][2], \
-                 use_cache = use_cache, return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'Generation':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1],\
-                 local_past_key_values = self.passive_pred_list[0][2],\
-                #  past_key_values = self.past_key_values,\
-                 use_cache = use_cache, return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  local_past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output
             elif self.args.task_type == 'SequenceClassification':# self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0], attention_mask=self.passive_pred_list[0][1], \
-                    past_key_values = self.passive_pred_list[0][2],\
-                    sequence_lengths = self.passive_pred_list[0][3], \
-                    use_cache = use_cache, return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  sequence_lengths = self.passive_pred_list['local_sequence_lengths'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output.logits
             elif self.args.task_type == 'QuestionAnswering':# self.passive_pred_list[0] = [intermediate, attention_mask]
-                self.global_output = self.global_model(self.passive_pred_list[0][0],  attention_mask=self.passive_pred_list[0][1],\
-                    past_key_values = self.passive_pred_list[0][2],\
-                    use_cache = use_cache, return_dict=True)
+                # self.global_output = self.global_model(inputs_embeds = self.passive_pred_list['local_pred'],\
+                #  attention_mask = self.passive_pred_list['local_attention_mask'],\
+                #  input_ids = None,\
+                #  past_key_values = self.passive_pred_list['local_past_key_values'],\
+                #  use_cache = use_cache,return_dict=True) 
                 pred = self.global_output
             else:
                 assert 1>2 , 'Task type no supported'
 
         elif self.args.model_type == 'T5': 
             if self.args.task_type == 'CausalLM':
-                self.global_output = self.global_model(self.passive_pred_list[0][0], \
-                 attention_mask=self.passive_pred_list[0][1],\
-                 use_cache = use_cache,return_dict=True)
+                pred = self.global_output.logits
+            elif self.args.task_type == 'Generation':
                 pred = self.global_output.logits
             else:
                 assert 1>2 , 'Task type no supported'
@@ -353,22 +373,13 @@ class ActiveParty_LLM(Party_LLM):
                 param_group['lr'] = eta_t
 
     def cal_passive_local_gradient(self, ik):
-        # print('self.global_pred:',type(self.global_pred))
-        # print(self.global_pred.requires_grad)
-
-        # print('self.passive_pred_list[ik][0]:',type(self.passive_pred_list[ik][0]))
-
-        # print('self.global_gradients:',type(self.global_gradients))
-        # print(self.global_gradients.requires_grad)
-
         if self.args.task_type == 'QuestionAnswering':
-            passive_local_gradient = torch.autograd.grad(self.global_pred.start_logits+self.global_pred.end_logits, self.passive_pred_list[ik][0], \
+            passive_local_gradient = torch.autograd.grad(self.global_pred.start_logits+self.global_pred.end_logits, self.passive_pred_list[ik]['inputs_embeds'], \
             grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
         else:
-            passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik][0], \
+            passive_local_gradient = torch.autograd.grad(self.global_pred, self.passive_pred_list[ik]['inputs_embeds'], \
             grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
-            # print(f'Active Party cal passive pradient {ik}')
-            # print(passive_local_gradient)
+
 
         return passive_local_gradient
 

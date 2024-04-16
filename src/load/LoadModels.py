@@ -27,7 +27,7 @@ import copy
 from models.llm_models.bert import *
 from models.llm_models.gpt2 import *
 from models.llm_models.llama import *
-from models.llm_models.t5 import *
+# from models.llm_models.t5 import *
 
 
 from models.bottom_models import *
@@ -506,7 +506,7 @@ def load_basic_models_llm_t5(args, index):
     if args.task_type == 'CausalLM':
         full_model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     elif args.task_type == "Generation":
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+        full_model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     # elif args.task_type == 'QuestionAnswering':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.task_type == 'SequenceClassification':
@@ -585,11 +585,11 @@ def load_basic_models_llm_t5(args, index):
         if args.task_type == "CausalLM":
             global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
         # elif args.task_type == "QuestionAnswering":
-        #     global_model = GPT2ForQuestionAnswering_pretrained(global_t5, head_layer)
+        #     global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
         # elif args.task_type == "SequenceClassification":
         #     global_model = GPT2ForSequenceClassification_pretrained(global_t5, head_layer)
-        # elif args.task_type == "Generation":
-        #     global_model = GPT2forGeneration_pretrained(global_t5, head_layer)
+        elif args.task_type == "Generation":
+            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
         else:
             assert 1 > 2, "task type not supported"
 
@@ -704,9 +704,9 @@ def load_basic_models_llm_gpt2(args, index):
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
-            global_model = GPT2LMHeadModel_pretrained(global_gpt, head_layer)
+            global_model = GPT2LMHeadModel_pretrained(global_gpt, head_layer, generation_config=full_model.generation_config)
         elif args.task_type == "QuestionAnswering":
-            global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, head_layer)
+            global_model = GPT2ForQuestionAnswering_pretrained(global_gpt, head_layer, generation_config=full_model.generation_config)
         elif args.task_type == "SequenceClassification":
             global_model = GPT2ForSequenceClassification_pretrained(global_gpt, head_layer)
         elif args.task_type == "Generation":
@@ -736,77 +736,6 @@ def load_basic_models_llm_llama(args, index):
     current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
-    # if args.pretrained == 0:
-    #     args.tokenizer = LlamaTokenizer.from_pretrained(model_path, do_lower_case=True)
-    #     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
-
-    #     full_llama = LlamaModel.from_pretrained(model_path)
-
-    #     if args.pad_token == "default":
-    #         if args.tokenizer.pad_token is None:
-    #             args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-    #             pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-    #             full_llama.config.pad_token_id = pad_id
-    #         args.pad_token = "default_" + args.tokenizer.pad_token
-    #     else:
-    #         if args.tokenizer.pad_token != None:
-    #             print(f'Note:Origin pad token: {args.tokenizer.pad_token}  --> {args.pad_token}')
-    #         args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-    #         pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-    #         full_llama.config.pad_token_id = pad_id
-
-    #     args.config = full_llama.config  # print(full_bert.encoder.layer[0])
-    #     all_encoder_num = args.config.num_hidden_layers
-    #     print('all_encoder_num:',all_encoder_num)
-
-    #     ########### Local Model ###########
-    #     local_model = None
-    #     local_model_optimizer = None
-    #     if index < args.k - 1:
-    #         print('args.local_encoders_num:',args.local_encoders_num)
-    #         local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
-    #         # Freeze Backbone
-    #         for param in local_model.parameters():
-    #             param.requires_grad = False
-    #         local_model = local_model.to(args.device)
-    #         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-    #         local_model_optimizer = None
-
-    #     ########### Global Model ###########
-    #     global_model = None
-    #     global_model_optimizer = None
-    #     if index == args.k - 1:
-    #         global_encoders_num = all_encoder_num - args.local_encoders_num
-    #         print('global_encoders_num:',global_encoders_num)
-
-    #         # global part of llama(frozen)
-    #         global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
-
-    #         # add Classification Layer(trainable)
-    #         # if args.task_type == "CausalLM":
-    #         #     global_model = LlamaForCausalLM_forfinetune(global_llama, head_layer)
-    #         # elif args.task_type == "QuestionAnswering":
-    #         #     global_model = LlamaForQuestionAnswering_forfinetune(global_llama, head_layer)
-    #         if args.task_type == "SequenceClassification":
-    #             global_model = LlamaForSequenceClassification_forfinetune(global_llama, current_output_dim)
-    #         else:
-    #             assert 1 > 2, "task type not supported"
-
-    #         print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
-
-    #         # Freeze Backbone
-    #         for param in global_model.model.parameters():
-    #             param.requires_grad = False
-
-    #         # Trainable Part for finetuning
-    #         for param in global_model.head_layer.parameters():
-    #             param.requires_grad = True
-
-    #         global_model = global_model.to(args.device)
-    #         global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
-
-    #     del (full_llama)
-    # else:
     print('load_basic_models_llm from:', current_model_type)
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
@@ -856,7 +785,8 @@ def load_basic_models_llm_llama(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalLlamaModel(full_llama, args.local_encoders_num, model_type=args.model_type)
+        local_model = LocalLlamaModel(full_llama, num_encoders = args.local_encoders_num, model_type=args.model_type,\
+        generation_config=full_model.generation_config)
         
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -865,6 +795,7 @@ def load_basic_models_llm_llama(args, index):
             param.requires_grad = False
 
         local_trainable_params = []
+        local_model_optimizer = None
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.embed_tokens.parameters():
             param.requires_grad = args.embedding_trainable[0]
@@ -875,7 +806,8 @@ def load_basic_models_llm_llama(args, index):
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
-        local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+        if len(local_trainable_params)<0:
+            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
     global_model = None
@@ -885,13 +817,13 @@ def load_basic_models_llm_llama(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_llama = GlobalLlamaModel(full_llama, global_encoders_num, model_type=args.model_type)
+        global_llama = GlobalLlamaModel(full_llama, num_encoders = global_encoders_num, model_type=args.model_type)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
-            global_model = LlamaForCausalLM_pretrained(global_llama, head_layer)
+            global_model = LlamaForCausalLM_pretrained(global_llama, head_layer,generation_config=full_model.generation_config)
         elif args.task_type == "Generation":
-            global_model = LlamaforGeneration_pretrained(global_llama, head_layer)
+            global_model = LlamaforGeneration_pretrained(global_llama, head_layer,generation_config=full_model.generation_config)
         elif args.task_type == "SequenceClassification":
             global_model = LlamaForSequenceClassification_pretrained(global_llama, head_layer)
         else:

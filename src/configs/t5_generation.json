@@ -23,24 +23,22 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2-large",
+            "type": "googleflan-t5-base",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "GPT2",
-            "local_encoders_num": 1,
+            "model_type": "T5",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/googleflan-t5-base"
         },
         "1": {
-            "type": "gpt2-large",
+            "type": "googleflan-t5-base",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "GPT2",
-            "local_encoders_num": 1,
+            "model_type": "T5",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/googleflan-t5-base"
         },
         "task":{
             "task_type": "Generation",
@@ -49,7 +47,7 @@
             "metric_type": "n_best",
             "n_best_size": 8
         },
-        "local_encoders_num": 3,
+        "local_encoders_num": 2,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     }

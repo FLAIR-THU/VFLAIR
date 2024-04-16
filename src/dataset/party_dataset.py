@@ -57,6 +57,7 @@ class PassiveDataset_LLM(Dataset):
             flag = 0
             for i in range(len(texts)):
                 ids = args.tokenizer(texts[i],return_tensors='pt')
+                
                 # truncation
                 if torch.tensor(ids['input_ids']).squeeze().shape[0] > args.max_length:
                     ids['input_ids'] = ids['input_ids'][...,-(args.max_length+1):] # torch.size([max_length])
@@ -75,15 +76,16 @@ class PassiveDataset_LLM(Dataset):
                 if 'token_type_ids' in list(ids.keys()):
                     self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze()[:-1] )
                 
-                # if flag == 0:
-                #     ids = args.tokenizer(texts[i],return_tensors='pt')
-                #     print(torch.tensor(ids['input_ids']).squeeze())
-                #     print()
-                #     print(self.texts[-1])
-                #     print()
-                #     print(self.labels[-1])
-                #     print('-'*25)
-                #     flag = flag + 1
+                if flag == 0:
+                    # ids = args.tokenizer(texts[i],return_tensors='pt')
+                    # print(torch.tensor(ids['input_ids']).squeeze())
+                    print(texts[i])
+                    print(labels[i])
+                    print(self.texts[-1].shape)
+                    print('text:',self.texts[-1])
+                    print('label',self.labels[-1])
+                    print('-'*25)
+                    flag = flag + 1
             # self.labels = labels
             self.texts=[aa.tolist() for aa in self.texts] 
             self.masks=[aa.tolist() for aa in self.masks] 

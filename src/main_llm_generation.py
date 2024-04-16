@@ -21,7 +21,7 @@ from models.llm_models.generation_model import *
 import warnings
 warnings.filterwarnings("ignore")
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel,AutoModelForSequenceClassification,AutoModelForPreTraining
+from transformers import AutoTokenizer, AutoModelForCausalLM,AutoModelForSeq2SeqLM, AutoModel,AutoModelForSequenceClassification,AutoModelForPreTraining
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -123,12 +123,15 @@ if __name__ == '__main__':
             GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         elif args.model_type == 'Llama':
             GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        # elif args.model_type == 'T5':
+        #     GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         else:
             assert 1>2, 'model type not supported for generation'
             
         ######### define your input text here #########
-        input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
-         mouth curved in a confident grin i do n't care about"]
+        # input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
+        #  mouth curved in a confident grin i do n't care about"]
+        input_text = ['Hello, how are you ?']
         ######### define your input text here #########
 
         inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
@@ -146,25 +149,34 @@ if __name__ == '__main__':
         print('full model path:',args.model_path)
         current_model_type = args.model_type #"gpt2"
         tokenizer = AutoTokenizer.from_pretrained(args.model_path)
-        full_model = AutoModelForCausalLM.from_pretrained(args.model_path) # AutoModelForCausalLM
+        if args.model_type == 'T5':
+            full_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path) # AutoModelForCausalLM
+        else:
+            full_model = AutoModelForCausalLM.from_pretrained(args.model_path) # AutoModelForCausalLM
+
         full_model = full_model.to(args.device)
+
+        # greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
+        # print('greedy_matching:',type(greedy_matching))
+        # print(greedy_matching)
         greedy_output = full_model.generate(**inputs, max_length=30)
-        print("greedy_output:\n" + 100 * '-')
+        print("full greedy_output:\n")
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
-        print('\n\n')
+
+        
+        print()
 
 
         ######### VFL model ########
-        
-        greedy_output = GenerationModel.generate(**inputs, max_length=128)
-        print("greedy_output:\n" + 100 * '-')
+        GenerationModel = GenerationModel.to(args.device)
+        print('input_ids:',inputs['input_ids'])
+
+        greedy_output = GenerationModel.generate(**inputs, max_length=30)
+        print("greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
 
-        greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
-        print('greedy_matching:',type(greedy_matching))
-        print(greedy_matching)
-
+        
 
 
 

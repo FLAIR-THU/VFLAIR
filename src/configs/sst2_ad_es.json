@@ -1,10 +1,10 @@
 {
-    "epochs": 10,
+    "epochs": 20,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 128,
-    "early_stop_threshold": 1,
     "pipeline": "finetune",
+    "early_stop_threshold": 1,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -26,7 +26,7 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",

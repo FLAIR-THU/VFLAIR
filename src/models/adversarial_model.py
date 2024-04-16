@@ -70,6 +70,7 @@ class Mapping_MLP3(nn.Module):
 
     def forward(self, x):
         origin_shape = x.shape
+        # print('=== ad model ===')
         # print('x:',x.shape,origin_shape)
         # print(self.seq_length,'  ',self.embed_dim)
         # print(self.seq_length*self.embed_dim)
@@ -85,6 +86,8 @@ class Mapping_MLP3(nn.Module):
         # print('x3:',x3.shape)
 
         x3 = x3.reshape(origin_shape)
+        # print('=== ad model ===')
+
         return x3
 
 
