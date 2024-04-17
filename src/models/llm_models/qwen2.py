@@ -8,6 +8,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.models.qwen2.modeling_qwen2 import Qwen2Model, Qwen2ForCausalLM, Qwen2Config, Qwen2DecoderLayer, \
     BaseModelOutputWithPast, Cache, DynamicCache, _prepare_4d_causal_attention_mask_for_sdpa, \
     _prepare_4d_causal_attention_mask, PreTrainedModel
+from transformers import MODEL_FOR_CAUSAL_LM_MAPPING
 from torch.nn import ModuleList, Parameter
 from typing import Iterable, Optional, Union, List, Tuple, Callable, Dict, Iterator
 # import logging as logger
@@ -15,7 +16,7 @@ from loguru import logger
 import torch
 import copy
 import os
-from party.party_utils import ProxyModel
+# from party.llm_party import ProxyModel
 
 
 class Qwen2DecoderLayerParam(object):
@@ -108,6 +109,7 @@ class Qwen2ModelHead(Qwen2ModelSplitter, VFLModel):
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
+            **kwargs
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         """
         改写forward方法的输入输出
@@ -279,7 +281,7 @@ class Qwen2ModelBody(Qwen2ModelSplitter, VFLModel):
             use_cache: Optional[bool] = None,
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+            return_dict: Optional[bool] = None
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         logger.debug(f"{self.__class__.__name__} run forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -676,7 +678,7 @@ class E2EModel(Qwen2ForCausalLM):
 
         if not isinstance(intermediate, Qwen2DecoderLayerParam):
             intermediate = Qwen2DecoderLayerParam(intermediate)
-        intermediate.labels = labels
+        # intermediate.labels = labels
         intermediate = intermediate.prepare_for_forward()
 
         # logger.debug(str(type(intermediate))+'thread id : '+str(threading.currentThread().ident))
@@ -734,7 +736,9 @@ class E2EModel(Qwen2ForCausalLM):
 
 
 class E2EModelV2(Qwen2ForCausalLM):
-    def __init__(self, model_config: Qwen2Config, models: Dict[int, PreTrainedModel, ProxyModel]):
+    def __init__(self, model_config: Qwen2Config, models: Dict[int, Union[PreTrainedModel
+    # , ProxyModel
+    ]]):
         model_config.tie_word_embeddings = False
         super().__init__(model_config)
         self.layers = None
@@ -750,6 +754,9 @@ class E2EModelV2(Qwen2ForCausalLM):
                 logger.warning(f"Parameter type {type(i)} is not supported")
                 continue
 
+    def can_generate(self) -> bool:
+        return True
+
     @property
     def num_of_slice(self):
         return len(self.models)
@@ -764,14 +771,27 @@ class E2EModelV2(Qwen2ForCausalLM):
         m = self.models[0]  # type:ProxyModel
         return m.optimizer
 
-    def __is_vfl(self):
+    def __is_vfl(self, raise_exception: bool = True):
         """
         some methods only support under vfl structure
         :return: bool
         """
         for model in self.models.items():
-            if not isinstance(model, ProxyModel):
-                raise ValueError(f"Model type {type(model)} is not supported")
+            # if not isinstance(model, ProxyModel):
+            if isinstance(model, PreTrainedModel):
+                if raise_exception:
+                    raise ValueError(f"Model type {type(model)} is not supported")
+                else:
+                    return False
+        return True
+
+    def eval(self):
+        for model in self.models.values():
+            model.eval()
+
+    def train(self, **kwargs):
+        for model in self.models.values():
+            model.train(**kwargs)
 
     def forward(
             self,
@@ -828,15 +848,27 @@ class E2EModelV2(Qwen2ForCausalLM):
 
     def backward(self):
         self.__is_vfl()
-        pass
+        # todo: 依次调用，提供终止方式
+        for i in range(len(self.models) - 1, 0, -1):
+            self.models[i].backward()
 
     def optimizer_step(self):
         self.__is_vfl()
-        pass
+        # todo: 可以同时调用
+        for i in range(len(self.models) - 1, 0, -1):
+            self.models[i].optimizer_step()
 
-    def scheduler_step(self):
+    def optimizer_zero_grad(self):
         self.__is_vfl()
-        pass
+        # todo: 可以同时调用
+        for i in range(len(self.models) - 1, 0, -1):
+            self.models[i].optimizer_zero_grad()
+
+    def lr_scheduler_step(self):
+        self.__is_vfl()
+        # todo: 可以同时调用
+        for i in range(len(self.models) - 1, 0, -1):
+            self.models[i].lr_scheduler_step()
 
     def save_pretrained(
             self,
@@ -886,9 +918,9 @@ class PipelineVFL2Slice:
         :return:
         """
         if self.is_server_end:
-            return self._load_model_tail(path_pretrain_model, split_index, **kwargs)
+            return {1: self._load_model_tail(path_pretrain_model, split_index, **kwargs)}
         else:
-            return self._load_model_head(path_pretrain_model, split_index, **kwargs)
+            return {0: self._load_model_head(path_pretrain_model, split_index, **kwargs)}
 
     def _load_model_head(self, path_model_head, split_index=None, **kwargs):
         model_head = Qwen2ModelHead.from_pretrained(path_model_head, **kwargs)
@@ -911,11 +943,11 @@ class PipelineVFL2Slice:
 
     def from_vfl(self, model_path, **kwargs):
         if self.is_server_end:
-            model_tail = self._load_model_tail(model_path, **kwargs)
-            return model_tail
+            model_tail = self._load_model_tail(os.path.join(model_path, 'model_1'), **kwargs)
+            return {1: model_tail}
         else:
-            model_head = self._load_model_head(model_path, **kwargs)
-            return model_head
+            model_head = self._load_model_head(os.path.join(model_path, 'model_0'), **kwargs)
+            return {0: model_head}
 
 
 class PipelineVFL3Slice(PipelineVFL2Slice):

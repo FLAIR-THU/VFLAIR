@@ -1,24 +1,54 @@
 import torch
 from typing import List, Tuple
 from party.llm_party import Party as Party_LLM
-from .party_utils import ProxyModel
+from .llm_party import ProxyModel
 from transformers import AutoTokenizer
 from peft import get_peft_model
 from config import vfl_basic_config
-from models.llm_models.qwen2 import PreTrainedModel, Qwen2ModelHead, Qwen2TailForCausalLM, Qwen2DecoderLayerParam, \
-    E2EModel, \
-    Qwen2ForCausalLM, Qwen2Config, PipelineVFL2Slice, PipelineVFL3Slice, E2EModelV2
+from models.llm_models.qwen2 import  PipelineVFL2Slice, PipelineVFL3Slice
 
 
 class QW_Active_Party(Party_LLM):
     def __init__(self, args, index, **kwargs):
         super().__init__(args, index)
-        self.proxy_models = {k: ProxyModel(self, index) for k in self.models}
 
+    def eval(self, **kwargs):
+        self.global_model.eval()
 
     def prepare_data(self, args, index):
-        pass
+        print('Active Party has no data, only global model')
 
+    def receive_pred(self, pred, giver_index):
+        self.pred_received[giver_index] = pred
+
+    def receive_attention_mask(self, attention_mask):
+        self.local_batch_attention_mask = attention_mask
+
+    def receive_token_type_ids(self, token_type_ids):
+        self.local_batch_token_type_ids = token_type_ids
+
+    def train_model(self):
+        self.global_model.train()
+
+
+    def train_model(self):
+        self.global_model.train()
+
+    def prepare_model(self, args, index):
+        model_path = args.model_list[str(index)]['path']
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        if vfl_basic_config.num_of_slice == 3:
+            p = PipelineVFL3Slice(self.is_active_party)
+            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
+        elif vfl_basic_config.num_of_slice == 2:
+            p = PipelineVFL2Slice(self.is_active_party)
+            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
+        else:
+            raise ValueError(f"vfl_basic_config.num_of_slice={vfl_basic_config.num_of_slice} is not supported")
+        # whether to train
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            if _train_conf.peft_config:
+                self._peft_model_setting()
 
 
     def distributed_predict(self, intermediate):

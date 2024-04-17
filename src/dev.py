@@ -156,7 +156,7 @@ def device_map_setter(kwargs: dict, add_model_prefix=False):
 MODEL_PATH = '/mnt/data/model'
 # DATA_PATH = '/dev/data/sunl0/data'
 DATA_PATH = '/mnt/data/data'
-SPLIT_INDEX = (2, -2)
+SPLIT_INDEX = -2
 IS_TEST = True
 
 # model_path = '/dev/data/sunl0/model/test/qwen/Qwen1___5-72B-Chat'
@@ -222,12 +222,12 @@ def load_vfl_model_2slice(split_idx=2, is_from_raw=True, save_model=False):
     p_server = PipelineVFL2Slice(True)
     p_client = PipelineVFL2Slice(False)
     # model_0, model_1,model_2 = None, None,None
-    models = [None, None, None]
+    models = {}
     if is_from_raw:
-        models[0] = p_client.from_pretrained(model_path, split_index=split_idx,
-                                             **device_map_setter(load_kwargs))
-        models[1] = p_server.from_pretrained(model_path, split_index=split_idx,
-                                             **load_kwargs)
+        models.update(p_client.from_pretrained(model_path, split_index=split_idx,
+                                             **device_map_setter(load_kwargs)))
+        models.update(p_server.from_pretrained(model_path, split_index=split_idx,
+                                             **load_kwargs))
         logger.info(f"finish loading models from raw")
         log_gpu_memory_usage()
     else:
@@ -237,11 +237,11 @@ def load_vfl_model_2slice(split_idx=2, is_from_raw=True, save_model=False):
                 if i == 0:
                     __kwargs = copy.deepcopy(load_kwargs)
                     __kwargs.update({'max_memory': {0: '20GiB'}})
-                    models[i] = p_client.from_vfl(_p, **__kwargs)
+                    models.update(p_client.from_vfl(_p, **__kwargs))
                 elif i == 1:
                     __kwargs = copy.deepcopy(load_kwargs)
                     __kwargs.update({'max_memory': {i: '14GiB' if i == 0 else '21GiB' for i in range(0, 8)}})
-                    models[i] = p_server.from_vfl(_p, **__kwargs)
+                    models.update(p_server.from_vfl(_p, **__kwargs))
                 else:
                     continue
                 for param in models[i].parameters():
@@ -254,7 +254,7 @@ def load_vfl_model_2slice(split_idx=2, is_from_raw=True, save_model=False):
         logger.info(f"save!")
         time.sleep(3)
         logger.info(f"release resources and norm to cuda")
-        for i, m in enumerate(models):
+        for i, m in models.items():
             if m:
                 PipelineVFL2Slice.save_vfl(os.path.join(vfl_folder, f"model_{i}"), m)
             else:
@@ -681,7 +681,7 @@ if __name__ == '__main__':
                 log_gpu_memory_usage()
 
     if "dev VFL":
-        models = load_vfl_model(split_idx=SPLIT_INDEX, is_from_raw=False, save_model=False)
+        models = load_vfl_model(split_idx=SPLIT_INDEX, is_from_raw=True, save_model=True)
         local_model, global_model = models[0], models[1]
         logger.info("finish load model")
         model_inputs.to(local_model.device)
@@ -719,7 +719,7 @@ if __name__ == '__main__':
                                           position_ids=intermediate.position_ids, use_cache=False)
             log_gpu_memory_usage()
         if "e2e":
-            if train_lora := 'lora':
+            if train_lora := not 'lora':
                 global_model = p_lora.get_lora_model(global_model)
             elif not 'lora inference':
                 global_model = PeftModelForCausalLM.from_pretrained(global_model, model_id=os.path.join(lora_path,

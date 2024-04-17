@@ -174,13 +174,13 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     if isinstance(batch_input_dicts[0][key_name], torch.Tensor):
                         data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
                     else:
-                        data_inputs[key_name] = [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] 
+                        data_inputs[key_name] = [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))]
 
                 # real received intermediate result
                 self.top_vfl.parties[0].obtain_local_data(data_inputs)
                 self.top_vfl.parties[0].gt_one_hot_label = batch_label
 
-                all_pred_list = self.top_vfl.pred_transmit()                
+                all_pred_list = self.top_vfl.pred_transmit()
                 real_results = all_pred_list[0]
                 self.top_vfl._clear_past_key_values()
 
@@ -199,7 +199,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     # print('received_intermediate:',received_intermediate.shape)
                     received_attention_mask = real_results['attention_mask'][_id].unsqueeze(0) # [1,256]
                     # print('received_attention_mask:',received_attention_mask.shape)
-                    
+
                     # initial guess
                     # dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
@@ -227,42 +227,42 @@ class VanillaModelInversion_WhiteBox(Attacker):
                             'input_ids':None, 'attention_mask':dummy_attention_mask,\
                             'inputs_embeds':dummy_embedding, 'token_type_ids':dummy_local_batch_token_type_ids
                         }
-                        dummy_intermediate  = local_model(**dummy_input)     
+                        dummy_intermediate  = local_model(**dummy_input)
                         local_model._clear_past_key_values()
 
                         dummy_intermediate = dummy_intermediate['inputs_embeds']
-                        
+
                         # if self.args.model_type  in ['Bert','Roberta']:
                         #     dummy_intermediate  = local_model(input_ids=None, \
                         #                                     attention_mask = dummy_attention_mask, \
                         #                                     token_type_ids=dummy_local_batch_token_type_ids,\
-                        #                                     inputs_embeds=dummy_embedding)     
+                        #                                     inputs_embeds=dummy_embedding)
                         #     dummy_intermediate = dummy_intermediate['inputs_embeds']
                         #     # dummy_intermediate, _a  = local_model(input_ids=dummy_data, \
                         #     #                                 attention_mask = dummy_attention_mask, \
                         #     #                                 token_type_ids=dummy_local_batch_token_type_ids,\
                         #     #                                 # embedding_output = dummy_embedding,\
-                        #     #                                 inputs_embeds=dummy_embedding)                 
+                        #     #                                 inputs_embeds=dummy_embedding)
                         # elif self.args.model_type == 'GPT2':
                         #     dummy_intermediate  = local_model(input_ids=None, \
                         #                                     attention_mask = dummy_attention_mask, \
                         #                                     token_type_ids=dummy_local_batch_token_type_ids,\
-                        #                                     inputs_embeds=dummy_embedding)    
+                        #                                     inputs_embeds=dummy_embedding)
                         #     dummy_intermediate = dummy_intermediate['inputs_embeds']
                         #     # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
                         #     #                             attention_mask = dummy_attention_mask, \
                         #     #                             token_type_ids=dummy_local_batch_token_type_ids,\
                         #     #                             # past_key_values = received_past_key_values,\
-                        #     #                             inputs_embeds = dummy_embedding)    
+                        #     #                             inputs_embeds = dummy_embedding)
                         # elif self.args.model_type == 'Llama':
                         #     dummy_intermediate  = local_model(input_ids=None, \
                         #                                     attention_mask = dummy_attention_mask, \
                         #                                     token_type_ids=dummy_local_batch_token_type_ids,\
-                        #                                     inputs_embeds=dummy_embedding)    
+                        #                                     inputs_embeds=dummy_embedding)
                         #     dummy_intermediate = dummy_intermediate['inputs_embeds']
                         #     # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None,\
                         #     #                             attention_mask = dummy_attention_mask, \
-                        #     #                             inputs_embeds = dummy_embedding)    
+                        #     #                             inputs_embeds = dummy_embedding)
                         # else:
                         #     assert 1>2, 'model type not supported'
                     

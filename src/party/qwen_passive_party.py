@@ -3,7 +3,11 @@ from typing import Dict
 from party.llm_party import Party as Party_LLM
 from loguru import logger
 from .LocalCommunication import LocalCommunication
-from .party_utils import ProxyModel
+from .llm_party import ProxyModel
+from transformers import AutoTokenizer
+from config import vfl_basic_config
+from models.llm_models.qwen2 import PipelineVFL2Slice, PipelineVFL3Slice
+from dataset.party_dataset import PassiveDataset, PassiveDataset_LLM
 
 
 class QW_Passive_Party(Party_LLM):
@@ -11,12 +15,31 @@ class QW_Passive_Party(Party_LLM):
 
     def __init__(self, args, index, **kwargs):
         super().__init__(args, index)
-        self.proxy_models = {k: ProxyModel(self, k) for k in self.models}
+        self.init_communication()
 
     def prepare_data(self, args, index):
-        pass
+        if not args.dataset:
+            return None
+        super().prepare_data(args, index)  # Party_llm's prepare_data
 
+        self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)
+        self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label)
 
+    def prepare_model(self, args, index):
+        model_path = args.model_list[str(index)]['path']
+        args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        if vfl_basic_config.num_of_slice == 3:
+            p = PipelineVFL3Slice(self.is_active_party)
+            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
+        elif vfl_basic_config.num_of_slice == 2:
+            p = PipelineVFL2Slice(self.is_active_party)
+            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
+        else:
+            raise ValueError(f"vfl_basic_config.num_of_slice={vfl_basic_config.num_of_slice} is not supported")
+        # whether to train
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            if _train_conf.peft_config:
+                self._peft_model_setting()
 
     # def predict(self, **kwargs):
     #     pass

@@ -810,7 +810,9 @@ def create_main_task(global_model_type):
             pred_list = self.pred_transmit(use_cache=False)
             # passive party inform active party to do global pred
             final_output = self.global_pred_transmit(pred_list, use_cache=False)
-
+            if vfl_basic_config.num_of_slice > 2:
+                # todo: deal with 3-slice inference
+                pass
             global_output = self.parties[1].global_output
             return global_output # dict
 
@@ -1141,6 +1143,10 @@ def create_main_task(global_model_type):
                 return loss.item(), batch_train_acc
 
         def train(self):
+            training_args = vfl_basic_config.vfl_training_config.training_args
+            # 创建 TensorBoard 摘要写入器
+            tensorboard_writer = SummaryWriter(training_args.logging_dir)
+
             print_every = 1
 
             for ik in range(self.k):
@@ -1161,17 +1167,24 @@ def create_main_task(global_model_type):
 
             last_adversarial_model_loss = 10000
             start_time = time.time()
+            optimize_step = 0
 
             data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
+            if "validation_before_epoch":
+                for p in self.parties:
+                    p.eval()
+                with torch.no_grad():
+                    _exp_result, test_acc = self.inference()
+                tensorboard_writer.add_scalar('train/test_acc', test_acc, 0)
             for i_epoch in range(self.epochs):
                 self.current_epoch = i_epoch
+                tensorboard_writer.add_scalar('train/epoch', i_epoch, optimize_step)
                 postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
                 i = -1
                 print_every = 1
                 total_time = 0
-
                 data_loader_list = [self.parties[ik].train_loader for ik in range(self.k - 1)]
-                for parties_data in zip(*data_loader_list):
+                for parties_data in tqdm(zip(*data_loader_list), desc=f'Epoch {i_epoch}/{self.epochs - 1}'):
                     ############ Allocate Data #################
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
@@ -1203,6 +1216,24 @@ def create_main_task(global_model_type):
                     self.loss, self.train_acc = self.train_batch(parties_data, gt_one_hot_label)
                     exit_time = time.time()
                     total_time += (exit_time - enter_time)
+                    optimize_step += 1
+                    tensorboard_writer.add_scalar('train/loss', self.loss, optimize_step)
+                    # todo： 添加逻辑，通过判断训练的层来获取lr
+                    try:
+                        tensorboard_writer.add_scalar('train/lr_local',
+                                                      self.parties[0].local_model_optimizer.param_groups[0]['lr'],
+                                                      optimize_step)
+                    except:
+                        pass
+                    try:
+                        tensorboard_writer.add_scalar('train/lr_global',
+                                                      self.parties[1].global_model_optimizer.param_groups[0]['lr'],
+                                                      optimize_step)
+                    except Exception as e:
+                        logger.error(repr(e))
+                        pass
+
+                    gc.collect()
                     # ====== train batch (end) ======
                     self.num_total_comms = self.num_total_comms + 1
                     # if self.num_total_comms % 10 == 0:
@@ -1213,6 +1244,8 @@ def create_main_task(global_model_type):
 
                 # LR decay
                 self.LR_Decay(i_epoch)
+                _lr = self.parties[0].global_LR_decay(i_epoch, is_return=True)
+
 
                 if self.args.apply_adversarial:
                     print(
@@ -1244,6 +1277,8 @@ def create_main_task(global_model_type):
                         print(exp_result)
 
                         self.final_epoch = i_epoch + 1
+                    tensorboard_writer.add_scalar('train/test_acc', self.test_acc, optimize_step)
+
 
                 data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
 
@@ -1462,28 +1497,133 @@ def create_main_task(global_model_type):
                 self.parties[i].local_model._clear_past_key_values()
             self.parties[-1].global_model._clear_past_key_values()
 
-    def _init_e2e_model(self):
-        model_config = None
-        if not self.args.task_type == 'DevLLMInference':
-            return
-        for party in self.parties:
-            try:
-                for model in party.models.values():
-                    model_config = model.config
+        def _init_e2e_model(self):
+            model_config = None
+            if not self.args.task_type == 'DevLLMInference':
+                return
+            for party in self.parties:
+                try:
+                    for model in party.models.values():
+                        model_config = model.config
+                        break
                     break
-                break
-            except Exception as e:
-                continue
-            # if party.models:
-            #     model_config = party.local_model.config
-            #     break
-            # elif party.models:
-            #     model_config = party.global_model.config
-            #     break
-        if not model_config:
-            logger.error(f"No model config for E2E_model")
-        with init_empty_weights():
-            self.e2e_model = E2EModelV2(model_config, {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
-        # self.e2e_model.to(self.e2e_model.local_model.device)
+                except Exception as e:
+                    continue
+                # if party.models:
+                #     model_config = party.local_model.config
+                #     break
+                # elif party.models:
+                #     model_config = party.global_model.config
+                #     break
+            if not model_config:
+                logger.error(f"No model config for E2E_model")
+            with init_empty_weights():
+                self.e2e_model = E2EModelV2(model_config, {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
+            # self.e2e_model.to(self.e2e_model.local_model.device)
+
+        @property
+        def passive_party(self):
+            return self.parties[0]
+
+        def _train_e2e_model(self):
+            """
+            当前按照 MainTask, MainTask.e2emodel, e2emodel.models[0] 在同一个端可直接访问的结构来设计
+            :return:
+            """
+            training_args = vfl_basic_config.vfl_training_config.training_args
+            logger.info(f"Training saving to {training_args.output_dir}")
+            # 创建 TensorBoard 摘要写入器
+            tensorboard_writer = SummaryWriter(training_args.logging_dir)
+
+            # # 创建 DataLoader 加载训练和验证数据集
+            # # train_dataloader = DataLoader(train_dataset, batch_size=training_args.per_device_train_batch_size, shuffle=False)
+            # # eval_dataloader = DataLoader(eval_dataset, batch_size=training_args.per_device_eval_batch_size)
+            # if isinstance(model, E2EModel):
+            #     trainable_params = filter(lambda x: x.requires_grad, model.global_model.parameters())
+            # elif isinstance(model, E2EModelV2):
+            #     trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+            # else:
+            #     # trainable_params = get_trainable_parameters(model)
+            #     trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+
+            # 开始训练
+            forward_step = 0
+            optimize_step = 0
+            # best_eval_loss = float('inf')
+            # todo: fix self.passive_party.dataset_train
+            dataset_train = DataLoader(self.passive_party.dataset_train,
+                                       batch_size=training_args.per_device_train_batch_size,
+                                       collate_fn=dataset_batch_processor)
+            for epoch in range(training_args.num_train_epochs):
+                total_loss = 0
+                for batch in tqdm(dataset_train, desc=f"Epoch {epoch + 1}/{training_args.num_train_epochs}", leave=False):
+                    # 将数据传递给设备
+                    # inputs = batch['input_ids'].to(training_args.device)
+                    # labels = batch['labels'].to(training_args.device)
+
+                    # 前向传播
+                    self.e2e_model.train()
+                    outputs = self.e2e_model(**self.__class__.data_collator(batch, self.e2e_model.device,
+                                                                            batch_size=training_args.per_device_train_batch_size))
+                    forward_step += 1
+
+                    loss = outputs.loss
+
+                    # 反向传播
+                    # loss.backward()
+                    self.e2e_model.backward()
+                    if not forward_step % training_args.gradient_accumulation_steps == 0:
+                        continue
+                    # optimizer.step()
+                    # optimizer.zero_grad()
+                    self.e2e_model.optimizer_step()
+                    self.e2e_model.optimizer_zero_grad()
+
+                    # 累积总损失
+                    total_loss += loss.item()
+
+                    optimize_step += 1
+
+                    # 记录训练损失
+                    tensorboard_writer.add_scalar('train/loss', loss, optimize_step)
+                    tensorboard_writer.add_scalar('train/learning_rate', self.e2e_model.optimizer.param_groups[0]['lr'],
+                                                  optimize_step)
+                    if optimize_step % training_args.eval_steps == 0:
+                        # 在验证集上评估模型
+                        eval_loss = self.__class__.validate_model(self.e2e_model, dataset_validate)
+                        tensorboard_writer.add_scalar('train/eval_loss', eval_loss, optimize_step)
+
+                    if optimize_step % training_args.save_steps == 0:
+                        self.e2e_model.save_pretrained(
+                            os.path.join(training_args.output_dir, f'checkpoint-{optimize_step}'))
+
+                self.e2e_model.lr_scheduler_step()
+
+                tensorboard_writer.add_scalar('train/epoch', epoch + 1, optimize_step)
+
+                # 如果当前模型性能优于之前的最佳性能，则保存当前模型
+                # if eval_loss < best_eval_loss:
+                #     best_eval_loss = eval_loss
+                # torch.save(model.state_dict(), f"{training_args.output_dir}/best_model.pt")
+
+                # 更新学习率
+
+            tensorboard_writer.close()
+
+        def _validate_e2e_model(self):
+            self.e2e_model.eval()
+            count, loss = 0, 0
+            _dataset = DataLoader(self.passive_party.dataset_train,
+                                  batch_size=vfl_basic_config.vfl_training_config.training_args.per_device_train_batch_size,
+                                  collate_fn=dataset_batch_processor)
+            with torch.no_grad():
+                for batch in tqdm(_dataset, leave=False):
+                    output = self.e2e_model(**data_collator(batch, model.device))
+                    if output.loss.item() != output.loss.item():
+                        continue
+                        # return example
+                    loss += output.loss.item()
+                    count += 1
+                return loss / count
 
     return MainTaskVFL_LLM

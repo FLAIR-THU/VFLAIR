@@ -81,7 +81,7 @@ MODEL_PATH = {
     'llama-2-7b': YOUR_MODEL_PATH + "llama-2-7b",
     "HuggingFaceM4tiny-random-LlamaForCausalLM": YOUR_MODEL_PATH + "HuggingFaceM4tiny-random-LlamaForCausalLM",
     "HuggingFaceH4tiny-random-LlamaForSequenceClassification": YOUR_MODEL_PATH + "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
-    
+
     "AudreyTrungNguyenllama-qnli-p-tuning": YOUR_MODEL_PATH + "AudreyTrungNguyenllama-qnli-p-tuning",
 
     "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base",
@@ -667,7 +667,7 @@ def load_basic_models_llm_gpt2(args, index):
     args.generation_config = full_model.generation_config
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.n_embd
-    
+
     all_encoder_num = args.config.num_hidden_layers
     print('all_encoder_num:',all_encoder_num)
 
@@ -695,7 +695,7 @@ def load_basic_models_llm_gpt2(args, index):
             param.requires_grad = False
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-        
+
         local_model_optimizer = None
         local_trainable_params = []
         print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
@@ -752,7 +752,7 @@ def load_basic_models_llm_gpt2(args, index):
                 global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
         global_model = global_model.to(args.device)
-    
+
     del(full_model)
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
@@ -808,7 +808,7 @@ def load_basic_models_llm_llama(args, index):
     args.generation_config = full_model.generation_config
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.hidden_size
-    
+
     all_encoder_num = args.config.num_hidden_layers
     print('all_encoder_num:',all_encoder_num)
 
@@ -941,7 +941,7 @@ def load_basic_models_llm_baichuan(args, index):
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalBaichuanModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
         generation_config=full_model.generation_config)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -950,13 +950,13 @@ def load_basic_models_llm_baichuan(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.embed_tokens.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layers.parameters():
             param.requires_grad = args.encoder_trainable[0]
@@ -1072,7 +1072,7 @@ def load_basic_models_llm_xlnet(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.word_embedding.parameters():
             param.requires_grad = args.embedding_trainable[0]
@@ -1082,13 +1082,13 @@ def load_basic_models_llm_xlnet(args, index):
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.mask_emb.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layer.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layer.parameters()))
-        
+
         if len(local_trainable_params)<0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -1101,7 +1101,7 @@ def load_basic_models_llm_xlnet(args, index):
 
         # global part of llama(frozen)
         global_model = GlobalXLNetModel(full_llm, num_encoders = global_encoders_num)
-        
+
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
             global_model = XLNetLMHeadModel_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
@@ -1186,7 +1186,7 @@ def load_basic_models_llm_falcon(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalFalconModel(full_llm, num_encoders = args.local_encoders_num)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1195,19 +1195,19 @@ def load_basic_models_llm_falcon(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.word_embeddings.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.word_embeddings.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.h.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.h.parameters()))
-        
+
         if len(local_trainable_params)<0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -1251,24 +1251,24 @@ def load_basic_models_llm_falcon(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_qwen2(args, index):
-    model_path = args.model_list[str(index)]['path']
-    args.tokenizer = AutoTokenizer.from_pretrained(model_path)
-    local_model, global_model = None, None
-    if index == 0:
-
-        local_model = PipelineVFL2Slice(is_server_end=False).from_vfl(model_path,
-                                                                      device_map='auto',
-                                                                      torch_dtype=torch.bfloat16)  # type:Qwen2ModelHead
-        logger.debug(f"model: {type(local_model)}\ndevice_map: {local_model.hf_device_map}")
-
-    if index == 1:
-        global_model = PipelineVFL2Slice(is_server_end=True).from_vfl(model_path,
-                                                                      device_map='auto',
-                                                                      torch_dtype=torch.bfloat16)  # type:Qwen2TailForCausalLM
-        logger.debug(f"model: {type(global_model)}\ndevice_map: {global_model.hf_device_map}")
-    local_model_optimizer, global_model_optimizer = None, None
-    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+# def load_basic_models_llm_qwen2(args, index):
+#     model_path = args.model_list[str(index)]['path']
+#     args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+#     local_model, global_model = None, None
+#     if index == 0:
+#
+#         local_model = PipelineVFL2Slice(is_server_end=False).from_vfl(model_path,
+#                                                                       device_map='auto',
+#                                                                       torch_dtype=torch.bfloat16)  # type:Qwen2ModelHead
+#         logger.debug(f"model: {type(local_model)}\ndevice_map: {local_model.hf_device_map}")
+#
+#     if index == 1:
+#         global_model = PipelineVFL2Slice(is_server_end=True).from_vfl(model_path,
+#                                                                       device_map='auto',
+#                                                                       torch_dtype=torch.bfloat16)  # type:Qwen2TailForCausalLM
+#         logger.debug(f"model: {type(global_model)}\ndevice_map: {global_model.hf_device_map}")
+#     local_model_optimizer, global_model_optimizer = None, None
+#     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
                               head_layer_trainable):
@@ -1346,7 +1346,7 @@ def load_basic_models_llm_mamba(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalMambaModel(full_llm, num_encoders = args.local_encoders_num)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1355,19 +1355,19 @@ def load_basic_models_llm_mamba(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.embeddings.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.embeddings.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layers.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
-        
+
         if len(local_trainable_params)<0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -1470,7 +1470,7 @@ def load_basic_models_llm_gemma(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalGemmaModel(full_llm, num_encoders = args.local_encoders_num)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1479,19 +1479,19 @@ def load_basic_models_llm_gemma(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.embed_tokens.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layers.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
-        
+
         if len(local_trainable_params)<0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -1559,7 +1559,7 @@ def load_basic_models_llm_chatglm(args, index):
     full_llm = full_model.transformer
     head_layer = full_model.transformer.output_layer
 
-    all_encoder_num = full_model.config.num_layers 
+    all_encoder_num = full_model.config.num_layers
 
     if args.task_type == 'CausalLM':
         head_layer = full_model.lm_head
@@ -1599,7 +1599,7 @@ def load_basic_models_llm_chatglm(args, index):
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
         generation_config=full_model.generation_config)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1683,21 +1683,21 @@ def load_basic_models_llm(args, index):
     elif args.model_type in ['Gemma']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gemma(args, index)
 
-    elif str(args.model_type).lower() in ['qwen2']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_qwen2(
-            args, index)
+    # elif str(args.model_type).lower() in ['qwen2']:
+    #     args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_qwen2(
+    #         args, index)
     elif args.model_type in ['T5']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_t5(args, index)
     else:
         assert 1 > 2, f'{args.model_type} not supported'
-    
+
     # if 'questionanswering' in args.model_architectures[0].lower():
     #     args.model_architect = 'TQA' # Text-span based Question Answering
     # elif 'classification' in args.model_architectures[0].lower():
     #     args.model_architect = 'CLS' # Classification
     # else:
     #     args.model_architect = 'CLM' # Causal LM
-        
+
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
