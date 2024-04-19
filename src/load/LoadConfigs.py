@@ -122,7 +122,6 @@ def do_load_basic_configs(config_dict, args):
             args.add_special_tokens = False
         else:
             args.add_special_tokens = True
-
     else:
         args.padding = 'do_not_pad'
     
@@ -166,10 +165,6 @@ def do_load_basic_configs(config_dict, args):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
-                    
-                    # args.local_encoders_num = config_model_dict[str(ik)]['local_encoders_num'] if  'local_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
-                    # args.global_encoders_num = config_model_dict[str(ik)]['global_encoders_num'] if  'global_encoders_num' in config_model_dict[str(ik)] else 1 # Overall Model Type
-                    
                     if ik == args.k-1:
                         args.embedding_trainable.append(False) # no embedding layer for active parties
                     else:

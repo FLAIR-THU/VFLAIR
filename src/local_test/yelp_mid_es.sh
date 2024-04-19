@@ -5,28 +5,10 @@
 
 echo 'MID Yelp'
 
-########## MIDModel_Linear ##########
-# 0.5
-# python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
-
-# 0.1
-sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid_es.json
-# python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
-
-# 0.01
-sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid_es.json
-# python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
-
-# 0.001
-sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid_es.json
-python main_pipeline_llm.py --seed 61 --configs yelp_mid_es
-
-sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid_es.json
-# sed -i 's/"mid_model_name":"MIDModel_Linear"/"mid_model_name":"MIDModel_SqueezeLinear"/g' ./configs/yelp_mid_es.json
-
-
-for seed in {62,63,64,65}
+for seed in {60,61,62,63,64,65}
     do
+    python main_pipeline_llm.py --seed $seed --configs yelp_wo
+
     ########## MIDModel_Linear ##########
     # 0.5
     python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
@@ -43,7 +25,11 @@ for seed in {62,63,64,65}
     sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid_es.json
     python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
 
-    sed -i 's/"lambda": 0.001/"lambda": 0.5/g' ./configs/yelp_mid_es.json
+    # 0.0001
+    sed -i 's/"lambda": 0.001/"lambda": 0.0001/g' ./configs/yelp_mid_es.json
+    python main_pipeline_llm.py --seed $seed --configs yelp_mid_es
+
+    sed -i 's/"lambda": 0.0001/"lambda": 0.5/g' ./configs/yelp_mid_es.json
     # sed -i 's/"mid_model_name":"MIDModel_Linear"/"mid_model_name":"MIDModel_SqueezeLinear"/g' ./configs/yelp_mid_es.json
 
 done

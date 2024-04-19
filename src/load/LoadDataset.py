@@ -1953,7 +1953,7 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts:
+        for _all_text in test_all_texts[:1]:
             # _all_text = _all_text.maketrans('', '', string.punctuation) #_all_text.rstrip(string.punctuation)
             all_doc_tokens = _all_text.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
@@ -1988,13 +1988,13 @@ def load_dataset_per_party_llm(args, index):
         ## train
         train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)[:128]
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
-                            max_seq_length=args.max_length, doc_stride=args.doc_stride, \
-                            max_query_length=args.max_query_length, is_training=True)
+                            max_seq_length=max_seq_length, doc_stride=doc_stride, \
+                            max_query_length=max_query_length, is_training=True)
 
 
         inputs = []
         labels = []
-        for feature in train_features:
+        for feature in train_features[:100]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 
@@ -2004,14 +2004,13 @@ def load_dataset_per_party_llm(args, index):
         ## test
         test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)[:128]
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer,
-                                                     max_seq_length=max_seq_length,
-                                                     doc_stride=doc_stride, max_query_length=max_query_length,
-                                                     is_training=False)
+                                                     max_seq_length=max_seq_length, doc_stride=doc_stride, \
+                                                     max_query_length=max_query_length, is_training=False)
         # print('test_features:',len(test_features),test_features[0].keys())
 
         inputs = []
         labels = []
-        for feature in test_features:
+        for feature in test_features[:10]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 

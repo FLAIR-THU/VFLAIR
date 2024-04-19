@@ -2,9 +2,9 @@
     "epochs": 20,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 64,
     "early_stop_threshold": 2,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -25,24 +25,24 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2",
+            "type": "googleflan-t5-base",
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
             "output_dim": 1,
-            "model_type": "GPT2",
+            "model_type": "T5",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/googleflan-t5-base"
         },
         "1": {
-            "type": "gpt2",
+            "type": "googleflan-t5-base",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 1,
-            "model_type": "GPT2",
+            "model_type": "T5",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/googleflan-t5-base"
         },
         "task":{
             "task_type": "CausalLM",
@@ -54,41 +54,5 @@
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 64,
-            "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        }
     }
 }

@@ -5,14 +5,17 @@
 
 echo 'DP SST2'
 
-for seed in {65,66}
+for seed in {60,61,62,63,64,65}
     do
+
+    python main_pipeline_llm.py --seed $seed --configs sst2_wo
+
     # 50
-    # python main_pipeline_llm.py --seed $seed --configs sst2_dp
+    python main_pipeline_llm.py --seed $seed --configs sst2_dp
 
     # 60
     sed -i 's/"epsilon": 50/"epsilon": 60/g' ./configs/sst2_dp.json
-    python main_pipeline_llm.py --seed $seed --configs sst2_dp
+    # python main_pipeline_llm.py --seed $seed --configs sst2_dp
 
     # 70
     sed -i 's/"epsilon": 60/"epsilon": 70/g' ./configs/sst2_dp.json
@@ -24,7 +27,7 @@ for seed in {65,66}
 
     # 90
     sed -i 's/"epsilon": 80/"epsilon": 90/g' ./configs/sst2_dp.json
-    python main_pipeline_llm.py --seed $seed --configs sst2_dp
+    # python main_pipeline_llm.py --seed $seed --configs sst2_dp
 
     # 100
     sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/sst2_dp.json

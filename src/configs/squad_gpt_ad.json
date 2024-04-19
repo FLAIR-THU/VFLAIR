@@ -1,6 +1,6 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
     "batch_size": 16,
     "pipeline": "finetune",
@@ -23,7 +23,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 256,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -31,7 +31,7 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "GPT2",
@@ -56,10 +56,11 @@
             "task_type": "QuestionAnswering",
             "metric_type": "best_pred",
             "doc_stride" : 128,
-            "max_seq_length": 512,
+            "max_seq_length": 256,
             "max_query_length" : 64,
             "max_answer_length": 30,
             "n_best_size": 20
+
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -73,7 +74,7 @@
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.001,
             "lambda": 0.05,
-            "seq_length": 70,
+            "seq_length": 256,
             "embed_dim": 768
         }
     },

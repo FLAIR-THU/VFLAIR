@@ -30,7 +30,7 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -55,7 +55,7 @@
             "task_type": "QuestionAnswering",
             "metric_type": "best_pred",
             "doc_stride" : 128,
-            "max_seq_length": 512,
+            "max_seq_length": 256,
             "max_query_length" : 64,
             "max_answer_length": 30,
             "n_best_size": 2
@@ -72,7 +72,7 @@
             "adversarial_model_lr": 0.001,
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.001,
-            "lambda": 0.1,
+            "lambda": 0.05,
             "seq_length": 256,
             "embed_dim": 768
         }
@@ -83,10 +83,21 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 2,
-                "batch_size": 16,
+                "epochs": 100,
+                "batch_size": 32,
                 "attack_sample_num": 100
             }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 100
         }
+    }
     }
 }

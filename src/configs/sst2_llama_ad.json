@@ -2,7 +2,7 @@
     "epochs": 1,
     "lr": 0.005,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 16,
     "pipeline": "finetune",
     "early_stop_threshold": 2,
     "device": "cuda",

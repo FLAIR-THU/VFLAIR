@@ -35,9 +35,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2",
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
+            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
+            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
         },
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
@@ -47,9 +47,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/shannon/dev/tools/nlp/models/bert-base-uncased-SST-2",
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/train-v1.1.json",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Squad/dev-v1.1.json"
+            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
+            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -79,7 +79,7 @@
                 "lr": 0.01,
                 "epochs": 1,
                 "batch_size": 16,
-                "attack_sample_num": 1000
+                "attack_sample_num": 100
             }
         }
     }

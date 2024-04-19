@@ -55,7 +55,7 @@ class PassiveParty_LLM(Party_LLM):
             print(f'running on cuda{torch.cuda.current_device()}')
 
         self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
-
+        
         self.criterion = cross_entropy_for_onehot
         
         # self.encoder = args.encoder
@@ -350,7 +350,7 @@ class PassiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def local_backward(self):
+    def local_backward(self): # model head 1
         # print(' === passive local backward === ')
 
         self.num_local_updates += 1 # another update
@@ -407,10 +407,10 @@ class PassiveParty_LLM(Party_LLM):
 
             self.local_model_optimizer.zero_grad()# self.mid_model_optimizer.zero_grad()
 
-            # update with mid_loss.backward
+            # update mid+local_model with mid_loss
             self.mid_loss.backward(retain_graph=True)
 
-            # update local encoder with global_loss
+            # update mid with global_loss
             weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.mid_model.parameters(),
@@ -424,7 +424,7 @@ class PassiveParty_LLM(Party_LLM):
                     else:
                         w.grad = g.detach()
         
-            # local model trainable part
+            # update local model trainable part with global_loss
             local_model_params = []
             for param in self.local_model.parameters():
                 if param.requires_grad:
@@ -442,9 +442,9 @@ class PassiveParty_LLM(Party_LLM):
                             w.grad += g.detach()
                         else:
                             w.grad = g.detach()
-
+            
             self.local_model_optimizer.step()
-
+     
         elif (self.args.apply_mid == True and (self.index in self.args.defense_configs["party"])
             and (self.index < self.args.k - 1) and self.mid_position == "inner"):
 

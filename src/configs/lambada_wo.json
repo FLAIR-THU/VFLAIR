@@ -1,13 +1,10 @@
 {
-    "epochs": 1,
+    "epochs": 20,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 64,
     "early_stop_threshold": 2,
-    "pipeline": "finetune",
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -35,9 +32,7 @@
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
-            "path": "/home/shannon/dev/tools/nlp/models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
             "type": "gpt2",
@@ -47,42 +42,18 @@
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
-            "path": "/home/shannon/dev/tools/nlp/models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
             "task_type": "CausalLM",
             "doc_stride" : 128,
-            "max_seq_length": 128,
+            "max_seq_length": 64,
             "metric_type": "best_pred",
             "n_best_size": 8
         },
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        }
     }
+    
 }

@@ -26,7 +26,7 @@
         "0": {
             "type": "Shunianyelp_review_classification",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 5,
             "model_type": "Bert",
@@ -58,7 +58,7 @@
             "lambda": 0.5,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
-            "seq_length": 328,
+            "seq_length": 384,
             "embed_dim": 768
         }
     },

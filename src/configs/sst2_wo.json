@@ -26,7 +26,7 @@
         "0": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -36,7 +36,7 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
