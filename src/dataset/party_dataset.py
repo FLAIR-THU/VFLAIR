@@ -24,6 +24,54 @@ class SimpleDataset(Dataset):
 
 
 
+class PassiveDataset_LLM_old(Dataset):
+    def __init__(self, args, texts ,labels, split_name='test'):
+        '''
+        texts: np.array
+        '''
+        self.args = args
+        self.texts = [] # input_ids
+        self.masks = [] # attention_mask
+        self.token_type_ids = [] # token_type_ids
+        self.labels = []
+        self.features = []
+
+        self.input_dicts = []
+        print('----- init PassiveDataset_LLM ----')
+        print('texts:',type(texts),texts.shape)
+        print(texts[0])
+
+        if args.task_type == 'SequenceClassification':
+    
+            for _text in texts:
+
+                ids = args.tokenizer(_text[0],_text[1], \
+                padding=args.padding,truncation=args.truncation ,\
+                max_length=args.max_length,return_tensors='pt')
+
+                self.input_dicts.append(ids)
+
+            if self.args.num_classes == 1:
+                self.labels = torch.tensor(labels, dtype=torch.float32)
+            else:
+                self.labels = torch.tensor(labels) 
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, item_idx):
+
+        input_dict = self.input_dicts[item_idx]
+        for key_name in self.input_dicts[item_idx].keys():
+            input_dict[key_name] = input_dict[key_name].squeeze().to(self.args.device)
+        
+        label = self.labels[item_idx].squeeze().to(self.args.device)
+        
+        return input_dict, label
+
+
+
+
+
 class PassiveDataset_LLM(Dataset):
     def __init__(self, args, texts ,labels, split_name='test'):
         '''
@@ -271,6 +319,7 @@ class PassiveDataset_LLM(Dataset):
         return data_i, target_i, mask_i,  token_type_ids_i, features_i #doc_tokens_i
         
           
+
 
 class PassiveDataset(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.

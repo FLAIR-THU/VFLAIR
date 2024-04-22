@@ -126,6 +126,7 @@ def create_main_task(global_model_type):
             self.max_staleness = self.num_update_per_batch * self.num_batch_per_workset
 
         def label_to_one_hot(self, target, num_classes=10):
+            target = torch.tensor(target)
             target = target.long()
             # print('label_to_one_hot:', target, type(target),type(target[0]))
             try:
@@ -173,49 +174,7 @@ def create_main_task(global_model_type):
                 start_time = time.time()
                 result_dict = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
 
-                # if self.args.model_type in ['Bert', 'Roberta']:
-                #     if self.args.task_type == 'SequenceClassification':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
-                #     elif self.args.task_type == 'QuestionAnswering':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
-                #     else:
-                #         assert 1 > 2, "task type not supported for finetune"
-                    
-                # elif self.args.model_type == 'Llama':
-                #     if self.args.task_type == 'SequenceClassification':
-                #         # pred, pred_detach, attention_mask, local_past_key_values, sequence_lengths 
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     elif self.args.task_type == 'CausalLM':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
-                #     elif self.args.task_type == 'QuestionAnswering':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)  # , _input_shape
-                #     elif self.args.task_type == 'Generation':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     else:
-                #         assert 1 > 2, "task type not supported for finetune"
-                
-                # elif self.args.model_type == 'GPT2':
-                #     if self.args.task_type == 'SequenceClassification':
-                #         # pred, pred_detach, attention_mask, local_past_key_values, sequence_lengths 
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     elif self.args.task_type == 'CausalLM':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     elif self.args.task_type == 'Generation':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     elif self.args.task_type == 'QuestionAnswering':
-                #         result_dict = self.parties[ik].give_pred(use_cache=use_cache)
-                #     else:
-                #         assert 1 > 2, "task type not supported for finetune"
-                    
-                # elif self.args.model_type == 'T5':
-                #     if self.args.task_type == 'CausalLM':
-                #         pred, pred_detach, attention_mask, local_past_key_values = self.parties[ik].give_pred(use_cache=use_cache)
-                #     else:
-                #         assert 1 > 2, "task type not supported for finetune"
-                
                 pred_detach = result_dict['inputs_embeds']
-                # attention_mask = result_dict['attention_mask']
-                # past_key_values   local_past_key_values 
 
                 # Defense
                 if self.args.apply_defense:
@@ -233,85 +192,6 @@ def create_main_task(global_model_type):
                 pred_list = result_dict 
                 self.parties[self.k - 1].receive_pred(pred_list, ik)
                 self.parties[ik].update_local_pred(pred_clone)
-
-                # if self.args.model_type in ['Bert', 'Roberta']:
-                #     if self.args.task_type == 'SequenceClassification':
-                #         pred_list = result_dict #[pred_clone, attention_mask, local_past_key_values]
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-                #     elif self.args.task_type == 'QuestionAnswering':
-                #         pred_list = result_dict #[pred_clone, attention_mask, local_past_key_values]
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-                    
-                # elif self.args.model_type == 'Llama':
-                #     pred_list = result_dict 
-                #     self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #     self.parties[ik].update_local_pred(pred_clone)
-                #     self.communication_cost += get_size_of(pred_clone) + \
-                #                                 get_size_of(attention_mask)  # MB
-                                                
-                #     # if self.args.task_type == 'SequenceClassification':
-                #     #     pred_list = [pred_clone, attention_mask, local_past_key_values, sequence_lengths]
-                #     #     self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #     #     self.parties[ik].update_local_pred(pred_clone)
-                #     #     self.communication_cost += get_size_of(pred_clone) + \
-                #     #                                get_size_of(sequence_lengths) + \
-                #     #                                get_size_of(attention_mask)  # MB
-                #     # elif self.args.task_type == 'CausalLM':
-                #     #     pred_list = [pred_clone, attention_mask, local_past_key_values]
-                #     #     self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #     #     self.parties[ik].update_local_pred(pred_clone)
-                #     #     self.communication_cost += get_size_of(pred_clone) + \
-                #     #                                get_size_of(attention_mask)  # MB
-                #     # elif self.args.task_type == 'Generation':
-                #     #     pred_list = [pred_clone, attention_mask, local_past_key_values]
-                #     #     self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #     #     self.parties[ik].update_local_pred(pred_clone)
-                #     #     self.communication_cost += get_size_of(pred_clone) + \
-                #     #                                get_size_of(attention_mask)  # MB
-                #     # elif self.args.task_type == 'QuestionAnswering':
-                #     #     pred_list = [pred_clone, attention_mask, local_past_key_values]
-                #     #     self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #     #     self.parties[ik].update_local_pred(pred_clone)
-                #     #     self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
-                
-                # elif self.args.model_type == 'GPT2':
-                #     if self.args.task_type == 'SequenceClassification':
-                #         pred_list = result_dict 
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-
-                #     elif self.args.task_type == 'CausalLM':
-                #         pred_list = result_dict 
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-                #     elif self.args.task_type == 'Generation':
-                #         pred_list = result_dict 
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-                #     elif self.args.task_type == 'QuestionAnswering':
-                #         pred_list = result_dict 
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + \
-                #                                    get_size_of(attention_mask)  # MB
-                # elif self.args.model_type == 'T5':
-                #     if self.args.task_type == 'CausalLM':
-                #         pred_list = [pred_clone, attention_mask, local_past_key_values]
-                #         self.parties[self.k - 1].receive_pred(pred_list, ik)
-                #         self.parties[ik].update_local_pred(pred_clone)
-                #         self.communication_cost += get_size_of(pred_clone) + get_size_of(attention_mask)  # MB
 
                 all_pred_list.append(pred_list)
                 
@@ -584,6 +464,18 @@ def create_main_task(global_model_type):
             total_sample_cnt = 0
             with torch.no_grad():
                 for parties_data in zip(*data_loader_list):
+                    # _parties_data = []
+                    # for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
+                    #     batch_input_dicts = []
+                    #     batch_label = []
+                    #     for bs_id in range(len(parties_data[party_id])):
+                    #         # Input Dict
+                    #         batch_input_dicts.append(parties_data[party_id][bs_id][0])
+                    #         # Label
+                    #         batch_label.append(parties_data[party_id][bs_id][1])
+                    #     _parties_data.append([batch_input_dicts, batch_label])
+                    # parties_data = _parties_data
+
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # iter through each passive party
                         batch_input_ids = []
@@ -646,17 +538,14 @@ def create_main_task(global_model_type):
                     else:
                         gt_one_hot_label = parties_data[0][1]
 
-                    # parties_data
-                    #  data_i, target_i, mask_i,  token_type_ids_i, features_i 
-                    data_inputs = {'input_ids' : parties_data[0][0],
+                    # data_inputs = {}
+                    # for key_name in parties_data[0][0][0].keys():
+                    #     data_inputs[key_name] = torch.stack( [parties_data[0][0][i][key_name] for i in range(len(parties_data[0][0]))] )
+                    
+                    data_inputs={'input_ids' : parties_data[0][0],
                     'attention_mask' : parties_data[0][2],
-                    'token_type_ids' : parties_data[0][3],
-                    'past_key_values' :  None}
+                    'token_type_ids' : parties_data[0][3]}
 
-                    # # Passive Party -> pred_list[local pred]
-                    # pred_list = self.pred_transmit(count_time = 'inference')
-                    # # local pred list -> Active Party -> test_logit[final pred]
-                    # test_logit = self.global_pred_transmit(pred_list, count_time = 'inference')
                     global_output = self.vfl_forward(**data_inputs)
 
                     # test_logit -> standard output for each task
@@ -1241,6 +1130,21 @@ def create_main_task(global_model_type):
                         _parties_data.append(
                             [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
                     parties_data = _parties_data
+
+                    # _parties_data = []
+                    # for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
+                    #     batch_input_dicts = []
+                    #     batch_label = []
+                    #     for bs_id in range(len(parties_data[party_id])):
+                    #         # Input Dict
+                    #         batch_input_dicts.append(parties_data[party_id][bs_id][0])
+                    #          # Label
+                    #         if type(parties_data[party_id][bs_id][1]) != str:
+                    #             batch_label.append(parties_data[party_id][bs_id][1].tolist())
+                    #         else:
+                    #             batch_label.append(parties_data[party_id][bs_id][1])
+                    #     _parties_data.append([batch_input_dicts, batch_label])
+                    # parties_data = _parties_data
 
                     if self.args.task_type == "SequenceClassification" and self.num_classes > 1:  # classification
                         gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
