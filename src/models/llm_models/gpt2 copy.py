@@ -15,24 +15,55 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutputWithPast,
 )
 
-from transformers.utils import (
-    ModelOutput,
-    add_code_sample_docstrings,
-    add_start_docstrings,
-    add_start_docstrings_to_model_forward,
-    logging,
-    replace_return_docstrings,
+from transformers.generation.stopping_criteria import (
+    MaxLengthCriteria,
+    MaxTimeCriteria,
+    StoppingCriteria,
+    StoppingCriteriaList,
+    validate_stopping_criteria,
+)
+
+from transformers.generation.configuration_utils import GenerationConfig
+from transformers.generation.utils import (
+    GreedySearchOutput,SampleOutput,BeamSearchOutput,BeamSampleOutput,ContrastiveSearchOutput,GenerateOutput
+)
+
+from transformers.generation.logits_process import (
+    EncoderNoRepeatNGramLogitsProcessor,
+    EncoderRepetitionPenaltyLogitsProcessor,
+    EpsilonLogitsWarper,
+    EtaLogitsWarper,
+    ExponentialDecayLengthPenalty,
+    ForcedBOSTokenLogitsProcessor,
+    ForcedEOSTokenLogitsProcessor,
+    ForceTokensLogitsProcessor,
+    HammingDiversityLogitsProcessor,
+    InfNanRemoveLogitsProcessor,
+    LogitNormalization,
+    LogitsProcessorList,
+    MinLengthLogitsProcessor,
+    MinNewTokensLengthLogitsProcessor,
+    NoBadWordsLogitsProcessor,
+    NoRepeatNGramLogitsProcessor,
+    PrefixConstrainedLogitsProcessor,
+    RepetitionPenaltyLogitsProcessor,
+    SequenceBiasLogitsProcessor,
+    SuppressTokensAtBeginLogitsProcessor,
+    SuppressTokensLogitsProcessor,
+    TemperatureLogitsWarper,
+    TopKLogitsWarper,
+    TopPLogitsWarper,
+    TypicalLogitsWarper,
+    UnbatchedClassifierFreeGuidanceLogitsProcessor,
 )
 
 import torch.nn as nn
 import torch
 import copy
 
-logger = logging.get_logger(__name__)
-
 ##### Evaluation with pretrained models ######
 class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
-    def __init__(self, global_gpt, score,generation_config=None):
+    def __init__(self, global_gpt, score):
         super().__init__(global_gpt.config)
         self.num_labels = global_gpt.config.num_labels
         self.transformer = global_gpt #GPT2Model(config)
@@ -93,7 +124,6 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         assert (
             self.config.pad_token_id is not None or batch_size == 1
         ), "Cannot handle batch sizes > 1 if no padding token is defined."
-        
         if self.config.pad_token_id is None:
             sequence_lengths = -1
         else:
@@ -103,10 +133,10 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
                 )
             else:
                 sequence_lengths = -1
-                # logger.warning(
-                #     f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
-                #     "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
-                # )
+                logger.warning(
+                    f"{self.__class__.__name__} will not detect padding tokens in `inputs_embeds`. Results may be "
+                    "unexpected if using padding tokens in conjunction with `inputs_embeds.`"
+                )
 
         # input_shape = input_ids.size()[:2]
         # batch_size  = input_shape[0]
@@ -150,12 +180,12 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
         )
 
 class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
-    def __init__(self, global_gpt, qa_outputs,generation_config=None):
+    def __init__(self, global_gpt, qa_outputs):
         super().__init__(global_gpt.config)
         self.num_labels = global_gpt.config.num_labels
         self.transformer = global_gpt #GPT2Model(config)
         self.head_layer = qa_outputs #nn.Linear(config.hidden_size, 2)
-        
+
         # Model parallel
         self.model_parallel = False
         self.device_map = None
@@ -248,8 +278,7 @@ class GPT2LMHeadModel_pretrained(GPT2PreTrainedModel):
         # print(' == init GPT2LMHeadModel_pretrained == ')
         self.transformer = global_gpt #GPT2Model(config)
         self.head_layer = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
-        self.generation_config=generation_config
-        
+
         # Model parallel
         self.model_parallel = False
         self.device_map = None
@@ -510,7 +539,6 @@ class LocalGPT2Model(GPT2PreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if input_ids is not None and inputs_embeds is not None:
@@ -684,7 +712,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         self.past_key_values = presents
         return {'inputs_embeds':hidden_states,
                 'attention_mask':attention_mask,
-                # 'local_past_key_values':presents,
+                'local_past_key_values':presents,
                 # 'past_key_values':global_past_key_values,
 
                 # 'sequence_lengths':sequence_lengths,
@@ -705,8 +733,8 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         self.local_num_encoders = self.num_encoders_all - self.global_num_encoders # local model hidden layers
         self.h =  nn.ModuleList([full_gpt.h[i] for i in range(self.local_num_encoders,self.num_encoders_all)])
         # self.h = nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders,self.num_encoders_all)])
-        for layer_idx in range(len(self.h)):
-            self.h[layer_idx].attn.layer_idx = self.h[layer_idx].attn.layer_idx  -self.local_num_encoders
+        # for layer_idx in range(len(self.h)):
+        #     self.h[layer_idx].attn.layer_idx = self.h[layer_idx].attn.layer_idx  -self.local_num_encoders
 
         self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
 
@@ -745,7 +773,6 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-        # print('Global use_cache:',use_cache)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if input_ids is not None and inputs_embeds is not None:
@@ -923,3 +950,178 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
             attentions=all_self_attentions,
             cross_attentions=all_cross_attentions,
         )
+    
+    def greedy_search(
+        self,
+        intermediate, attention_mask,
+        logits_processor: Optional[LogitsProcessorList] = None,
+        stopping_criteria: Optional[StoppingCriteriaList] = None,
+        max_length: Optional[int] = None,
+        pad_token_id: Optional[int] = None,
+        eos_token_id: Optional[Union[int, List[int]]] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        output_scores: Optional[bool] = None,
+        return_dict_in_generate: Optional[bool] = None,
+        synced_gpus: bool = False,
+        streamer: Optional["BaseStreamer"] = None,
+        **model_kwargs,
+        ) -> Union[GreedySearchOutput, torch.LongTensor]:
+    
+        print('==== global greedy search ====')
+        # init values
+        logits_processor = logits_processor if logits_processor is not None else LogitsProcessorList()
+        stopping_criteria = stopping_criteria if stopping_criteria is not None else StoppingCriteriaList()
+        if max_length is not None:
+            warnings.warn(
+                "`max_length` is deprecated in this function, use"
+                " `stopping_criteria=StoppingCriteriaList([MaxLengthCriteria(max_length=max_length)])` instead.",
+                UserWarning,
+            )
+            stopping_criteria = validate_stopping_criteria(stopping_criteria, max_length)
+        pad_token_id = pad_token_id if pad_token_id is not None else self.generation_config.pad_token_id
+        eos_token_id = eos_token_id if eos_token_id is not None else self.generation_config.eos_token_id
+        if isinstance(eos_token_id, int):
+            eos_token_id = [eos_token_id]
+        eos_token_id_tensor = torch.tensor(eos_token_id).to(input_ids.device) if eos_token_id is not None else None
+        output_scores = output_scores if output_scores is not None else self.generation_config.output_scores
+        output_attentions = (
+            output_attentions if output_attentions is not None else self.generation_config.output_attentions
+        )
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.generation_config.output_hidden_states
+        )
+        return_dict_in_generate = (
+            return_dict_in_generate
+            if return_dict_in_generate is not None
+            else self.generation_config.return_dict_in_generate
+        )
+
+        # init attention / hidden states / scores tuples
+        scores = () if (return_dict_in_generate and output_scores) else None
+        decoder_attentions = () if (return_dict_in_generate and output_attentions) else None
+        cross_attentions = () if (return_dict_in_generate and output_attentions) else None
+        decoder_hidden_states = () if (return_dict_in_generate and output_hidden_states) else None
+
+        # if model is an encoder-decoder, retrieve encoder attention weights and hidden states
+        if return_dict_in_generate and self.config.is_encoder_decoder:
+            encoder_attentions = model_kwargs["encoder_outputs"].get("attentions") if output_attentions else None
+            encoder_hidden_states = (
+                model_kwargs["encoder_outputs"].get("hidden_states") if output_hidden_states else None
+            )
+
+        # keep track of which sequences are already finished
+        # unfinished_sequences = torch.ones(input_ids.shape[0], dtype=torch.long, device=input_ids.device)
+
+        this_peer_finished = False  # used by synced_gpus only
+        while True:
+            if synced_gpus:
+                # Under synced_gpus the `forward` call must continue until all gpus complete their sequence.
+                # The following logic allows an early break if all peers finished generating their sequence
+                this_peer_finished_flag = torch.tensor(0.0 if this_peer_finished else 1.0).to(input_ids.device)
+                # send 0.0 if we finished, 1.0 otherwise
+                dist.all_reduce(this_peer_finished_flag, op=dist.ReduceOp.SUM)
+                # did all peers finish? the reduced sum will be 0.0 then
+                if this_peer_finished_flag.item() == 0.0:
+                    break
+
+            # prepare model inputs
+            # model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
+
+            
+            # forward pass to get next token
+            outputs = self(
+                intermediate, attention_mask = attention_mask,
+                return_dict=True,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+            )
+
+            if synced_gpus and this_peer_finished:
+                continue  # don't waste resources running the code we don't need
+
+            next_token_logits = outputs.logits[:, -1, :]
+
+            return next_token_logits
+
+            # pre-process distribution
+            next_tokens_scores = logits_processor(input_ids, next_token_logits)
+
+            # Store scores, attentions and hidden_states when required
+            if return_dict_in_generate:
+                if output_scores:
+                    scores += (next_tokens_scores,)
+                if output_attentions:
+                    decoder_attentions += (
+                        (outputs.decoder_attentions,) if self.config.is_encoder_decoder else (outputs.attentions,)
+                    )
+                    if self.config.is_encoder_decoder:
+                        cross_attentions += (outputs.cross_attentions,)
+
+                if output_hidden_states:
+                    decoder_hidden_states += (
+                        (outputs.decoder_hidden_states,)
+                        if self.config.is_encoder_decoder
+                        else (outputs.hidden_states,)
+                    )
+
+            # argmax
+            next_tokens = torch.argmax(next_tokens_scores, dim=-1)
+
+            # finished sentences should have their next token be a padding token
+            if eos_token_id is not None:
+                if pad_token_id is None:
+                    raise ValueError("If `eos_token_id` is defined, make sure that `pad_token_id` is defined.")
+                next_tokens = next_tokens * unfinished_sequences + pad_token_id * (1 - unfinished_sequences)
+
+            # update generated ids, model inputs, and length for next step
+            input_ids = torch.cat([input_ids, next_tokens[:, None]], dim=-1)
+            if streamer is not None:
+                streamer.put(next_tokens.cpu())
+            model_kwargs = self._update_model_kwargs_for_generation(
+                outputs, model_kwargs, is_encoder_decoder=self.config.is_encoder_decoder
+            )
+
+            # if eos_token was found in one sentence, set sentence to finished
+            if eos_token_id_tensor is not None:
+                unfinished_sequences = unfinished_sequences.mul(
+                    next_tokens.tile(eos_token_id_tensor.shape[0], 1).ne(eos_token_id_tensor.unsqueeze(1)).prod(dim=0)
+                )
+
+                # stop when each sentence is finished
+                if unfinished_sequences.max() == 0:
+                    this_peer_finished = True
+
+            # stop if we exceed the maximum length
+            if stopping_criteria(input_ids, scores):
+                this_peer_finished = True
+
+            if this_peer_finished and not synced_gpus:
+                break
+
+        if streamer is not None:
+            streamer.end()
+
+        if return_dict_in_generate:
+            if self.config.is_encoder_decoder:
+                return GreedySearchEncoderDecoderOutput(
+                    sequences=input_ids,
+                    scores=scores,
+                    encoder_attentions=encoder_attentions,
+                    encoder_hidden_states=encoder_hidden_states,
+                    decoder_attentions=decoder_attentions,
+                    cross_attentions=cross_attentions,
+                    decoder_hidden_states=decoder_hidden_states,
+                    past_key_values=model_kwargs.get("past_key_values"),
+                )
+            else:
+                return GreedySearchDecoderOnlyOutput(
+                    sequences=input_ids,
+                    scores=scores,
+                    attentions=decoder_attentions,
+                    hidden_states=decoder_hidden_states,
+                    past_key_values=model_kwargs.get("past_key_values"),
+                )
+        else:
+            return input_ids
+

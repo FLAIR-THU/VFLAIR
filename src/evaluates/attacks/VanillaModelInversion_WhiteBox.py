@@ -203,7 +203,9 @@ class VanillaModelInversion_WhiteBox(Attacker):
                 # real received intermediate result
                 input_shape = origin_data.shape[:2]
                 self.top_vfl.parties[0].input_shape = input_shape
-                self.top_vfl.parties[0].obtain_local_data(origin_data, origin_attention_mask, origin_token_type_ids)
+                self.top_vfl.parties[0].obtain_local_data(
+                    {'input_ids':origin_data, 'attention_mask':origin_attention_mask, 
+                    'token_type_ids':origin_token_type_ids})
                 self.top_vfl.parties[0].gt_one_hot_label = origin_label
 
 
@@ -213,7 +215,10 @@ class VanillaModelInversion_WhiteBox(Attacker):
                 # batch_received_intermediate = real_results[0].type(torch.float32).to(self.device)
                 # batch_received_attention_mask = real_results[1].to(self.device)
                 batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
-                batch_received_attention_mask = real_results['attention_mask'].to(self.device)
+                if real_results['attention_mask']!= None:
+                    batch_received_attention_mask = real_results['attention_mask'].to(self.device)
+                else:
+                    batch_received_attention_mask = None
 
                 # print('batch_received_intermediate:',batch_received_intermediate.shape)
                 # print('batch_received_attention_mask:',batch_received_attention_mask.shape)

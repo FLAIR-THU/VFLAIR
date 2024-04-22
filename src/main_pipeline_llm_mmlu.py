@@ -16,7 +16,7 @@ import torch
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
-from evaluates.MainTaskVFL_LLM import *
+from evaluates.MainTaskVFL_LLM_dev import *
 from utils.basic_functions import append_exp_res
 
 from load.LoadConfigs import INVERSION
@@ -41,7 +41,7 @@ def evaluate_no_attack_pretrained(args):
     vfl = MainTaskVFL_LLM(args)
     vfl.init_communication()
 
-    exp_result, metric_val = vfl.inference_new()
+    exp_result, metric_val = vfl.inference()
 
     # # Save record 
     exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}" + exp_result
@@ -173,16 +173,17 @@ if __name__ == '__main__':
         args = load_attack_configs(args.configs, args, -1)
 
         if args.dataset == 'MMLU':
-            subject_list = ['abstract_algebra', 'anatomy', 'astronomy', 'business_ethics', 'clinical_knowledge', \
-            'college_biology', 'college_chemistry', 'college_computer_science','college_mathematics','college_medicine',\
-            'college_physics', 'computer_security', 'conceptual_physics', 'econometrics', 'electrical_engineering', \
-            'elementary_mathematics', 'formal_logic', 'global_facts', 'high_school_biology', 'high_school_chemistry',\
-            'high_school_computer_science', 'high_school_european_history','high_school_geography', 'high_school_government_and_politics', \
-            'high_school_macroeconomics', 'high_school_mathematics', 'high_school_microeconomics', 'high_school_physics', 'high_school_psychology',\
-            'high_school_statistics', 'high_school_us_history', 'high_school_world_history', 'human_aging', 'human_sexuality', 'international_law',\
-            'jurisprudence', 'logical_fallacies', 'machine_learning', 'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', \
-            'moral_scenarios', 'nutrition', 'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', \
-            'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology', 'world_religions']
+            subject_list = ['abstract_algebra']
+            # 'anatomy', 'astronomy', 'business_ethics', 'clinical_knowledge', \
+            # 'college_biology', 'college_chemistry', 'college_computer_science','college_mathematics','college_medicine',\
+            # 'college_physics', 'computer_security', 'conceptual_physics', 'econometrics', 'electrical_engineering', \
+            # 'elementary_mathematics', 'formal_logic', 'global_facts', 'high_school_biology', 'high_school_chemistry',\
+            # 'high_school_computer_science', 'high_school_european_history','high_school_geography', 'high_school_government_and_politics', \
+            # 'high_school_macroeconomics', 'high_school_mathematics', 'high_school_microeconomics', 'high_school_physics', 'high_school_psychology',\
+            # 'high_school_statistics', 'high_school_us_history', 'high_school_world_history', 'human_aging', 'human_sexuality', 'international_law',\
+            # 'jurisprudence', 'logical_fallacies', 'machine_learning', 'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', \
+            # 'moral_scenarios', 'nutrition', 'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', \
+            # 'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology', 'world_religions']
             
             acc_list = []
             for _subject in subject_list:

@@ -14,8 +14,8 @@ from party.llm_party import Party as Party_LLM
 
 from dataset.party_dataset import PassiveDataset, PassiveDataset_LLM
 from dataset.party_dataset import ActiveDataset
-from load.LoadModels import load_models_per_party, load_models_per_party_new, QuestionAnsweringModelOutput
-
+from load.LoadModels import load_models_per_party, QuestionAnsweringModelOutput
+# load_models_per_party_new
 from utils.squad_utils import normalize_answer, _get_best_indexes, compute_exact, compute_f1
 from utils.communication_protocol_funcs import get_size_of
 from evaluates.defenses.defense_api import apply_defense
@@ -179,8 +179,8 @@ class PassiveParty_LLM(Party_LLM):
     def prepare_data(self, args, index):
         super().prepare_data(args, index) # Party_llm's prepare_data
  
-        self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label)
-        self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label)
+        self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
+        self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')
 
     def update_local_pred(self, pred):
         self.pred_received[self.args.k-1] = pred

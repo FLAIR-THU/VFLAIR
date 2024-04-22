@@ -1,5 +1,5 @@
 {
-    "epochs": 10,
+    "epochs": 20,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 128,
@@ -24,28 +24,29 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
-            "model_type": "GPT2",
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "1": {
-            "type": "gpt2",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
-            "model_type": "GPT2",
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 2,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -64,21 +65,21 @@
     },
     "attack_list": {
         "0":{
-            "name": "WhiteBoxInversion",
+            "name": "VanillaModelInversion_WhiteBox",
             "parameters": {
                 "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
+                "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
                 "attack_sample_num": 100
             }
         },
         "1":{
-            "name": "VanillaModelInversion_WhiteBox",
+            "name": "WhiteBoxInversion",
             "parameters": {
                 "party": [1],
-                "lr": 0.01,
+                "T": 0.05,
+                "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
                 "attack_sample_num": 100

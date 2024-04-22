@@ -50,7 +50,8 @@ def do_load_basic_configs(config_dict, args):
 
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
-    
+    args.test_batch_size = config_dict['test_batch_size'] if ('test_batch_size' in config_dict) else args.batch_size
+
     # Communication Protocol
     communication_protocol_dict = config_dict['communication'] if ('communication' in config_dict) else None
     

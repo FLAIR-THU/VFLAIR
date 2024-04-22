@@ -155,7 +155,9 @@ class WhiteBoxInversion(Attacker):
                 # real result
                 input_shape = origin_data.shape[:2]
                 self.top_vfl.parties[0].input_shape = input_shape
-                self.top_vfl.parties[0].obtain_local_data(origin_data, origin_attention_mask, origin_token_type_ids)
+                self.top_vfl.parties[0].obtain_local_data(
+                    {'input_ids':origin_data, 'attention_mask':origin_attention_mask, 
+                    'token_type_ids':origin_token_type_ids})
                 self.top_vfl.parties[0].gt_one_hot_label = origin_label
                 
                 # real_results = self.top_vfl.parties[0].give_pred()
@@ -165,7 +167,10 @@ class WhiteBoxInversion(Attacker):
                 # batch_received_intermediate = real_results[0].type(torch.float32)# real intermediate
                 # batch_received_attention_mask = real_results[1]
                 batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
-                batch_received_attention_mask = real_results['attention_mask'].to(self.device)
+                if real_results['attention_mask']!= None:
+                    batch_received_attention_mask = real_results['attention_mask'].to(self.device)
+                else:
+                    batch_received_attention_mask = None
                 
                 bs, seq_length = input_shape # 10,30
                 # print('seq_length:',seq_length) # 70

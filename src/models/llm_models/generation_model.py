@@ -5,7 +5,7 @@ import copy
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.gpt2.modeling_gpt2 import GPT2LMHeadModel
 from transformers.models.llama.modeling_llama import LlamaForCausalLM
-# from transformers.models.t5.modeling_t5 import T5ForConditionalGeneration
+from transformers.models.t5.modeling_t5 import T5ForConditionalGeneration
 
 from typing import Optional, Tuple, Union, List
 import warnings
@@ -123,56 +123,56 @@ class GPT2_VFLGeneration(GPT2LMHeadModel):
 
         return output
 
-# class T5_VFLGeneration(T5ForConditionalGeneration):
+class T5_VFLGeneration(T5ForConditionalGeneration):
 
-#     def __init__(self, top_vfl):
-#         super().__init__(top_vfl.args.config)
+    def __init__(self, top_vfl):
+        super().__init__(top_vfl.args.config)
 
-#         self.top_vfl = top_vfl
+        self.top_vfl = top_vfl
 
-#     def forward(
-#         self,
-#         input_ids: Optional[torch.LongTensor] = None,
-#         attention_mask: Optional[torch.FloatTensor] = None,
-#         decoder_input_ids: Optional[torch.LongTensor] = None,
-#         decoder_attention_mask: Optional[torch.BoolTensor] = None,
-#         head_mask: Optional[torch.FloatTensor] = None,
-#         decoder_head_mask: Optional[torch.FloatTensor] = None,
-#         cross_attn_head_mask: Optional[torch.Tensor] = None,
-#         encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-#         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-#         inputs_embeds: Optional[torch.FloatTensor] = None,
-#         decoder_inputs_embeds: Optional[torch.FloatTensor] = None,
-#         labels: Optional[torch.LongTensor] = None,
-#         use_cache: Optional[bool] = None,
-#         output_attentions: Optional[bool] = None,
-#         output_hidden_states: Optional[bool] = None,
-#         return_dict: Optional[bool] = None,
-#     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        decoder_input_ids: Optional[torch.LongTensor] = None,
+        decoder_attention_mask: Optional[torch.BoolTensor] = None,
+        head_mask: Optional[torch.FloatTensor] = None,
+        decoder_head_mask: Optional[torch.FloatTensor] = None,
+        cross_attn_head_mask: Optional[torch.Tensor] = None,
+        encoder_outputs: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        decoder_inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
             
-#         output = self.top_vfl.vfl_forward(
-#             input_ids = input_ids , 
-#             attention_mask = attention_mask, 
-#             past_key_values = past_key_values,
+        output = self.top_vfl.vfl_forward(
+            input_ids = input_ids , 
+            attention_mask = attention_mask, 
+            past_key_values = past_key_values,
 
-#             decoder_input_ids=decoder_input_ids,
-#             decoder_attention_mask=decoder_attention_mask,
-#             head_mask=head_mask,
-#             decoder_head_mask=decoder_head_mask,
-#             cross_attn_head_mask=cross_attn_head_mask,
-#             encoder_outputs=encoder_outputs,
-#             inputs_embeds=inputs_embeds,
-#             decoder_inputs_embeds=decoder_inputs_embeds,
-#             labels=labels,
-#             use_cache=use_cache,
-#             output_attentions=output_attentions,
-#             output_hidden_states=output_hidden_states,
-#             return_dict=return_dict,)
+            decoder_input_ids=decoder_input_ids,
+            decoder_attention_mask=decoder_attention_mask,
+            head_mask=head_mask,
+            decoder_head_mask=decoder_head_mask,
+            cross_attn_head_mask=cross_attn_head_mask,
+            encoder_outputs=encoder_outputs,
+            inputs_embeds=inputs_embeds,
+            decoder_inputs_embeds=decoder_inputs_embeds,
+            labels=labels,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,)
 
-#         # output.logits = output.logits.squeeze()
-#         # print('in vfl outputs.logits:', output.logits.shape)
+        # output.logits = output.logits.squeeze()
+        # print('in vfl outputs.logits:', output.logits.shape)
 
-#         return output
+        return output
 
 # class E2EModel(Qwen2ForCausalLM):
 #     def __init__(self, local_model: LocalQwen2Model, global_model: GlobalQwen2Model):

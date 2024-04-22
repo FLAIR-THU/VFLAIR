@@ -5,7 +5,7 @@
 
 echo 'MID SST2 es dots'
 
-for seed in {64,65,66,67,68,69}
+for seed in {67,68,69}
     do
     ########## MIDModel_Linear ##########
     # 0.5

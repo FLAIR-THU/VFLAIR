@@ -8,7 +8,8 @@ from party.party import Party
 from party.llm_party import Party as Party_LLM
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
 from dataset.party_dataset import ActiveDataset
-from load.LoadModels import load_models_per_party, load_models_per_party_new
+from load.LoadModels import load_models_per_party
+# load_models_per_party_new
 
 # class ActiveParty_LLM(Party_LLM):
 #     def __init__(self, args, index):
@@ -260,10 +261,9 @@ class ActiveParty_LLM(Party_LLM):
         self.passive_pred_list = pred_list
 
         # print('self.passive_pred_list:',type(self.passive_pred_list))
-        # print('===transmit :',self.passive_pred_list[0].keys())
-        # print(len(self.passive_pred_list[0]['past_key_values']) )
+        # print('agg:',self.passive_pred_list[0]['attention_mask'])
         # passive_pred_list[0] = [pred_clone, attention_mask, local_past_key_values, sequence_lengths]
-        self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
+        self.global_output = self.global_model(**self.passive_pred_list[0],use_cache=use_cache)  # use_cache = use_cache,return_dict=True
 
         if self.args.model_type in ['Bert','Roberta']: 
             if self.args.task_type == 'SequenceClassification':
