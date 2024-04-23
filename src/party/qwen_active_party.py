@@ -5,7 +5,7 @@ from .llm_party import ProxyModel
 from transformers import AutoTokenizer
 from peft import get_peft_model
 from config import vfl_basic_config
-from models.llm_models.qwen2 import  PipelineVFL2Slice, PipelineVFL3Slice
+from models.llm_models.qwen2 import  VFLPipelineQwen
 
 
 class QW_Active_Party(Party_LLM):
@@ -37,14 +37,8 @@ class QW_Active_Party(Party_LLM):
     def prepare_model(self, args, index):
         model_path = args.model_list[str(index)]['path']
         args.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if vfl_basic_config.num_of_slice == 3:
-            p = PipelineVFL3Slice(self.is_active_party)
-            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
-        elif vfl_basic_config.num_of_slice == 2:
-            p = PipelineVFL2Slice(self.is_active_party)
-            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
-        else:
-            raise ValueError(f"vfl_basic_config.num_of_slice={vfl_basic_config.num_of_slice} is not supported")
+        p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
+        self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
         # whether to train
         if _train_conf := vfl_basic_config.vfl_training_config:
             if _train_conf.peft_config:

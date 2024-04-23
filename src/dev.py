@@ -11,8 +11,8 @@ from transformers import AutoTokenizer, AutoConfig, AutoModel, DataCollatorForSe
     GenerationConfig, PreTrainedModel, PreTrainedTokenizer
 from datasets import Dataset
 import pandas as pd
-from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM, Qwen2DecoderLayerParam, E2EModel, \
-    Qwen2ForCausalLM, Qwen2Config, PipelineVFL2Slice, PipelineVFL3Slice, E2EModelV2
+from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM, Qwen2DecoderLayerParam, \
+    Qwen2ForCausalLM, Qwen2Config, E2EModel, VFLPipelineQwen
 import pynvml
 from loguru import logger
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch, infer_auto_device_map
@@ -156,7 +156,7 @@ def device_map_setter(kwargs: dict, add_model_prefix=False):
 MODEL_PATH = '/mnt/data/model'
 # DATA_PATH = '/dev/data/sunl0/data'
 DATA_PATH = '/mnt/data/data'
-SPLIT_INDEX = -2
+SPLIT_INDEX = (2, -2)
 IS_TEST = True
 
 # model_path = '/dev/data/sunl0/model/test/qwen/Qwen1___5-72B-Chat'
@@ -172,6 +172,7 @@ lora_path = model_path + f'_lora_{SPLIT_INDEX}'
 load_kwargs = {
     'device_map': 'auto',
     'torch_dtype': torch.bfloat16,
+    'max_memory':{0:'20GB'}
     # 'max_memory': {0: '21GB', 1: '22GB', 2: '18GB', 3: '20GB', 4: '22GB', 5: '22GB', 6: '22GB', 7: '20GB'},
 }
 
@@ -208,9 +209,9 @@ class DevPipeline:
 
 
 def load_vfl_model(split_idx: [int, tuple] = SPLIT_INDEX, *args, **kwargs):
-    if isinstance(split_idx, int):
+    if isinstance(split_idx, int) or len(split_idx) == 1:
         return load_vfl_model_2slice(split_idx, *args, **kwargs)
-    elif isinstance(split_idx, tuple):
+    elif isinstance(split_idx, tuple) and len(split_idx) == 2:
         return load_vfl_model_3slice(split_idx, *args, **kwargs)
     else:
         raise ValueError(f"Invalid split_idx: {split_idx}")
@@ -219,63 +220,81 @@ def load_vfl_model(split_idx: [int, tuple] = SPLIT_INDEX, *args, **kwargs):
 def load_vfl_model_2slice(split_idx=2, is_from_raw=True, save_model=False):
     logger.info(f"Loading VFL")
     log_gpu_memory_usage()
-    p_server = PipelineVFL2Slice(True)
-    p_client = PipelineVFL2Slice(False)
+    p_server = VFLPipelineQwen(split_idx, True)
+    p_client = VFLPipelineQwen(split_idx, False)
+    # p_server = PipelineVFL2Slice(True)
+    # p_client = PipelineVFL2Slice(False)
     # model_0, model_1,model_2 = None, None,None
     models = {}
     if is_from_raw:
-        models.update(p_client.from_pretrained(model_path, split_index=split_idx,
-                                             **device_map_setter(load_kwargs)))
-        models.update(p_server.from_pretrained(model_path, split_index=split_idx,
-                                             **load_kwargs))
+        models.update(p_client.from_pretrained(model_path,
+                                               **device_map_setter(load_kwargs)))
+        models.update(p_server.from_pretrained(model_path,
+                                               **load_kwargs))
+        # models.update(p_client.from_pretrained(model_path, split_index=split_idx,
+        #                                        **device_map_setter(load_kwargs)))
+        # models.update(p_server.from_pretrained(model_path, split_index=split_idx,
+        #                                        **load_kwargs))
         logger.info(f"finish loading models from raw")
         log_gpu_memory_usage()
     else:
+        models.update(p_client.from_vfl(vfl_folder, **load_kwargs))
+        models.update(p_server.from_vfl(vfl_folder, **load_kwargs))
         for i in range(len(models)):
-            _p = os.path.join(vfl_folder, f"model_{i}")
-            if os.path.exists(_p):
-                if i == 0:
-                    __kwargs = copy.deepcopy(load_kwargs)
-                    __kwargs.update({'max_memory': {0: '20GiB'}})
-                    models.update(p_client.from_vfl(_p, **__kwargs))
-                elif i == 1:
-                    __kwargs = copy.deepcopy(load_kwargs)
-                    __kwargs.update({'max_memory': {i: '14GiB' if i == 0 else '21GiB' for i in range(0, 8)}})
-                    models.update(p_server.from_vfl(_p, **__kwargs))
-                else:
-                    continue
-                for param in models[i].parameters():
-                    param.requires_grad = False
-            else:
-                break
+            for param in models[i].parameters():
+                param.requires_grad = False
         logger.info(f"finish loading models from vfl")
         log_gpu_memory_usage()
+        # for i in range(len(models)):
+        #     _p = os.path.join(vfl_folder, f"model_{i}")
+        #     if os.path.exists(_p):
+        #         if i == 0:
+        #             __kwargs = copy.deepcopy(load_kwargs)
+        #             __kwargs.update({'max_memory': {0: '20GiB'}})
+        #             models.update(p_client.from_vfl(_p, **__kwargs))
+        #         elif i == 1:
+        #             __kwargs = copy.deepcopy(load_kwargs)
+        #             __kwargs.update({'max_memory': {i: '14GiB' if i == 0 else '21GiB' for i in range(0, 8)}})
+        #             models.update(p_server.from_vfl(_p, **__kwargs))
+        #         else:
+        #             continue
+        #         for param in models[i].parameters():
+        #             param.requires_grad = False
+        #     else:
+        #         break
+        # logger.info(f"finish loading models from vfl")
+        # log_gpu_memory_usage()
     if save_model:
-        logger.info(f"save!")
-        time.sleep(3)
-        logger.info(f"release resources and norm to cuda")
-        for i, m in models.items():
-            if m:
-                PipelineVFL2Slice.save_vfl(os.path.join(vfl_folder, f"model_{i}"), m)
-            else:
-                break
-        # g_state_dict = global_model.state_dict()
-        # g_state_dict.pop('model.embed_tokens.weight')
-        # global_model.state_dict()
-    return tuple(models)
+        pass
+        # logger.info(f"save!")
+        # time.sleep(3)
+        # logger.info(f"release resources and norm to cuda")
+        # for i, m in models.items():
+        #     if m:
+        #         PipelineVFL2Slice.save_vfl(os.path.join(vfl_folder, f"model_{i}"), m)
+        #     else:
+        #         break
+
+    return models
 
 
 def load_vfl_model_3slice(split_idx=(2, -2), is_from_raw=True, save_model=False):
     logger.info(f"Loading VFL")
     log_gpu_memory_usage()
-    p_server = PipelineVFL3Slice(True)
-    p_client = PipelineVFL3Slice(False)
+    p_server = VFLPipelineQwen(split_idx, True)
+    p_client = VFLPipelineQwen(split_idx, False)
+    # p_server = PipelineVFL3Slice(True)
+    # p_client = PipelineVFL3Slice(False)
     models = {k: None for k in range(3)}
     if is_from_raw:
-        models.update(p_client.from_pretrained(model_path, split_index=split_idx,
+        models.update(p_client.from_pretrained(model_path,
                                                **load_kwargs))
-        models.update(p_server.from_pretrained(model_path, split_index=split_idx,
+        models.update(p_server.from_pretrained(model_path,
                                                **load_kwargs))
+        # models.update(p_client.from_pretrained(model_path, split_index=split_idx,
+        #                                        **load_kwargs))
+        # models.update(p_server.from_pretrained(model_path, split_index=split_idx,
+        #                                        **load_kwargs))
         logger.info(f"finish loading models from raw")
         log_gpu_memory_usage()
     else:
@@ -287,17 +306,16 @@ def load_vfl_model_3slice(split_idx=(2, -2), is_from_raw=True, save_model=False)
         logger.info(f"finish loading models from vfl")
         log_gpu_memory_usage()
     if save_model:
-        logger.info(f"save!")
-        time.sleep(3)
-        logger.info(f"release resources and norm to cuda")
-        for i, m in models.items():
-            if m:
-                PipelineVFL3Slice.save_vfl(os.path.join(vfl_folder, f"model_{i}"), m)
-            else:
-                continue
-        # g_state_dict = global_model.state_dict()
-        # g_state_dict.pop('model.embed_tokens.weight')
-        # global_model.state_dict()
+        pass
+        # logger.info(f"save!")
+        # time.sleep(3)
+        # logger.info(f"release resources and norm to cuda")
+        # for i, m in models.items():
+        #     if m:
+        #         PipelineVFL3Slice.save_vfl(os.path.join(vfl_folder, f"model_{i}"), m)
+        #     else:
+        #         continue
+
     return models
 
 
@@ -313,6 +331,10 @@ def check1():
     model_weight = load_file(os.path.join(lora_path, 'checkpoint-manual', 'adapter_model.safetensors'))
 
     return model_weight
+
+
+def transformers_register():
+    AutoConfig.register()
 
 
 def process_func(example):
@@ -453,8 +475,6 @@ class PipelineLoraFinetune:
         # train_dataloader = DataLoader(train_dataset, batch_size=training_args.per_device_train_batch_size, shuffle=False)
         # eval_dataloader = DataLoader(eval_dataset, batch_size=training_args.per_device_eval_batch_size)
         if isinstance(model, E2EModel):
-            trainable_params = filter(lambda x: x.requires_grad, model.global_model.parameters())
-        elif isinstance(model,E2EModelV2):
             trainable_params = filter(lambda x: x.requires_grad, model.parameters())
         else:
             # trainable_params = get_trainable_parameters(model)
@@ -592,7 +612,7 @@ if __name__ == '__main__':
         # model.load_state_dict(torch.load(model_path, map_location=lambda storage))
         log_gpu_memory_usage()
 
-        if 'lora':
+        if not 'lora':
             if 'train':
                 model_lora = p_lora.get_lora_model(model)
                 p_lora.train_model(model_lora, dataset_train, dataset_validate, is_trainer=False)
@@ -730,7 +750,7 @@ if __name__ == '__main__':
             log_gpu_memory_usage()
             with init_empty_weights():
                 # e2e_model = E2EModel(local_model.config, local_model, global_model)
-                e2e_model = E2EModelV2(models[0].config, models)
+                e2e_model = E2EModel(models[0].config, models)
             logger.info(f"finish loading e2e model")
             log_gpu_memory_usage()
             if train_lora:

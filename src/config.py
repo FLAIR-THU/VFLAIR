@@ -4,6 +4,7 @@ all configs shall not be changed during process
 import os
 import datetime
 import sys
+from typing import Tuple
 
 from peft import PeftConfig, LoraConfig, TaskType
 from transformers import TrainingArguments
@@ -14,23 +15,31 @@ from loguru import logger
 
 # indicator whether to use the new pipeline
 _new_pipeline = False
-is_test = False
+is_test = True
 if not is_test:
     logger.remove()
     logger.add(sys.stderr, level="INFO")
 
 
 class VFLBasicConfig(object):
-    num_of_slice = 2
-    seed = 7
     kwargs_model_loading = {'device_map': 'auto',
                             'max_memory': {4: '20Gib'},
                             'torch_dtype': torch.bfloat16,
                             }
 
     def __init__(self, **kwargs):
+        self.split_index = kwargs.get('split_index', (2,))
+        self.seed = kwargs.get('seed', 7)
         self.vfl_training_config = VFLTrainingConfig(self)
         # self.vfl_training_config = None
+
+    @property
+    def num_of_slice(self) -> int:
+        if isinstance(self.split_index, int):
+            return 2
+        elif isinstance(self.split_index, tuple):
+            return len(self.split_index) + 1
+
     @property
     def is_inference(self):
         return not self.vfl_training_config

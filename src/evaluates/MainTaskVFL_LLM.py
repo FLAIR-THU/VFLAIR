@@ -59,7 +59,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Auto
 from config import vfl_basic_config, _new_pipeline
 
 from load.LoadModels import QuestionAnsweringModelOutput
-from models.llm_models.qwen2 import E2EModelV2
+from models.llm_models.qwen2 import E2EModel
 from party.LocalCommunication import LocalCommunication
 
 import warnings

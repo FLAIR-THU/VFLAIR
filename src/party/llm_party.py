@@ -25,8 +25,7 @@ import collections
 from transformers import PreTrainedModel, AutoTokenizer
 from peft import get_peft_model
 from config import vfl_basic_config, _new_pipeline
-from models.llm_models.qwen2 import Qwen2DecoderLayerParam, \
-    E2EModel, PipelineVFL2Slice, PipelineVFL3Slice, E2EModelV2
+from models.llm_models.qwen2 import  VFLPipelineQwen
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
@@ -143,9 +142,11 @@ class Party(object):
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size, collate_fn=lambda x: x)
 
     def prepare_model(self, args, index):
-        # prepare model and optimizer
-        if _new_pipeline:
-            self._prepare_model_qwen(args, index)
+        if args.model_type.lower() == 'qwen2':
+            model_path = args.model_list[str(index)]['path']
+            args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+            p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
+            self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
         else:
             (
                 args,
@@ -155,29 +156,6 @@ class Party(object):
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
 
-    def _prepare_model_qwen(self, args, index):
-        model_path = args.model_list[str(index)]['path']
-        args.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if vfl_basic_config.num_of_slice == 3:
-            p = PipelineVFL3Slice(self.is_active_party)
-            self.models.update(p.from_vfl(model_path, **vfl_basic_config.kwargs_model_loading))
-        else:
-            raise ValueError(f"vfl_basic_config.num_of_slice={vfl_basic_config.num_of_slice} is not supported")
-        # 设置训练参数
-        if _train_conf := vfl_basic_config.vfl_training_config:
-            for i in _train_conf.trainable_slice:
-                if i in self.models:
-                    model = self.models[i]
-                    model.enable_input_require_grads()
-                    peft_model = get_peft_model(model, _train_conf.peft_config)
-                    peft_model.print_trainable_parameters()
-                    self.models.update({i: peft_model})
-                    trainable_params = filter(lambda x: x.requires_grad, model.parameters())
-                    # 定义优化器和学习率调度器
-                    optimizer = torch.optim.AdamW(trainable_params, lr=_train_conf.training_args.learning_rate)
-                    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=4)
-                    self.optimizers.update({i: optimizer})
-                    self.lr_schedulers.update({i: scheduler})
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -317,7 +295,7 @@ class Party(object):
         #             use_cache = use_cache)
         #         self.local_pred_clone = self.local_pred.detach().clone()
         #         self.local_attention_mask = self.local_attention_mask.detach().clone()
-        
+
         ######### Defense Applied on Local Model Prediction Process ###########
         if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out"):
             self.local_pred, self.mid_loss = self.mid_model(self.local_pred)  # , self.local_attention_mask
