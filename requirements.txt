@@ -16,7 +16,7 @@ openpyxl==3.1.2
 fastapi==0.103
 uvicorn==0.27.0.post1
 sqlmodel==0.0.14
-transformers==4.37.2
+transformers==4.39.0
 PyYAML==6.0.1
 tensorflow==2.12
 grpcio==1.49.1
