@@ -1246,7 +1246,6 @@ def create_main_task(global_model_type):
                 self.LR_Decay(i_epoch)
                 _lr = self.parties[0].global_LR_decay(i_epoch, is_return=True)
 
-
                 if self.args.apply_adversarial:
                     print(
                         f'global_loss={self.parties[0].global_loss} adversarial_model_loss:{self.parties[0].adversarial_model_loss.item()} adversary_attack_loss:{self.parties[0].adversary_attack_loss.item()}')
@@ -1278,7 +1277,6 @@ def create_main_task(global_model_type):
 
                         self.final_epoch = i_epoch + 1
                     tensorboard_writer.add_scalar('train/test_acc', self.test_acc, optimize_step)
-
 
                 data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
 
