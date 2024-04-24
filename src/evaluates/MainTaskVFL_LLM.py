@@ -1527,20 +1527,20 @@ def create_main_task(global_model_type):
         def __call__(self, **kwargs):
             return self.forward(**kwargs)
 
-    def _init_e2e_model(self):
-        model_config = None
-        if not self.args.task_type == 'DevLLMInference':
-            return
-        for party in self.parties:
-            if party.local_model:
-                model_config = party.local_model.config
-                break
-            elif party.global_model:
-                model_config = party.global_model.config
-                break
-        if not model_config:
-            logger.error(f"No model config for E2E_model")
-        self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1])
-        # self.e2e_model.to(self.e2e_model.local_model.device)
+        def _init_e2e_model(self):
+            model_config = None
+            if not self.args.task_type == 'DevLLMInference':
+                return
+            for party in self.parties:
+                if party.local_model:
+                    model_config = party.local_model.config
+                    break
+                elif party.global_model:
+                    model_config = party.global_model.config
+                    break
+            if not model_config:
+                logger.error(f"No model config for E2E_model")
+            self.e2e_model = E2EModel(model_config, self.parties[0], self.parties[1])
+            # self.e2e_model.to(self.e2e_model.local_model.device)
 
     return MainTaskVFL_LLM
