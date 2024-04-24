@@ -1,10 +1,11 @@
 {
-    "epochs": 30,
+    "epochs": 50,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 64,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "early_stop_threshold": 2,
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -46,20 +47,15 @@
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 2,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 384,
-            "embed_dim": 768
+            "epsilon": 50
         }
     },
     "attack_list": {

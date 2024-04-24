@@ -347,6 +347,7 @@ class Party(object):
             
     def give_pred(self, use_cache = False):
         # print('give_pred_dev:',self.local_data_input.keys())
+        self.local_data_input['use_cache'] = use_cache
         intermediate = self.local_model(**self.local_data_input)
 
         self.local_pred = intermediate['inputs_embeds']
@@ -373,9 +374,9 @@ class Party(object):
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
 
-        self.transferred_past_key_values = None # no need to transmit past_key_values
-        if use_cache: # need to transmit past_key_values
-            self.transferred_past_key_values = self.past_key_values
+        # self.transferred_past_key_values = None # no need to transmit past_key_values
+        # if use_cache: # need to transmit past_key_values
+        #     self.transferred_past_key_values = self.past_key_values
 
         intermediate['inputs_embeds'] = self.local_pred_clone
         intermediate['attention_mask'] = self.local_attention_mask

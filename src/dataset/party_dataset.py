@@ -24,37 +24,111 @@ class SimpleDataset(Dataset):
 
 
 
-class PassiveDataset_LLM_old(Dataset):
+class PassiveDataset_LLM(Dataset):
     def __init__(self, args, texts ,labels, split_name='test'):
         '''
         texts: np.array
         '''
         self.args = args
-        self.texts = [] # input_ids
-        self.masks = [] # attention_mask
-        self.token_type_ids = [] # token_type_ids
         self.labels = []
         self.features = []
-
         self.input_dicts = []
-        print('----- init PassiveDataset_LLM ----')
-        print('texts:',type(texts),texts.shape)
-        print(texts[0])
 
         if args.task_type == 'SequenceClassification':
-    
             for _text in texts:
+                if len( texts.shape) == 1: # input: single sentence
+                    if args.padding != "do_not_pad" and args.padding_type == "inside": # [PAD] between [CLS][SEP]
+                        text_tokens = args.tokenizer.tokenize(_text)
 
-                ids = args.tokenizer(_text[0],_text[1], \
-                padding=args.padding,truncation=args.truncation ,\
-                max_length=args.max_length,return_tensors='pt')
+                        pad_length = max( args.max_length - len(text_tokens), 0 )
+                        for _pad in range(pad_length):
+                            if args.padding_side == 'right':
+                                text_tokens.append( args.tokenizer.pad_token )
+                            elif args.padding_side == 'left':
+                                text_tokens.insert(0, args.tokenizer.pad_token )
+                            elif args.padding_side == 'random':
+                                text_tokens.insert(randrange(len(text_tokens)+1), args.tokenizer.pad_token )
 
+                        _text = " ".join(text_tokens)
+                        # print('after pad:', _text)
+
+                        ids = args.tokenizer(_text, truncation=args.truncation ,max_length=args.max_length,\
+                        return_tensors='pt',add_special_tokens=args.add_special_tokens)
+
+                        # for _pos in range(ids['attention_mask'].shape[1]):
+                        #     if ids['input_ids'][0][_pos] == args.tokenizer.pad_token_id:
+                        #         ids['attention_mask'][0][_pos] = 0
+                    else: # [PAD] outside [CLS][SEP]
+                        ids = args.tokenizer(_text, \
+                        padding=args.padding,truncation=args.truncation ,\
+                        max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
+                elif len( texts.shape) > 1: # input: sentence pairs
+                    try:
+                        ids = args.tokenizer(_text[0],_text[1], \
+                        padding=args.padding,truncation=args.truncation ,\
+                        max_length=args.max_length,return_tensors='pt')
+                    except:
+                        assert 1>2
+                else:
+                    print(texts.shape)
+                    assert 1>2, 'text input shape not supported'
+                
                 self.input_dicts.append(ids)
 
+            
             if self.args.num_classes == 1:
                 self.labels = torch.tensor(labels, dtype=torch.float32)
             else:
                 self.labels = torch.tensor(labels) 
+
+        elif args.task_type == 'CausalLM':
+            flag = 0
+            for i in range(len(texts)):
+                if split_name == 'test':
+                    ids = args.tokenizer(texts[i],return_tensors='pt')
+                else:
+                    ids = args.tokenizer(texts[i], \
+                    padding=args.padding,truncation=args.truncation ,\
+                    max_length=args.max_length,return_tensors='pt') 
+
+                if flag == 0:
+                    print('TEXT:',texts[i])
+                    print('text_id:',ids['input_ids'].shape, ids['input_ids'])
+                    print('label:',labels[i])
+                    print('-'*25)
+                    flag = flag + 1
+                
+                self.input_dicts.append(ids)
+        
+        elif args.task_type == 'QuestionAnswering':
+            # labels : bs * [start_position, end_position]
+            # texts: bs * [feature]
+            for i in range(len(texts)): 
+                _feature = texts[i]
+                # self.texts.append(_feature["input_ids"]) # input_ids
+                # self.masks.append(_feature["input_mask"]) # input_mask
+                # self.token_type_ids.append(_feature["segment_ids"]) # segment_ids
+
+                # self.labels.append( labels[i] ) # [ [start_position, end_position] ]
+                # self.features.append( _feature ) 
+
+                inputs = {
+                    'input_ids': _feature["input_ids"],
+                    'attention_mask':_feature["input_mask"],
+                    'token_type_ids': _feature["segment_ids"],
+                    
+                    'feature': {
+                        'token_to_orig_map':_feature["token_to_orig_map"],
+                        'token_is_max_context':_feature["token_is_max_context"],
+                        'len_tokens': len(_feature["tokens"])
+                    }
+                }
+                self.input_dicts.append(inputs)
+
+            # print('self.features:',type(self.features), len(self.features))
+            # print(type(self.features[0]), type(self.features[1]))
+
+
     def __len__(self):
         return len(self.labels)
 
@@ -72,7 +146,7 @@ class PassiveDataset_LLM_old(Dataset):
 
 
 
-class PassiveDataset_LLM(Dataset):
+class PassiveDataset_LLM_old(Dataset):
     def __init__(self, args, texts ,labels, split_name='test'):
         '''
         texts: np.array
@@ -208,39 +282,13 @@ class PassiveDataset_LLM(Dataset):
                     # Segment token indices to indicate first and second portions of the inputs.
                     if 'token_type_ids' in list(ids.keys()):
                         self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
-                    
+                print(self.texts[0])
+                assert 1>2
+
             elif len( texts.shape) == 2: # input: sentence pairs
                 for _text in texts:
 
-                    # if args.padding != "do_not_pad" and args.padding_type == "inside": # [PAD] between [CLS][SEP]
-                    #     text_tokens_0 = args.tokenizer.tokenize(_text[0])
-                    #     text_tokens_1 = args.tokenizer.tokenize(_text[1])
-
-
-                    #     pad_length = max( args.max_length - len(text_tokens), 0 )
-                    #     for _pad in range(pad_length):
-                    #         if args.padding_side == 'right':
-                    #             text_tokens.append( args.tokenizer.pad_token )
-                    #         elif args.padding_side == 'left':
-                    #             text_tokens.insert(0, args.tokenizer.pad_token )
-                    #         elif args.padding_side == 'random':
-                    #             text_tokens.insert(randrange(len(text_tokens)+1), args.tokenizer.pad_token )
-
-                    #     _text = " ".join(text_tokens)
-                    #     # print('after pad:', _text)
-
-                    #     ids = args.tokenizer(_text, truncation=args.truncation ,max_length=args.max_length,\
-                    #     return_tensors='pt',add_special_tokens=args.add_special_tokens)
-
-                    #     # for _pos in range(ids['attention_mask'].shape[1]):
-                    #     #     if ids['input_ids'][0][_pos] == args.tokenizer.pad_token_id:
-                    #     #         ids['attention_mask'][0][_pos] = 0
-
-                    # else: # [PAD] outside [CLS][SEP]
-                    #     ids = args.tokenizer(_text[0],_text[1], \
-                    #     padding=args.padding,truncation=args.truncation ,\
-                    #     max_length=args.max_length,return_tensors='pt',add_special_tokens=args.add_special_tokens)
-                   
+                
                     try:
                         ids = args.tokenizer(_text[0],_text[1], \
                         padding=args.padding,truncation=args.truncation ,\
@@ -252,7 +300,9 @@ class PassiveDataset_LLM(Dataset):
                     self.masks.append( torch.tensor(ids['attention_mask']).squeeze() )
                     if 'token_type_ids' in list(ids.keys()):
                         self.token_type_ids.append( torch.tensor(ids['token_type_ids']).squeeze() )
-            
+                print(self.texts[0])
+                assert 1>2
+
             elif len( texts.shape) == 3: # input: sentence pairs
                 for _text in texts:
                     try:

@@ -4,7 +4,6 @@
     "k": 2,
     "batch_size": 32,
     "pipeline": "pretrained",
-    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -24,27 +23,27 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2",
+            "type": "gpt2-large",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "local_encoders_num": 1,
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
         },
         "1": {
-            "type": "gpt2",
+            "type": "gpt2-large",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "local_encoders_num": 1,
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
         },
         "task":{
-            "task_type": "CausalLM",
+            "task_type": "Generation",
             "doc_stride" : 8,
             "max_seq_length": 8,
             "metric_type": "n_best",

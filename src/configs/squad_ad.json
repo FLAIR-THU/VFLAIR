@@ -4,7 +4,7 @@
     "k": 2,
     "batch_size": 64,
     "early_stop_threshold": 2,
-    "pipeline": "finetune",
+    "pipeline": "pretrained",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

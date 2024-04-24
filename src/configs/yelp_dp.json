@@ -1,9 +1,11 @@
 {
-    "epochs": 5,
+    "epochs": 50,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 64,
     "pipeline": "pretrained",
+    "early_stop_threshold": 2,
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -25,7 +27,8 @@
         "0": {
             "type": "Shunianyelp_review_classification",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
             "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -34,7 +37,8 @@
         "1": {
             "type": "Shunianyelp_review_classification",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "head_layer_trainable": 1,
             "output_dim": 5,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -43,6 +47,7 @@
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -50,7 +55,7 @@
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "epsilon": 50
+            "epsilon": 60
         }
     },
     "attack_list": {
@@ -59,6 +64,17 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 1000
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
                 "attack_sample_num": 1000

@@ -95,9 +95,10 @@ def do_load_basic_configs(config_dict, args):
     args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
 
     ############## for LLM ###############
-    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None
-    # pretrained finetune
-
+    args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None# pretrained finetune
+    
+    args.model_architect = config_dict['model_architect'] if('model_architect' in config_dict) else 'CLM'
+    
     # Tokenizer
     args.tokenizer = None # for LLM if needed
     args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None

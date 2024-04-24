@@ -1,10 +1,11 @@
 {
-    "epochs": 30,
+    "epochs": 50,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 64,
     "pipeline": "finetune",
     "early_stop_threshold": 2,
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -46,6 +47,7 @@
         "task":{
             "task_type": "SequenceClassification"
         },
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
