@@ -115,22 +115,25 @@ if __name__ == '__main__':
 
         set_seed(args.current_seed)
 
+        # inherit generation functions from global model
+        args.global_model_type = type(args.parties[-1].global_model)
+        MainTaskVFL_LLM = create_main_task(args.global_model_type)
         vfl = MainTaskVFL_LLM(args)
         vfl.init_communication()
 
-        if args.model_type == 'GPT2':
-            GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        elif args.model_type == 'Llama':
-            GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        elif args.model_type == 'T5':
-            GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        else:
-            assert 1>2, 'model type not supported for generation'
+        # if args.model_type == 'GPT2':
+        #     GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        # elif args.model_type == 'Llama':
+        #     GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        # elif args.model_type == 'T5':
+        #     GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        # else:
+        #     assert 1>2, 'model type not supported for generation'
             
         ######### define your input text here #########
         # input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
         #  mouth curved in a confident grin i do n't care about"]
-        input_text = ['Hello, how are you ?']
+        input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
         ######### define your input text here #########
 
         inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
@@ -152,7 +155,7 @@ if __name__ == '__main__':
         # greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
         # print('greedy_matching:',type(greedy_matching))
         # print(greedy_matching)
-        greedy_output = full_model.generate(**inputs, max_length=30)
+        greedy_output = full_model.generate(**inputs, max_new_tokens=5)
         print("full greedy_output:\n")
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
@@ -161,8 +164,8 @@ if __name__ == '__main__':
 
 
         ######### VFL model ########
-        GenerationModel = GenerationModel.to(args.device)
-        greedy_output = GenerationModel.generate(**inputs, max_length=30)
+        # GenerationModel = GenerationModel.to(args.device)
+        greedy_output = vfl.generate(**inputs, max_new_tokens=2)
         print("greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 

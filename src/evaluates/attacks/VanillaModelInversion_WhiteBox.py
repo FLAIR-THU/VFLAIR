@@ -157,138 +157,162 @@ class VanillaModelInversion_WhiteBox(Attacker):
             flag = 0
             enter_time = time.time()
             for origin_input in test_data_loader:
-                ### origin_input: tuple of 5
-                batch_input_ids = []
+                ## origin_input: list of bs * (input_discs, label)
+                batch_input_dicts = []
                 batch_label = []
-                batch_attention_mask = []
-                batch_token_type_ids = []
-                batch_feature = []
                 for bs_id in range(len(origin_input)):
-                    # Input_ids
-                    batch_input_ids.append( origin_input[bs_id][0].tolist() )
-                    # Attention Mask
-                    batch_attention_mask.append( origin_input[bs_id][2].tolist()  )
-                    # token_type_ids
-                    if origin_input[bs_id][3] == []:
-                        batch_token_type_ids = None
-                    else:
-                        batch_token_type_ids.append( origin_input[bs_id][3].tolist() ) 
-                    # feature (for QuestionAnswering only)
-                    if origin_input[bs_id][4] == []:
-                        batch_feature = None
-                    else:
-                        batch_feature.append( origin_input[bs_id][4] )   
-                    # Label
+                    # Input Dict
+                    batch_input_dicts.append(origin_input[bs_id][0])
+                        # Label
                     if type(origin_input[bs_id][1]) != str:
-                        batch_label.append( origin_input[bs_id][1].tolist()  )
+                        batch_label.append(origin_input[bs_id][1].tolist())
                     else:
-                        batch_label.append( origin_input[bs_id][1]  )
+                        batch_label.append(origin_input[bs_id][1])
 
-                batch_input_ids = torch.tensor(batch_input_ids).to(self.device)#.unsqueeze(0)
-                batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)#.unsqueeze(0)
-                if batch_token_type_ids != None:
-                    batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)#.unsqueeze(0)
-                if type( batch_label[0] ) != str:
-                    batch_label = torch.tensor(batch_label).to(self.device)
-        
-                origin_input = [batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] 
-
-                # origin_input = [ data, label, mask, token_type_ids, feature(forQA) ]
-                origin_data, origin_label, origin_attention_mask, origin_token_type_ids, origin_feature =  origin_input
-                if origin_token_type_ids == []:
-                    origin_token_type_ids = None
-                if origin_feature == []:
-                    origin_feature = None
-
+                data_inputs = {}
+                for key_name in batch_input_dicts[0].keys():
+                    data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
+                
                 # real received intermediate result
-                input_shape = origin_data.shape[:2]
-                self.top_vfl.parties[0].input_shape = input_shape
-                self.top_vfl.parties[0].obtain_local_data(
-                    {'input_ids':origin_data, 'attention_mask':origin_attention_mask, 
-                    'token_type_ids':origin_token_type_ids})
-                self.top_vfl.parties[0].gt_one_hot_label = origin_label
+                self.top_vfl.parties[0].obtain_local_data(data_inputs)
+                self.top_vfl.parties[0].gt_one_hot_label = batch_label
+
+                # # origin_input: tuple of 5
+                # batch_input_ids = []
+                # batch_label = []
+                # batch_attention_mask = []
+                # batch_token_type_ids = []
+                # batch_feature = []
+                # for bs_id in range(len(origin_input)):
+                #     # Input_ids
+                #     batch_input_ids.append( origin_input[bs_id][0].tolist() )
+                #     # Attention Mask
+                #     batch_attention_mask.append( origin_input[bs_id][2].tolist()  )
+                #     # token_type_ids
+                #     if origin_input[bs_id][3] == []:
+                #         batch_token_type_ids = None
+                #     else:
+                #         batch_token_type_ids.append( origin_input[bs_id][3].tolist() ) 
+                #     # feature (for QuestionAnswering only)
+                #     if origin_input[bs_id][4] == []:
+                #         batch_feature = None
+                #     else:
+                #         batch_feature.append( origin_input[bs_id][4] )   
+                #     # Label
+                #     if type(origin_input[bs_id][1]) != str:
+                #         batch_label.append( origin_input[bs_id][1].tolist()  )
+                #     else:
+                #         batch_label.append( origin_input[bs_id][1]  )
+
+                # batch_input_ids = torch.tensor(batch_input_ids).to(self.device)#.unsqueeze(0)
+                # batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)#.unsqueeze(0)
+                # if batch_token_type_ids != None:
+                #     batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)#.unsqueeze(0)
+                # if type( batch_label[0] ) != str:
+                #     batch_label = torch.tensor(batch_label).to(self.device)
+        
+                # origin_input = [batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] 
+
+                # # origin_input = [ data, label, mask, token_type_ids, feature(forQA) ]
+                # origin_data, origin_label, origin_attention_mask, origin_token_type_ids, origin_feature =  origin_input
+                # if origin_token_type_ids == []:
+                #     origin_token_type_ids = None
+                # if origin_feature == []:
+                #     origin_feature = None
+
+                # # real received intermediate result
+                # input_shape = origin_data.shape[:2]
+                # self.top_vfl.parties[0].input_shape = input_shape
+                # self.top_vfl.parties[0].obtain_local_data(
+                #     {'input_ids':origin_data, 'attention_mask':origin_attention_mask, 
+                #     'token_type_ids':origin_token_type_ids})
+                # self.top_vfl.parties[0].gt_one_hot_label = origin_label
+
+                
 
 
                 all_pred_list = self.top_vfl.pred_transmit()
                 real_results = all_pred_list[0]
 
-                # batch_received_intermediate = real_results[0].type(torch.float32).to(self.device)
-                # batch_received_attention_mask = real_results[1].to(self.device)
-                batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
-                if real_results['attention_mask']!= None:
-                    batch_received_attention_mask = real_results['attention_mask'].to(self.device)
-                else:
-                    batch_received_attention_mask = None
-
-                # print('batch_received_intermediate:',batch_received_intermediate.shape)
-                # print('batch_received_attention_mask:',batch_received_attention_mask.shape)
-
+                # batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
+                # if real_results['attention_mask']!= None:
+                #     batch_received_attention_mask = real_results['attention_mask'].to(self.device)
+                # else:
+                #     batch_received_attention_mask = None
 
                 # each sample in a batch
-                for _id in range(origin_data.shape[0]):
-                    sample_origin_data = origin_data[_id].unsqueeze(0) # [1,sequence length]
+                for _id in range(len(origin_input)):
+                    sample_origin_data = batch_input_dicts[_id]['input_ids'].unsqueeze(0) # [1,sequence length]
+                    bs, seq_length = sample_origin_data.shape
                     # print('sample_origin_data:',sample_origin_data.shape)
-                    received_intermediate = batch_received_intermediate[_id].unsqueeze(0) # [1,256,768]
+                    received_intermediate = real_results['inputs_embeds'][_id].unsqueeze(0) # [1,256,768]
                     # print('received_intermediate:',received_intermediate.shape)
-                    received_attention_mask = batch_received_attention_mask[_id].unsqueeze(0) # [1,256]
+                    received_attention_mask = real_results['attention_mask'][_id].unsqueeze(0) # [1,256]
                     # print('received_attention_mask:',received_attention_mask.shape)
-
+                    
                     # initial guess
-                    dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
+                    # dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
-                    if origin_token_type_ids != None:
-                        dummy_local_batch_token_type_ids = origin_token_type_ids[_id].unsqueeze(0).to(self.device)
+                    if 'token_type_ids' not in batch_input_dicts[0].keys():
+                        dummy_local_batch_token_type_ids = batch_input_dicts[_id]['token_type_ids'].unsqueeze(0).to(self.device)
                     else:
                         dummy_local_batch_token_type_ids = None
 
-                    bs, seq_length = sample_origin_data.shape
-                    if self.args.model_type in ['Bert','Roberta']:
-                        dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
-                    elif self.args.model_type == "GPT2":
-                        dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
-                    elif self.args.model_type == "Llama":
-                        dummy_embedding = torch.zeros([bs,seq_length,4096]).type(torch.float32).to(self.device)
-                    else:
-                        assert 1>2, f"{self.args.model_type} not supported"
+                    dummy_embedding = torch.zeros([bs,seq_length,self.args.model_embedded_dim]).type(torch.float32).to(self.device)
+                    # if self.args.model_type in ['Bert','Roberta']:
+                    #     dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
+                    # elif self.args.model_type == "GPT2":
+                    #     dummy_embedding = torch.zeros([bs,seq_length,768]).type(torch.float32).to(self.device)
+                    # elif self.args.model_type == "Llama":
+                    #     dummy_embedding = torch.zeros([bs,seq_length,4096]).type(torch.float32).to(self.device)
+                    # else:
+                    #     assert 1>2, f"{self.args.model_type} not supported"
                     dummy_embedding.requires_grad_(True) 
                     
                     optimizer = torch.optim.Adam([dummy_embedding], lr=self.lr)
                     
                     def get_cost(dummy_embedding):
                         # compute dummy result
-                        if self.args.model_type  in ['Bert','Roberta']:
-                            dummy_intermediate  = local_model(input_ids=None, \
-                                                            attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,\
-                                                            inputs_embeds=dummy_embedding)     
-                            dummy_intermediate = dummy_intermediate['inputs_embeds']
-                            # dummy_intermediate, _a  = local_model(input_ids=dummy_data, \
-                            #                                 attention_mask = dummy_attention_mask, \
-                            #                                 token_type_ids=dummy_local_batch_token_type_ids,\
-                            #                                 # embedding_output = dummy_embedding,\
-                            #                                 inputs_embeds=dummy_embedding)                 
-                        elif self.args.model_type == 'GPT2':
-                            dummy_intermediate  = local_model(input_ids=None, \
-                                                            attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,\
-                                                            inputs_embeds=dummy_embedding)    
-                            dummy_intermediate = dummy_intermediate['inputs_embeds']
-                            # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
-                            #                             attention_mask = dummy_attention_mask, \
-                            #                             token_type_ids=dummy_local_batch_token_type_ids,\
-                            #                             # past_key_values = received_past_key_values,\
-                            #                             inputs_embeds = dummy_embedding)    
-                        elif self.args.model_type == 'Llama':
-                            dummy_intermediate  = local_model(input_ids=None, \
-                                                            attention_mask = dummy_attention_mask, \
-                                                            token_type_ids=dummy_local_batch_token_type_ids,\
-                                                            inputs_embeds=dummy_embedding)    
-                            dummy_intermediate = dummy_intermediate['inputs_embeds']
-                            # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None,\
-                            #                             attention_mask = dummy_attention_mask, \
-                            #                             inputs_embeds = dummy_embedding)    
-                        else:
-                            assert 1>2, 'model type not supported'
+                        dummy_input = {
+                            'input_ids':None, 'attention_mask':dummy_attention_mask,\
+                            'inputs_embeds':dummy_embedding, 'token_type_ids':dummy_local_batch_token_type_ids
+                        }
+                        dummy_intermediate  = local_model(**dummy_input)     
+                        dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        
+                        # if self.args.model_type  in ['Bert','Roberta']:
+                        #     dummy_intermediate  = local_model(input_ids=None, \
+                        #                                     attention_mask = dummy_attention_mask, \
+                        #                                     token_type_ids=dummy_local_batch_token_type_ids,\
+                        #                                     inputs_embeds=dummy_embedding)     
+                        #     dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        #     # dummy_intermediate, _a  = local_model(input_ids=dummy_data, \
+                        #     #                                 attention_mask = dummy_attention_mask, \
+                        #     #                                 token_type_ids=dummy_local_batch_token_type_ids,\
+                        #     #                                 # embedding_output = dummy_embedding,\
+                        #     #                                 inputs_embeds=dummy_embedding)                 
+                        # elif self.args.model_type == 'GPT2':
+                        #     dummy_intermediate  = local_model(input_ids=None, \
+                        #                                     attention_mask = dummy_attention_mask, \
+                        #                                     token_type_ids=dummy_local_batch_token_type_ids,\
+                        #                                     inputs_embeds=dummy_embedding)    
+                        #     dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        #     # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None, \
+                        #     #                             attention_mask = dummy_attention_mask, \
+                        #     #                             token_type_ids=dummy_local_batch_token_type_ids,\
+                        #     #                             # past_key_values = received_past_key_values,\
+                        #     #                             inputs_embeds = dummy_embedding)    
+                        # elif self.args.model_type == 'Llama':
+                        #     dummy_intermediate  = local_model(input_ids=None, \
+                        #                                     attention_mask = dummy_attention_mask, \
+                        #                                     token_type_ids=dummy_local_batch_token_type_ids,\
+                        #                                     inputs_embeds=dummy_embedding)    
+                        #     dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        #     # dummy_intermediate,  _a, _b, _c = local_model(input_ids=None,\
+                        #     #                             attention_mask = dummy_attention_mask, \
+                        #     #                             inputs_embeds = dummy_embedding)    
+                        # else:
+                        #     assert 1>2, 'model type not supported'
                     
                         crit = nn.CrossEntropyLoss()
                         _cost = crit(dummy_intermediate, received_intermediate)
@@ -373,11 +397,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     flag += 1
                 
                     del(dummy_embedding)
-                    del(dummy_data)
                     del(dummy_attention_mask)
-
-                del(batch_received_intermediate)
-                del(batch_received_attention_mask)
 
             end_time = time.time()
         

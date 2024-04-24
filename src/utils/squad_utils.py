@@ -45,22 +45,45 @@ def get_tokens(s):
     return normalize_answer(s).split()
 
 def compute_exact(a_gold, a_pred):
-    return int(normalize_answer(a_gold) == normalize_answer(a_pred))
+    return int(a_gold == a_pred)
 
 def compute_f1(a_gold, a_pred):
-    gold_toks = get_tokens(a_gold)
-    pred_toks = get_tokens(a_pred)
-    common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
-    num_same = sum(common.values())
-    if len(gold_toks) == 0 or len(pred_toks) == 0:
+    gold_toks = a_gold
+    pred_toks = a_pred
+
+    set_common = set(a_gold) & set(a_pred)
+    list_common = list(set_common)
+    num_same = len(list_common) #sum(common.values())
+    
+    if len(a_gold) == 0 or len(a_pred) == 0:
         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
-        return int(gold_toks == pred_toks)
+        return int(a_gold == a_pred)
+    
     if num_same == 0:
         return 0
-    precision = 1.0 * num_same / len(pred_toks)
-    recall = 1.0 * num_same / len(gold_toks)
+    
+    precision = 1.0 * num_same / len(a_pred)
+    recall = 1.0 * num_same / len(a_gold)
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
+
+# def compute_exact(a_gold, a_pred):
+#     return int(normalize_answer(a_gold) == normalize_answer(a_pred))
+
+# def compute_f1(a_gold, a_pred):
+#     gold_toks = get_tokens(a_gold)
+#     pred_toks = get_tokens(a_pred)
+#     common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
+#     num_same = sum(common.values())
+#     if len(gold_toks) == 0 or len(pred_toks) == 0:
+#         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
+#         return int(gold_toks == pred_toks)
+#     if num_same == 0:
+#         return 0
+#     precision = 1.0 * num_same / len(pred_toks)
+#     recall = 1.0 * num_same / len(gold_toks)
+#     f1 = (2 * precision * recall) / (precision + recall)
+#     return f1
 
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""

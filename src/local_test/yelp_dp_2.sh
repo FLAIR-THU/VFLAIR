@@ -7,7 +7,7 @@ echo 'Yelp DP'
 
 for seed in {60,61,62,63,64,65}
     do
-    python main_pipeline_llm.py --seed $seed --configs yelp_wo
+    python main_pipeline_llm.py --seed $seed --configs yelp_wo_2
 
     # 50
     python main_pipeline_llm.py --configs yelp_dp

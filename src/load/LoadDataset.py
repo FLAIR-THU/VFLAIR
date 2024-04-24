@@ -1560,6 +1560,12 @@ def load_dataset_per_party_llm(args, index):
 
 
     elif args.dataset == 'SST-2':
+        task_prompt = {
+        'imdb': """Analyze the following movie review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
+        "yelp": """Analyze the following restaurant review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
+        "SST-2": """Analyze the following sentence and determine if the sentiment is: positive or negative.\n{}\nThe awnser is:""",
+    
+            }
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'SST-2/train.tsv'
@@ -1568,12 +1574,22 @@ def load_dataset_per_party_llm(args, index):
         sentences = df.sentence.values
         labels = df.label.values
 
+        if args.model_architect == 'CLM':
+            instructions = task_prompt[args.dataset]
+            for i in range(len(sentences)):
+                sentences[i] = instructions.format(sentences[i])
+
         X_train = np.array(sentences)
         y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
 
         df = pd.read_csv(test_set_file, delimiter='\t')  # names=[  'sentence','label']
         sentences = df.sentence.values
         labels = df.label.values
+
+        if args.model_architect == 'CLM':
+            instructions = task_prompt[args.dataset]
+            for i in range(len(sentences)):
+                sentences[i] = instructions.format(sentences[i])
 
         X_test = np.array(sentences)
         y_test = np.array(labels)
@@ -1908,7 +1924,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
         
-        for _all_text in train_all_texts:
+        for _all_text in train_all_texts[:1]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1948,7 +1964,7 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts:
+        for _all_text in test_all_texts[:100]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
 
             text_tokens = all_doc_tokens[:-1]
