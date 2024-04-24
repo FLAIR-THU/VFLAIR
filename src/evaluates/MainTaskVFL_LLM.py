@@ -339,11 +339,11 @@ def create_main_task(global_model_type):
             self.communication_cost += get_size_of(global_gradients)
 
             self._communication.send_global_loss_and_gradients(self.parties[0].global_gradients)  # self.parties[0].global_loss,
-            # self.parties[self.k-1].global_loss = self.parties[0].global_loss
-            # self.parties[self.k-1].global_gradients = self.parties[0].global_gradients
             return global_loss
 
-        def generate_result(self, test_logit, gt_one_hot_label, parties_data):
+
+        def generate_result(self, model_output, gt_one_hot_label, parties_data):
+            # raw_model_output --> standard prediction result
             test_preds = []
             test_targets = []
             test_predict_labels = []
@@ -355,7 +355,7 @@ def create_main_task(global_model_type):
 
             if self.args.model_architect=='CLS': #task_type == "SequenceClassification":
                 if self.args.num_classes == 1:  # regression
-                    predict_label = test_logit.detach().cpu()
+                    predict_label = model_output.logits.detach().cpu()
                     actual_label = gt_one_hot_label.detach().cpu()
 
                     predict_label = torch.tensor([_.item() for _ in predict_label])
@@ -365,49 +365,35 @@ def create_main_task(global_model_type):
 
                     return list(predict_label), list(actual_label), sample_cnt
                 else:  # Classification
-                    enc_predict_prob = test_logit
-
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)
-                    actual_label = torch.argmax(gt_one_hot_label, dim=-1)
-
-                    test_preds.append(list(enc_predict_prob.detach().cpu().numpy()))
-                    test_targets.append(list(gt_one_hot_label.detach().cpu().numpy()))
+                    predict_label = torch.argmax(model_output.logits, dim=-1).detach().cpu()
+                    actual_label = torch.argmax(gt_one_hot_label, dim=-1).detach().cpu()
 
                     sample_cnt = predict_label.shape[0]
                     suc_cnt += torch.sum(predict_label == actual_label).item()
-                    return list(predict_label.detach().cpu()), list(actual_label.detach().cpu()), sample_cnt
+                    return list(predict_label), list(actual_label), sample_cnt
 
             elif self.args.model_architect=='CLM': #.task_type == "CausalLM":
                 if self.args.task_type == "CausalLM":#dataset == "Lambada":
-                    next_token_logits = test_logit[:, -1]  # [bs, 32000]   test_logit: bs, seq_len, vocab_dim
 
+                    if isinstance(model_output,torch.Tensor): # generation -- generated token ids
+                        predict_label_list = model_output[:,self.seq_length:]
+                    else: # forward -- raw model output
+                        print('model_output:',type(model_output))
+                        print('model_output.logits:',model_output.logits.shape)
+                        generated_token_logits = model_output.logits[:,-1,:]
+                        print('generated_token_logits:',generated_token_logits.shape)
+                        predict_label_list = torch.argmax(generated_token_logits, dim=-1)
+                    print('predict_label_list:',predict_label_list.shape)
+
+                    predict_label_list = [int(_id.item()) for _id in list(predict_label_list)]
                     target_label_list = [int(_id.item()) for _id in list(gt_one_hot_label)]
+                    return target_label_list, predict_label_list, len(predict_label_list)
 
-                    enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-                    if self.args.metric_type == "best_pred":
-                        predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                        predict_label_list = predict_label  # predict_word: bs * best_pred
-                        # predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
-                        # predict_word = [normalize_answer(_p) for _p in predict_word]
-                        # predict_word_list = predict_word  # predict_word: bs * best_pred
-                    elif self.args.metric_type == "n_best":
-                        logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                        predict_label_list = index_list[:, :self.args.n_best_size]
-                        # for _bs in range(predict_label.shape[0]):  # each batch
-                        #     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        #     predict_word = [normalize_answer(_p) for _p in predict_word]
-                        #     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
-                    
-                    print('generate result predict_label_list:',predict_label_list)
-                    print('generate result target_label_list:',target_label_list)
-
-                    return target_label_list, predict_label_list, None #target_word_list, predict_word_list, None
                 elif self.args.task_type == "SequenceClassification":
-                    print('test_logit:',type(test_logit),test_logit.shape)
+                    print('model_output:',type(model_output),model_output.shape)
                     print('self.seq_length:',self.seq_length)
-                    new_token_logits = test_logit #[:,self.seq_length:]
+                    new_token_logits = model_output #[:,self.seq_length:]
                     print('new_token_logits:',type(new_token_logits),new_token_logits.shape)
-
                     for _i in range(new_token_logits.shape[0]):
                         model_output_ids = new_token_logits[_i]
                         print('text:',self.args.tokenizer.decode(model_output_ids, skip_special_tokens=True))
@@ -453,8 +439,8 @@ def create_main_task(global_model_type):
 
 
             elif self.args.model_architect=='TQA': #.task_type == "QuestionAnswering":
-                start_logits = test_logit.start_logits # bs, 512
-                end_logits = test_logit.end_logits # bs, 512
+                start_logits = model_output.start_logits # bs, 512
+                end_logits = model_output.end_logits # bs, 512
                 sample_cnt = start_logits.shape[0] # bs
 
                 n_best_size = self.args.n_best_size
@@ -467,9 +453,8 @@ def create_main_task(global_model_type):
                 batch_nbest_list = []
                 batch_gold_ans_list = []
                 for i in range(start_logits.shape[0]):  # for each sample in this batch
-
                     ############ Gold ################
-                    feature = parties_data[0][i]['feature']  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
+                    feature = parties_data[0][0][i]['feature']  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
                     # feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
 
                     gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
@@ -482,11 +467,6 @@ def create_main_task(global_model_type):
                     for _i in range(len(gold_start_indexs)):
                         gold_start_index = int(gold_start_indexs[_i])
                         gold_end_index = int(gold_end_indexs[_i])
-
-                        # if gold_start_index == -1:
-                        #     continue
-                        # gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
-                        # gold_ans_text = normalize_answer(gold_ans_text)
 
                         gold_ans_text = list(range(gold_start_index,gold_end_index+1))
                         gold_ans.append(gold_ans_text)
@@ -560,10 +540,6 @@ def create_main_task(global_model_type):
                                 end_logit=prelim_predictions[_id].end_logit))
 
                     batch_nbest_list.append(nbest)
-
-                # print('batch_nbest_list:',batch_nbest_list)
-                # print('batch_gold_ans_list:',batch_gold_ans_list)
-
                 return batch_nbest_list, batch_gold_ans_list, sample_cnt
 
             else:
@@ -618,29 +594,25 @@ def create_main_task(global_model_type):
                     # test_logit -> standard output for each task
                     if self.args.model_architect=='CLS': #task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
                         global_output = self.forward(**data_inputs)
-                        test_logit = global_output.logits
-                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(global_output, gt_one_hot_label, parties_data)
                         predict_label_list.extend(batch_predict_label)
                         actual_label_list.extend(batch_actual_label)
                         if sample_cnt is not None:
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='TQA': #task_type == "QuestionAnswering":
                         global_output = self.forward(**data_inputs)
-                        test_logit = global_output
-                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
+                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label, parties_data)
                         nbest_list.extend(batch_nbest)
                         gold_ans_list.extend(batch_gold_ans)
                         if sample_cnt is not None:
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='CLM': #task_type == "CausalLM":
-                        # test_logit = global_output.logits
-                        # batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
-                        generation_output = self.generate(**data_inputs, \
-                        generation_config = self.generation_config,max_new_tokens=5)
+                        print('data_inputs[input_ids]:',data_inputs['input_ids'].shape)
+                        generation_output = self.generate(**data_inputs, generation_config = self.generation_config,\
+                                max_new_tokens=1)
+                        self._clear_past_key_values()
 
                         batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label, parties_data)
-
-
                         target_word_list.extend(batch_target_word)
                         predict_word_list.extend(batch_predict_word)
                         if sample_cnt is not None:
@@ -650,50 +622,91 @@ def create_main_task(global_model_type):
 
                     del parties_data
 
-            if self.args.task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
+            if self.args.model_architect=='CLS':  # and self.args.num_classes > 1: # classification
                 return predict_label_list, actual_label_list, total_sample_cnt
-            elif self.args.task_type == "QuestionAnswering":
-                # return exact_score_list, f1_list, total_sample_cnt
+            elif self.args.model_architect=='TQA':
                 return nbest_list, gold_ans_list, total_sample_cnt
-            elif self.args.task_type == "CausalLM":
-                print('target_word_list:',len(target_word_list),target_word_list[:5])
-                print('predict_word_list:',predict_word_list[:5])
-                print('total_sample_cnt:',total_sample_cnt)
-                return target_word_list, predict_word_list, total_sample_cnt
+            elif self.args.model_architect=='CLM':
+                return predict_word_list, target_word_list, total_sample_cnt
             else:
                 assert 1 > 2, 'Task type not supported'
 
-        def seq_inference(self):
-            # SequenceClassification / Regression
-            postfix = {'test_acc': 0.0}
+        def generate_assessment(self, predict_list, label_list):
+            if self.args.model_architect == 'TQA':
+                nbest_list = predict_list
+                gold_ans_list = label_list
 
-            predict_labels, actual_labels, total_sample_cnt = self.predict()
+                best_non_null_entry = None
+                exact_score_list = []
+                f1_list = []
+                for nbest, gold_ans in zip(nbest_list, gold_ans_list): # iterate through each sample
+                    exact_score = 0
+                    f1 = 0
+                    best_non_null_entry = None
+                    if self.args.metric_type == "best_pred":
+                        for entry in nbest:
+                            # total_scores.append(entry.start_logit + entry.end_logit)
+                            if not best_non_null_entry:
+                                if entry.text:
+                                    best_non_null_entry = entry
+                        pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
+                        exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
+                        f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
+                        exact_score_list.append(exact_score)
+                        f1_list.append(f1)
+                    elif self.args.metric_type == "n_best":
+                        for entry in nbest:
+                            total_scores.append(entry.start_logit + entry.end_logit)
+                            if not best_non_null_entry:
+                                if entry.text:
+                                    best_non_null_entry = entry
+                            pred_ans_text = entry.text
+                            exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
+                            f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
+                        exact_score_list.append(exact_score)
+                        f1_list.append(f1)
+                    else:
+                        assert 1 > 2, f"{self.args.metric_type} not provided!"
 
-            # prediction result assessment
-            if self.num_classes == 1:
-                self.test_mse = torch.mean(
-                    (torch.tensor(predict_labels) - torch.tensor(actual_labels)) ** 2).item()
-                self.test_pearson_corr = stats.pearsonr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
-                self.test_spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
-                postfix['test_mse'] = '{:.4f}%'.format(self.test_mse * 100)
-                postfix['test_pearson_corr'] = '{:.4f}%'.format(self.test_pearson_corr * 100)
-                exp_result = '|test_mse={:.4f}|test_pearson_corr={:.4f}|test_spearmanr_corr={:.4f}' \
-                    .format(self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr)
-                print(exp_result)
-                return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
-            else:
-                # print('predict_labels:',predict_labels[:10])
-                # print('actual_labels:',actual_labels[:10])
+                exact_score = np.mean(exact_score_list)
+                f1 = np.mean(f1_list)
+                return {'exact_score':exact_score, 'f1':f1}
 
-                suc_cnt = torch.sum(torch.tensor(predict_labels) == \
-                                    torch.tensor(actual_labels)).item()
-                self.test_acc = suc_cnt / float(total_sample_cnt)  # ACC
-                self.test_mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
-                postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-                postfix['test_mcc'] = '{:.2f}%'.format(self.test_mcc * 100)
-                exp_result = '|test_acc={:.2f}|test_mcc={:.2f}'.format(self.test_acc, self.test_mcc)
-                print(exp_result)
-                return exp_result, self.test_acc
+            elif self.args.model_architect == 'CLM':
+                predict_word_list = predict_list
+                target_word_list = label_list
+                if self.args.metric_type == "best_pred":
+                    suc_cnt = 0
+                    for i in range(len(target_word_list)):
+                        if target_word_list[i] == predict_word_list[i]:
+                            suc_cnt += 1
+                    acc = suc_cnt / float(len(target_word_list))
+                elif self.args.metric_type == "n_best":
+                    suc_cnt = 0
+                    for i in range(len(target_word_list)):
+                        if target_word_list[i] in predict_word_list[i]:
+                            suc_cnt += 1
+                    acc = suc_cnt / float(len(target_word_list))  # ACC
+                else:
+                    assert 1 > 2, 'metric type not supported'
+                return {'acc':acc}
+
+            elif self.args.model_architect == 'CLS':
+                predict_labels = predict_list
+                actual_labels = label_list
+                if self.num_classes == 1:
+                    mse = torch.mean(
+                        (torch.tensor(predict_labels) - torch.tensor(actual_labels)) ** 2).item()
+                    pearson_corr = stats.pearsonr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
+                    spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
+                    return {'mse':mse, 'pearson_corr':pearson_corr, 'spearmanr_corr':spearmanr_corr}
+                else:
+                    suc_cnt = torch.sum(torch.tensor(predict_labels) == \
+                                        torch.tensor(actual_labels)).item()
+                    acc = suc_cnt / torch.tensor(predict_labels).shape[0]  # ACC
+                    mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
+
+                    return {'acc':acc, 'mcc':mcc}
 
         def _llm_inference(self, **kwargs):
             if self.k > 2:
@@ -741,102 +754,73 @@ def create_main_task(global_model_type):
                     base_dict.update({k: kwargs.get(k)})
             return base_dict
 
-        def causal_lm_inference(self):
-            postfix = {'test_acc': 0.0}
+        def seq_inference(self):
+            # SequenceClassification / Regression
+            predict_labels, actual_labels, total_sample_cnt = self.predict()
 
-            target_word_list, predict_word_list, total_sample_cnt = self.predict()
-            # target_label_list, predict_label_list, None
+            # prediction result assessment
+            result_dict = self.generate_assessment(predict_labels, actual_labels)
+            if self.num_classes == 1:
+                self.test_mse = result_dict['mse']
+                self.test_pearson_corr = result_dict['pearson_corr']
+                self.test_spearmanr_corr = result_dict['spearmanr_corr']
+
+                exp_result = f'|test_mse={self.test_mse}|test_pearson_corr={self.test_pearson_corr}|test_spearmanr_corr={self.test_spearmanr_corr}'
+                print(exp_result)
+                return exp_result, [self.test_mse, self.test_pearson_corr, self.test_spearmanr_corr]
+            else:
+                self.test_acc = result_dict['acc']
+                self.test_mcc = result_dict['mcc']
+                exp_result = f'|test_acc={self.test_acc}|test_mcc={self.test_mcc}'
+                print(exp_result)
+                return exp_result, self.test_acc
+
+        def causal_lm_inference(self):
+            print('=== causal_lm_inference ===')
+            predict_word_list, target_word_list, total_sample_cnt = self.predict()
 
             print('target_word_list:\n', target_word_list[:5])
             print('predict_word_list:\n', predict_word_list[:5])
             print('total_sample_cnt:',total_sample_cnt)
 
-            # prediction result assessment
-            if self.args.metric_type == "best_pred":
-                suc_cnt = 0
-                for i in range(len(target_word_list)):
-                    if target_word_list[i] == predict_word_list[i]:
-                        suc_cnt += 1
-                self.test_acc = suc_cnt / float(len(target_word_list))
-            elif self.args.metric_type == "n_best":
-                suc_cnt = 0
-                for i in range(len(target_word_list)):
-                    if target_word_list[i] in predict_word_list[i]:
-                        suc_cnt += 1
-                self.test_acc = suc_cnt / float(len(target_word_list))  # ACC
-            else:
-                assert 1 > 2, 'metric type not supported'
-
-            postfix['test_acc'] = '{:.2f}%'.format(self.test_acc * 100)
-
-            exp_result = '|test_acc={:.2f}'.format(self.test_acc)
+            result_dict = self.generate_assessment(predict_word_list, target_word_list)
+            self.test_acc = result_dict['acc']
+            exp_result = f'|test_acc={self.test_acc}'
             print(exp_result)
 
             return exp_result, self.test_acc
 
         def qa_inference(self):
-            # QA
+            # generate all model prediction
             start_time = time.time()
             nbest_list, gold_ans_list, total_sample_cnt = self.predict()
             end_time = time.time()
             print('predict:',end_time-start_time)
 
             start_time = time.time()
-            # prediction result assessment
-            # total_scores = []
-            best_non_null_entry = None
-            exact_score_list = []
-            f1_list = []
-            for nbest, gold_ans in zip(nbest_list, gold_ans_list): # iterate through each sample
-                exact_score = 0
-                f1 = 0
-                best_non_null_entry = None
-                if self.args.metric_type == "best_pred":
-                    for entry in nbest:
-                        # total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                    pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                    exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                    f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                elif self.args.metric_type == "n_best":
-                    for entry in nbest:
-                        total_scores.append(entry.start_logit + entry.end_logit)
-                        if not best_non_null_entry:
-                            if entry.text:
-                                best_non_null_entry = entry
-                        pred_ans_text = entry.text
-                        exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                        f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                    exact_score_list.append(exact_score)
-                    f1_list.append(f1)
-                else:
-                    assert 1 > 2, f"{self.args.metric_type} not provided!"
 
-            end_time = time.time()
-            print('assess:',end_time-start_time)
+            result_dict = self.generate_assessment(nbest_list, gold_ans_list)
+            exp_result = '|exact_score={:.4f}|f1={:.4f}'.format(result_dict['exact_score'], result_dict['f1'])
 
-            exact_score = np.mean(exact_score_list)
-            f1 = np.mean(f1_list)
-            exp_result = '|exact_score={:.4f}|f1={:.4f}'.format(exact_score, f1)
-
-            self.test_acc = exact_score
+            self.test_acc = result_dict['exact_score']
             print(exp_result)
             return exp_result, self.test_acc
 
         def forward(self, **kwargs):
             self.parties[0].obtain_local_data(kwargs)
-
             # passive party do local pred
             pred_list = self.pred_transmit(use_cache=True)
-
             # passive party inform active party to do global pred
-            self.global_pred_transmit(pred_list, use_cache=True)
-            final_output = self.parties[1].global_output
-            return final_output
+            final_output = self.global_pred_transmit(pred_list, use_cache=True)
+
+            global_output = self.parties[1].global_output
+            return global_output # dict
+
+        def backward(self,final_pred):
+            # passive party -> global gradient -> active party
+            self.global_gradient_transmit(final_pred, count_time = 'train')
+            # active party -> local gradient -> passive party
+            self.local_gradient_transmit(count_time = 'train')
 
         def inference(self, **kwargs):
             # set inference time back to 0
@@ -866,7 +850,7 @@ def create_main_task(global_model_type):
                 return exp_result, main_task_result
 
             if self.args.model_architect=='CLM':#task_type == "CausalLM":
-                # exp_result, self.test_acc =
+                print('=== inference ===')
                 exp_result, main_task_result = self.causal_lm_inference()
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
@@ -880,41 +864,46 @@ def create_main_task(global_model_type):
                 return result
 
         def train_batch(self, parties_data, batch_label):
-            '''
-            batch_label: self.gt_one_hot_label   may be noisy
-                QA: bs * [start_position, end_position]
-            '''
             ############### allocate data ###############
             gt_one_hot_label = batch_label
             self.gt_one_hot_label = gt_one_hot_label
             for ik in range(self.k - 1):
                 # # allocate data (data/label/attention_mask/token_type_ids)
-                # input_shape = parties_data[ik][0].shape[:2]  # parties_data[ik][0].size()
-                # # self.parties[ik].input_shape = input_shape
-                # self.parties[ik].obtain_local_data(
-                #     {'input_ids':parties_data[ik][0],
-                #     'attention_mask':parties_data[ik][2],
-                #     'token_type_ids': parties_data[ik][3]})
-                # self.parties[ik].gt_one_hot_label = gt_one_hot_label
-
                 data_inputs = {}
                 for key_name in parties_data[ik][0][0].keys():
-                    data_inputs[key_name] = torch.stack( [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))] )
+                    if isinstance(parties_data[ik][0][0][key_name], torch.Tensor):
+                        data_inputs[key_name] = torch.stack( [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))] )
+                    else:
+                        data_inputs[key_name] =  [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))]
                 self.parties[ik].obtain_local_data(data_inputs)
                 self.parties[ik].gt_one_hot_label = gt_one_hot_label
 
             ################ normal vertical federated learning ################
             # torch.autograd.set_detect_anomaly(True)
             # =================== Commu ===================
-            # Passive Party -> pred_list[local pred]
-            pred_list = self.pred_transmit(count_time = 'train')
-            # pred_list[local pred] -> Active Party -> test_logit[final pred]
-            final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
+
+            # # Passive Party -> pred_list[local pred]
+            # pred_list = self.pred_transmit(count_time = 'train')
+            # # pred_list[local pred] -> Active Party -> test_logit[final pred]
+            # final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
+
+            final_pred = self.forward(**data_inputs)
+            self._clear_past_key_values()
+
+            # generation_output = self.generate(**data_inputs, \
+            #     generation_config = self.generation_config,max_new_tokens=1)
+            # self._clear_past_key_values()
+            # print('generation_output:',type(generation_output),generation_output.shape)
 
             # passive party -> global gradient -> active party
-            loss = self.global_gradient_transmit(final_pred, count_time = 'train')
-            # active party -> local gradient -> passive party
-            self.local_gradient_transmit(count_time = 'train')
+            # print('enter global_gradient_transmit')
+            # self.global_gradient_transmit(final_pred, count_time = 'train')
+            # # active party -> local gradient -> passive party
+            # self.local_gradient_transmit(count_time = 'train')
+            self.backward(final_pred)
+            # loss = self.global_gradient_transmit(final_pred, count_time = 'train')
+            # # active party -> local gradient -> passive party
+            # self.local_gradient_transmit(count_time = 'train')
 
             # ============= Model Update =============
             start_time = time.time()
@@ -934,228 +923,227 @@ def create_main_task(global_model_type):
             if self.args.task_type == 'QuestionAnswering':
                 pred = final_pred
 
-                start_logits = pred.start_logits
-                end_logits = pred.end_logits
+                batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(pred, gt_one_hot_label, parties_data)
 
-                n_best_size = self.args.n_best_size
-                start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
-                end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
+                result_dict = self.generate_assessment(batch_nbest, batch_gold_ans)
 
-                exact_score_list = []
-                f1_list = []
-                # for each sample in this batch
-                for i in range(start_logits.shape[0]):
-                    _start_logits = start_logits[i]
-                    _end_logits = end_logits[i]
-                    _start_indexes = start_indexes[i]
-                    _end_indexes = end_indexes[i]
+                # start_logits = pred.start_logits
+                # end_logits = pred.end_logits
 
-                    ############ Gold ################
-                    feature = parties_data[0][4][i]
-                    feature_tokens = [_token[0] for _token in feature["tokens"]]
+                # n_best_size = self.args.n_best_size
+                # start_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in start_logits]
+                # end_indexes = [_get_best_indexes(_logits, n_best_size) for _logits in end_logits]
 
-                    gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
-                    if len(gold_start_indexs.shape) == 0:
-                        gold_start_indexs = gold_start_indexs.unsqueeze(0)
-                    if len(gold_end_indexs.shape) == 0:
-                        gold_end_indexs = gold_end_indexs.unsqueeze(0)
-                    gold_ans = []  # gold answers for this sample
-                    for _i in range(len(gold_start_indexs)):
-                        gold_start_index = int(gold_start_indexs[_i])
-                        gold_end_index = int(gold_end_indexs[_i])
-                        gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
-                        gold_ans_text = normalize_answer(gold_ans_text)
-                        gold_ans.append(gold_ans_text)
-                    # print('gold_ans:',gold_ans,feature["orig_answer_text"])
+                # exact_score_list = []
+                # f1_list = []
+                # # for each sample in this batch
+                # for i in range(start_logits.shape[0]):
+                #     _start_logits = start_logits[i]
+                #     _end_logits = end_logits[i]
+                #     _start_indexes = start_indexes[i]
+                #     _end_indexes = end_indexes[i]
 
-                    ############ Pred ################
-                    _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                        "PrelimPrediction",
-                        ["start_index", "end_index", "start_logit", "end_logit"])
-                    _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
-                        "NbestPrediction", ["text", "start_logit", "end_logit"])
+                #     ############ Gold ################
+                #     feature = parties_data[0][4][i]
+                #     feature_tokens = [_token[0] for _token in feature["tokens"]]
 
-                    # iterate through all possible start-end pairs
-                    prelim_predictions = []
-                    for start_index in _start_indexes:
-                        for end_index in _end_indexes:
-                            # We could hypothetically create invalid predictions, e.g., predict
-                            # that the start of the span is in the question. We throw out all
-                            # invalid predictions.
-                            if start_index >= len(feature["tokens"]):
-                                continue
-                            if end_index >= len(feature["tokens"]):
-                                continue
-                            if start_index not in feature["token_to_orig_map"]:
-                                continue
-                            if end_index not in feature["token_to_orig_map"]:
-                                continue
-                            if not feature["token_is_max_context"].get(start_index, False):
-                                continue
-                            if end_index < start_index:
-                                continue
-                            length = end_index - start_index + 1
-                            if length > self.args.max_answer_length:
-                                continue
+                #     gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
+                #     if len(gold_start_indexs.shape) == 0:
+                #         gold_start_indexs = gold_start_indexs.unsqueeze(0)
+                #     if len(gold_end_indexs.shape) == 0:
+                #         gold_end_indexs = gold_end_indexs.unsqueeze(0)
+                #     gold_ans = []  # gold answers for this sample
+                #     for _i in range(len(gold_start_indexs)):
+                #         gold_start_index = int(gold_start_indexs[_i])
+                #         gold_end_index = int(gold_end_indexs[_i])
+                #         gold_ans_text = " ".join(feature_tokens[gold_start_index:(gold_end_index + 1)])
+                #         gold_ans_text = normalize_answer(gold_ans_text)
+                #         gold_ans.append(gold_ans_text)
+                #     # print('gold_ans:',gold_ans,feature["orig_answer_text"])
 
-                            prelim_predictions.append(
-                                _PrelimPrediction(
-                                    start_index=start_index,
-                                    end_index=end_index,
-                                    start_logit=_start_logits[start_index],
-                                    end_logit=_end_logits[end_index]))
+                #     ############ Pred ################
+                #     _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
+                #         "PrelimPrediction",
+                #         ["start_index", "end_index", "start_logit", "end_logit"])
+                #     _NbestPrediction = collections.namedtuple(  # pylint: disable=invalid-name
+                #         "NbestPrediction", ["text", "start_logit", "end_logit"])
 
-                    # Iterate through Sorted Predictions
-                    prelim_predictions = sorted(
-                        prelim_predictions,
-                        key=lambda x: (x.start_logit + x.end_logit),
-                        reverse=True)
-                    exact_score = 0
-                    f1 = 0
-                    # Get n best prediction text
-                    nbest = []
-                    n_best_size = min(n_best_size, len(prelim_predictions))
-                    for _id in range(n_best_size):
-                        start_index = prelim_predictions[_id].start_index
-                        end_index = prelim_predictions[_id].end_index
+                #     # iterate through all possible start-end pairs
+                #     prelim_predictions = []
+                #     for start_index in _start_indexes:
+                #         for end_index in _end_indexes:
+                #             # We could hypothetically create invalid predictions, e.g., predict
+                #             # that the start of the span is in the question. We throw out all
+                #             # invalid predictions.
+                #             if start_index >= len(feature["tokens"]):
+                #                 continue
+                #             if end_index >= len(feature["tokens"]):
+                #                 continue
+                #             if start_index not in feature["token_to_orig_map"]:
+                #                 continue
+                #             if end_index not in feature["token_to_orig_map"]:
+                #                 continue
+                #             if not feature["token_is_max_context"].get(start_index, False):
+                #                 continue
+                #             if end_index < start_index:
+                #                 continue
+                #             length = end_index - start_index + 1
+                #             if length > self.args.max_answer_length:
+                #                 continue
 
-                        pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
-                        pred_ans_text = normalize_answer(pred_ans_text)
+                #             prelim_predictions.append(
+                #                 _PrelimPrediction(
+                #                     start_index=start_index,
+                #                     end_index=end_index,
+                #                     start_logit=_start_logits[start_index],
+                #                     end_logit=_end_logits[end_index]))
 
-                        nbest.append(
-                            _NbestPrediction(
-                                text=pred_ans_text,
-                                start_logit=prelim_predictions[_id].start_logit,
-                                end_logit=prelim_predictions[_id].end_logit))
+                #     # Iterate through Sorted Predictions
+                #     prelim_predictions = sorted(
+                #         prelim_predictions,
+                #         key=lambda x: (x.start_logit + x.end_logit),
+                #         reverse=True)
+                #     exact_score = 0
+                #     f1 = 0
+                #     # Get n best prediction text
+                #     nbest = []
+                #     n_best_size = min(n_best_size, len(prelim_predictions))
+                #     for _id in range(n_best_size):
+                #         start_index = prelim_predictions[_id].start_index
+                #         end_index = prelim_predictions[_id].end_index
 
-                    # Get best predicted answer
-                    total_scores = []
-                    best_non_null_entry = None
+                #         pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
+                #         pred_ans_text = normalize_answer(pred_ans_text)
 
-                    if self.args.metric_type == "best_pred":
-                        for entry in nbest:
-                            total_scores.append(entry.start_logit + entry.end_logit)
-                            if not best_non_null_entry:
-                                if entry.text:
-                                    best_non_null_entry = entry
-                        pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
-                        # Calculate exact_score/f1 for best pred
-                        # print('best pred:',pred_ans_text)
-                        exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
-                        f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
-                        # print('this batch:',exact_score,f1)
-                        exact_score_list.append(exact_score)
-                        f1_list.append(f1)
-                    elif self.args.metric_type == "n_best":
-                        for entry in nbest:
-                            total_scores.append(entry.start_logit + entry.end_logit)
-                            if not best_non_null_entry:
-                                if entry.text:
-                                    best_non_null_entry = entry
-                            pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
-                            # Calculate best exact_score/f1 among n best preds
-                            exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
-                            f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
-                        # print('this batch:',exact_score,f1)
-                        exact_score_list.append(exact_score)
-                        f1_list.append(f1)
-                    else:
-                        assert 1 > 2, f"{self.args.metric_type} not provided!"
+                #         nbest.append(
+                #             _NbestPrediction(
+                #                 text=pred_ans_text,
+                #                 start_logit=prelim_predictions[_id].start_logit,
+                #                 end_logit=prelim_predictions[_id].end_logit))
 
-                exact_score = np.mean(exact_score_list)
-                f1 = np.mean(f1_list)
+                #     # Get best predicted answer
+                #     total_scores = []
+                #     best_non_null_entry = None
 
+                #     if self.args.metric_type == "best_pred":
+                #         for entry in nbest:
+                #             total_scores.append(entry.start_logit + entry.end_logit)
+                #             if not best_non_null_entry:
+                #                 if entry.text:
+                #                     best_non_null_entry = entry
+                #         pred_ans_text = best_non_null_entry.text if (best_non_null_entry != None) else ""
+                #         # Calculate exact_score/f1 for best pred
+                #         # print('best pred:',pred_ans_text)
+                #         exact_score = max(compute_exact(a, pred_ans_text) for a in gold_ans)
+                #         f1 = max(compute_f1(a, pred_ans_text) for a in gold_ans)
+                #         # print('this batch:',exact_score,f1)
+                #         exact_score_list.append(exact_score)
+                #         f1_list.append(f1)
+                #     elif self.args.metric_type == "n_best":
+                #         for entry in nbest:
+                #             total_scores.append(entry.start_logit + entry.end_logit)
+                #             if not best_non_null_entry:
+                #                 if entry.text:
+                #                     best_non_null_entry = entry
+                #             pred_ans_text = entry.text  # print('best pred:',pred_ans_text)
+                #             # Calculate best exact_score/f1 among n best preds
+                #             exact_score = max(exact_score, max(compute_exact(a, pred_ans_text) for a in gold_ans))
+                #             f1 = max(f1, max(compute_f1(a, pred_ans_text) for a in gold_ans))
+                #         # print('this batch:',exact_score,f1)
+                #         exact_score_list.append(exact_score)
+                #         f1_list.append(f1)
+                #     else:
+                #         assert 1 > 2, f"{self.args.metric_type} not provided!"
+
+                # exact_score = np.mean(exact_score_list)
+                # f1 = np.mean(f1_list)
+                exact_score = result_dict['exact_score']
                 return loss.item(), exact_score
 
             elif self.args.task_type == 'SequenceClassification':
+
                 if self.args.num_classes == 1:
-                    real_batch_label = batch_label.cpu().detach()
-                    pred = final_pred.cpu().detach().squeeze()
-                    # print('real_batch_label:',real_batch_label[:5])
-                    # print('pred:',pred[:5])
-
-                    batch_mse = torch.mean((torch.tensor(pred) - torch.tensor(real_batch_label)) ** 2).item()
-                    batch_pearson_corr = stats.pearsonr(torch.tensor(pred), torch.tensor(real_batch_label))[0]
-                    batch_test_spearmanr_corr = stats.spearmanr(torch.tensor(pred), torch.tensor(real_batch_label))[0]
-
-                    # predict_prob = F.softmax(pred, dim=-1)
-
-                    # suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
-                    # batch_train_acc = suc_cnt / predict_prob.shape[0]
-
+                    pred = self.parties[self.k - 1].global_output
                     loss = self.parties[0].global_loss
 
-                    return loss.item(), [batch_mse, batch_pearson_corr, batch_test_spearmanr_corr]
+                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label, parties_data)
+                    result_dict = self.generate_assessment(batch_predict_label, batch_actual_label)
+
+                    batch_mse = result_dict['mse']
+                    batch_pearson_corr = result_dict['pearson_cor']
+                    batch_spearmanr_corr = result_dict['spearmanr_corr']
+
+                    return loss.item(), [batch_mse, batch_pearson_corr, batch_spearmanr_corr]
                 else:
-                    real_batch_label = batch_label
-
-                    pred = final_pred
-                    predict_prob = F.softmax(pred, dim=-1)
-
-                    suc_cnt = torch.sum(torch.argmax(predict_prob, dim=-1) == torch.argmax(real_batch_label, dim=-1)).item()
-                    batch_train_acc = suc_cnt / predict_prob.shape[0]
-
+                    pred = self.parties[self.k - 1].global_output
                     loss = self.parties[0].global_loss
 
+                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label, parties_data)
+                    result_dict = self.generate_assessment(batch_predict_label, batch_actual_label)
+
+                    batch_train_acc = result_dict['acc']
                     return loss.item(), batch_train_acc
 
             elif self.args.task_type == 'CausalLM':
                 pred = final_pred
                 loss = self.parties[0].global_loss
-                test_logit = pred
-                next_token_logits = test_logit[:,-1]  # [bs, 32000] # print('next_token_logits:',next_token_logits.shape,next_token_logits)
-
-                if self.args.dataset == "Lambada":
-                    # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
-                    target_label_list = [int(_p) for _p in gt_one_hot_label]
-
-                    # predict_word_list : bs * predicted words
-                    enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-                    if self.args.metric_type == "best_pred":
-                        predict_label_list = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    elif self.args.metric_type == "n_best":
-                        logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                        # print('index_list:',index_list.shape)
-                        predict_label_list = index_list[:, :self.args.n_best_size]
-
-                    if self.args.metric_type == "best_pred":
-                        suc_cnt = 0
-                        for i in range(len(target_label_list)):
-                            if target_label_list[i] == predict_label_list[i]:
-                                suc_cnt += 1
-                        batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
-                    elif self.args.metric_type == "n_best":
-                        suc_cnt = 0
-                        for i in range(len(target_label_list)):
-                            if target_label_list[i] in predict_label_list[i]:
-                                suc_cnt += 1
-                        batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
-                    else:
-                        assert 1 > 2, 'metric type not supported'
 
 
-                else:  # MMLU
-                    choice_id_list = []
-                    for choice in self.args.label_dict.keys():
-                        choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
-                        _id = self.args.tokenizer(choice).input_ids[-1]
-                    enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
-                    enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
+                batch_target_word, batch_predict_word, sample_cnt = self.generate_result(pred, gt_one_hot_label, parties_data)
 
-                    predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                    actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
+                result_dict = self.generate_assessment(batch_predict_word, batch_target_word)
+                batch_train_acc = result_dict['acc']
 
-                    # test_predict_labels = predict_label.detach().cpu().tolist()
-                    # test_actual_labels = actual_label.detach().cpu().tolist()
-                    # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
+                # if self.args.dataset == "Lambada":
+                #     # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
+                #     target_label_list = [int(_p) for _p in gt_one_hot_label]
 
-                    sample_cnt += predict_label.shape[0]
-                    suc_cnt += torch.sum(predict_label == actual_label).item()
+                #     # predict_word_list : bs * predicted words
+                #     enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
+                #     if self.args.metric_type == "best_pred":
+                #         predict_label_list = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
+                #     elif self.args.metric_type == "n_best":
+                #         logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
+                #         # print('index_list:',index_list.shape)
+                #         predict_label_list = index_list[:, :self.args.n_best_size]
+
+                #     if self.args.metric_type == "best_pred":
+                #         suc_cnt = 0
+                #         for i in range(len(target_label_list)):
+                #             if target_label_list[i] == predict_label_list[i]:
+                #                 suc_cnt += 1
+                #         batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
+                #     elif self.args.metric_type == "n_best":
+                #         suc_cnt = 0
+                #         for i in range(len(target_label_list)):
+                #             if target_label_list[i] in predict_label_list[i]:
+                #                 suc_cnt += 1
+                #         batch_train_acc = suc_cnt / float(len(target_label_list))  # ACC
+                #     else:
+                #         assert 1 > 2, 'metric type not supported'
+
+
+                # else:  # MMLU
+                #     choice_id_list = []
+                #     for choice in self.args.label_dict.keys():
+                #         choice_id_list.append(self.args.tokenizer(choice).input_ids[-1])
+                #         _id = self.args.tokenizer(choice).input_ids[-1]
+                #     enc = next_token_logits[:, choice_id_list]  # [bs, num_choice]
+                #     enc_predict_prob = nn.functional.softmax(enc, dim=-1)  # [bs, num_choice]
+
+                #     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
+                #     actual_label = gt_one_hot_label  # torch.argmax(gt_one_hot_label, dim=-1)
+
+                #     # test_predict_labels = predict_label.detach().cpu().tolist()
+                #     # test_actual_labels = actual_label.detach().cpu().tolist()
+                #     # test_full_predict_labels.extend( list(full_predict_label.detach().cpu()) )
+
+                #     sample_cnt += predict_label.shape[0]
+                #     suc_cnt += torch.sum(predict_label == actual_label).item()
 
                 return loss.item(), batch_train_acc
 
         def train(self):
-
             print_every = 1
 
             for ik in range(self.k):
@@ -1182,70 +1170,12 @@ def create_main_task(global_model_type):
                 self.current_epoch = i_epoch
                 postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
                 i = -1
-                # for ik in range(self.k - 1):
-                #     self.loss, self.train_acc = self.parties[ik].train(i_epoch)
                 print_every = 1
                 total_time = 0
 
                 data_loader_list = [self.parties[ik].train_loader for ik in range(self.k - 1)]
                 for parties_data in zip(*data_loader_list):
                     ############ Allocate Data #################
-                    # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
-                    # _parties_data = []
-                    # for party_id in range(len(parties_data)):  # iter through each passive party
-                    #     batch_input_ids = []
-                    #     batch_label = []
-                    #     batch_attention_mask = []
-                    #     batch_token_type_ids = []
-                    #     batch_feature = []
-                    #     for bs_id in range(len(parties_data[party_id])):
-                    #         # Input_ids
-                    #         batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
-                    #         # Attention Mask
-                    #         batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
-
-                    #         # ptoken_type_ids
-                    #         if parties_data[party_id][bs_id][3] == []:
-                    #             batch_token_type_ids = None
-                    #         else:
-                    #             batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
-
-                    #         # feature (for QuestionAnswering only)
-                    #         if parties_data[party_id][bs_id][4] == []:
-                    #             batch_feature = None
-                    #         else:
-                    #             batch_feature.append(parties_data[party_id][bs_id][4])
-
-                    #         # Label
-                    #         if type(parties_data[party_id][bs_id][1]) != str:
-                    #             batch_label.append(parties_data[party_id][bs_id][1].tolist())
-                    #         else:
-                    #             batch_label.append(parties_data[party_id][bs_id][1])
-
-                    #     batch_input_ids = torch.tensor(batch_input_ids).to(self.current_device)
-                    #     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.current_device)
-                    #     if batch_token_type_ids != None:
-                    #         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.current_device)
-
-                    #     if type(batch_label[0]) != str:
-                    #         if self.args.task_type == 'QuestionAnswering':
-                    #             # origin_batch_label_shape [bs, 2, num_of_answers]
-                    #             # 2*bs, num_of_answers
-                    #             # print('batch_label:',batch_label)
-                    #             if type(batch_label[0][0]) == list:
-                    #                 batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
-                    #                                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.current_device)
-                    #                 origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
-                    #                 batch_label = batch_label.reshape(origin_batch_label_shape)
-                    #             else:
-                    #                 batch_label = torch.tensor(batch_label).to(self.current_device)
-                    #         else:
-                    #             batch_label = torch.tensor(batch_label).to(self.current_device)
-
-                    #     _parties_data.append(
-                    #         [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
-                    # parties_data = _parties_data
-
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
                         batch_input_dicts = []
@@ -1264,9 +1194,8 @@ def create_main_task(global_model_type):
                     if self.args.task_type == "SequenceClassification" and self.num_classes > 1:  # classification
                         gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                     else:
-                        gt_one_hot_label = parties_data[0][1]
+                        gt_one_hot_label = torch.tensor(parties_data[0][1]).to(self.current_device)
                     self.gt_one_hot_label = gt_one_hot_label
-
                     i += 1
 
                     # passive party call active party global model to a training mode
@@ -1377,7 +1306,7 @@ def create_main_task(global_model_type):
                     # "local_model_gradient": [copy.deepcopy(self.parties[ik].weights_grad_a) for ik in range(self.k)],
                     "train_acc": copy.deepcopy(self.train_acc),
                     "loss": copy.deepcopy(self.loss),
-                    # "global_pred": self.parties[self.k - 1].global_pred,
+                    # "global_pred": self.parties[self.k - 1].global_output,
                     "final_model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
                     # "final_global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
                 }
@@ -1526,6 +1455,11 @@ def create_main_task(global_model_type):
 
         def __call__(self, **kwargs):
             return self.forward(**kwargs)
+
+        def _clear_past_key_values(self):
+            for i in range(self.k-1):
+                self.parties[i].local_model._clear_past_key_values()
+            self.parties[-1].global_model._clear_past_key_values()
 
         def _init_e2e_model(self):
             model_config = None

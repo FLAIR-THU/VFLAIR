@@ -255,6 +255,9 @@ class GPT2LMHeadModel_pretrained(GPT2LMHeadModel):
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def _clear_past_key_values(self):
+        self.transformer.past_key_values = None
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -344,6 +347,9 @@ class GPT2forGeneration_pretrained(GPT2LMHeadModel):
 
         # Initialize weights and apply final processing
         # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.transformer.past_key_values = None
 
     def forward(
         self,
@@ -457,6 +463,9 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         self.post_init()
 
         self.embedding_output = None
+        self.past_key_values = None
+
+    def _clear_past_key_values(self):
         self.past_key_values = None
 
     def forward(
@@ -652,14 +661,6 @@ class LocalGPT2Model(GPT2PreTrainedModel):
 
         return {'inputs_embeds':hidden_states,
                 'attention_mask':attention_mask,
-                # 'local_past_key_values':presents,
-                # 'past_key_values':global_past_key_values,
-
-                # 'sequence_lengths':sequence_lengths,
-                # 'use_cache': use_cache,
-                # 'output_attentions':output_attentions,
-                # 'output_hidden_states': output_attentions,
-                # 'return_dict': return_dict,
                 }
     
 class GlobalGPT2Model(GPT2PreTrainedModel):

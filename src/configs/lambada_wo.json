@@ -1,11 +1,12 @@
 {
-    "epochs": 20,
+    "epochs": 1,
     "lr": 0.001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 4,
     "test_batch_size": 1,
     "early_stop_threshold": 2,
-    "pipeline": "pretrained",
+    "pipeline": "finetune",
+    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -20,7 +21,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "True",
-        "max_length": 512,
+        "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },

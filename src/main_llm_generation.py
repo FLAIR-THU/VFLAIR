@@ -133,11 +133,18 @@ if __name__ == '__main__':
         ######### define your input text here #########
         # input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
         #  mouth curved in a confident grin i do n't care about"]
-        input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
+        # input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
+        
+        texts = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\nDesign a class for representing a person in Python.\n\n### Response:"""
+        inputs = args.tokenizer( texts, \
+                                        # padding='max_length',  # Pad to max_length
+                                        # truncation='longest_first',  # Truncate to max_length
+                                        # max_length=8,  
+                                        return_tensors='pt').to(args.device)
         ######### define your input text here #########
 
-        inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
-        print('input_ids:',inputs['input_ids'])
+        # inputs = args.tokenizer(input_text, padding='max_length',max_length=70,return_tensors="pt").to(args.device)
+        print('input_ids:',inputs['input_ids'].shape)
         
 
         
@@ -155,7 +162,7 @@ if __name__ == '__main__':
         # greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
         # print('greedy_matching:',type(greedy_matching))
         # print(greedy_matching)
-        greedy_output = full_model.generate(**inputs, max_new_tokens=5)
+        greedy_output = full_model.generate(**inputs, max_new_tokens=200)
         print("full greedy_output:\n")
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
@@ -165,7 +172,7 @@ if __name__ == '__main__':
 
         ######### VFL model ########
         # GenerationModel = GenerationModel.to(args.device)
-        greedy_output = vfl.generate(**inputs, max_new_tokens=2)
+        greedy_output = vfl.generate(**inputs, max_new_tokens=200)
         print("greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 

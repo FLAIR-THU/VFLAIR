@@ -1,62 +1,61 @@
 {
-    "epochs": 50,
-    "lr": 0.0001,
+    "epochs": 1,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
-    "pipeline": "pretrained",
+    "batch_size": 32,
+    "test_batch_size": 1,
     "early_stop_threshold": 2,
-    "model_architect":"CLS",
+    "pipeline": "finetune",
+    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "Lambada",
+        "num_classes": 1,
+        "use_prompt": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 384,
+        "truncation": "True",
+        "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },
-    "dataset":{
-        "dataset_name": "yelp-polarity",
-        "num_classes": 5
-    },
     "model_list":{
         "0": {
-            "type": "Shunianyelp_review_classification",
+            "type": "gpt2",
             "pretrained": 1,
             "encoder_trainable": 0,
             "embedding_trainable": 0,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "output_dim": 1,
+            "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
-            "type": "Shunianyelp_review_classification",
+            "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 0,
             "head_layer_trainable": 1,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "encoder_trainable": 0,
+            "output_dim": 1,
+            "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
-            "task_type": "SequenceClassification"
+            "task_type": "CausalLM",
+            "doc_stride" : 128,
+            "max_seq_length": 512,
+            "metric_type": "best_pred",
+            "n_best_size": 8
         },
-        "local_encoders_num": 2,
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "party": [0],
-            "epsilon": 70
-        }
     },
     "attack_list": {
         "0":{
@@ -65,8 +64,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 1000
+                "batch_size": 1,
+                "attack_sample_num": 5
             }
         },
         "1":{
@@ -76,9 +75,10 @@
                 "T": 0.05,
                 "lr": 0.001,
                 "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 1000
+                "batch_size": 1,
+                "attack_sample_num": 5
             }
         }
     }
+    
 }

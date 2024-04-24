@@ -1,5 +1,5 @@
 # from transformers import T5PreTrainedModel
-from transformers.models.falcon.modeling_falcon import FalconModel, FalconPreTrainedModel
+from transformers.models.falcon.modeling_falcon import * 
 
 from transformers import PreTrainedModel, add_start_docstrings
 from transformers.activations import ACT2FN
@@ -23,7 +23,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 ##### Evaluation with pretrained models ######
-class FalconForCausalLM_pretrained(FalconPreTrainedModel):
+class FalconForCausalLM_pretrained(FalconForCausalLM):
     def __init__(self, global_falcon, lm_head, generation_config=None):
         super().__init__(global_falcon.config)
         self.transformer = global_falcon #FalconModel(config)
@@ -31,7 +31,7 @@ class FalconForCausalLM_pretrained(FalconPreTrainedModel):
         self.generation_config = generation_config
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
     def forward(
         self,
@@ -98,7 +98,7 @@ class FalconForCausalLM_pretrained(FalconPreTrainedModel):
 
 ##################### Functional Global Models ######################
 class LocalFalconModel(FalconPreTrainedModel):
-    def __init__(self, full_falcon , num_encoders, generation_config=True):
+    def __init__(self, full_falcon , num_encoders):
         super().__init__(full_falcon.config)
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_falcon.config.num_hidden_layers
@@ -125,6 +125,9 @@ class LocalFalconModel(FalconPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.past_key_values = None 
+        self.embedding_output = None
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -143,6 +146,7 @@ class LocalFalconModel(FalconPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
+
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if input_ids is not None and inputs_embeds is not None:
@@ -155,10 +159,14 @@ class LocalFalconModel(FalconPreTrainedModel):
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
         if past_key_values is None:
-            past_key_values = tuple([None] * len(self.h))
+            if self.past_key_values == None:
+                past_key_values = tuple([None] * len(self.h))
+            else:
+                past_key_values = self.past_key_values
 
         if inputs_embeds is None:
             inputs_embeds = self.word_embeddings(input_ids)
+        self.embedding_output = inputs_embeds
 
         hidden_states = inputs_embeds
 
@@ -284,6 +292,8 @@ class LocalFalconModel(FalconPreTrainedModel):
             if output_attentions:
                 all_self_attentions = all_self_attentions + (outputs[2 if use_cache else 1],)
 
+        self.past_key_values = presents
+
         return {'inputs_embeds': hidden_states, 'attention_mask': attention_mask}
 
         # # Add last hidden state
@@ -303,7 +313,7 @@ class LocalFalconModel(FalconPreTrainedModel):
         # )
 
 class GlobalFalconModel(FalconPreTrainedModel):
-    def __init__(self, full_falcon , num_encoders, generation_config=True):
+    def __init__(self, full_falcon , num_encoders):
         super().__init__(full_falcon.config)
         self.global_num_encoders = num_encoders
         self.num_encoders_all = full_falcon.config.num_hidden_layers
@@ -319,6 +329,9 @@ class GlobalFalconModel(FalconPreTrainedModel):
         # Transformer blocks
         self.h = nn.ModuleList([full_falcon.h[i] for i in range(self.local_num_encoders,self.num_encoders_all)])
         # nn.ModuleList([FalconDecoderLayer(config) for _ in range(config.num_hidden_layers)])
+        # for layer_idx in range(len(self.h)):
+        #     self.h[layer_idx].attn.layer_idx = self.h[layer_idx].attn.layer_idx  -self.local_num_encoders
+
 
         self._use_flash_attention_2 = full_falcon.config._attn_implementation == "flash_attention_2"
         self._use_sdpa = full_falcon.config._attn_implementation == "sdpa"
@@ -330,6 +343,8 @@ class GlobalFalconModel(FalconPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+        self.past_key_values = None
 
     def forward(
         self,
@@ -350,7 +365,6 @@ class GlobalFalconModel(FalconPreTrainedModel):
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
@@ -360,8 +374,12 @@ class GlobalFalconModel(FalconPreTrainedModel):
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
+        
         if past_key_values is None:
-            past_key_values = tuple([None] * len(self.h))
+            if self.past_key_values == None:
+                past_key_values = tuple([None] * len(self.h))
+            else:
+                past_key_values = self.past_key_values
 
         ### no need
         # if inputs_embeds is None:
@@ -497,6 +515,8 @@ class GlobalFalconModel(FalconPreTrainedModel):
 
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
+
+        self.past_key_values = presents
 
         if not return_dict:
             return tuple(v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None)

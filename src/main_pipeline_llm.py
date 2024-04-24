@@ -164,7 +164,8 @@ if __name__ == '__main__':
         print('=================================\n')
 
         iterinfo='===== iter '+str(seed)+' ===='
-        append_exp_res(args.exp_res_path, iterinfo)
+        # append_exp_res(args.exp_res_path, iterinfo)
+        print(iterinfo)
 
         args.basic_vfl_withaux = None
         args.main_acc_noattack_withaux = None
@@ -229,7 +230,7 @@ if __name__ == '__main__':
         MainTaskVFL_LLM = create_main_task(args.global_model_type)
         
         commuinfo='== metrics:'+args.metric_type
-        append_exp_res(args.exp_res_path, commuinfo)
+        # append_exp_res(args.exp_res_path, commuinfo)
         
         # vanilla
         if args.pipeline == 'pretrained':

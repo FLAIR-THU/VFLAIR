@@ -204,7 +204,7 @@ class PassiveParty_LLM(Party_LLM):
             global_gradients_clone = global_gradients_clone/2
             self.global_gradients = global_gradients_clone
         else:
-            global_gradients = torch.autograd.grad(global_loss, global_pred, retain_graph=True)
+            global_gradients = torch.autograd.grad(global_loss, global_pred.logits, retain_graph=True)
             global_gradients_clone = global_gradients[0].detach().clone()
             self.global_gradients = global_gradients_clone
 
@@ -216,7 +216,7 @@ class PassiveParty_LLM(Party_LLM):
         # ########### Normal Loss ###############
         if self.args.task_type == 'SequenceClassification':
             # loss = self.criterion(pred, gt_one_hot_label)
-            pooled_logits = pred
+            pooled_logits = pred.logits
             labels = gt_one_hot_label
 
             # GPT2
@@ -224,13 +224,6 @@ class PassiveParty_LLM(Party_LLM):
                 self.problem_type = "regression"
             else:
                 self.problem_type = "single_label_classification"
-            # elif self.num_labels > 1 and (labels.dtype == torch.long or labels.dtype == torch.int):
-            #     self.problem_type = "single_label_classification"
-            # else:
-            #     self.problem_type = "multi_label_classification"
-
-            # print('self.problem_type:',self.problem_type)
-            # print('labels:',labels.dtype, labels.shape)
 
             if self.problem_type == "regression":
                 loss_fct = MSELoss()
@@ -246,14 +239,13 @@ class PassiveParty_LLM(Party_LLM):
             #     loss = loss_fct(pooled_logits, labels)
 
         elif self.args.task_type == 'CausalLM':
-            #  GPT2
-            labels = gt_one_hot_label
-            
-            label_id = torch.tensor(gt_one_hot_label.long()).to(self.args.device)
-
-            lm_logits = pred # # [bs, seq_len, vocab_size]
+            #  ? pred: generated text ids [bs, new_token_num]
+            lm_logits = pred.logits # [bs, seq_len, vocab_size]
             next_token_logits = lm_logits[:,-1,:]
-           
+
+            labels = torch.tensor(gt_one_hot_label).squeeze()
+            label_id = torch.tensor(labels.long()).to(self.args.device)
+
             # Flatten the tokens
             loss_fct = CrossEntropyLoss()
             # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
@@ -261,9 +253,6 @@ class PassiveParty_LLM(Party_LLM):
             # print('loss:', loss)
 
         elif self.args.task_type == 'QuestionAnswering':
-            # GPT2
-            # print('gt_one_hot_label:',type(gt_one_hot_label), gt_one_hot_label.shape) # torch.size( bs, 2)
-            # print('gt_one_hot_label[0]:',gt_one_hot_label[0].shape)
             start_logits = pred.start_logits
             end_logits = pred.end_logits
 
@@ -306,7 +295,6 @@ class PassiveParty_LLM(Party_LLM):
 
         # ########### Defense on Loss ###############
         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
-
             intermediate = self.local_pred # pred after adversarial model: bs, seq, embed_dim768
             adversary_recovered_embedding = self.imagined_adversary(intermediate)
 
@@ -320,7 +308,7 @@ class PassiveParty_LLM(Party_LLM):
 
             # renew global loss function : loss used to update adversarial model mapping
             self.adversarial_model_loss =   self.adversary_lambda * self.mapping_distance - self.adversary_attack_loss
-            self.global_loss = self.global_loss + self.adversarial_model_loss
+            self.global_loss = self.global_loss + self.adversarial_model_loss 
 
         elif self.args.apply_mid == True and (self.index in self.args.defense_configs['party']):
             # print(f'main_loss={self.global_loss},mid_loss={self.mid_loss}')
@@ -521,23 +509,23 @@ class PassiveParty_LLM(Party_LLM):
                     self.local_model_optimizer.step()
 
 
-    def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
-        # print(f"global_pred.shape={global_pred.size()}") # (batch_size, num_classes)
-        self.gradient_each_class = [[] for _ in range(global_pred.size(1))]
-        one_hot_label = torch.zeros(global_pred.size()).to(global_pred.device)
-        for ic in range(global_pred.size(1)):
-            one_hot_label *= 0.0
-            one_hot_label[:,ic] += 1.0
-            if self.train_index != None: # for graph data
-                if test == False:
-                    loss = self.criterion(global_pred[self.train_index], one_hot_label[self.train_index])
-                else:
-                    loss = self.criterion(global_pred[self.test_index], one_hot_label[self.test_index])
-            else:
-                loss = self.criterion(global_pred, one_hot_label)
-            for ik in range(self.args.k):
-                self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
-        # end of calculate_gradient_each_class, return nothing
+    # def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
+    #     # print(f"global_pred.shape={global_pred.size()}") # (batch_size, num_classes)
+    #     self.gradient_each_class = [[] for _ in range(global_pred.size(1))]
+    #     one_hot_label = torch.zeros(global_pred.size()).to(global_pred.device)
+    #     for ic in range(global_pred.size(1)):
+    #         one_hot_label *= 0.0
+    #         one_hot_label[:,ic] += 1.0
+    #         if self.train_index != None: # for graph data
+    #             if test == False:
+    #                 loss = self.criterion(global_pred[self.train_index], one_hot_label[self.train_index])
+    #             else:
+    #                 loss = self.criterion(global_pred[self.test_index], one_hot_label[self.test_index])
+    #         else:
+    #             loss = self.criterion(global_pred, one_hot_label)
+    #         for ik in range(self.args.k):
+    #             self.gradient_each_class[ic].append(torch.autograd.grad(loss, local_pred_list[ik], retain_graph=True, create_graph=True))
+    #     # end of calculate_gradient_each_class, return nothing
 
     def launch_defense(self, gradients_list, _type):
 

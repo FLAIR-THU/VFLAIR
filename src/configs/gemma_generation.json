@@ -23,24 +23,24 @@
     },
     "model_list":{
         "0": {
-            "type": "fxmartyreally-tiny-falcon-testing",
+            "type": "fxmartytiny-random-GemmaForCausalLM",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "Falcon",
+            "model_type": "Gemma",
             "local_encoders_num": 1,
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/fxmartyreally-tiny-falcon-testing"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/fxmartytiny-random-GemmaForCausalLM"
         },
         "1": {
-            "type": "fxmartyreally-tiny-falcon-testing",
+            "type": "fxmartytiny-random-GemmaForCausalLM",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "Falcon",
+            "model_type": "Gemma",
             "local_encoders_num": 1,
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/fxmartyreally-tiny-falcon-testing"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/fxmartytiny-random-GemmaForCausalLM"
         },
         "task":{
             "task_type": "CausalLM",

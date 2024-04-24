@@ -32,6 +32,9 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    def _clear_past_key_values(self):
+        pass
+
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None, 
@@ -126,6 +129,9 @@ class BertForSequenceClassification_pretrained(BertPreTrainedModel):
         # torch.nn.init.xavier_uniform_(self.head_layer[1].weight)
         # torch.nn.init.zeros_(self.head_layer[1].bias)
 
+    def _clear_past_key_values(self):
+        pass
+
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None,
@@ -212,6 +218,11 @@ class BertLMHeadModel_pretrained(BertPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+        self.past_key_values = None
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
         self,
@@ -495,6 +506,11 @@ class LocalBertModel(BertPreTrainedModel):
         self.inner_mid_model = None
         self.mid_loss = None
 
+        self.past_key_values = None
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None,
@@ -649,6 +665,8 @@ class GlobalBertModel(BertPreTrainedModel):
         
         self.local_num_encoders = self.num_encoders_all - self.num_encoders
         self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.local_num_encoders) #full_bert.encoder #BertEncoder(config)
+        
+        self.past_key_values = None
         
     def forward(
         self,

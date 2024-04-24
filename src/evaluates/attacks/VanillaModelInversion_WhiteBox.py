@@ -171,68 +171,18 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                 data_inputs = {}
                 for key_name in batch_input_dicts[0].keys():
-                    data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
-                
+                    if isinstance(batch_input_dicts[0][key_name], torch.Tensor):
+                        data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
+                    else:
+                        data_inputs[key_name] = [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] 
+
                 # real received intermediate result
                 self.top_vfl.parties[0].obtain_local_data(data_inputs)
                 self.top_vfl.parties[0].gt_one_hot_label = batch_label
 
-                # # origin_input: tuple of 5
-                # batch_input_ids = []
-                # batch_label = []
-                # batch_attention_mask = []
-                # batch_token_type_ids = []
-                # batch_feature = []
-                # for bs_id in range(len(origin_input)):
-                #     # Input_ids
-                #     batch_input_ids.append( origin_input[bs_id][0].tolist() )
-                #     # Attention Mask
-                #     batch_attention_mask.append( origin_input[bs_id][2].tolist()  )
-                #     # token_type_ids
-                #     if origin_input[bs_id][3] == []:
-                #         batch_token_type_ids = None
-                #     else:
-                #         batch_token_type_ids.append( origin_input[bs_id][3].tolist() ) 
-                #     # feature (for QuestionAnswering only)
-                #     if origin_input[bs_id][4] == []:
-                #         batch_feature = None
-                #     else:
-                #         batch_feature.append( origin_input[bs_id][4] )   
-                #     # Label
-                #     if type(origin_input[bs_id][1]) != str:
-                #         batch_label.append( origin_input[bs_id][1].tolist()  )
-                #     else:
-                #         batch_label.append( origin_input[bs_id][1]  )
-
-                # batch_input_ids = torch.tensor(batch_input_ids).to(self.device)#.unsqueeze(0)
-                # batch_attention_mask = torch.tensor(batch_attention_mask).to(self.device)#.unsqueeze(0)
-                # if batch_token_type_ids != None:
-                #     batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.device)#.unsqueeze(0)
-                # if type( batch_label[0] ) != str:
-                #     batch_label = torch.tensor(batch_label).to(self.device)
-        
-                # origin_input = [batch_input_ids,batch_label,batch_attention_mask,batch_token_type_ids,batch_feature] 
-
-                # # origin_input = [ data, label, mask, token_type_ids, feature(forQA) ]
-                # origin_data, origin_label, origin_attention_mask, origin_token_type_ids, origin_feature =  origin_input
-                # if origin_token_type_ids == []:
-                #     origin_token_type_ids = None
-                # if origin_feature == []:
-                #     origin_feature = None
-
-                # # real received intermediate result
-                # input_shape = origin_data.shape[:2]
-                # self.top_vfl.parties[0].input_shape = input_shape
-                # self.top_vfl.parties[0].obtain_local_data(
-                #     {'input_ids':origin_data, 'attention_mask':origin_attention_mask, 
-                #     'token_type_ids':origin_token_type_ids})
-                # self.top_vfl.parties[0].gt_one_hot_label = origin_label
-
-                
-
-
-                all_pred_list = self.top_vfl.pred_transmit()
+                all_pred_list = self.top_vfl.pred_transmit()                
                 real_results = all_pred_list[0]
+                self.top_vfl._clear_past_key_values()
 
                 # batch_received_intermediate = real_results['inputs_embeds'].type(torch.float32).to(self.device)
                 # if real_results['attention_mask']!= None:
@@ -253,7 +203,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                     # initial guess
                     # dummy_data = torch.zeros_like(sample_origin_data).long().to(self.device)
                     dummy_attention_mask = received_attention_mask.to(self.device)
-                    if 'token_type_ids' not in batch_input_dicts[0].keys():
+                    if 'token_type_ids' in batch_input_dicts[0].keys():
                         dummy_local_batch_token_type_ids = batch_input_dicts[_id]['token_type_ids'].unsqueeze(0).to(self.device)
                     else:
                         dummy_local_batch_token_type_ids = None
@@ -278,6 +228,8 @@ class VanillaModelInversion_WhiteBox(Attacker):
                             'inputs_embeds':dummy_embedding, 'token_type_ids':dummy_local_batch_token_type_ids
                         }
                         dummy_intermediate  = local_model(**dummy_input)     
+                        local_model._clear_past_key_values()
+
                         dummy_intermediate = dummy_intermediate['inputs_embeds']
                         
                         # if self.args.model_type  in ['Bert','Roberta']:
