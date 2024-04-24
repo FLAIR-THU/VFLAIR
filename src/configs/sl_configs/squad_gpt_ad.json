@@ -1,8 +1,8 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 16,
     "pipeline": "finetune",
     "early_stop_threshold": 1,
     "device": "cuda",
@@ -13,15 +13,17 @@
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "SST-2",
-        "num_classes": 2
+        "dataset_name": "SQuAD",
+        "num_classes": 1,
+        "use_prompt": 1,
+        "n_shot": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 256,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -29,29 +31,36 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
             "path": "/mnt/data/model/gpt2"
         },
         "1": {
             "type": "gpt2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
             "encoder_trainable": 0,
+            "head_layer_trainable": 1,
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
-             "path": "/mnt/data/model/gpt2"
+            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
+            "path": "/mnt/data/model/gpt2"
         },
         "task":{
-            "task_type": "SequenceClassification"
+            "task_type": "QuestionAnswering",
+            "metric_type": "best_pred",
+            "doc_stride" : 128,
+            "max_seq_length": 256,
+            "max_query_length" : 64,
+            "max_answer_length": 30,
+            "n_best_size": 20
+
         },
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
@@ -65,7 +74,7 @@
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.001,
             "lambda": 0.05,
-            "seq_length": 70,
+            "seq_length": 256,
             "embed_dim": 768
         }
     },
@@ -75,9 +84,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 1,
+                "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 10
             }
         },
         "1":{
@@ -86,10 +95,10 @@
                 "party": [1],
                 "T": 0.05,
                 "lr": 0.001,
-                "epochs": 1,
+                "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
-        }
+                "attack_sample_num": 10
+            }
         }
     }
 }

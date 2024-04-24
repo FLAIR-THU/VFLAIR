@@ -1,8 +1,8 @@
 {
-    "epochs": 10,
-    "lr": 0.001,
+    "epochs": 1,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 128,
+    "batch_size": 32,
     "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
@@ -29,7 +29,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
         },
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
@@ -38,7 +40,9 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
         },
         "task":{
             "task_type": "SequenceClassification"
@@ -47,16 +51,10 @@
         "global_model": "ClassificationModelHostHead"
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.001,
-            "lambda": 1,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 30,
-            "embed_dim": 768
+            "epsilon": 1000
         }
     },
     "attack_list": {
@@ -66,7 +64,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 32
+                "batch_size": 32,
+                "attack_sample_num": 10
             }
         }
     }

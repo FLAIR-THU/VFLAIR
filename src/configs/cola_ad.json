@@ -4,9 +4,6 @@
     "k": 2,
     "batch_size": 64,
     "pipeline": "finetune",
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -32,9 +29,7 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "1": {
             "type": "textattackbert-base-uncased-CoLA",
@@ -43,9 +38,7 @@
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
         },
         "task":{
             "task_type": "SequenceClassification"
