@@ -570,7 +570,7 @@ def load_basic_models_llm_t5(args, index):
             param.requires_grad = False
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-        
+
         local_model_optimizer = None
         local_trainable_params = []
         print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
@@ -583,7 +583,7 @@ def load_basic_models_llm_t5(args, index):
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.encoder.parameters()))
-        
+
         if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -689,7 +689,7 @@ def load_basic_models_llm_gpt2(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalGPT2Model(full_llm, args.local_encoders_num)
-        
+
         # Freeze Backbone
         for param in local_model.parameters():
             param.requires_grad = False
@@ -818,7 +818,7 @@ def load_basic_models_llm_llama(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalLlamaModel(full_llm, num_encoders = args.local_encoders_num)
-        
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 

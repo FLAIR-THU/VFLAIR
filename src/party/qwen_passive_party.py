@@ -3,7 +3,6 @@ from typing import Dict
 from party.llm_party import Party as Party_LLM
 from loguru import logger
 from .LocalCommunication import LocalCommunication
-from .llm_party import ProxyModel
 from transformers import AutoTokenizer
 from config import vfl_basic_config
 from models.llm_models.qwen2 import VFLPipelineQwen

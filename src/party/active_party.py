@@ -33,7 +33,7 @@ class ActiveParty_LLM(Party_LLM):
         self.pred_received = []
         for _ in range(args.k):
             self.pred_received.append([])
-        
+
         self.global_output = None # transmitted to passive party
         self.global_loss = None # transmitted from passive party
         self.global_gradients = None # transmitted from passive party
@@ -168,7 +168,7 @@ class ActiveParty_LLM(Party_LLM):
 
 
     def global_LR_decay(self,i_epoch):
-        if self.global_model_optimizer != None: 
+        if self.global_model_optimizer != None:
             eta_0 = self.args.main_lr
             eta_t = eta_0/(np.sqrt(int(i_epoch)+1))
             for param_group in self.global_model_optimizer.param_groups:
@@ -192,13 +192,13 @@ class ActiveParty_LLM(Party_LLM):
     def global_backward(self):
         # print('=== Active Global Backward ===')
 
-        if self.global_model_optimizer != None: 
+        if self.global_model_optimizer != None:
             if self.args.task_type == 'QuestionAnswering':
-                
+
                 # update global model
                 self.global_model_optimizer.zero_grad()
-                parameters = []          
-            
+                parameters = []
+
                 # trainable layer parameters
                 # load grads into parameters
                 weights_grad_a_start = torch.autograd.grad(self.global_output.start_logits, self.global_model.head_layer.parameters(), \
@@ -211,7 +211,7 @@ class ActiveParty_LLM(Party_LLM):
                     self.weights_grad_a.append(weights_grad_a_start[_i]+weights_grad_a_end[_i])
                 self.weights_grad_a = tuple( self.weights_grad_a )
                 # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
-                    
+
                 # self.weights_grad_a = weights_grad_a_start+weights_grad_a_end
                 # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
 
@@ -220,9 +220,9 @@ class ActiveParty_LLM(Party_LLM):
                     if w.requires_grad:
                         w.grad = g.detach()
                 # print('weights_grad_a:',weights_grad_a)
-               
+
                 self.global_model_optimizer.step()
-            else:                
+            else:
                 # update global model
                 try:
                     # todo: here should update all trainable params

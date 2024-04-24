@@ -1,7 +1,6 @@
 import torch
 from typing import List, Tuple
 from party.llm_party import Party as Party_LLM
-from .llm_party import ProxyModel
 from transformers import AutoTokenizer
 from peft import get_peft_model
 from config import vfl_basic_config
