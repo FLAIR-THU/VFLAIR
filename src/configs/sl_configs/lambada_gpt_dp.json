@@ -1,10 +1,10 @@
 {
     "epochs": 1,
-    "lr": 0.0001,
+    "lr": 0.001,
     "k": 2,
     "batch_size": 16,
     "pipeline": "finetune",
-    "early_stop_threshold": 1,
+    "early_stop_threshold": 2,
     "device": "cuda",
     "gpu": 0,
     "fl_type": "VFL",
@@ -14,14 +14,15 @@
     },
     "dataset":{
         "dataset_name": "Lambada",
-        "num_classes": 2
+        "num_classes": 1,
+        "use_prompt": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 70,
+        "truncation": "True",
+        "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -31,7 +32,7 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
             "train_set_file": "/mnt/data/data/Lambada",
@@ -43,7 +44,7 @@
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
             "train_set_file": "/mnt/data/data/Lambada",
@@ -75,7 +76,7 @@
                 "lr": 0.01,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 500
             }
         },
         "1":{
@@ -86,7 +87,7 @@
                 "lr": 0.001,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 500
             }
         }
     }
