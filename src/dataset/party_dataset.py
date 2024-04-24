@@ -98,6 +98,7 @@ class PassiveDataset_LLM(Dataset):
                     print('-'*25)
                     flag = flag + 1
                 
+                self.labels.append( args.tokenizer.convert_tokens_to_ids( labels[i] ) )
                 self.input_dicts.append(ids)
         
         elif args.task_type == 'QuestionAnswering':
@@ -105,13 +106,6 @@ class PassiveDataset_LLM(Dataset):
             # texts: bs * [feature]
             for i in range(len(texts)): 
                 _feature = texts[i]
-                # self.texts.append(_feature["input_ids"]) # input_ids
-                # self.masks.append(_feature["input_mask"]) # input_mask
-                # self.token_type_ids.append(_feature["segment_ids"]) # segment_ids
-
-                # self.labels.append( labels[i] ) # [ [start_position, end_position] ]
-                # self.features.append( _feature ) 
-
                 inputs = {
                     'input_ids': _feature["input_ids"],
                     'attention_mask':_feature["input_mask"],
@@ -124,10 +118,7 @@ class PassiveDataset_LLM(Dataset):
                     }
                 }
                 self.input_dicts.append(inputs)
-
-            # print('self.features:',type(self.features), len(self.features))
-            # print(type(self.features[0]), type(self.features[1]))
-
+                self.labels.append( labels[i] ) # [ [start_position, end_position] ]
 
     def __len__(self):
         return len(self.labels)
@@ -136,12 +127,12 @@ class PassiveDataset_LLM(Dataset):
 
         input_dict = self.input_dicts[item_idx]
         for key_name in self.input_dicts[item_idx].keys():
-            input_dict[key_name] = input_dict[key_name].squeeze().to(self.args.device)
+            input_dict[key_name] = torch.tensor(input_dict[key_name]).to(self.args.device)
         
-        label = self.labels[item_idx].squeeze().to(self.args.device)
+        
+        label = torch.tensor(self.labels[item_idx]).squeeze().to(self.args.device)
         
         return input_dict, label
-
 
 
 

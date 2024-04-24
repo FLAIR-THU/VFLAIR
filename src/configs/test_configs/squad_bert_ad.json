@@ -1,9 +1,10 @@
 {
-    "epochs": 10,
+    "epochs": 2,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 32,
     "pipeline": "finetune",
+    "model_architect":"TQA",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -25,24 +26,24 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
             "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -78,7 +79,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 5
             }
         },
         "1":{
@@ -89,7 +90,7 @@
                 "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 100
+                "attack_sample_num": 5
         }
     }
     }

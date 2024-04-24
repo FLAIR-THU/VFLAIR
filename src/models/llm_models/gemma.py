@@ -1,5 +1,5 @@
 # from transformers import T5PreTrainedModel
-from transformers.models.gemma.modeling_gemma import GemmaPreTrainedModel, GemmaModel, GemmaForCausalLM
+from transformers.models.gemma.modeling_gemma import * #GemmaPreTrainedModel, GemmaModel, GemmaForCausalLM
 
 from transformers.modeling_attn_mask_utils import (
     AttentionMaskConverter,
@@ -20,7 +20,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 ##### Evaluation with pretrained models ######
-class GemmaForCausalLM_pretrained(GemmaPreTrainedModel):
+class GemmaForCausalLM_pretrained(GemmaForCausalLM):
     def __init__(self, global_gemma, lm_head, generation_config=None):
         super().__init__(global_gemma.config)
         self.model = global_gemma #GemmaModel(config)
@@ -29,7 +29,7 @@ class GemmaForCausalLM_pretrained(GemmaPreTrainedModel):
         self.generation_config = generation_config
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
     def forward(
         self,
@@ -152,6 +152,9 @@ class LocalGemmaModel(GemmaModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.embedding_output = None
+        self.past_key_values = None
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -185,11 +188,15 @@ class LocalGemmaModel(GemmaModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+        self.embedding_output = inputs_embeds
 
         past_seen_tokens = 0
         if use_cache:  # kept for BC (cache positions)
-            if not isinstance(past_key_values, StaticCache):
-                past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            if self.past_key_values == None:
+                if not isinstance(past_key_values, StaticCache):
+                    past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            else:
+                past_key_values = self.past_key_values
             past_seen_tokens = past_key_values.get_seq_length()
 
         if cache_position is None:
@@ -250,7 +257,7 @@ class LocalGemmaModel(GemmaModel):
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
         
-        # print('emit cache_position:',cache_position)
+        self.past_key_values = past_key_values
 
         return {'inputs_embeds':hidden_states, 'attention_mask':causal_mask}
         
@@ -306,6 +313,8 @@ class GlobalGemmaModel(GemmaModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.past_key_values = None
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -344,8 +353,11 @@ class GlobalGemmaModel(GemmaModel):
 
         past_seen_tokens = 0
         if use_cache:  # kept for BC (cache positions)
-            if not isinstance(past_key_values, StaticCache):
-                past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            if self.past_key_values == None:
+                if not isinstance(past_key_values, StaticCache):
+                    past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+                else:
+                    past_key_values = self.past_key_values
             past_seen_tokens = past_key_values.get_seq_length()
 
         if cache_position is None:
@@ -420,6 +432,9 @@ class GlobalGemmaModel(GemmaModel):
             next_cache = (
                 next_decoder_cache.to_legacy_cache() if isinstance(next_decoder_cache, Cache) else next_decoder_cache
             )
+        
+        self.past_key_values = past_key_values #next_cache
+
         if not return_dict:
             return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
         return BaseModelOutputWithPast(

@@ -80,7 +80,8 @@ MODEL_PATH = {
     "benayasllama-2-7b-sst2_v0": YOUR_MODEL_PATH + "benayasllama-2-7b-sst2_v0",
     "AudreyTrungNguyenllama-qnli-p-tuning": YOUR_MODEL_PATH + "AudreyTrungNguyenllama-qnli-p-tuning",
 
-    "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base"
+    "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base",
+    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM'
 }
 
 LLM_supported = MODEL_PATH.keys()
@@ -1052,9 +1053,7 @@ def load_basic_models_llm_xlnet(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalXLNetModel(full_llama, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
-        
+        local_model = LocalXLNetModel(full_llama, num_encoders = args.local_encoders_num)
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1091,8 +1090,8 @@ def load_basic_models_llm_xlnet(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalXLNetModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
-
+        global_model = GlobalXLNetModel(full_llm, num_encoders = global_encoders_num)
+        
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
             global_model = XLNetLMHeadModel_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
@@ -1143,7 +1142,7 @@ def load_basic_models_llm_falcon(args, index):
     else:
         assert 1 > 2, "task type not supported"
 
-    full_llm = full_model.model
+    full_llm = full_model.transformer
 
     if args.task_type == 'CausalLM':
         head_layer = full_model.lm_head
@@ -1157,16 +1156,11 @@ def load_basic_models_llm_falcon(args, index):
         head_layer = None
         assert 1 > 2, "task type not supported"
 
-    if args.pad_token == "default":
-        if args.tokenizer.pad_token is None:
-            args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
-            full_model.config.pad_token_id = pad_id
-        args.pad_token = "default_" + args.tokenizer.pad_token
-    else:
-        args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
-        pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
-        full_model.config.pad_token_id = pad_id
+    if args.tokenizer.pad_token is None:
+        args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+        pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+        full_model.config.pad_token_id = int(pad_id)
+        args.tokenizer.pad_token_id = int(pad_id)
 
     args.config = full_model.config
     args.generation_config = full_model.generation_config
@@ -1181,8 +1175,7 @@ def load_basic_models_llm_falcon(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalFalconModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
+        local_model = LocalFalconModel(full_llm, num_encoders = args.local_encoders_num)
         
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -1216,7 +1209,7 @@ def load_basic_models_llm_falcon(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalFalconModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
+        global_model = GlobalFalconModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
@@ -1231,7 +1224,7 @@ def load_basic_models_llm_falcon(args, index):
         print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
 
         # Freeze Backbone
-        for param in global_model.model.parameters():
+        for param in global_model.transformer.parameters():
             param.requires_grad = False
 
         # Head Layer Trainable/Freeze
@@ -1306,8 +1299,7 @@ def load_basic_models_llm_mamba(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalMambaModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
+        local_model = LocalMambaModel(full_llm, num_encoders = args.local_encoders_num)
         
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -1431,8 +1423,7 @@ def load_basic_models_llm_gemma(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalGemmaModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
+        local_model = LocalGemmaModel(full_llm, num_encoders = args.local_encoders_num)
         
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -1466,7 +1457,7 @@ def load_basic_models_llm_gemma(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalGemmaModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
+        global_model = GlobalGemmaModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":

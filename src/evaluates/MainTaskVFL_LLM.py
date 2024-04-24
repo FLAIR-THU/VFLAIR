@@ -298,27 +298,32 @@ def create_main_task(global_model_type):
 
             elif self.args.model_architect=='CLM': #.task_type == "CausalLM":
                 if self.args.task_type == "CausalLM":#dataset == "Lambada":
-                    next_token_logits = test_logit[:, -1]  # [bs, 32000]   test_logit: bs, seq_len, vocab_dim
+                    print('== generate result ==')
+                    # next_token_logits = test_logit[:, -1]  # [bs, 32000]   test_logit: bs, seq_len, vocab_dim
+
+                    predict_label_list = test_logit[:,self.seq_length:] # bs, new_token_num
+                
+                    predict_label_list = [int(_id.item()) for _id in list(predict_label_list)]
 
                     target_label_list = [int(_id.item()) for _id in list(gt_one_hot_label)]
 
-                    enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
-                    if self.args.metric_type == "best_pred":
-                        predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
-                        predict_label_list = predict_label  # predict_word: bs * best_pred
-                        # predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
-                        # predict_word = [normalize_answer(_p) for _p in predict_word]
-                        # predict_word_list = predict_word  # predict_word: bs * best_pred
-                    elif self.args.metric_type == "n_best":
-                        logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
-                        predict_label_list = index_list[:, :self.args.n_best_size]
-                        # for _bs in range(predict_label.shape[0]):  # each batch
-                        #     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
-                        #     predict_word = [normalize_answer(_p) for _p in predict_word]
-                        #     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
+                    # enc_predict_prob = nn.functional.softmax(next_token_logits, dim=-1)
+                    # if self.args.metric_type == "best_pred":
+                    #     predict_label = torch.argmax(enc_predict_prob, dim=-1)  # [bs]
+                    #     predict_label_list = predict_label  # predict_word: bs * best_pred
+                    #     # predict_word = [self.args.tokenizer.decode([_best_id]) for _best_id in predict_label_list.tolist()]
+                    #     # predict_word = [normalize_answer(_p) for _p in predict_word]
+                    #     # predict_word_list = predict_word  # predict_word: bs * best_pred
+                    # elif self.args.metric_type == "n_best":
+                    #     logit_list, index_list = torch.sort(enc_predict_prob, descending=True)
+                    #     predict_label_list = index_list[:, :self.args.n_best_size]
+                    #     # for _bs in range(predict_label.shape[0]):  # each batch
+                    #     #     predict_word = [self.args.tokenizer.decode([_label]) for _label in predict_label[_bs].tolist()]
+                    #     #     predict_word = [normalize_answer(_p) for _p in predict_word]
+                    #     #     predict_word_list.append(predict_word)  # predict_word: list of n best for this batch
                     
-                    print('generate result predict_label_list:',predict_label_list)
-                    print('generate result target_label_list:',target_label_list)
+                    print('predict_label_list:',predict_label_list)
+                    print('target_label_list:',target_label_list)
 
                     return target_label_list, predict_label_list, None #target_word_list, predict_word_list, None
                 elif self.args.task_type == "SequenceClassification":
@@ -534,6 +539,7 @@ def create_main_task(global_model_type):
                     
                     self.seq_length = data_inputs['input_ids'].shape[-1]
                     
+                    print('self.args.model_architect:',self.args.model_architect)
                     # test_logit -> standard output for each task
                     if self.args.model_architect=='CLS': #task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
                         global_output = self.forward(**data_inputs)
@@ -554,12 +560,13 @@ def create_main_task(global_model_type):
                     elif self.args.model_architect=='CLM': #task_type == "CausalLM":
                         # test_logit = global_output.logits
                         # batch_target_word, batch_predict_word, sample_cnt = self.generate_result(test_logit, gt_one_hot_label, parties_data)
-                        generation_output = self.generate(**data_inputs, \
-                        generation_config = self.generation_config,max_new_tokens=5)
-
-                        batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label, parties_data)
                         
-
+                        generation_output = self.generate(**data_inputs, \
+                        generation_config = self.generation_config,max_new_tokens=1)
+                        self._clear_past_key_values()
+                        print('generation_output:',type(generation_output),generation_output.shape)
+                        
+                        batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label, parties_data)
                         target_word_list.extend(batch_target_word)
                         predict_word_list.extend(batch_predict_word)
                         if sample_cnt is not None:
@@ -616,6 +623,7 @@ def create_main_task(global_model_type):
 
         def causal_lm_inference(self):
             postfix = {'test_acc': 0.0}
+            print('=== causal_lm_inference ===')
 
             target_word_list, predict_word_list, total_sample_cnt = self.predict()
             # target_label_list, predict_label_list, None 
@@ -739,7 +747,7 @@ def create_main_task(global_model_type):
                 return exp_result, main_task_result
 
             if self.args.model_architect=='CLM':#task_type == "CausalLM":
-                # exp_result, self.test_acc =
+                print('=== inference ===')
                 exp_result, main_task_result = self.causal_lm_inference()
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
@@ -752,19 +760,12 @@ def create_main_task(global_model_type):
             batch_label: self.gt_one_hot_label   may be noisy
                 QA: bs * [start_position, end_position]
             '''
+            print('== train_batch ==')
             ############### allocate data ###############
             gt_one_hot_label = batch_label
             self.gt_one_hot_label = gt_one_hot_label
             for ik in range(self.k - 1):
                 # # allocate data (data/label/attention_mask/token_type_ids)
-                # input_shape = parties_data[ik][0].shape[:2]  # parties_data[ik][0].size()
-                # # self.parties[ik].input_shape = input_shape
-                # self.parties[ik].obtain_local_data(
-                #     {'input_ids':parties_data[ik][0], 
-                #     'attention_mask':parties_data[ik][2],
-                #     'token_type_ids': parties_data[ik][3]})
-                # self.parties[ik].gt_one_hot_label = gt_one_hot_label
-
                 data_inputs = {}
                 for key_name in parties_data[ik][0][0].keys():
                     data_inputs[key_name] = torch.stack( [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))] )
@@ -778,6 +779,12 @@ def create_main_task(global_model_type):
             pred_list = self.pred_transmit(count_time = 'train')
             # pred_list[local pred] -> Active Party -> test_logit[final pred]
             final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
+
+            # generation_output = self.generate(**data_inputs, \
+            #     generation_config = self.generation_config,max_new_tokens=1)
+            # self._clear_past_key_values()
+            # print('generation_output:',type(generation_output),generation_output.shape)
+                        
 
             # passive party -> global gradient -> active party
             self.global_gradient_transmit(final_pred, count_time = 'train')
@@ -1059,62 +1066,6 @@ def create_main_task(global_model_type):
                 data_loader_list = [self.parties[ik].train_loader for ik in range(self.k - 1)]
                 for parties_data in zip(*data_loader_list):
                     ############ Allocate Data #################
-                    # parties_data[0]:  bs *( data, label, mask, token_type_ids, feature(forQA))
-                    # _parties_data = []
-                    # for party_id in range(len(parties_data)):  # iter through each passive party
-                    #     batch_input_ids = []
-                    #     batch_label = []
-                    #     batch_attention_mask = []
-                    #     batch_token_type_ids = []
-                    #     batch_feature = []
-                    #     for bs_id in range(len(parties_data[party_id])):
-                    #         # Input_ids
-                    #         batch_input_ids.append(parties_data[party_id][bs_id][0].tolist())
-                    #         # Attention Mask
-                    #         batch_attention_mask.append(parties_data[party_id][bs_id][2].tolist())
-
-                    #         # ptoken_type_ids
-                    #         if parties_data[party_id][bs_id][3] == []:
-                    #             batch_token_type_ids = None
-                    #         else:
-                    #             batch_token_type_ids.append(parties_data[party_id][bs_id][3].tolist())
-
-                    #         # feature (for QuestionAnswering only)
-                    #         if parties_data[party_id][bs_id][4] == []:
-                    #             batch_feature = None
-                    #         else:
-                    #             batch_feature.append(parties_data[party_id][bs_id][4])
-
-                    #         # Label
-                    #         if type(parties_data[party_id][bs_id][1]) != str:
-                    #             batch_label.append(parties_data[party_id][bs_id][1].tolist())
-                    #         else:
-                    #             batch_label.append(parties_data[party_id][bs_id][1])
-
-                    #     batch_input_ids = torch.tensor(batch_input_ids).to(self.current_device)
-                    #     batch_attention_mask = torch.tensor(batch_attention_mask).to(self.current_device)
-                    #     if batch_token_type_ids != None:
-                    #         batch_token_type_ids = torch.tensor(batch_token_type_ids).to(self.current_device)
-
-                    #     if type(batch_label[0]) != str:
-                    #         if self.args.task_type == 'QuestionAnswering':
-                    #             # origin_batch_label_shape [bs, 2, num_of_answers]
-                    #             # 2*bs, num_of_answers
-                    #             # print('batch_label:',batch_label)
-                    #             if type(batch_label[0][0]) == list:
-                    #                 batch_label = pad_sequence([torch.tensor(position_list) for sample_label in batch_label \
-                    #                                             for position_list in sample_label], batch_first=True, padding_value=-1).to(self.current_device)
-                    #                 origin_batch_label_shape = [int(batch_label.shape[0] / 2), 2, batch_label.shape[1]]
-                    #                 batch_label = batch_label.reshape(origin_batch_label_shape)
-                    #             else:
-                    #                 batch_label = torch.tensor(batch_label).to(self.current_device)
-                    #         else:
-                    #             batch_label = torch.tensor(batch_label).to(self.current_device)
-
-                    #     _parties_data.append(
-                    #         [batch_input_ids, batch_label, batch_attention_mask, batch_token_type_ids, batch_feature])
-                    # parties_data = _parties_data
-
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
                         batch_input_dicts = []
@@ -1396,4 +1347,9 @@ def create_main_task(global_model_type):
         def __call__(self, **kwargs):
             return self.forward(**kwargs)
 
+        def _clear_past_key_values(self):
+            for i in range(self.k-1):
+                self.parties[i].local_model._clear_past_key_values()
+            self.parties[-1].global_model._clear_past_key_values()
+    
     return MainTaskVFL_LLM
