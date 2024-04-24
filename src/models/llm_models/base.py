@@ -8,7 +8,8 @@ import torch
 from transformers import AutoTokenizer
 
 
-class VFLModel:
+class VFLModel(ABC):
+    @abstractmethod
     def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
         raise NotImplementedError('Not implemented')
 

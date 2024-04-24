@@ -37,7 +37,6 @@ from models.llm_models.mistral import *
 from models.llm_models.xlnet import *
 
 from models.llm_models.t5 import *
-from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM, PipelineVFL2Slice
 # from models.llm_models.t5 import *
 
 
@@ -564,7 +563,7 @@ def load_basic_models_llm_t5(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalT5Model(full_t5, num_encoders = args.local_encoders_num)
-        
+
         # Freeze Backbone
         for param in local_model.parameters():
             param.requires_grad = False

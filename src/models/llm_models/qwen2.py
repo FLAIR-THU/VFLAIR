@@ -74,6 +74,8 @@ class Qwen2DecoderLayerParam(object):
         return Qwen2DecoderLayerParam(**new_dict)
 
     def get(self, key, default=None):
+        if key == 'input_embeds':
+            key = 'hidden_states'
         return self.__dict__.get(key, default)
 
 
@@ -280,7 +282,8 @@ class Qwen2ModelBody(Qwen2ModelSplitter):
             use_cache: Optional[bool] = None,
             output_attentions: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None
+            return_dict: Optional[bool] = None,
+            **kwargs
     ) -> Union[Tuple, BaseModelOutputWithPast]:
         logger.debug(f"{self.__class__.__name__} run forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions

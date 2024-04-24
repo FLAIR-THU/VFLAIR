@@ -4,11 +4,15 @@ sys.path.append(os.pardir)
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
+from loguru import logger
 from party.party import Party
 from party.llm_party import Party as Party_LLM
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor, pairwise_dist
 from dataset.party_dataset import ActiveDataset
 from load.LoadModels import load_models_per_party
+
+from config import vfl_basic_config
+
 # load_models_per_party_new
 
 
@@ -167,10 +171,10 @@ class ActiveParty_LLM(Party_LLM):
         # print(self.global_gradients)
 
 
-    def global_LR_decay(self,i_epoch):
+    def global_LR_decay(self, i_epoch):
         if self.global_model_optimizer != None:
             eta_0 = self.args.main_lr
-            eta_t = eta_0/(np.sqrt(int(i_epoch)+1))
+            eta_t = eta_0 / (np.sqrt(int(i_epoch) + 1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
@@ -234,7 +238,8 @@ class ActiveParty_LLM(Party_LLM):
                         if w.requires_grad:
                             w.grad = g.detach()
                     self.global_model_optimizer.step()
-                except:
+                except Exception as e:
+                    logger.debug(f"active party step optimizer 1")
                     self.global_model_optimizer.zero_grad()
                     self.global_output.backward(gradient=self.global_gradients, retain_graph=True)
                     self.global_model_optimizer.step()

@@ -15,7 +15,7 @@ from loguru import logger
 
 # indicator whether to use the new pipeline
 _new_pipeline = False
-is_test = True
+is_test = False
 if not is_test:
     logger.remove()
     logger.add(sys.stderr, level="INFO")
@@ -23,12 +23,12 @@ if not is_test:
 
 class VFLBasicConfig(object):
     kwargs_model_loading = {'device_map': 'auto',
-                            'max_memory': {4: '20Gib'},
+                            'max_memory': {0: '22Gib'},
                             'torch_dtype': torch.bfloat16,
                             }
 
     def __init__(self, **kwargs):
-        self.split_index = kwargs.get('split_index', (2,))
+        self.split_index = kwargs.get('split_index', (2,-2))
         self.seed = kwargs.get('seed', 7)
         self.vfl_training_config = VFLTrainingConfig(self)
         # self.vfl_training_config = None
@@ -49,7 +49,7 @@ class VFLTrainingConfig(object):
     def __init__(self, vbc: VFLBasicConfig):
         self.is_training = True
         self.vfl_basic_config = vbc
-        self.__trainable_slice = (-1, 0)
+        self.__trainable_slice = (-1, -2)
         self.peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
@@ -69,7 +69,8 @@ class VFLTrainingConfig(object):
             logging_steps=10,
             num_train_epochs=10,
             save_steps=50,
-            learning_rate=1e-5,
+            learning_rate=1e-4
+            ,
             save_on_each_node=True,
             gradient_checkpointing=True,
             report_to=['tensorboard'],

@@ -7,6 +7,7 @@ sys.path.append(os.pardir)
 
 import torch
 from torch.utils.data import DataLoader
+from loguru import logger
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
@@ -24,8 +25,8 @@ import re
 import collections
 from transformers import PreTrainedModel, AutoTokenizer
 from peft import get_peft_model
-from config import vfl_basic_config, _new_pipeline
-from models.llm_models.qwen2 import  VFLPipelineQwen
+from config import vfl_basic_config
+from models.llm_models.qwen2 import VFLPipelineQwen
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
@@ -66,20 +67,23 @@ class Party(object):
         self.test_poison_label = None
         self.train_target_list = None
         self.test_target_list = None
+        # store attributes of model slices
+        self.input_tensors = {}  # type:dict[int,torch.Tensor]
+        self.output_tensors = {}  # type:dict[int,torch.Tensor]
+        self.models = {}  # type:dict[int,PreTrainedModel]
+        self.optimizers = {}  # type:dict[int,torch.optim.Optimizer]
+        self.lr_schedulers = {}  # type:dict[int,torch.optim.lr_scheduler.LinearLR]
         # local model
         self.local_model = None
         self.local_model_optimizer = None
         # global_model
         self.global_model = None
         self.global_model_optimizer = None
+        self.prepare_model(args, index)
 
         # attack and defense
         # self.attacker = None
         self.defender = None
-        self.models = {}  # type:dict[int,PreTrainedModel]
-        self.optimizers = {}
-        self.lr_schedulers = {}
-        self.prepare_model(args, index)
 
         if need_data:
             self.prepare_data(args, index)
@@ -136,8 +140,9 @@ class Party(object):
 
         batch_size = self.args.batch_size
         test_batch_size = self.args.test_batch_size
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
-        self.test_loader = DataLoader(self.test_dst, batch_size=test_batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size, collate_fn=lambda x: x)  # ,
+        self.test_loader = DataLoader(self.test_dst, batch_size=test_batch_size,
+                                      collate_fn=lambda x: x)  # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size, collate_fn=lambda x: x)
 
@@ -155,7 +160,28 @@ class Party(object):
                 self.global_model,
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            if _train_conf.peft_config:
+                self._peft_model_setting()
 
+    def _peft_model_setting(self):
+        _train_conf = vfl_basic_config.vfl_training_config
+        logger.info(f"enable peft model setting: \n{str(_train_conf.peft_config)}")
+
+        for i in _train_conf.trainable_slice:
+            if i in self.models:
+                model = self.models[i]
+                if model:
+                    model.enable_input_require_grads()
+                    peft_model = get_peft_model(model, _train_conf.peft_config)
+                    peft_model.print_trainable_parameters()
+                    self.models.update({i: peft_model})
+                    trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+                    # 定义优化器和学习率调度器
+                    optimizer = torch.optim.AdamW(trainable_params, lr=_train_conf.training_args.learning_rate)
+                    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=4)
+                    self.optimizers.update({i: optimizer})
+                    self.lr_schedulers.update({i: scheduler})
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -175,12 +201,12 @@ class Party(object):
     def receive_gradient(self, gradient):
         self.local_gradient = gradient
         return
-    
-    def give_pred_old(self, use_cache = False):
-        intermediate = self.local_model(input_ids = self.local_batch_data,\
-                                        attention_mask = self.local_batch_attention_mask,\
-                                        token_type_ids = self.local_batch_token_type_ids,\
-                                        past_key_values = self.past_key_values,\
+
+    def give_pred_old(self, use_cache=False):
+        intermediate = self.local_model(input_ids=self.local_batch_data, \
+                                        attention_mask=self.local_batch_attention_mask, \
+                                        token_type_ids=self.local_batch_token_type_ids, \
+                                        past_key_values=self.past_key_values, \
                                         use_cache=use_cache)
         self.local_pred = intermediate['inputs_embeds']
         self.local_attention_mask = intermediate['attention_mask'] if ('attention_mask' in intermediate) else None
@@ -314,8 +340,8 @@ class Party(object):
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
 
-        self.transferred_past_key_values = None # no need to transmit past_key_values
-        if use_cache: # need to transmit past_key_values
+        self.transferred_past_key_values = None  # no need to transmit past_key_values
+        if use_cache:  # need to transmit past_key_values
             self.transferred_past_key_values = self.past_key_values
 
         intermediate['inputs_embeds'] = self.local_pred_clone
@@ -364,12 +390,13 @@ class Party(object):
         # elif self.args.model_type == 'T5':
         #     if self.args.task_type == 'CausalLM':
         #         return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
-            
-    def give_pred(self, use_cache = False):
+
+    def give_pred(self, use_cache=False):
         # print('give_pred_dev:',self.local_data_input.keys())
         self.local_data_input['use_cache'] = use_cache
         intermediate = self.local_model(**self.local_data_input)
-
+        if not isinstance(intermediate, dict):
+            intermediate = intermediate.prepare_for_forward()
         self.local_pred = intermediate['inputs_embeds']
         self.local_attention_mask = intermediate['attention_mask'] if ('attention_mask' in intermediate) else None
 
@@ -378,11 +405,12 @@ class Party(object):
             self.local_attention_mask = self.local_attention_mask.detach().clone()
 
         ######### Defense Applied on Local Model Prediction Process ###########
-        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
-            self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
+        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out"):
+            self.local_pred, self.mid_loss = self.mid_model(self.local_pred)  # , self.local_attention_mask
             self.local_pred_clone = self.local_pred.detach().clone()
 
-        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "inner") :
+        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (
+                self.mid_position == "inner"):
             # print('inner mid: self.mid_position=',self.mid_position)
             self.mid_loss = self.local_model.mid_loss
             # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
@@ -410,29 +438,82 @@ class Party(object):
         eta_0 = self.args.main_lr
         eta_t = eta_0 / (np.sqrt(i_epoch + 1))
         for param_group in self.local_model_optimizer.param_groups:
-            param_group['lr'] = eta_t 
-            
+            param_group['lr'] = eta_t
+
     def obtain_local_data_old(self, input_ids=None,
-                        inputs_embeds=None,
-                        local_batch_attention_mask=None,
-                        local_batch_token_type_ids=None,
-                        past_key_values = None,
-                        **kwargs):
-        self.local_batch_data = input_ids # input_ids
+                              inputs_embeds=None,
+                              local_batch_attention_mask=None,
+                              local_batch_token_type_ids=None,
+                              past_key_values=None,
+                              **kwargs):
+        self.local_batch_data = input_ids  # input_ids
         self.local_batch_attention_mask = local_batch_attention_mask
         self.local_batch_token_type_ids = local_batch_token_type_ids
 
         self.past_key_values = past_key_values
 
-    def obtain_local_data(self, data_input_dict ,**kwargs):
+    def obtain_local_data(self, data_input_dict, **kwargs):
         # self.local_batch_data = kwargs['input_ids'] # input_ids
         # self.local_batch_attention_mask = kwargs['attention_mask']
         # self.local_batch_token_type_ids = kwargs['token_type_ids'] if 'token_type_ids' in kwargs else None
         # self.past_key_values = past_key_values
         # print('obtain_local_data_dev:',kwargs.keys())
-        self.local_data_input = data_input_dict
+        if data_input_dict:
+            self.local_data_input = data_input_dict
+        else:
+            pass
+
+    @property
+    def local_model(self):
+        return self.models[0]
+
+    @local_model.setter
+    def local_model(self, model):
+        self.models.update({0: model})
+
+    @property
+    def local_model_optimizer(self):
+        return self.optimizers[0]
+
+    @local_model_optimizer.setter
+    def local_model_optimizer(self, optimizer):
+        self.optimizers.update({0: optimizer})
+
+    @property
+    def global_model(self):
+        return self.models[1]
+
+    @global_model.setter
+    def global_model(self, model):
+        self.models.update({1: model})
+
+    @property
+    def global_model_optimizer(self):
+        return self.optimizers[1]
+
+    @global_model_optimizer.setter
+    def global_model_optimizer(self, optimizer):
+        self.optimizers.update({1: optimizer})
 
     def local_forward(self):
         # args.local_model()
         pass
 
+    def forward(self, model_index, **kwargs):
+        logger.debug(f"model_{model_index} forward")
+        self.input_tensors[model_index] = kwargs.get('inputs_embeds')
+        resp = self.models[model_index](**kwargs)
+        if model_index ==vfl_basic_config.num_of_slice-1:
+            self.output_tensors[model_index] = resp['logits']
+        else:
+            self.output_tensors[model_index] = resp['hidden_states']
+        return resp
+
+    def backward(self, model_index, **kwargs):
+        logger.debug(f"model_{model_index} backward")
+        self.output_tensors[model_index].backward(**kwargs)
+
+    def optimizer_step(self, model_index):
+        logger.debug(f"model_{model_index} {__name__}")
+        self.optimizers[model_index].step()
+        self.optimizers[model_index].zero_grad()

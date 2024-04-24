@@ -75,6 +75,7 @@ STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40, 'diabetes': 0
                 'cola_public': 0.8,
                 'SST-2': 0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
+
 def create_main_task(global_model_type):
     print('inherited:',global_model_type)
     class MainTaskVFL_LLM( global_model_type, object): #GenerationMixin object,
@@ -106,7 +107,6 @@ def create_main_task(global_model_type):
 
             self.train_party_time = [0 for i in range(self.k)]
             self.inference_party_time = [0 for i in range(self.k)]
-
 
             self.parties_data = None
             self.gt_one_hot_label = None
@@ -232,10 +232,10 @@ def create_main_task(global_model_type):
                 all_pred_list.append(pred_list)
 
                 end_time = time.time()
-                if count_time=='train':
-                    self.train_party_time[ik] += end_time-start_time
-                elif count_time=='inference':
-                    self.inference_party_time[ik] += end_time-start_time
+                if count_time == 'train':
+                    self.train_party_time[ik] += end_time - start_time
+                elif count_time == 'inference':
+                    self.inference_party_time[ik] += end_time - start_time
 
             self.all_pred_list = all_pred_list
             return all_pred_list
@@ -317,10 +317,10 @@ def create_main_task(global_model_type):
             start_time = time.time()
             final_pred = self._communication.send_pred_message(pred_list,use_cache=use_cache)#
             end_time = time.time()
-            if count_time=='train':
-                self.train_party_time[-1] += end_time-start_time
-            elif count_time=='inference':
-                self.inference_party_time[-1] += end_time-start_time
+            if count_time == 'train':
+                self.train_party_time[-1] += end_time - start_time
+            elif count_time == 'inference':
+                self.inference_party_time[-1] += end_time - start_time
             return final_pred
 
         def local_gradient_transmit(self, count_time='train'):
@@ -332,7 +332,7 @@ def create_main_task(global_model_type):
                         passive_local_gradient = torch.Tensor(passive_local_gradient).to(self.args.device)
                     end_time = time.time()
 
-                    if count_time=='train':
+                    if count_time == 'train':
                         self.train_party_time[self.k - 1] += end_time - start_time
 
                     self.parties[ik].local_gradient = passive_local_gradient
@@ -342,7 +342,7 @@ def create_main_task(global_model_type):
             global_loss = self.parties[0].cal_loss(final_pred)
             global_gradients = self.parties[0].cal_global_gradient(global_loss, final_pred)
             end_time = time.time()
-            if count_time=='train':
+            if count_time == 'train':
                 self.train_party_time[0] += end_time - start_time
 
             self.communication_cost += get_size_of(global_gradients)
@@ -523,12 +523,12 @@ def create_main_task(global_model_type):
                     prelim_predictions = sorted(
                         prelim_predictions,
                         key=lambda x: (x.start_logit + x.end_logit),
-                        reverse=True) # length=2
+                        reverse=True)  # length=2
                     # print('prelim_predictions:',len(prelim_predictions))
 
                     exact_score = 0
                     f1 = 0
-                    nbest = [] # Get n best prediction text
+                    nbest = []  # Get n best prediction text
                     n_best_size = min(n_best_size, len(prelim_predictions))
                     for _id in range(n_best_size):
                         start_index = prelim_predictions[_id].start_index
@@ -804,23 +804,38 @@ def create_main_task(global_model_type):
             print(exp_result)
             return exp_result, self.test_acc
 
-        def forward(self, **kwargs):
+        def forward(self, count_time=False, **kwargs):
             self.parties[0].obtain_local_data(kwargs)
             # passive party do local pred
-            pred_list = self.pred_transmit(use_cache=False)
+            pred_list = self.pred_transmit(use_cache=False,count_time=count_time)
+
             # passive party inform active party to do global pred
-            final_output = self.global_pred_transmit(pred_list, use_cache=False)
+            resp = self.global_pred_transmit(pred_list, use_cache=False,count_time=count_time)
+            if not isinstance(resp,(dict,torch.Tensor)):
+                resp=resp.prepare_for_forward()
+                t=resp['inputs_embeds']
+                req_grad=t.requires_grad
+                resp['inputs_embeds']=t.detach().clone()
+                if req_grad:
+                    resp['inputs_embeds'].requires_grad=True
             if vfl_basic_config.num_of_slice > 2:
                 # todo: deal with 3-slice inference
-                pass
-            global_output = self.parties[1].global_output
-            return global_output # dict
+                final_output=self.parties[0].forward(2,**resp)
+            else:
+                # todo: use global_pred_transmit return instead
+                final_output = self.parties[1].global_output
+            return final_output
 
         def backward(self,final_pred):
             # passive party -> global gradient -> active party
-            self.global_gradient_transmit(final_pred, count_time = 'train')
+            loss=self.global_gradient_transmit(final_pred, count_time = 'train')
             # active party -> local gradient -> passive party
             self.local_gradient_transmit(count_time = 'train')
+            if vfl_basic_config.num_of_slice==3:
+                # todo: deal with 3-slice backward
+                loss.backward()
+                # self.parties[0].backward(2)
+                self.parties[0].optimizer_step(2)
 
         def inference(self, **kwargs):
             # set inference time back to 0
@@ -837,7 +852,7 @@ def create_main_task(global_model_type):
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
                 self.final_state.update(self.save_party_data())
-                exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
+                exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
             if self.args.model_architect=='CLS':#task_type == "SequenceClassification":
@@ -846,7 +861,7 @@ def create_main_task(global_model_type):
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
                 self.final_state.update(self.save_party_data())
-                exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
+                exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
             if self.args.model_architect=='CLM':#task_type == "CausalLM":
@@ -854,7 +869,7 @@ def create_main_task(global_model_type):
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
                 self.final_state.update(self.save_party_data())
-                exp_result = f'|inference_party_time={self.inference_party_time}'+exp_result
+                exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
             elif self.args.task_type == "DevLLMInference":
@@ -886,7 +901,7 @@ def create_main_task(global_model_type):
             # # pred_list[local pred] -> Active Party -> test_logit[final pred]
             # final_pred = self.global_pred_transmit(pred_list, count_time = 'train')
 
-            final_pred = self.forward(**data_inputs)
+            final_pred = self.forward(count_time='train',**data_inputs)
             self._clear_past_key_values()
 
             # generation_output = self.generate(**data_inputs, \
@@ -1223,11 +1238,19 @@ def create_main_task(global_model_type):
                         tensorboard_writer.add_scalar('train/lr_local',
                                                       self.parties[0].local_model_optimizer.param_groups[0]['lr'],
                                                       optimize_step)
-                    except:
+                    except Exception as e:
+                        logger.debug(repr(e))
                         pass
                     try:
                         tensorboard_writer.add_scalar('train/lr_global',
                                                       self.parties[1].global_model_optimizer.param_groups[0]['lr'],
+                                                      optimize_step)
+                    except Exception as e:
+                        logger.error(repr(e))
+                        pass
+                    try:
+                        tensorboard_writer.add_scalar('train/lr_model_2',
+                                                      self.parties[0].optimizers[2].param_groups[0]['lr'],
                                                       optimize_step)
                     except Exception as e:
                         logger.error(repr(e))
@@ -1244,7 +1267,9 @@ def create_main_task(global_model_type):
 
                 # LR decay
                 self.LR_Decay(i_epoch)
-                _lr = self.parties[0].global_LR_decay(i_epoch, is_return=True)
+                if vfl_basic_config.num_of_slice==3:
+                    self.parties[0].lr_schedulers[2].step()
+                # _lr = self.parties[0].global_LR_decay(i_epoch, is_return=True)
 
                 if self.args.apply_adversarial:
                     print(
@@ -1286,7 +1311,7 @@ def create_main_task(global_model_type):
                 if early_stop_count >= early_stop_threshold:
                     self.final_epoch = i_epoch + 1
                     break
-                last_loss = min(last_loss,self.loss)
+                last_loss = min(last_loss, self.loss)
 
             self.training_time = total_time
             if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
@@ -1312,6 +1337,7 @@ def create_main_task(global_model_type):
             else:
                 filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={self.args.model_list[str(0)]["type"]}'
             result_file_name = result_path + filename + f'.csv'
+            result_file_name=result_file_name.replace('/','')
             print('Save csv to:', result_file_name)
             data_record.to_csv(result_file_name)
 
@@ -1322,8 +1348,10 @@ def create_main_task(global_model_type):
                 return {
                     "model": [copy.deepcopy(self.parties[ik].local_model) for ik in range(self.args.k)],
                     "global_model": copy.deepcopy(self.parties[self.args.k - 1].global_model),
-                    "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in range(self.args.k)] + [
-                        str(type(self.parties[self.args.k - 1].global_model)).split('.')[-1].split('\'')[-2]]
+                    "model_names": [str(type(self.parties[ik].local_model)).split('.')[-1].split('\'')[-2] for ik in
+                                    range(self.args.k)] + [
+                                       str(type(self.parties[self.args.k - 1].global_model)).split('.')[-1].split('\'')[
+                                           -2]]
 
                 }
             else:
@@ -1375,9 +1403,10 @@ def create_main_task(global_model_type):
                 file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
             else:
                 file_path = dir_path + 'NoDefense.pkl'
-            torch.save(([self.trained_models["model"][i].state_dict() for i in range(len(self.trained_models["model"]))],
-                        self.trained_models["model_names"]),
-                    file_path)
+            torch.save(
+                ([self.trained_models["model"][i].state_dict() for i in range(len(self.trained_models["model"]))],
+                 self.trained_models["model_names"]),
+                file_path)
 
         def evaluate_attack(self):
             self.attacker = AttackerLoader(self, self.args)
@@ -1516,7 +1545,8 @@ def create_main_task(global_model_type):
             if not model_config:
                 logger.error(f"No model config for E2E_model")
             with init_empty_weights():
-                self.e2e_model = E2EModelV2(model_config, {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
+                self.e2e_model = E2EModelV2(model_config,
+                                            {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
             # self.e2e_model.to(self.e2e_model.local_model.device)
 
         @property
@@ -1554,7 +1584,8 @@ def create_main_task(global_model_type):
                                        collate_fn=dataset_batch_processor)
             for epoch in range(training_args.num_train_epochs):
                 total_loss = 0
-                for batch in tqdm(dataset_train, desc=f"Epoch {epoch + 1}/{training_args.num_train_epochs}", leave=False):
+                for batch in tqdm(dataset_train, desc=f"Epoch {epoch + 1}/{training_args.num_train_epochs}",
+                                  leave=False):
                     # 将数据传递给设备
                     # inputs = batch['input_ids'].to(training_args.device)
                     # labels = batch['labels'].to(training_args.device)

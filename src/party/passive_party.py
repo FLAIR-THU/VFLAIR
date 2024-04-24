@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
+from loguru import  logger
 
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
@@ -27,6 +28,7 @@ from models.imagined_adversary_models import *
 from models.adversarial_model import *
 
 from models.mid_model_rapper import *
+from config import vfl_basic_config
 
 import time
 import numpy as np
@@ -56,7 +58,8 @@ class PassiveParty_LLM(Party_LLM):
             torch.cuda.set_device(cuda_id)
             print(f'running on cuda{torch.cuda.current_device()}')
 
-        self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr, args.device)
+        self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr,
+                                args.device)
 
         self.criterion = cross_entropy_for_onehot
 
@@ -95,7 +98,7 @@ class PassiveParty_LLM(Party_LLM):
 
                 self.adversarial_model_lr = defense_configs['adversarial_model_lr']
                 self.adversarial_model_hidden_size = defense_configs['adversarial_model_hidden_size'] if (
-                            'adversarial_model_hidden_size' in defense_configs) else 80
+                        'adversarial_model_hidden_size' in defense_configs) else 80
                 if not ('adversarial_model' in defense_configs):
                     adversarial_model_name = 'Adversarial_Mapping'
                 else:
@@ -121,7 +124,7 @@ class PassiveParty_LLM(Party_LLM):
                 # prepare imagined adversary --  for adversarial training
                 imagined_adversary_model_name = defense_configs['imagined_adversary']
                 self.imagined_adversary_hidden_size = defense_configs['imagined_adversary_hidden_size'] if (
-                            'imagined_adversary_hidden_size' in defense_configs) else 80
+                        'imagined_adversary_hidden_size' in defense_configs) else 80
                 self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim,
                                                                                    self.imagined_adversary_hidden_size).to(
                     device)
@@ -209,8 +212,8 @@ class PassiveParty_LLM(Party_LLM):
     def prepare_data(self, args, index):
         if not args.dataset:
             return None
-        super().prepare_data(args, index) # Party_llm's prepare_data
- 
+        super().prepare_data(args, index)  # Party_llm's prepare_data
+
         self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
         self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')
 
@@ -232,10 +235,13 @@ class PassiveParty_LLM(Party_LLM):
             global_gradients_clone = global_gradients_clone / 2
             self.global_gradients = global_gradients_clone
         else:
-            global_gradients = torch.autograd.grad(global_loss, global_pred.logits, retain_graph=True)
+            if vfl_basic_config.num_of_slice==2:
+                _input_tensor = global_pred.logits
+            else:
+                _input_tensor = self.input_tensors[2]
+            global_gradients = torch.autograd.grad(global_loss, _input_tensor, retain_graph=True)
             global_gradients_clone = global_gradients[0].detach().clone()
             self.global_gradients = global_gradients_clone
-
         return global_gradients_clone
 
     def cal_loss(self, pred, test=False):
@@ -332,7 +338,7 @@ class PassiveParty_LLM(Party_LLM):
 
             # avrage mapping distance on bs*seq_len   self.origin_pred: bs, seq_len, embed_dim
             self.mapping_distance = torch.norm(self.origin_pred - self.local_pred, p=2) / (
-                        self.origin_pred.shape[0] * self.origin_pred.shape[1])
+                    self.origin_pred.shape[0] * self.origin_pred.shape[1])
 
             # print(f'main_loss={self.global_loss},mapping_distance={self.mapping_distance},adversary_attack_loss={self.adversary_attack_loss}')
 
@@ -361,7 +367,7 @@ class PassiveParty_LLM(Party_LLM):
     def update_local_gradient(self, gradient):
         self.local_gradient = gradient
 
-    def global_LR_decay(self, i_epoch,is_return=False):
+    def global_LR_decay(self, i_epoch, is_return=False):
         eta_0 = self.args.main_lr
         eta_t = eta_0 / (np.sqrt(i_epoch + 1))
         if is_return:
@@ -370,8 +376,9 @@ class PassiveParty_LLM(Party_LLM):
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
 
-    def local_backward(self): # model head 1
+    def local_backward(self):  # model head 1
         # print(' === passive local backward === ')
+        logger.debug(f"step optimizer 0")
 
         self.num_local_updates += 1  # another update
 
@@ -443,7 +450,7 @@ class PassiveParty_LLM(Party_LLM):
                         w.grad += g.detach()
                     else:
                         w.grad = g.detach()
-        
+
             # update local model trainable part with global_loss
             local_model_params = []
             for param in self.local_model.parameters():
