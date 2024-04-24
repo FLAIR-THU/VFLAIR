@@ -122,8 +122,9 @@ class Party(object):
         #     self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
 
         batch_size = self.args.batch_size
+        test_batch_size = self.args.test_batch_size
         self.train_loader = DataLoader(self.train_dst, batch_size=batch_size ,collate_fn=lambda x:x ) # ,
-        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
+        self.test_loader = DataLoader(self.test_dst, batch_size=test_batch_size ,collate_fn=lambda x:x) # , shuffle=True ,collate_fn=my_collate
         if need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size ,collate_fn=lambda x:x)
 
@@ -156,7 +157,7 @@ class Party(object):
         self.local_gradient = gradient
         return
     
-    def give_pred(self, use_cache = False):
+    def give_pred_old(self, use_cache = False):
         intermediate = self.local_model(input_ids = self.local_batch_data,\
                                         attention_mask = self.local_batch_attention_mask,\
                                         token_type_ids = self.local_batch_token_type_ids,\
@@ -288,7 +289,7 @@ class Party(object):
  
         elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             self.origin_pred = self.local_pred.clone()
-            print('self.origin_pred:',self.origin_pred.shape)
+            # print('self.origin_pred:',self.origin_pred.shape)
             self.local_pred = self.adversarial_model(self.origin_pred)
             self.local_pred_clone = self.local_pred.detach().clone()
         ######### Defense Applied on Local Model Prediction Process ###########
@@ -344,7 +345,43 @@ class Party(object):
         #     if self.args.task_type == 'CausalLM':
         #         return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
             
-    
+    def give_pred(self, use_cache = False):
+        # print('give_pred_dev:',self.local_data_input.keys())
+        intermediate = self.local_model(**self.local_data_input)
+
+        self.local_pred = intermediate['inputs_embeds']
+        self.local_attention_mask = intermediate['attention_mask'] if ('attention_mask' in intermediate) else None
+        
+        self.local_pred_clone = self.local_pred.detach().clone()
+        if self.local_attention_mask != None:
+            self.local_attention_mask = self.local_attention_mask.detach().clone()
+
+        ######### Defense Applied on Local Model Prediction Process ###########
+        if self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "out") :
+            self.local_pred , self.mid_loss = self.mid_model(self.local_pred) # , self.local_attention_mask
+            self.local_pred_clone = self.local_pred.detach().clone()
+        
+        elif self.args.apply_mid and (self.index in self.args.defense_configs["party"]) and (self.mid_position == "inner") :
+            # print('inner mid: self.mid_position=',self.mid_position)
+            self.mid_loss = self.local_model.mid_loss
+            # print(' self.local_model.mid_loss:', self.local_model.mid_loss)
+ 
+        elif (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
+            self.origin_pred = self.local_pred.clone()
+            # print('self.origin_pred:',self.origin_pred.shape)
+            self.local_pred = self.adversarial_model(self.origin_pred)
+            self.local_pred_clone = self.local_pred.detach().clone()
+        ######### Defense Applied on Local Model Prediction Process ###########
+
+        self.transferred_past_key_values = None # no need to transmit past_key_values
+        if use_cache: # need to transmit past_key_values
+            self.transferred_past_key_values = self.past_key_values
+
+        intermediate['inputs_embeds'] = self.local_pred_clone
+        intermediate['attention_mask'] = self.local_attention_mask
+
+        return intermediate
+
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
@@ -354,41 +391,28 @@ class Party(object):
         for param_group in self.local_model_optimizer.param_groups:
             param_group['lr'] = eta_t 
             
-    def obtain_local_data(self, input_ids, 
-                        local_batch_attention_mask, 
-                        local_batch_token_type_ids, 
-                        past_key_values = None):
+    def obtain_local_data_old(self, input_ids=None, 
+                        inputs_embeds=None,
+                        local_batch_attention_mask=None,
+                        local_batch_token_type_ids=None,
+                        past_key_values = None,
+                        **kwargs):
         self.local_batch_data = input_ids # input_ids
         self.local_batch_attention_mask = local_batch_attention_mask
         self.local_batch_token_type_ids = local_batch_token_type_ids
 
         self.past_key_values = past_key_values
     
+    def obtain_local_data(self, data_input_dict ,**kwargs):
+        # self.local_batch_data = kwargs['input_ids'] # input_ids
+        # self.local_batch_attention_mask = kwargs['attention_mask']
+        # self.local_batch_token_type_ids = kwargs['token_type_ids'] if 'token_type_ids' in kwargs else None
+        # self.past_key_values = past_key_values
+        # print('obtain_local_data_dev:',kwargs.keys())
+        self.local_data_input = data_input_dict
+    
     def local_forward(self):
         # args.local_model()
         pass
 
-    # def local_backward(self,weight=None):
-    #     # print('local_backward self.local_pred:',self.local_pred.requires_grad)
-
-    #     self.num_local_updates += 1 # another update
-        
-    #     # update local model
-    #     if self.local_model_optimizer != None:
-    #         # adversarial training : update adversarial model
-    #         if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-    #             self.adversarial_model_optimizer.zero_grad()
-
-    #             self.local_model_optimizer.zero_grad()
-
-
-    #             final_adversary_loss = - self.adversarial_loss + self.args.adversary_lambda * self.mapping_distance
-    #             final_adversary_loss.backward(retain_graph=True)
-
-    #             self.local_model_optimizer.step()
-
-    #             self.adversarial_model_optimizer.step()
-        
-        
-
-
+   

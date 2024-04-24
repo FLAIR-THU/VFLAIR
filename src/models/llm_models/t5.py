@@ -128,6 +128,7 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
         >>> # studies have shown that owning a dog is good for you.
         ```"""
         use_cache = use_cache if use_cache is not None else self.config.use_cache
+        # print('T5ForConditionalGeneration_pretrained use_cache:',use_cache)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if labels is not None and decoder_input_ids is None and decoder_inputs_embeds is None:
@@ -136,7 +137,7 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
             decoder_input_ids = self._shift_right(labels)
             print('decoder_input_ids:',decoder_input_ids)
 
-        decoder_outputs, encoder_outputs = self.t5(
+        t5_output = self.t5(
             inputs_embeds= inputs_embeds, # encoder_intermediate
             position_bias = position_bias, # encoder_intermediate
             attention_mask = attention_mask,
@@ -155,8 +156,15 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
             output_hidden_states = output_hidden_states,
             return_dict = return_dict,
         )
+        decoder_outputs = t5_output['decoder_outputs']
+        encoder_outputs = t5_output['encoder_outputs']
+        # print('decoder_outputs:',type(decoder_outputs) )
+        # print('encoder_outputs:',type(encoder_outputs) )
+
 
         sequence_output = decoder_outputs[0]
+        # print('sequence_output:',type(sequence_output) )
+
 
         # Set device for model parallelism
         if self.model_parallel:
@@ -281,6 +289,8 @@ class LocalT5Stack(T5PreTrainedModel):
             torch.cuda.set_device(self.first_device)
             self.embed_tokens = self.embed_tokens.to(self.first_device)
         use_cache = use_cache if use_cache is not None else self.config.use_cache
+        print('LocalT5Stack use_cache:',use_cache,'  self.config.use_cache:',self.config.use_cache)
+
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -492,14 +502,12 @@ class GlobalT5Stack(T5PreTrainedModel):
         output_hidden_states=None,
         return_dict=None,
     ):
-
-        # print('GlobalT5Stack inputs_embeds:',inputs_embeds)
-
         # Model parallel
         if self.model_parallel:
             torch.cuda.set_device(self.first_device)
             self.embed_tokens = self.embed_tokens.to(self.first_device)
         use_cache = use_cache if use_cache is not None else self.config.use_cache
+        print('GlobalT5Stack use_cache:',use_cache,'  self.config.use_cache:',self.config.use_cache)
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -710,6 +718,14 @@ class LocalT5Model(T5PreTrainedModel):
         # self.encoder = full_t5.encoder #T5Stack(encoder_config, self.shared)
         self.encoder = LocalT5Stack(encoder_config, full_t5.encoder, embed_tokens = self.shared, num_local_encoders = num_encoders)
 
+        # # local decoder
+        # decoder_config = copy.deepcopy(full_t5.config)
+        # decoder_config.is_decoder = True
+        # decoder_config.is_encoder_decoder = False
+        # decoder_config.num_layers = full_t5.config.num_decoder_layers
+        # self.decoder = GlobalT5Stack(decoder_config, full_t5.decoder, embed_tokens = self.shared, num_global_encoders = num_encoders)
+        # # full_t5.decoder #T5Stack(decoder_config, self.shared)
+
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -734,6 +750,7 @@ class LocalT5Model(T5PreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+
         **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqModelOutput]:
         r"""
@@ -795,10 +812,13 @@ class LocalT5Model(T5PreTrainedModel):
                 output_hidden_states=output_hidden_states,
                 return_dict=return_dict,
             )
-
+        
+        
         return {'inputs_embeds':hidden_states,  # encoder intermediate
+                'attention_mask':attention_mask,
                 'position_bias':position_bias , 
-                'attention_mask':attention_mask}
+                'use_cache':use_cache,
+                'labels':kwargs['labels'],}
 
 class GlobalT5Model(T5PreTrainedModel):
     def __init__(self, full_t5 ,num_encoders, generation_config=None):
@@ -820,6 +840,7 @@ class GlobalT5Model(T5PreTrainedModel):
         decoder_config.is_decoder = True
         decoder_config.is_encoder_decoder = False
         decoder_config.num_layers = full_t5.config.num_decoder_layers
+        # self.decoder = GlobalT5Stack(decoder_config, full_t5.decoder, embed_tokens = self.shared, num_global_encoders = num_encoders)
         self.decoder = full_t5.decoder #T5Stack(decoder_config, self.shared)
 
 
@@ -851,23 +872,17 @@ class GlobalT5Model(T5PreTrainedModel):
         position_bias = None,
         **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqModelOutput]:
-
         # global part of encoder: GlobalT5Stack
         encoder_outputs = self.encoder(
-            inputs_embeds = inputs_embeds,
-            attention_mask = attention_mask,
-            position_bias = position_bias,
-            
             input_ids=input_ids,
-            encoder_hidden_states=encoder_hidden_states,
-            encoder_attention_mask=encoder_attention_mask,
+            attention_mask=attention_mask,
+            inputs_embeds=inputs_embeds,
             head_mask=head_mask,
-            cross_attn_head_mask=cross_attn_head_mask,
-            past_key_values=past_key_values,
-            use_cache=use_cache,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+
+            position_bias = position_bias,
         )
 
         hidden_states = encoder_outputs[0]

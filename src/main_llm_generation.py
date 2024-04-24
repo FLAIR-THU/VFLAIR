@@ -7,7 +7,6 @@ import random
 import logging
 import argparse
 import torch
-torch.cuda.current_device()
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
@@ -123,8 +122,8 @@ if __name__ == '__main__':
             GenerationModel = GPT2_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         elif args.model_type == 'Llama':
             GenerationModel = Llama_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
-        # elif args.model_type == 'T5':
-        #     GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
+        elif args.model_type == 'T5':
+            GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         else:
             assert 1>2, 'model type not supported for generation'
             
@@ -135,13 +134,7 @@ if __name__ == '__main__':
         ######### define your input text here #########
 
         inputs = args.tokenizer(input_text, return_tensors="pt").to(args.device)
-        ids = args.tokenizer(input_text, return_tensors='pt') 
-        input_ids = torch.tensor(ids['input_ids']).squeeze().to(args.device)
-        attention_mask = torch.tensor(ids['attention_mask']).squeeze().to(args.device)
-        if 'token_type_ids' in list(ids.keys()):
-            token_type_ids = torch.tensor(ids['token_type_ids']).squeeze().to(args.device)
-        else:
-            token_type_ids = None
+        print('input_ids:',inputs['input_ids'])
         
 
         
@@ -169,8 +162,6 @@ if __name__ == '__main__':
 
         ######### VFL model ########
         GenerationModel = GenerationModel.to(args.device)
-        print('input_ids:',inputs['input_ids'])
-
         greedy_output = GenerationModel.generate(**inputs, max_length=30)
         print("greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
