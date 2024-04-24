@@ -2,8 +2,8 @@
     "epochs": 1,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 7,
-    "pipeline": "pretrained",
+    "batch_size": 32,
+    "pipeline": "finetune",
     "early_stop_threshold": 1,
     "model_architect":"CLM",
     "communication":{

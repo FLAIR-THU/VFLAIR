@@ -207,8 +207,6 @@ class PassiveParty_LLM(Party_LLM):
         return global_gradients_clone
 
     def cal_loss(self, pred, test=False):
-        print('== cal_loss ==')
-
         gt_one_hot_label = self.gt_one_hot_label # label
         
         # ########### Normal Loss ###############
@@ -292,8 +290,6 @@ class PassiveParty_LLM(Party_LLM):
         self.global_loss = loss
 
         # ########### Defense on Loss ###############
-        print('self.args.apply_adversarial:',self.args.apply_adversarial)
-        print('self.index:',self.index,self.args.defense_configs)
         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
             intermediate = self.local_pred # pred after adversarial model: bs, seq, embed_dim768
             adversary_recovered_embedding = self.imagined_adversary(intermediate)

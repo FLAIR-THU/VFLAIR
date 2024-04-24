@@ -119,6 +119,7 @@ class PassiveDataset_LLM(Dataset):
                 }
                 self.input_dicts.append(inputs)
                 self.labels.append( labels[i] ) # [ [start_position, end_position] ]
+            self.labels = torch.tensor(self.labels)
 
     def __len__(self):
         return len(self.labels)
@@ -126,12 +127,12 @@ class PassiveDataset_LLM(Dataset):
     def __getitem__(self, item_idx):
 
         input_dict = self.input_dicts[item_idx]
-        for key_name in self.input_dicts[item_idx].keys():
-            input_dict[key_name] = torch.tensor(input_dict[key_name]).to(self.args.device)
-        
+
+        for key_name in input_dict.keys():
+            if not isinstance( input_dict[key_name] , dict):
+                input_dict[key_name] = torch.tensor(input_dict[key_name]).squeeze().to(self.args.device)
         
         label = torch.tensor(self.labels[item_idx]).squeeze().to(self.args.device)
-        
         return input_dict, label
 
 

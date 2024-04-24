@@ -171,8 +171,11 @@ class VanillaModelInversion_WhiteBox(Attacker):
 
                 data_inputs = {}
                 for key_name in batch_input_dicts[0].keys():
-                    data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
-                
+                    if isinstance(batch_input_dicts[0][key_name], torch.Tensor):
+                        data_inputs[key_name] = torch.stack( [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] )
+                    else:
+                        data_inputs[key_name] = [batch_input_dicts[i][key_name] for i in range(len(batch_input_dicts))] 
+
                 # real received intermediate result
                 self.top_vfl.parties[0].obtain_local_data(data_inputs)
                 self.top_vfl.parties[0].gt_one_hot_label = batch_label
