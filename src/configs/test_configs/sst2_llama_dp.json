@@ -1,53 +1,59 @@
 {
-    "epochs": 50,
-    "lr": 0.0001,
+    "epochs": 1,
+    "lr": 0.005,
     "k": 2,
     "batch_size": 64,
-    "pipeline": "pretrained",
-    "early_stop_threshold": 2,
+    "device": "cuda",
+    "gpu": 0,
+    "fl_type": "VFL",
     "model_architect":"CLS",
+    "pipeline": "finetune",
+    "early_stop_threshold": 2,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "SST-2",
+        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 384,
+        "max_length": 70,
         "padding_side": "left",
         "add_special_tokens": 1
     },
-    "dataset":{
-        "dataset_name": "yelp-polarity",
-        "num_classes": 5
-    },
     "model_list":{
         "0": {
-            "type": "Shunianyelp_review_classification",
+            "type": "llama-2-7b",
             "pretrained": 1,
-            "encoder_trainable": 0,
+            "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
-            "type": "Shunianyelp_review_classification",
+            "type": "llama-2-7b",
             "pretrained": 1,
-            "encoder_trainable": 0,
             "head_layer_trainable": 1,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "encoder_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
+            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
             "task_type": "SequenceClassification"
         },
-        "local_encoders_num": 2,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -55,7 +61,7 @@
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "epsilon": 80
+            "epsilon": 50
         }
     },
     "attack_list": {
@@ -64,20 +70,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
+                "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 1000
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 1000
+                "attack_sample_num": 100
             }
         }
     }
