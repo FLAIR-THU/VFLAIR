@@ -98,6 +98,7 @@ def do_load_basic_configs(config_dict, args):
     args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None# pretrained finetune
     
     args.model_architect = config_dict['model_architect'] if('model_architect' in config_dict) else 'CLM'
+    print('load model_architect:',args.model_architect)
     
     # Tokenizer
     args.tokenizer = None # for LLM if needed

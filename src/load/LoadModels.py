@@ -637,10 +637,12 @@ def load_basic_models_llm_gpt2(args, index):
 
     print('load gpt:',args.model_architect)
     if args.model_architect == 'CLM':#task_type == 'CausalLM':
+        print('gpt AutoModelForCausalLM')
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
     # elif args.task_type == "Generation":
     #     full_model = AutoModelForCausalLM.from_pretrained(model_path)
     elif args.model_architect == 'TQA':#.task_type == 'QuestionAnswering':
+        print('gpt AutoModelForQuestionAnswering')
         full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     elif args.model_architect == 'CLS':#.task_type == 'SequenceClassification':
         full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
@@ -1682,13 +1684,13 @@ def load_basic_models_llm(args, index):
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_t5(args, index)
     else:
         assert 1 > 2, f'{args.model_type} not supported'
-
-    if 'questionanswering' in args.model_architectures[0].lower():
-        args.model_architect = 'TQA' # Text-span based Question Answering
-    elif 'classification' in args.model_architectures[0].lower():
-        args.model_architect = 'CLS' # Classification
-    else:
-        args.model_architect = 'CLM' # Causal LM
+    
+    # if 'questionanswering' in args.model_architectures[0].lower():
+    #     args.model_architect = 'TQA' # Text-span based Question Answering
+    # elif 'classification' in args.model_architectures[0].lower():
+    #     args.model_architect = 'CLS' # Classification
+    # else:
+    #     args.model_architect = 'CLM' # Causal LM
         
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer

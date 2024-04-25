@@ -4,6 +4,7 @@
     "k": 2,
     "batch_size": 16,
     "pipeline": "finetune",
+    "model_architect":"TQA",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

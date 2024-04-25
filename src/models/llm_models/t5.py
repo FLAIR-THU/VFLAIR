@@ -768,9 +768,6 @@ class LocalT5Model(T5PreTrainedModel):
         #         hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
         #         attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
         #     )
-        print('-'*25)
-        print('input_ids:',input_ids)
-        print('inputs_embeds:',inputs_embeds)
 
         if encoder_outputs is None:
             hidden_states, position_bias = self.encoder(
@@ -782,18 +779,17 @@ class LocalT5Model(T5PreTrainedModel):
                     output_hidden_states=output_hidden_states,
                     return_dict=return_dict,
                 )
-            self.position_bias = position_bias
+            return {'inputs_embeds':hidden_states,  # encoder intermediate
+                    'attention_mask':attention_mask,
+                    'position_bias':position_bias , 
+                    'labels':kwargs['labels'],
+                    'decoder_input_ids':decoder_input_ids
+                    }
         else:
-            hidden_states = encoder_outputs[1] if len(encoder_outputs) > 1 else None,
-            attention_mask = encoder_outputs[2] if len(encoder_outputs) > 2 else None,
-            position_bias = self.position_bias
-
-        labels = kwargs['labels'] if 'labels' in kwargs.keys() else None
-        return {'inputs_embeds':hidden_states,  # encoder intermediate
-                'attention_mask':attention_mask,
-                'position_bias':position_bias , 
-                'labels':labels,
-                'decoder_input_ids':decoder_input_ids
+            return {
+                'inputs_embeds': encoder_outputs[0],
+                'decoder_input_ids':decoder_input_ids,
+                'encoder_outputs':encoder_outputs
                 }
 
 class GlobalT5Model(T5PreTrainedModel):
@@ -849,17 +845,18 @@ class GlobalT5Model(T5PreTrainedModel):
         **kwargs
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqModelOutput]:
         # global part of encoder: GlobalT5Stack
-        encoder_outputs = self.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            inputs_embeds=inputs_embeds,
-            head_mask=head_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
+        if encoder_outputs == None:
+            encoder_outputs = self.encoder(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                inputs_embeds=inputs_embeds,
+                head_mask=head_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
 
-            position_bias = position_bias,
-        )
+                position_bias = position_bias,
+            )
 
         hidden_states = encoder_outputs[0]
 
