@@ -84,12 +84,15 @@ class PassiveDataset_LLM(Dataset):
         elif args.task_type == 'CausalLM':
             flag = 0
             for i in range(len(texts)):
-                if split_name == 'test':
-                    ids = args.tokenizer(texts[i],return_tensors='pt')
-                else:
-                    ids = args.tokenizer(texts[i], \
-                    padding=args.padding,truncation=args.truncation ,\
-                    max_length=args.max_length,return_tensors='pt') 
+                # if split_name == 'test':
+                #     # ids = args.tokenizer(texts[i],return_tensors='pt')
+                #     ids = args.tokenizer(texts[i], \
+                #     padding=args.padding,truncation=args.truncation ,\
+                #     max_length=args.max_length,return_tensors='pt') 
+                # else:
+                ids = args.tokenizer(texts[i], \
+                padding=args.padding,truncation=args.truncation ,\
+                max_length=args.max_length,return_tensors='pt') 
 
                 if flag == 0:
                     print('TEXT:',texts[i])

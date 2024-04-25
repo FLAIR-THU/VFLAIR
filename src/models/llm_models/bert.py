@@ -15,7 +15,7 @@ from typing import Optional, Tuple, Union, List
 import torch.nn as nn
 import torch
 import copy
-from transformers.models.bert.modeling_bert import (BertEmbeddings,BertPooler,BertLayer)
+from transformers.models.bert.modeling_bert import *
 
 ##################### Functional Global Models ######################
 '''
@@ -206,7 +206,7 @@ class BertForSequenceClassification_pretrained(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
-class BertLMHeadModel_pretrained(BertPreTrainedModel):
+class BertLMHeadModel_pretrained(BertLMHeadModel):
     def __init__(self, global_bert, cls):
         super().__init__(global_bert.config)
 
@@ -217,12 +217,12 @@ class BertLMHeadModel_pretrained(BertPreTrainedModel):
         self.head_layer = cls #BertOnlyMLMHead(config)
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
         self.past_key_values = None
 
     def _clear_past_key_values(self):
-        self.past_key_values = None
+        self.bert._clear_past_key_values()
 
     def forward(
         self,
@@ -667,7 +667,10 @@ class GlobalBertModel(BertPreTrainedModel):
         self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.local_num_encoders) #full_bert.encoder #BertEncoder(config)
         
         self.past_key_values = None
-        
+    
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+
     def forward(
         self,
         inputs_embeds: Optional[torch.Tensor] = None,# local_pred: intermediate_embedding

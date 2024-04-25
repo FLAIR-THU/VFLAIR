@@ -1,14 +1,14 @@
 {
     "epochs": 1,
-    "lr": 0.005,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 16,
+    "pipeline": "pretrained",
+    "model_architect":"CLS",
+    "early_stop_threshold": 1,
     "device": "cuda",
     "gpu": 0,
     "fl_type": "VFL",
-    "model_architect":"CLS",
-    "pipeline": "finetune",
-    "early_stop_threshold": 2,
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -28,28 +28,24 @@
     },
     "model_list":{
         "0": {
-            "type": "llama-2-7b",
+            "type": "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
-            "path": "/mnt/data/model/llama-2-7b-hf"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/HuggingFaceH4tiny-random-LlamaForSequenceClassification"
         },
         "1": {
-            "type": "llama-2-7b",
+            "type": "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
-            "path": "/mnt/data/model/llama-2-7b-hf"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/HuggingFaceH4tiny-random-LlamaForSequenceClassification"
         },
         "task":{
             "task_type": "SequenceClassification"

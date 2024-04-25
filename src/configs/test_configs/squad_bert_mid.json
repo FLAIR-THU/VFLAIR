@@ -1,14 +1,10 @@
 {
-    "epochs": 1,
+    "epochs": 2,
     "lr": 0.0001,
     "k": 2,
     "batch_size": 16,
-    "early_stop_threshold": 2,
     "pipeline": "finetune",
     "model_architect":"TQA",
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -30,28 +26,24 @@
     },
     "model_list":{
         "0": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "1": {
-            "type": "textattackbert-base-uncased-SST-2",
+            "type": "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
             "pretrained": 1,
-            "encoder_trainable": 0,
             "head_layer_trainable": 1,
+            "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/google-bertbert-large-uncased-whole-word-masking-finetuned-squad"
         },
         "task":{
             "task_type": "QuestionAnswering",
@@ -60,7 +52,7 @@
             "max_seq_length": 256,
             "max_query_length" : 64,
             "max_answer_length": 30,
-            "n_best_size": 20
+            "n_best_size": 2
 
         },
         "apply_trainable_layer": 0,
@@ -76,7 +68,7 @@
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 256,
-            "embed_dim": 768
+            "embed_dim": 1024
         }
     },
     "attack_list": {

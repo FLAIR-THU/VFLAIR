@@ -54,7 +54,7 @@
         "task":{
             "task_type": "CausalLM",
             "doc_stride" : 128,
-            "max_seq_length": 128,
+            "max_seq_length": 64,
             "metric_type": "best_pred",
             "n_best_size": 8
         },

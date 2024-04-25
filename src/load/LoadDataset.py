@@ -1924,7 +1924,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
         
-        for _all_text in train_all_texts[:1]:
+        for _all_text in train_all_texts:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1935,7 +1935,7 @@ def load_dataset_per_party_llm(args, index):
                     length = max_seq_length
 
                 text_tokens = all_doc_tokens[ start_offset : start_offset + length] # 0 1...7 
-                # print('text_tokens:',len(text_tokens),' prompt_tokens:',len(prompt_tokens))
+                
                 text = args.tokenizer.convert_tokens_to_string(prompt_tokens+text_tokens)
                 last_word = all_doc_tokens[ start_offset + length ] 
                 # print('text:',text)
@@ -1964,11 +1964,19 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts[:10]:
+        for _all_text in test_all_texts:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
 
             text_tokens = all_doc_tokens[:-1]
-            text = args.tokenizer.convert_tokens_to_string(prompt_tokens+text_tokens)
+
+            # pad_length = args.max_seq_length - len(prompt_tokens) - len(text_tokens)
+
+            # if pad_length > 0:
+            #     text_tokens = [args.tokenizer.eos_token *pad_length] + prompt_tokens + text_tokens
+            # else:
+            text_tokens = prompt_tokens + text_tokens
+                
+            text = args.tokenizer.convert_tokens_to_string(text_tokens)
             
             texts.append(text) # messages.append( )
             target_word.append(all_doc_tokens[-1])
@@ -2000,7 +2008,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in train_features[:100]:
+        for feature in train_features:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 
@@ -2016,7 +2024,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in test_features[:10]:
+        for feature in test_features:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 

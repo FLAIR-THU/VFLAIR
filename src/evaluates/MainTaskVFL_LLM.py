@@ -19,7 +19,7 @@ from sklearn.metrics import roc_auc_score, matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
 import torch
-import warnings
+
 
 import inspect
 from typing import List, Optional, Tuple, Union, Dict, Any
@@ -54,6 +54,9 @@ from evaluates.attacks.attack_api import AttackerLoader
 
 from load.LoadModels import MODEL_PATH
 from party.LocalCommunication import LocalCommunication
+
+import warnings
+warnings.filterwarnings("ignore")
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable = True
@@ -297,12 +300,8 @@ def create_main_task(global_model_type):
                     if isinstance(model_output,torch.Tensor): # generation -- generated token ids
                         predict_label_list = model_output[:,self.seq_length:]
                     else: # forward -- raw model output
-                        print('model_output:',type(model_output))
-                        print('model_output.logits:',model_output.logits.shape)
                         generated_token_logits = model_output.logits[:,-1,:]
-                        print('generated_token_logits:',generated_token_logits.shape)
                         predict_label_list = torch.argmax(generated_token_logits, dim=-1) 
-                    print('predict_label_list:',predict_label_list.shape)
 
                     predict_label_list = [int(_id.item()) for _id in list(predict_label_list)]
                     target_label_list = [int(_id.item()) for _id in list(gt_one_hot_label)]
@@ -526,7 +525,6 @@ def create_main_task(global_model_type):
                         if sample_cnt is not None:
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='CLM': #task_type == "CausalLM":
-                        print('data_inputs[input_ids]:',data_inputs['input_ids'].shape)
                         generation_output = self.generate(**data_inputs, generation_config = self.generation_config,\
                                 max_new_tokens=1)
                         self._clear_past_key_values()
@@ -649,12 +647,7 @@ def create_main_task(global_model_type):
                 return exp_result, self.test_acc
 
         def causal_lm_inference(self):
-            print('=== causal_lm_inference ===')
             predict_word_list, target_word_list, total_sample_cnt = self.predict()
-
-            print('target_word_list:\n', target_word_list[:5])
-            print('predict_word_list:\n', predict_word_list[:5])
-            print('total_sample_cnt:',total_sample_cnt)
 
             result_dict = self.generate_assessment(predict_word_list, target_word_list)
             self.test_acc = result_dict['acc']
@@ -668,7 +661,6 @@ def create_main_task(global_model_type):
             start_time = time.time()
             nbest_list, gold_ans_list, total_sample_cnt = self.predict()
             end_time = time.time()
-            print('predict:',end_time-start_time)
 
             start_time = time.time()
 
@@ -682,9 +674,9 @@ def create_main_task(global_model_type):
         def forward(self, **kwargs):
             self.parties[0].obtain_local_data(kwargs)
             # passive party do local pred
-            pred_list = self.pred_transmit(use_cache=True)
+            pred_list = self.pred_transmit(use_cache=False)
             # passive party inform active party to do global pred
-            final_output = self.global_pred_transmit(pred_list, use_cache=True)
+            final_output = self.global_pred_transmit(pred_list, use_cache=False)
             
             global_output = self.parties[1].global_output
             return global_output # dict
@@ -723,7 +715,6 @@ def create_main_task(global_model_type):
                 return exp_result, main_task_result
 
             if self.args.model_architect=='CLM':#task_type == "CausalLM":
-                print('=== inference ===')
                 exp_result, main_task_result = self.causal_lm_inference()
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
