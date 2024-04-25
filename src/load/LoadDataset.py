@@ -2047,45 +2047,7 @@ def load_dataset_per_party_llm(args, index):
                 "### Instruction:\n{instruction}\n\n### Response:"
             ),
         }
-        # IGNORE_INDEX = -100
-
-        # def preprocess(
-        #     sources: Sequence[str],
-        #     targets: Sequence[str],
-        #     tokenizer,#: transformers.PreTrainedTokenizer,
-        # ) -> Dict:
-        #     """Preprocess the data by tokenizing."""
-        #     examples = [s + t for s, t in zip(sources, targets)]
-        #     examples_tokenized, sources_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (examples, sources)]
-        #     input_ids = examples_tokenized["input_ids"]
-        #     labels = copy.deepcopy(input_ids)
-        #     for label, source_len in zip(labels, sources_tokenized["input_ids_lens"]):
-        #         label[:source_len] = IGNORE_INDEX
-        #     return dict(input_ids=input_ids, labels=labels)
-
-        # def _tokenize_fn(strings: Sequence[str], tokenizer) -> Dict:
-        #     """Tokenize a list of strings."""
-        #     tokenized_list = [
-        #         tokenizer(
-        #             text,
-        #             return_tensors="pt",
-        #             padding="longest",
-        #             max_length=tokenizer.model_max_length,
-        #             truncation=True,
-        #         )
-        #         for text in strings
-        #     ]
-        #     input_ids = labels = [tokenized.input_ids[0] for tokenized in tokenized_list]
-        #     input_ids_lens = labels_lens = [
-        #         tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item() for tokenized in tokenized_list
-        #     ]
-        #     return dict(
-        #         input_ids=input_ids,
-        #         labels=labels,
-        #         input_ids_lens=input_ids_lens,
-        #         labels_lens=labels_lens,
-        #     )
-
+        
         list_data_dict = split['train']
         sources = [
             prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
@@ -2093,17 +2055,24 @@ def load_dataset_per_party_llm(args, index):
         ]
         targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
 
-        data_dict = preprocess(sources, targets, args.tokenizer)
+        X_train = sources
+        y_train = targets
 
-        input_ids = data_dict["input_ids"]
-        labels = data_dict["labels"]
+        list_data_dict = split['test']
+        sources = [
+            prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
+            for example in list_data_dict
+        ]
+        targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
 
-        print('TRAIN:',len(train_dst), train_dst[0].keys())
-        print(train_dst[0])
+        X_test = sources
+        y_test = targets
 
-        # test_dst = load_dataset(dataset_path,split='test')
-        print('TEST:',len(test_dst), test_dst[0].keys())
-        print(test_dst[0])
+        train_dst = (X_train, y_train)
+        test_dst = (X_test, y_test)
+
+        print('X:',type(X_train), len(X_train), len(X_test))  #
+        print('y',type(y_train), len(y_train), len(y_test))  #
 
 
     elif not args.dataset:

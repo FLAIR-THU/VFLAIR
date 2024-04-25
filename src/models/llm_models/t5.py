@@ -1,5 +1,5 @@
 # from transformers import T5PreTrainedModel
-from transformers.models.t5.modeling_t5 import T5Stack, T5LayerNorm,T5PreTrainedModel
+from transformers.models.t5.modeling_t5 import * 
 from typing import Optional, Tuple, Union, List
 import warnings
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -60,8 +60,8 @@ import torch
 import copy
 
 ##### Evaluation with pretrained models ######
-class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
-    def __init__(self, global_t5, lm_head):
+class T5ForConditionalGeneration_pretrained(T5ForConditionalGeneration):
+    def __init__(self, global_t5, lm_head, generation_config = None):
         super().__init__(global_t5.config)
         # print(' == init GPT2LMHeadModel_pretrained == ')
         self.t5 = global_t5 #GPT2Model(config)
@@ -71,8 +71,10 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
         self.model_parallel = False
         self.device_map = None
 
+        self.generation_config = generation_config
+
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
     def forward(
         self,
@@ -202,45 +204,6 @@ class T5ForConditionalGeneration_pretrained(T5PreTrainedModel):
             encoder_hidden_states=encoder_outputs.hidden_states,
             encoder_attentions=encoder_outputs.attentions,
         )
-
-    def prepare_inputs_for_generation(
-        self,
-        input_ids,
-        past_key_values=None,
-        attention_mask=None,
-        head_mask=None,
-        decoder_head_mask=None,
-        decoder_attention_mask=None,
-        cross_attn_head_mask=None,
-        use_cache=None,
-        encoder_outputs=None,
-        **kwargs,
-    ):
-        # cut decoder_input_ids if past_key_values is used
-        if past_key_values is not None:
-            past_length = past_key_values[0][0].shape[2]
-
-            # Some generation methods already pass only the last input ID
-            if input_ids.shape[1] > past_length:
-                remove_prefix_length = past_length
-            else:
-                # Default to old behavior: keep only final ID
-                remove_prefix_length = input_ids.shape[1] - 1
-
-            input_ids = input_ids[:, remove_prefix_length:]
-
-        return {
-            "decoder_input_ids": input_ids,
-            "past_key_values": past_key_values,
-            "encoder_outputs": encoder_outputs,
-            "attention_mask": attention_mask,
-            "head_mask": head_mask,
-            "decoder_head_mask": decoder_head_mask,
-            "decoder_attention_mask": decoder_attention_mask,
-            "cross_attn_head_mask": cross_attn_head_mask,
-            "use_cache": use_cache,
-        }
-
 
 ##################### Functional Global Models ######################
 class LocalT5Stack(T5PreTrainedModel):
@@ -733,6 +696,8 @@ class LocalT5Model(T5PreTrainedModel):
         self.model_parallel = False
         self.device_map = None
 
+        self.position_bias = None
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -803,22 +768,33 @@ class LocalT5Model(T5PreTrainedModel):
         #         hidden_states=encoder_outputs[1] if len(encoder_outputs) > 1 else None,
         #         attentions=encoder_outputs[2] if len(encoder_outputs) > 2 else None,
         #     )
-        hidden_states, position_bias = self.encoder(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                inputs_embeds=inputs_embeds,
-                head_mask=head_mask,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                return_dict=return_dict,
-            )
-        
-        
+        print('-'*25)
+        print('input_ids:',input_ids)
+        print('inputs_embeds:',inputs_embeds)
+
+        if encoder_outputs is None:
+            hidden_states, position_bias = self.encoder(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    inputs_embeds=inputs_embeds,
+                    head_mask=head_mask,
+                    output_attentions=output_attentions,
+                    output_hidden_states=output_hidden_states,
+                    return_dict=return_dict,
+                )
+            self.position_bias = position_bias
+        else:
+            hidden_states = encoder_outputs[1] if len(encoder_outputs) > 1 else None,
+            attention_mask = encoder_outputs[2] if len(encoder_outputs) > 2 else None,
+            position_bias = self.position_bias
+
+        labels = kwargs['labels'] if 'labels' in kwargs.keys() else None
         return {'inputs_embeds':hidden_states,  # encoder intermediate
                 'attention_mask':attention_mask,
                 'position_bias':position_bias , 
-                'use_cache':use_cache,
-                'labels':kwargs['labels'],}
+                'labels':labels,
+                'decoder_input_ids':decoder_input_ids
+                }
 
 class GlobalT5Model(T5PreTrainedModel):
     def __init__(self, full_t5 ,num_encoders, generation_config=None):

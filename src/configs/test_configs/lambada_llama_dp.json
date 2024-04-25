@@ -1,53 +1,65 @@
 {
-    "epochs": 50,
-    "lr": 0.0001,
+    "epochs": 1,
+    "lr": 0.001,
     "k": 2,
-    "batch_size": 64,
-    "pipeline": "pretrained",
+    "batch_size": 16,
     "early_stop_threshold": 2,
-    "model_architect":"CLS",
+    "pipeline": "finetune",
+    "device": "cuda",
+    "gpu": 0,
+    "model_architect":"CLM",
+    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "Lambada",
+        "num_classes": 1,
+        "use_prompt": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 384,
+        "truncation": "True",
+        "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },
-    "dataset":{
-        "dataset_name": "yelp-polarity",
-        "num_classes": 5
-    },
     "model_list":{
         "0": {
-            "type": "Shunianyelp_review_classification",
+            "type": "llama-2-7b",
             "pretrained": 1,
-            "encoder_trainable": 0,
+            "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "output_dim": 1,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "1": {
-            "type": "Shunianyelp_review_classification",
+            "type": "llama-2-7b",
             "pretrained": 1,
-            "encoder_trainable": 0,
             "head_layer_trainable": 1,
-            "output_dim": 5,
-            "model_type": "Bert",
+            "encoder_trainable": 0,
+            "output_dim": 1,
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+            "train_set_file": "/mnt/data/data/Lambada",
+            "test_set_file": "/mnt/data/data/Lambada",
+            "path": "/mnt/data/model/llama-2-7b-hf"
         },
         "task":{
-            "task_type": "SequenceClassification"
+            "task_type": "CausalLM",
+            "doc_stride" : 128,
+            "max_seq_length": 128,
+            "metric_type": "best_pred",
+            "n_best_size": 8
         },
-        "local_encoders_num": 2,
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -55,7 +67,7 @@
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "epsilon": 80
+            "epsilon": 50
         }
     },
     "attack_list": {
@@ -64,9 +76,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
+                "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 1000
+                "attack_sample_num": 500
             }
         },
         "1":{
@@ -75,9 +87,9 @@
                 "party": [1],
                 "T": 0.05,
                 "lr": 0.001,
-                "epochs": 100,
+                "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 1000
+                "attack_sample_num": 500
             }
         }
     }

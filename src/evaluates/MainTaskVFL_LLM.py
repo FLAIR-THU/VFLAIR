@@ -1453,6 +1453,10 @@ def create_main_task(global_model_type):
         def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
             return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
 
+        def _prepare_encoder_decoder_kwargs_for_generation(self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None):
+            return self.parties[-1].global_model._prepare_encoder_decoder_kwargs_for_generation(\
+                inputs_tensor=inputs_tensor, model_kwargs = model_kwargs, model_input_name= model_input_name)
+
         def __call__(self, **kwargs):
             return self.forward(**kwargs)
 

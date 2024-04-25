@@ -36,6 +36,7 @@ from models.llm_models.gemma import *
 from models.llm_models.mistral import *
 from models.llm_models.xlnet import *
 
+from models.llm_models.t5 import *
 from models.llm_models.qwen2 import Qwen2ModelHead, Qwen2TailForCausalLM, PipelineVFL2Slice
 # from models.llm_models.t5 import *
 
@@ -538,8 +539,6 @@ def load_basic_models_llm_t5(args, index):
 
     args.config = full_model.config
     args.generation_config = full_model.generation_config
-    args.generation_config = full_model.generation_config
-
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.d_model
 
@@ -563,7 +562,7 @@ def load_basic_models_llm_t5(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalT5Model(full_t5, num_encoders = args.local_encoders_num, generation_config=full_model.generation_config)
+        local_model = LocalT5Model(full_t5, num_encoders = args.local_encoders_num)
         
         # Freeze Backbone
         for param in local_model.parameters():
@@ -599,13 +598,13 @@ def load_basic_models_llm_t5(args, index):
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
-            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
+            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer, generation_config=full_model.generation_config)
         # elif args.task_type == "QuestionAnswering":
         #     global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
         # elif args.task_type == "SequenceClassification":
         #     global_model = GPT2ForSequenceClassification_pretrained(global_t5, head_layer)
         elif args.task_type == "Generation":
-            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
+            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer, generation_config=full_model.generation_config)
         else:
             assert 1 > 2, "task type not supported"
 
@@ -1592,7 +1591,7 @@ def load_basic_models_llm_chatglm(args, index):
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
         generation_config=full_model.generation_config)
-
+        
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1686,13 +1685,11 @@ def load_basic_models_llm(args, index):
 
     if 'questionanswering' in args.model_architectures[0].lower():
         args.model_architect = 'TQA' # Text-span based Question Answering
-    elif 'lm' in args.model_architectures[0].lower():
-        args.model_architect = 'CLM' # Causal LM
     elif 'classification' in args.model_architectures[0].lower():
         args.model_architect = 'CLS' # Classification
     else:
-        assert 1>2, f'Unrecognized model architect:{args.model_architectures[0]}'
-
+        args.model_architect = 'CLM' # Causal LM
+        
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

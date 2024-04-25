@@ -1,0 +1,62 @@
+{
+    "epochs": 1,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 32,
+    "pipeline": "finetune",
+    "model_architect":"CLM",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+       "dataset_name": "Lambada",
+        "num_classes": 1,
+        "use_prompt": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 128,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 0,
+            "encoder_trainable": 1,
+            "embedding_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 0,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 0,
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+             "train_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/Lambada",
+            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
+        },
+        "task":{
+           "task_type": "CausalLM",
+            "doc_stride" : 128,
+            "max_seq_length": 128,
+            "metric_type": "best_pred",
+            "n_best_size": 8
+        },
+        "local_encoders_num": 1,
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}

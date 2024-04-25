@@ -4,6 +4,7 @@
     "k": 2,
     "batch_size": 32,
     "pipeline": "pretrained",
+    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
