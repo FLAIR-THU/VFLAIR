@@ -44,6 +44,10 @@ class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+    
+    def _clear_past_key_values(self):
+        self.transformer._clear_past_key_values()
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -162,6 +166,9 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+    
+    def _clear_past_key_values(self):
+        self.transformer._clear_past_key_values()
 
     def forward(
         self,
@@ -687,6 +694,9 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.past_key_values = None
+
+    def _clear_past_key_values(self):
         self.past_key_values = None
 
     def forward(

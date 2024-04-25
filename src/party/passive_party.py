@@ -229,6 +229,7 @@ class PassiveParty_LLM(Party_LLM):
                     loss = loss_fct(pooled_logits, labels)
             elif self.problem_type == "single_label_classification":
                 loss_fct = CrossEntropyLoss()
+                print(pooled_logits.view(-1, self.num_labels).shape)
                 loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels) #labels.view(-1)
             # elif self.problem_type == "multi_label_classification":
             #     loss_fct = BCEWithLogitsLoss()

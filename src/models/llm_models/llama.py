@@ -40,6 +40,9 @@ class LlamaforGeneration_pretrained(LlamaForCausalLM):
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -146,6 +149,9 @@ class LlamaForCausalLM_pretrained(LlamaForCausalLM):
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -251,6 +257,9 @@ class LlamaForSequenceClassification_pretrained(LlamaPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
 
     def forward(
         self,
@@ -367,6 +376,8 @@ class LocalLlamaModel(LlamaPreTrainedModel):
         self.embedding_output = None
         self.past_key_values = None
 
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
         self,
@@ -574,6 +585,8 @@ class GlobalLlamaModel(LlamaPreTrainedModel):
 
         self.past_key_values = None
         
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
         self,

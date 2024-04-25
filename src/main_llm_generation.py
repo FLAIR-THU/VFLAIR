@@ -135,7 +135,7 @@ if __name__ == '__main__':
         #  mouth curved in a confident grin i do n't care about"]
         # input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
         
-        texts = "Hello, how are you ?"
+        # texts = "Hello, how are you ?"
         texts = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\nDesign a class for representing a person in Python.\n\n### Response:"""
         inputs = args.tokenizer( texts, \
                                         # padding='max_length',  # Pad to max_length
@@ -163,7 +163,7 @@ if __name__ == '__main__':
         # greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
         # print('greedy_matching:',type(greedy_matching))
         # print(greedy_matching)
-        greedy_output = full_model.generate(**inputs, max_new_tokens=2)
+        greedy_output = full_model.generate(**inputs, max_new_tokens=100)
         print("full greedy_output:\n")
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         # GenerationModel = GenerationModel.to(args.device)
         print('Data Input:',inputs)
 
-        greedy_output = vfl.generate(**inputs, max_new_tokens=2)
+        greedy_output = vfl.generate(**inputs, max_new_tokens=100)
         print("greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
