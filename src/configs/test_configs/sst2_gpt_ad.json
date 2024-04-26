@@ -1,14 +1,11 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 64,
+    "batch_size": 128,
     "pipeline": "finetune",
     "early_stop_threshold": 1,
-    "device": "cuda",
     "model_architect":"CLS",
-    "gpu": 0,
-    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -35,9 +32,7 @@
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
-            "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
             "type": "gpt2",
@@ -47,9 +42,7 @@
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SST-2/train.tsv",
-            "test_set_file": "/mnt/data/data/SST-2/dev.tsv",
-             "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
             "task_type": "SequenceClassification"

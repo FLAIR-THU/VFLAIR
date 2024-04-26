@@ -4,9 +4,9 @@
     "k": 2,
     "batch_size": 16,
     "pipeline": "finetune",
+    "model_architect":"CLM",
     "early_stop_threshold": 1,
     "device": "cuda",
-    "model_architect":"CLM",
     "gpu": 0,
     "fl_type": "VFL",
     "communication":{
@@ -22,7 +22,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "longest_first",
-        "max_length": 70,
+        "max_length": 512,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -32,29 +32,25 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-            "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
             "type": "gpt2",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
-            "output_dim": 2,
+            "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-             "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 128,
+            "doc_stride" : 256,
+            "max_seq_length": 512,
             "metric_type": "best_pred",
             "n_best_size": 8
         },
@@ -70,7 +66,7 @@
             "imagined_adversary": "ImaginedAdversary_MLP3",
             "imagined_adversary_lr": 0.001,
             "lambda": 0.05,
-            "seq_length": 128,
+            "seq_length": 512,
             "embed_dim": 768
         }
     },
@@ -82,7 +78,7 @@
                 "lr": 0.01,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 5
             }
         },
         "1":{
@@ -93,7 +89,7 @@
                 "lr": 0.001,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 5
             }
         }
     }

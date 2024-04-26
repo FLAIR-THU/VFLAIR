@@ -1,13 +1,10 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
     "batch_size": 16,
     "pipeline": "finetune",
     "model_architect":"TQA",
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -31,14 +28,12 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
-            "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
             "type": "gpt2",
@@ -48,21 +43,18 @@
             "output_dim": 2,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
-            "path": "/mnt/data/model/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
             "task_type": "QuestionAnswering",
             "metric_type": "best_pred",
             "doc_stride" : 128,
-            "max_seq_length": 512,
+            "max_seq_length": 256,
             "max_query_length" : 64,
             "max_answer_length": 30,
             "n_best_size": 20
 
         },
-        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },

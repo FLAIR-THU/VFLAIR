@@ -1,8 +1,8 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 8,
+    "batch_size": 16,
     "pipeline": "finetune",
     "model_architect":"TQA",
     "device": "cuda",
@@ -31,7 +31,7 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 2,
             "model_type": "GPT2",
@@ -56,13 +56,12 @@
             "task_type": "QuestionAnswering",
             "metric_type": "best_pred",
             "doc_stride" : 128,
-            "max_seq_length": 512,
-            "max_query_length" : 64,
+            "max_seq_length": 256,
+            "max_query_length" : 256,
             "max_answer_length": 30,
             "n_best_size": 20
 
         },
-        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },

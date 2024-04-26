@@ -79,8 +79,8 @@ MODEL_PATH = {
 
     'llama-2-7b': YOUR_MODEL_PATH + "llama-2-7b",
     "HuggingFaceM4tiny-random-LlamaForCausalLM": YOUR_MODEL_PATH + "HuggingFaceM4tiny-random-LlamaForCausalLM",
-    "Shitaollama2-mnli": YOUR_MODEL_PATH + "Shitaollama2-mnli",
-    "benayasllama-2-7b-sst2_v0": YOUR_MODEL_PATH + "benayasllama-2-7b-sst2_v0",
+    "HuggingFaceH4tiny-random-LlamaForSequenceClassification": YOUR_MODEL_PATH + "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
+    
     "AudreyTrungNguyenllama-qnli-p-tuning": YOUR_MODEL_PATH + "AudreyTrungNguyenllama-qnli-p-tuning",
 
     "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base",
@@ -766,16 +766,19 @@ def load_basic_models_llm_llama(args, index):
 
     if args.task_type == 'CausalLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
+        full_llm = full_model.model
     elif args.task_type == 'Generation':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
+        full_llm = full_model.model
     elif args.task_type == 'QuestionAnswering':
         full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+        full_llm = full_model.transformer
     elif args.task_type == 'SequenceClassification':
         full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+        full_llm = full_model.model
     else:
         assert 1 > 2, "task type not supported"
 
-    full_llm = full_model.model
 
     if args.task_type == 'CausalLM':
         head_layer = full_model.lm_head
@@ -851,6 +854,8 @@ def load_basic_models_llm_llama(args, index):
             global_model = LlamaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
         elif args.task_type == "Generation":
             global_model = LlamaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
+        elif args.task_type == "QuestionAnswering":
+            global_model = LlamaForQuestionAnswering_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
         elif args.task_type == "SequenceClassification":
             global_model = LlamaForSequenceClassification_pretrained(global_model, head_layer)
         else:

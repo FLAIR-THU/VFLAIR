@@ -76,7 +76,7 @@
                 "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 2
             }
         },
         "1":{
@@ -86,7 +86,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 10
+                "attack_sample_num": 2
             }
         }
     }

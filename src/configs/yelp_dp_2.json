@@ -55,7 +55,7 @@
         "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "epsilon": 100
+            "epsilon": 60
         }
     },
     "attack_list": {

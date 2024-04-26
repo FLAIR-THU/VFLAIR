@@ -1,65 +1,59 @@
 {
     "epochs": 1,
-    "lr": 0.001,
+    "lr": 0.0001,
     "k": 2,
-    "batch_size": 16,
-    "early_stop_threshold": 2,
+    "batch_size": 4,
     "pipeline": "finetune",
+    "model_architect":"CLM",
+    "early_stop_threshold": 1,
     "device": "cuda",
     "gpu": 0,
     "fl_type": "VFL",
-    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
         "dataset_name": "Lambada",
-        "num_classes": 1,
-        "use_prompt": 1
+        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "True",
+        "truncation": "longest_first",
         "max_length": 64,
         "padding_side": "left",
         "add_special_tokens": 1
     },
     "model_list":{
         "0": {
-            "type": "llama-2-7b",
+            "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
             "pretrained": 1,
-            "encoder_trainable": 1,
+            "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-            "path": "/mnt/data/model/llama-2-7b-hf"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/HuggingFaceM4tiny-random-LlamaForCausalLM"
         },
         "1": {
-            "type": "llama-2-7b",
+            "type": "HuggingFaceM4tiny-random-LlamaForCausalLM",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-            "path": "/mnt/data/model/llama-2-7b-hf"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/HuggingFaceM4tiny-random-LlamaForCausalLM"
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 128,
+            "doc_stride" : 256,
+            "max_seq_length": 512,
             "metric_type": "best_pred",
             "n_best_size": 8
         },
-        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -73,7 +67,7 @@
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 64,
-            "embed_dim": 4096
+            "embed_dim": 16
         }
     },
     "attack_list": {
@@ -84,7 +78,7 @@
                 "lr": 0.01,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 5
             }
         },
         "1":{
@@ -95,7 +89,7 @@
                 "lr": 0.001,
                 "epochs": 1,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 5
             }
         }
     }

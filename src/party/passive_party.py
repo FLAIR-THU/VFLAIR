@@ -98,8 +98,10 @@ class PassiveParty_LLM(Party_LLM):
                     adversarial_model_name = 'Adversarial_Mapping'
                 else:
                     adversarial_model_name = defense_configs['adversarial_model']
+                
                 seq_length = defense_configs['seq_length']
-                embed_dim = defense_configs['embed_dim']
+                embed_dim = self.args.model_embedded_dim #defense_configs['embed_dim']
+
                 # prepare adversarial model --  for adversarial training
                 self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim, self.adversarial_model_hidden_size).to(self.args.device)
                 if self.local_model_optimizer == None:
@@ -139,7 +141,7 @@ class PassiveParty_LLM(Party_LLM):
                     
 
                 seq_length = self.args.defense_configs['seq_length']
-                embed_dim = self.args.defense_configs['embed_dim']
+                embed_dim = self.args.model_embedded_dim #defense_configs['embed_dim']
 
 
                 if self.mid_position == "inner":
@@ -233,7 +235,6 @@ class PassiveParty_LLM(Party_LLM):
                     loss = loss_fct(pooled_logits, labels)
             elif self.problem_type == "single_label_classification":
                 loss_fct = CrossEntropyLoss()
-                print(pooled_logits.view(-1, self.num_labels).shape)
                 loss = loss_fct(pooled_logits.view(-1, self.num_labels), labels) #labels.view(-1)
             # elif self.problem_type == "multi_label_classification":
             #     loss_fct = BCEWithLogitsLoss()
