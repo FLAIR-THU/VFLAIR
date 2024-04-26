@@ -13,6 +13,10 @@ class VFLModel(ABC):
     def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
         raise NotImplementedError('Not implemented')
 
+    @abstractmethod
+    def _clear_past_key_values(self):
+        pass
+
 
 class VFLPipeline(ABC):
     def __init__(self, split_index=Union[int, Tuple[int]], is_server=None):

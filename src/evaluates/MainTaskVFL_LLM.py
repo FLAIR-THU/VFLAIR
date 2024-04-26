@@ -1,3 +1,4 @@
+import gc
 import sys, os
 
 sys.path.append(os.pardir)
@@ -77,6 +78,7 @@ STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40, 'diabetes': 0
 
 
 def create_main_task(global_model_type):
+    # todo: when 3slice inherit from passive party
     print('inherited:',global_model_type)
     class MainTaskVFL_LLM( global_model_type, object): #GenerationMixin object,
         def __init__(self, args, job_id=None):
@@ -568,7 +570,7 @@ def create_main_task(global_model_type):
 
             total_sample_cnt = 0
             with torch.no_grad():
-                for parties_data in zip(*data_loader_list):
+                for parties_data in tqdm(zip(*data_loader_list),desc="inference process"):
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
                         batch_input_dicts = []
@@ -1185,7 +1187,7 @@ def create_main_task(global_model_type):
             optimize_step = 0
 
             data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
-            if "validation_before_epoch":
+            if not "validation_before_epoch":
                 for p in self.parties:
                     p.eval()
                 with torch.no_grad():
@@ -1246,14 +1248,14 @@ def create_main_task(global_model_type):
                                                       self.parties[1].global_model_optimizer.param_groups[0]['lr'],
                                                       optimize_step)
                     except Exception as e:
-                        logger.error(repr(e))
+                        logger.debug(repr(e))
                         pass
                     try:
                         tensorboard_writer.add_scalar('train/lr_model_2',
                                                       self.parties[0].optimizers[2].param_groups[0]['lr'],
                                                       optimize_step)
                     except Exception as e:
-                        logger.error(repr(e))
+                        logger.debug(repr(e))
                         pass
 
                     gc.collect()

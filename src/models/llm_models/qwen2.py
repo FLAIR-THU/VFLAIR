@@ -93,6 +93,9 @@ class Qwen2ModelSplitter(Qwen2Model, VFLModel):
         self.config.num_hidden_layers = len(new_layers)
         return True
 
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+
 
 class Qwen2ModelHead(Qwen2ModelSplitter):
     def __init__(self, config: Qwen2Config):
@@ -605,6 +608,8 @@ class Qwen2TailForCausalLM(Qwen2ForCausalLM, VFLModel):
     def vfl_split(self, idx_of_layers: Iterable[int]) -> bool:
         return self.model.vfl_split(idx_of_layers)
 
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
 
 class E2EModel(Qwen2ForCausalLM):
     def __init__(self, model_config: Qwen2Config, models: Dict[int, Union[PreTrainedModel

@@ -149,9 +149,11 @@ class Party(object):
     def prepare_model(self, args, index):
         if args.model_type.lower() == 'qwen2':
             model_path = args.model_list[str(index)]['path']
-            args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+            args.tokenizer = AutoTokenizer.from_pretrained(model_path,padding_side='left')
             p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
             self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
+            # todo: deal with 3 slice case maybe reconsider about args.config
+            self._prepere_model_update_args(args, self.models[1] if self.models[1] else self.models[0])
         else:
             (
                 args,
@@ -163,6 +165,16 @@ class Party(object):
         if _train_conf := vfl_basic_config.vfl_training_config:
             if _train_conf.peft_config:
                 self._peft_model_setting()
+
+    def _prepere_model_update_args(self, args, model):
+        if not model:
+            raise ValueError("model is None")
+        args.config = model.config
+        if model.generation_config:
+            #todo: when 3slice active party overwrite generation config
+            args.generation_config = model.generation_config
+        args.model_architectures = args.config.architectures
+        args.model_embedded_dim = args.config.hidden_size
 
     def _peft_model_setting(self):
         _train_conf = vfl_basic_config.vfl_training_config
@@ -503,7 +515,7 @@ class Party(object):
         logger.debug(f"model_{model_index} forward")
         self.input_tensors[model_index] = kwargs.get('inputs_embeds')
         resp = self.models[model_index](**kwargs)
-        if model_index ==vfl_basic_config.num_of_slice-1:
+        if model_index == vfl_basic_config.num_of_slice - 1:
             self.output_tensors[model_index] = resp['logits']
         else:
             self.output_tensors[model_index] = resp['hidden_states']
