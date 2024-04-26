@@ -225,7 +225,7 @@ class ActiveParty_LLM(Party_LLM):
             else:                
                 # update global model
                 try:
-                # todo: here should update all trainable params
+                    # todo: here should update all trainable params
                     self.global_model_optimizer.zero_grad()
                     weights_grad_a = torch.autograd.grad(self.global_output.logits, self.global_model.head_layer.parameters(), \
                     grad_outputs=self.global_gradients, retain_graph=True)
