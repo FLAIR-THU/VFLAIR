@@ -1924,7 +1924,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
 
-        for _all_text in train_all_texts:
+        for _all_text in train_all_texts[:4]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1937,7 +1937,7 @@ def load_dataset_per_party_llm(args, index):
                 text_tokens = all_doc_tokens[ start_offset : start_offset + length] # 0 1...7
 
                 text = args.tokenizer.convert_tokens_to_string(prompt_tokens+text_tokens)
-                last_word = all_doc_tokens[ start_offset + length ] 
+                last_word = all_doc_tokens[ start_offset + length ]
                 # print('text:',text)
                 # print('last_word:',last_word)
 

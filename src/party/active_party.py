@@ -158,6 +158,8 @@ class ActiveParty_LLM(Party_LLM):
         self.passive_pred_list = pred_list
         self.passive_pred_list[0].update({'use_cache':use_cache})
         self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
+        if not isinstance(self.global_output,dict):
+            self.global_output=self.global_output.prepare_for_forward()
         if vfl_basic_config.num_of_slice==2:
             self.output_tensors[1]=self.global_output['logits']
         else:

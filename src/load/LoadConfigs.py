@@ -21,6 +21,7 @@ def load_llm_configs(config_dict):
     # args.tasks = config_dict['tasks']
     args.device = config_dict['device']
     args.gpu = config_dict['gpu']
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     args.fl_type = config_dict['fl_type']
     return args
 

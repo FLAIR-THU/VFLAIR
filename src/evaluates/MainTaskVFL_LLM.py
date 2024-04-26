@@ -719,7 +719,7 @@ def create_main_task(global_model_type):
                 raise ValueError('llm_inference only supports k=2')
 
             format_kwargs = self._format_forward_kwargs(**kwargs)
-            generate_ids = self.e2e_model.generate(format_kwargs.get('input_ids'), max_new_tokens=20)
+            generate_ids = self.generate(format_kwargs.get('input_ids'), max_new_tokens=20)
             generate_ids = [
                 output_ids[len(input_ids):] for input_ids, output_ids in zip(format_kwargs['input_ids'], generate_ids)
             ]
@@ -840,6 +840,11 @@ def create_main_task(global_model_type):
                 self.parties[0].optimizer_step(2)
 
         def inference(self, **kwargs):
+
+            if self.args.task_type == "DevLLMInference":
+                # LLM推理入口，兼容forward格式入参
+                result = self._llm_inference(**kwargs)
+                return result
             # set inference time back to 0
             self.inference_party_time = [0 for i in range(self.k)]
 
@@ -874,10 +879,6 @@ def create_main_task(global_model_type):
                 exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
-            elif self.args.task_type == "DevLLMInference":
-                # LLM推理入口，兼容forward格式入参
-                result = self._llm_inference(**kwargs)
-                return result
 
         def train_batch(self, parties_data, batch_label):
             ############### allocate data ###############
@@ -1187,7 +1188,7 @@ def create_main_task(global_model_type):
             optimize_step = 0
 
             data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
-            if not "validation_before_epoch":
+            if "validation_before_epoch":
                 for p in self.parties:
                     p.eval()
                 with torch.no_grad():
@@ -1511,8 +1512,8 @@ def create_main_task(global_model_type):
             #         exception_message += f" Please use one of the following classes instead: {generate_compatible_classes}"
             #     raise TypeError(exception_message)
 
-        def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
-            return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
+        # def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
+        #     return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
 
         def _prepare_encoder_decoder_kwargs_for_generation(self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None):
             return self.parties[-1].global_model._prepare_encoder_decoder_kwargs_for_generation(\
@@ -1527,6 +1528,7 @@ def create_main_task(global_model_type):
             self.parties[-1].global_model._clear_past_key_values()
 
         def _init_e2e_model(self):
+            return
             model_config = None
             if not self.args.task_type == 'DevLLMInference':
                 return
@@ -1547,7 +1549,7 @@ def create_main_task(global_model_type):
             if not model_config:
                 logger.error(f"No model config for E2E_model")
             with init_empty_weights():
-                self.e2e_model = E2EModelV2(model_config,
+                self.e2e_model = E2EModel(model_config,
                                             {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
             # self.e2e_model.to(self.e2e_model.local_model.device)
 

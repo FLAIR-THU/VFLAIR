@@ -152,8 +152,7 @@ class Party(object):
             args.tokenizer = AutoTokenizer.from_pretrained(model_path,padding_side='left')
             p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
             self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
-            # todo: deal with 3 slice case maybe reconsider about args.config
-            self._prepere_model_update_args(args, self.models[1] if self.models[1] else self.models[0])
+            self._prepare_model_update_args(args)
         else:
             (
                 args,
@@ -166,15 +165,15 @@ class Party(object):
             if _train_conf.peft_config:
                 self._peft_model_setting()
 
-    def _prepere_model_update_args(self, args, model):
-        if not model:
-            raise ValueError("model is None")
+    def _prepare_model_update_args(self, args):
+        for m in self.models.values():
+            if m:
+                model=m
         args.config = model.config
-        if model.generation_config:
-            #todo: when 3slice active party overwrite generation config
-            args.generation_config = model.generation_config
         args.model_architectures = args.config.architectures
         args.model_embedded_dim = args.config.hidden_size
+        if m and m.generation_config:
+            args.generation_config = model.generation_config
 
     def _peft_model_setting(self):
         _train_conf = vfl_basic_config.vfl_training_config

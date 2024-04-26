@@ -15,7 +15,7 @@ from loguru import logger
 
 # indicator whether to use the new pipeline
 _new_pipeline = False
-is_test = False
+is_test = True
 if not is_test:
     logger.remove()
     logger.add(sys.stderr, level="INFO")
@@ -23,7 +23,7 @@ if not is_test:
 
 class VFLBasicConfig(object):
     kwargs_model_loading = {'device_map': 'auto',
-                            'max_memory': {0: '22Gib'},
+                            # 'max_memory': {0: '22Gib'},
                             'torch_dtype': torch.bfloat16,
                             }
 
@@ -69,8 +69,7 @@ class VFLTrainingConfig(object):
             logging_steps=10,
             num_train_epochs=10,
             save_steps=50,
-            learning_rate=1e-4
-            ,
+            learning_rate=1e-5,
             save_on_each_node=True,
             gradient_checkpointing=True,
             report_to=['tensorboard'],

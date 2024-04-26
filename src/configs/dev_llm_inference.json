@@ -12,7 +12,7 @@
     "iteration_per_aggregation": 1
   },
   "dataset": {
-    "dataset_name": "Lambada",
+    "dataset_name": "",
     "num_classes": 1,
     "use_prompt": 1
   },
@@ -33,9 +33,7 @@
       "output_dim": 1,
       "model_type": "Qwen2",
       "max_sequence": 512,
-      "train_set_file": "/mnt/data/data/Lambada",
-      "test_set_file": "/mnt/data/data/Lambada",
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat_vfl_2"
+      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "1": {
       "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -44,12 +42,10 @@
       "output_dim": 1,
       "model_type": "Qwen2",
       "max_sequence": 512,
-      "train_set_file": "/mnt/data/data/Lambada",
-      "test_set_file": "/mnt/data/data/Lambada",
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat_vfl_2"
+      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "task": {
-      "task_type": "CausalLM",
+      "task_type": "DevLLMInference",
       "doc_stride": 8,
       "max_seq_length": 8,
       "metric_type": "n_best",
@@ -57,41 +53,5 @@
     },
     "apply_trainable_layer": 0,
     "global_model": ""
-  },
-  "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 50,
-            "embed_dim": 1024
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 1,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 1,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        }
-    }
+  }
 }
