@@ -1512,8 +1512,12 @@ def create_main_task(global_model_type):
             #         exception_message += f" Please use one of the following classes instead: {generate_compatible_classes}"
             #     raise TypeError(exception_message)
 
-        # def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
-        #     return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
+        def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
+            # todo: fix 3-slice Compatibility
+            if vfl_basic_config.num_of_slice==3:
+                return super(global_model_type).prepare_inputs_for_generation(input_ids,**model_kwargs)
+            else:
+                return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
 
         def _prepare_encoder_decoder_kwargs_for_generation(self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None):
             return self.parties[-1].global_model._prepare_encoder_decoder_kwargs_for_generation(\

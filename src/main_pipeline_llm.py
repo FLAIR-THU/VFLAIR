@@ -111,7 +111,7 @@ def evaluate_inversion_attack(args):
 def get_cls_ancestor(model_type: str='qwen2'):
     from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
     target_module = __import__('transformers')
-    aa = MODEL_FOR_CAUSAL_LM_MAPPING_NAMES['qwen2']
+    aa = MODEL_FOR_CAUSAL_LM_MAPPING_NAMES[model_type]
     target_cls = getattr(target_module, aa)
     return target_cls
 
@@ -236,6 +236,7 @@ if __name__ == '__main__':
         # inherit generation functions from global model
         args.global_model_type = type(args.parties[-1].global_model)
         ancestor_cls = args.global_model_type
+        # todo: infer from model_type might be enough, would also work under 3-slice
         if issubclass(ancestor_cls,PeftModel):
             ancestor_cls=get_cls_ancestor(args.config.model_type)
         MainTaskVFL_LLM = create_main_task(ancestor_cls)
