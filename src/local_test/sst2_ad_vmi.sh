@@ -5,38 +5,9 @@
 
 echo 'SST2 Ad 2encoder'
 
-# 0.1 1 encoder
-python main_pipeline_llm.py --seed 66 --configs sst2_ad_1encoder
-
-# 0.001
-for seed in {66,67,68,69}
-    do
-    # python main_pipeline_llm.py --seed $seed --configs sst2_ad_2encoder
-done
-
-# 0.01
-sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/sst2_ad_2encoder.json
-for seed in {66,67,68,69}
-    do
-    # python main_pipeline_llm.py --seed $seed --configs sst2_ad_2encoder
-done
-
-# 0.1
-sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/sst2_ad_2encoder.json
-for seed in {66,67,68,69}
-    do
-    # python main_pipeline_llm.py --seed $seed --configs sst2_ad_2encoder
-done
-
-# 0.5
-sed -i 's/"lambda": 0.1/"lambda": 0.5/g' ./configs/sst2_ad_2encoder.json
-for seed in {66,67,68,69}
-    do
-    # python main_pipeline_llm.py --seed $seed --configs sst2_ad_2encoder
-done
 
 # 1
-sed -i 's/"lambda": 0.5/"lambda": 1.0/g' ./configs/sst2_ad_2encoder.json
+sed -i 's/"lambda": 0.001/"lambda": 1.0/g' ./configs/sst2_ad_2encoder.json
 for seed in {66,67,68,69}
     do
     python main_pipeline_llm.py --seed $seed --configs sst2_ad_2encoder

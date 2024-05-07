@@ -77,7 +77,7 @@ class PassiveDataset_LLM(Dataset):
                 
                 self.input_dicts.append(ids)
 
-            
+            print(type(labels[:2]),labels[:2])
             if self.args.num_classes == 1:
                 self.labels = torch.tensor(labels, dtype=torch.float32)
             else:

@@ -595,7 +595,7 @@ def create_main_task(global_model_type):
 
             total_sample_cnt = 0
             with torch.no_grad():
-                for parties_data in tqdm(zip(*data_loader_list),desc="inference process"):
+                for parties_data in zip(*data_loader_list):#tqdm(zip(*data_loader_list),desc="inference process"):
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
                         batch_input_dicts = []
@@ -626,14 +626,14 @@ def create_main_task(global_model_type):
                     # test_logit -> standard output for each task
                     if self.args.model_architect=='CLS': #task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
                         global_output = self.forward(**data_inputs)
-                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(global_output, gt_one_hot_label, parties_data)
+                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(global_output, gt_one_hot_label)
                         predict_label_list.extend(batch_predict_label)
                         actual_label_list.extend(batch_actual_label)
                         if sample_cnt is not None:
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='TQA': #task_type == "QuestionAnswering":
                         global_output = self.forward(**data_inputs)
-                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label, parties_data)
+                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label)
                         nbest_list.extend(batch_nbest)
                         gold_ans_list.extend(batch_gold_ans)
                         if sample_cnt is not None:
@@ -650,7 +650,7 @@ def create_main_task(global_model_type):
                             generation_output = self.forward(**data_inputs)
                         self._clear_past_key_values()
 
-                        batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label, parties_data)
+                        batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label)
                         target_word_list.extend(batch_target_word)
                         predict_word_list.extend(batch_predict_word)
                         if sample_cnt is not None:
@@ -844,6 +844,7 @@ def create_main_task(global_model_type):
             kwargs.update({'input_ids': model_inputs.input_ids.to(self.parties[0].device),
                            'output_hidden_states': True})
             logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
+            
             base_dict = {'input_ids': None,
                          'attention_mask': None,
                          'position_ids': None,
@@ -1132,8 +1133,9 @@ def create_main_task(global_model_type):
             
         def train_vfl(self,**kwargs): # def train(self):
             training_args = vfl_basic_config.vfl_training_config.training_args
-            # 创建 TensorBoard 摘要写入器
-            tensorboard_writer = SummaryWriter(training_args.logging_dir)
+            if self.args.model_type.lower() == 'qwen2':
+                # 创建 TensorBoard 摘要写入器
+                tensorboard_writer = SummaryWriter(training_args.logging_dir)#training_args.logging_dir)
 
             print_every = 1
 
@@ -1158,16 +1160,20 @@ def create_main_task(global_model_type):
             optimize_step = 0
 
             data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
-            if "validation_before_epoch":
-                for p in self.parties:
-                    p.eval()
-                with torch.no_grad():
-                    _exp_result, test_acc = self.inference()
-                tensorboard_writer.add_scalar('train/test_acc', test_acc, 0)
+            if self.args.model_type.lower() == 'qwen2':
+                if "validation_before_epoch":
+                    for p in self.parties:
+                        p.eval()
+                    with torch.no_grad():
+                        _exp_result, test_acc = self.inference()
+                    tensorboard_writer.add_scalar('train/test_acc', test_acc, 0)
+            
             for i_epoch in range(self.epochs):
                 self.train()
                 self.current_epoch = i_epoch
-                tensorboard_writer.add_scalar('train/epoch', i_epoch, optimize_step)
+                if self.args.model_type.lower() == 'qwen2':
+                    tensorboard_writer.add_scalar('train/epoch', i_epoch, optimize_step)
+                
                 postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
                 i = -1
                 print_every = 1
@@ -1206,31 +1212,33 @@ def create_main_task(global_model_type):
                     exit_time = time.time()
                     total_time += (exit_time - enter_time)
                     optimize_step += 1
-                    tensorboard_writer.add_scalar('train/loss', self.loss, optimize_step)
-                    # todo： 添加逻辑，通过判断训练的层来获取lr
-                    try:
-                        tensorboard_writer.add_scalar('train/lr_local',
-                                                      self.parties[0].local_model_optimizer.param_groups[0]['lr'],
-                                                      optimize_step)
-                    except Exception as e:
-                        logger.debug(repr(e))
-                        pass
-                    try:
-                        tensorboard_writer.add_scalar('train/lr_global',
-                                                      self.parties[1].global_model_optimizer.param_groups[0]['lr'],
-                                                      optimize_step)
-                    except Exception as e:
-                        logger.debug(repr(e))
-                        pass
-                    try:
-                        tensorboard_writer.add_scalar('train/lr_model_2',
-                                                      self.parties[0].optimizers[2].param_groups[0]['lr'],
-                                                      optimize_step)
-                    except Exception as e:
-                        logger.debug(repr(e))
-                        pass
 
-                    gc.collect()
+                    if self.args.model_type.lower() == 'qwen2':
+                        tensorboard_writer.add_scalar('train/loss', self.loss, optimize_step)
+                        # todo： 添加逻辑，通过判断训练的层来获取lr
+                        try:
+                            tensorboard_writer.add_scalar('train/lr_local',
+                                                        self.parties[0].local_model_optimizer.param_groups[0]['lr'],
+                                                        optimize_step)
+                        except Exception as e:
+                            logger.debug(repr(e))
+                            pass
+                        try:
+                            tensorboard_writer.add_scalar('train/lr_global',
+                                                        self.parties[1].global_model_optimizer.param_groups[0]['lr'],
+                                                        optimize_step)
+                        except Exception as e:
+                            logger.debug(repr(e))
+                            pass
+                        try:
+                            tensorboard_writer.add_scalar('train/lr_model_2',
+                                                        self.parties[0].optimizers[2].param_groups[0]['lr'],
+                                                        optimize_step)
+                        except Exception as e:
+                            logger.debug(repr(e))
+                            pass
+
+                        gc.collect()
                     # ====== train batch (end) ======
                     self.num_total_comms = self.num_total_comms + 1
                     # if self.num_total_comms % 10 == 0:
@@ -1276,7 +1284,9 @@ def create_main_task(global_model_type):
                         print(exp_result)
 
                         self.final_epoch = i_epoch + 1
-                    tensorboard_writer.add_scalar('train/test_acc', self.test_acc, optimize_step)
+                    
+                    if self.args.model_type.lower() == 'qwen2':
+                        tensorboard_writer.add_scalar('train/test_acc', self.test_acc, optimize_step)
 
                 data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
 

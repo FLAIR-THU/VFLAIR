@@ -153,6 +153,11 @@ class Party(object):
             p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
             self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
             self._prepare_model_update_args(args)
+
+            if _train_conf := vfl_basic_config.vfl_training_config:
+                if _train_conf.peft_config:
+                    self._peft_model_setting()
+
         else:
             (
                 args,
@@ -161,10 +166,7 @@ class Party(object):
                 self.global_model,
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
-        if _train_conf := vfl_basic_config.vfl_training_config:
-            if _train_conf.peft_config:
-                self._peft_model_setting()
-
+        
     def _prepare_model_update_args(self, args):
         for m in self.models.values():
             if m:

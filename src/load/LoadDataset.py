@@ -1481,16 +1481,6 @@ def load_dataset_per_party_llm(args, index):
         test_dst = (X_test, y_test)
 
     elif args.dataset == 'yelp-polarity':
-        # data_file = DATA_PATH + 'Yelp'
-        # print(data_file)
-        # dataset = load_dataset(data_file)
-
-        # print( 'dataset[train][0]:',dataset['train'][0] )
-        # assert 1>2
-
-        # train_set_file = DATA_PATH + 'yelp_review_polarity_csv/train.csv'
-        # test_set_file = DATA_PATH + 'yelp_review_polarity_csv/test.csv'
-
         train_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/train.csv'
         test_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/test.csv'
 
@@ -1562,39 +1552,38 @@ def load_dataset_per_party_llm(args, index):
 
 
     elif args.dataset == 'SST-2':
-        task_prompt = {
-        'imdb': """Analyze the following movie review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
-        "yelp": """Analyze the following restaurant review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
-        "SST-2": """Analyze the following sentence and determine if the sentiment is: positive or negative.\n{}\nThe awnser is:""",
-
-            }
+        # task_prompt = {
+        # 'imdb': """Analyze the following movie review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
+        # "yelp": """Analyze the following restaurant review and determine if the sentiment is: positive or negative. Return answer in single word as either positive or negative: {}""",
+        # "SST-2": """Analyze the following sentence and determine if the sentiment is: positive or negative.\n{}\nThe awnser is:""",
+        #     }
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'SST-2/train.tsv'
             test_set_file = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(train_set_file, delimiter='\t', names=['label','sentence'])  # names=[  'sentence','label']
-        sentences = df.sentence.values
-        labels = df.label.values
+        df = pd.read_csv(train_set_file, delimiter='\t', names=['sentence','label'])  # names=[  'sentence','label']
+        sentences = df.sentence.values[1:]
+        labels = df.label.values[1:]
 
-        if args.model_architect == 'CLM':
-            instructions = task_prompt[args.dataset]
-            for i in range(len(sentences)):
-                sentences[i] = instructions.format(sentences[i])
+        # if args.model_architect == 'CLM':
+        #     instructions = task_prompt[args.dataset]
+        #     for i in range(len(sentences)):
+        #         sentences[i] = instructions.format(sentences[i])
 
         X_train = np.array(sentences)
-        y_train = np.array(labels) #print('y_train:',y_train.dtype) # int64
+        y_train = np.array([int(_label) for _label in labels])
 
-        df = pd.read_csv(test_set_file, delimiter='\t', names=['label','sentence'])  # names=[  'sentence','label']
-        sentences = df.sentence.values
-        labels = df.label.values
+        df = pd.read_csv(test_set_file, delimiter='\t', names=['sentence','label'])  # names=[  'sentence','label']
+        sentences = df.sentence.values[1:]
+        labels = df.label.values[1:]
 
-        if args.model_architect == 'CLM':
-            instructions = task_prompt[args.dataset]
-            for i in range(len(sentences)):
-                sentences[i] = instructions.format(sentences[i])
+        # if args.model_architect == 'CLM':
+        #     instructions = task_prompt[args.dataset]
+        #     for i in range(len(sentences)):
+        #         sentences[i] = instructions.format(sentences[i])
 
         X_test = np.array(sentences)
-        y_test = np.array(labels)
+        y_test = np.array([int(_label) for _label in labels])
         # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.current_seed)
 
         print(type(X_train), X_train.shape, X_test.shape)  #

@@ -399,7 +399,6 @@ class PassiveParty_LLM(Party_LLM):
 
     def local_backward(self):  # model head 1
         # print(' === passive local backward === ')
-        logger.debug(f"step optimizer 0")
 
         self.num_local_updates += 1  # another update
 
