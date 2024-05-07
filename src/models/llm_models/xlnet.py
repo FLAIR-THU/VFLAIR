@@ -22,7 +22,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 ##### Evaluation with pretrained models ######
-class XLNetLMHeadModel_pretrained(XLNetPreTrainedModel):
+class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
 
     def __init__(self, global_xlnet, lm_loss, generation_config=None):
         super().__init__(global_xlnet.config)
@@ -36,6 +36,9 @@ class XLNetLMHeadModel_pretrained(XLNetPreTrainedModel):
 
         # # Initialize weights and apply final processing
         self.post_init()
+
+    def _clear_past_key_values(self):
+        self.transformer._clear_past_key_values()
 
     def forward(
         self,
@@ -163,9 +166,9 @@ class XLNetLMHeadModel_pretrained(XLNetPreTrainedModel):
         )
 
 ##################### Functional Global Models ######################
-class LocalXLNetModel(XLNetModel):
+class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLNetPreTrainedModel XLNetModel
     def __init__(self, full_xlnet, num_encoders=1):
-        super().__init__(full_xlnet.config)
+        super(XLNetPreTrainedModel,self).__init__(full_xlnet.config)
 
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_xlnet.config.n_layer
@@ -186,7 +189,10 @@ class LocalXLNetModel(XLNetModel):
         self.dropout = full_xlnet.dropout #nn.Dropout(config.dropout)
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.past_key_values=None
 
     def forward(
         self,
@@ -450,8 +456,11 @@ class GlobalXLNetModel(XLNetModel):
         self.dropout = full_xlnet.dropout #nn.Dropout(config.dropout)
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
+    def _clear_past_key_values(self):
+        self.past_key_values=None
+        
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None,

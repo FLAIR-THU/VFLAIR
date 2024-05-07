@@ -59,7 +59,7 @@ def evaluate_no_attack_finetune(args):
     vfl = MainTaskVFL_LLM(args)
     vfl.init_communication()
 
-    exp_result, metric_val, training_time = vfl.train()
+    exp_result, metric_val, training_time = vfl.train_vfl()
 
     # attack_metric = main_acc_noattack - main_acc
     # attack_metric_name = 'acc_loss'
@@ -92,7 +92,7 @@ def evaluate_inversion_attack(args):
             vfl.init_communication()
 
             if args.pipeline == 'finetune':
-                _exp_result, metric_val, training_time= vfl.train()
+                _exp_result, metric_val, training_time= vfl.train_vfl()
             elif args.pipeline == 'pretrained':
                 _exp_result, metric_val= vfl.inference()
             main_tack_acc = metric_val

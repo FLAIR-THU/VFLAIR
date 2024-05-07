@@ -67,8 +67,8 @@
             "parameters": {
                 "party": [1],
                 "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
+                "lr": 0.005,
+                "epochs": 500,
                 "batch_size": 32,
                 "attack_sample_num": 1000
             }

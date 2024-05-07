@@ -101,7 +101,7 @@ class GPT2_VFLGeneration(GPT2LMHeadModel):
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithCrossAttentions]:
             
-        output = self.top_vfl.vfl_forward(
+        output = self.top_vfl.forward(
             input_ids = input_ids , 
             attention_mask = attention_mask, 
             token_type_ids = token_type_ids,

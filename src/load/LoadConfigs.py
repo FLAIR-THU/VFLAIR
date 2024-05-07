@@ -159,7 +159,7 @@ def do_load_basic_configs(config_dict, args):
         args.max_seq_length = args.task_dict['max_seq_length'] if('max_seq_length' in args.task_dict) else -1
         args.max_answer_length = args.task_dict['max_answer_length'] if('max_answer_length' in args.task_dict) else -1
         args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
-
+        args.max_new_tokens = args.task_dict['max_new_tokens'] if('max_new_tokens' in args.task_dict) else 1
         
         args.encoder_trainable = []
         args.embedding_trainable = []

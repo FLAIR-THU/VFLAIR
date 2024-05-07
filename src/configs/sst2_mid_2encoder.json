@@ -5,6 +5,7 @@
     "batch_size": 128,
     "pipeline": "finetune",
     "early_stop_threshold": 1,
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -69,17 +70,6 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
                 "epochs": 100,
                 "batch_size": 32,
                 "attack_sample_num": 100

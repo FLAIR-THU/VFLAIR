@@ -1,0 +1,56 @@
+{
+    "epochs": 1,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 32,
+    "pipeline": "pretrained",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "default",
+        "truncation": "longest_first",
+        "max_length": 30,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "dataset":{
+        "dataset_name": "CoLA",
+        "num_classes": 2
+    },
+    "model_list":{
+        "0": {
+            "type": "state-spacesmamba-130m-hf",
+            "pretrained": 1,
+            "head_layer_trainable": 0,
+            "output_dim": 1,
+            "model_type": "Mamba",
+            "local_encoders_num": 1,
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/state-spacesmamba-130m-hf"
+        },
+        "1": {
+            "type": "state-spacesmamba-130m-hf",
+            "pretrained": 1,
+            "head_layer_trainable": 0,
+            "output_dim": 1,
+            "model_type": "Mamba",
+            "local_encoders_num": 1,
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/state-spacesmamba-130m-hf"
+        },
+        "task":{
+            "task_type": "CausalLM",
+            "doc_stride" : 8,
+            "max_seq_length": 8,
+            "metric_type": "n_best",
+            "n_best_size": 8
+        },
+        "local_encoders_num": 1,
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}

@@ -58,7 +58,7 @@ def evaluate_no_attack_finetune(args):
     vfl = MainTaskVFL_LLM(args)
     vfl.init_communication()
 
-    exp_result, metric_val, training_time = vfl.train()
+    exp_result, metric_val, training_time = vfl.train_vfl()
 
     # attack_metric = main_acc_noattack - main_acc
     # attack_metric_name = 'acc_loss'
@@ -91,7 +91,7 @@ def evaluate_inversion_attack(args):
             vfl.init_communication()
 
             if args.pipeline == 'finetune':
-                _exp_result, metric_val, training_time= vfl.train()
+                _exp_result, metric_val, training_time= vfl.train_vfl()
             elif args.pipeline == 'pretrained':
                 _exp_result, metric_val= vfl.inference()
             main_tack_acc = metric_val
@@ -164,7 +164,8 @@ if __name__ == '__main__':
         print('=================================\n')
 
         iterinfo='===== iter '+str(seed)+' ===='
-        append_exp_res(args.exp_res_path, iterinfo)
+        # append_exp_res(args.exp_res_path, iterinfo)
+        print(iterinfo)
 
         args.basic_vfl_withaux = None
         args.main_acc_noattack_withaux = None
@@ -229,7 +230,7 @@ if __name__ == '__main__':
         MainTaskVFL_LLM = create_main_task(args.global_model_type)
         
         commuinfo='== metrics:'+args.metric_type
-        append_exp_res(args.exp_res_path, commuinfo)
+        # append_exp_res(args.exp_res_path, commuinfo)
         
         # vanilla
         if args.pipeline == 'pretrained':

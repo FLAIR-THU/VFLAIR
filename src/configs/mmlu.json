@@ -3,13 +3,15 @@
     "lr": 0.001,
     "k": 2,
     "batch_size": 16,
-    "pipeline": "pretrained",
+    "model_architect":"CLM",
+    "pipeline": "finetune",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
         "dataset_name": "MMLU",
+        "num_classes": 4,
         "use_prompt": 1,
         "n_shot": 0
     },
@@ -24,33 +26,31 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2-large",
+            "type": "gpt2",
             "pretrained": 1,
             "encoder_trainable": 0,
             "embedding_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "1": {
-            "type": "gpt2-large",
+            "type": "gpt2",
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2-large"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
         },
         "task":{
-            "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 512,
+            "task_type": "SequenceClassification",
             "metric_type": "best_pred",
             "n_best_size": 8
         },
-        "local_encoders_num": 4,
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     }

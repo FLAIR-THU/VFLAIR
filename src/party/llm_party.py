@@ -438,7 +438,8 @@ class Party(object):
         #     self.transferred_past_key_values = self.past_key_values
 
         intermediate['inputs_embeds'] = self.local_pred_clone
-        intermediate['attention_mask'] = self.local_attention_mask
+        if self.local_attention_mask != None:
+            intermediate['attention_mask'] = self.local_attention_mask
 
         return intermediate
 

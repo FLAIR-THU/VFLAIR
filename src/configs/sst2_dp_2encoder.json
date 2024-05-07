@@ -5,6 +5,7 @@
     "batch_size": 128,
     "pipeline": "pretrained",
     "early_stop_threshold": 1,
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1

@@ -9,14 +9,12 @@ import argparse
 import torch
 
 from load.LoadConfigs import * #load_configs
-from load.LoadParty import load_parties, load_parties_llm
-from evaluates.MainTaskVFL_LLM import *
+from load.LoadParty import * #load_parties, load_parties_llms
+from evaluates.MainTaskVFL_LLM_dev import *
 from utils.basic_functions import append_exp_res
 
 from load.LoadConfigs import INVERSION
-
 from models.llm_models.generation_model import *
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -135,49 +133,90 @@ if __name__ == '__main__':
         #  mouth curved in a confident grin i do n't care about"]
         # input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
         
-        # texts = "Hello, how are you ?"
-        texts = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\nDesign a class for representing a person in Python.\n\n### Response:"""
+        texts = "Hello, how are you ?"
+        label_text = "I'm fine."
+        # texts = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\nDesign a class for representing a person in Python.\n\n### Response:"""
         inputs = args.tokenizer( texts, \
                                         # padding='max_length',  # Pad to max_length
                                         # truncation='longest_first',  # Truncate to max_length
                                         # max_length=8,  
                                         return_tensors='pt').to(args.device)
+        labels = args.tokenizer( label_text, \
+                                        # padding='max_length',  # Pad to max_length
+                                        # truncation='longest_first',  # Truncate to max_length
+                                        # max_length=8,  
+                                        return_tensors='pt').to(args.device)
+        label_ids = labels['input_ids']
         ######### define your input text here #########
 
         # inputs = args.tokenizer(input_text, padding='max_length',max_length=70,return_tensors="pt").to(args.device)
         print('input_ids:',inputs['input_ids'].shape)
-        
+        print('label_ids:',label_ids)
 
         
         ##### normal full model #####
         print('full model path:',args.model_path)
         current_model_type = args.model_type #"gpt2"
-        tokenizer = AutoTokenizer.from_pretrained(args.model_path)
+        tokenizer = AutoTokenizer.from_pretrained(args.model_path,trust_remote_code=True)
         if args.model_type == 'T5':
-            full_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path) # AutoModelForCausalLM
+            full_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path,trust_remote_code=True) # AutoModelForCausalLM
         else:
-            full_model = AutoModelForCausalLM.from_pretrained(args.model_path) # AutoModelForCausalLM
+            full_model = AutoModelForCausalLM.from_pretrained(args.model_path,trust_remote_code=True) # AutoModelForCausalLM
 
         full_model = full_model.to(args.device)
 
-        # greedy_matching = GenerationModel.greedy_matching(**inputs, max_length=128)
-        # print('greedy_matching:',type(greedy_matching))
-        # print(greedy_matching)
-        greedy_output = full_model.generate(**inputs, max_new_tokens=100)
-        print("full greedy_output:\n")
+
+        full_model.train()
+        greedy_output = full_model.generate(**inputs,max_new_tokens=10)
+        print("train full greedy_output:\n")
+        print(type(greedy_output),greedy_output.shape)
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
-        
+        vfl.train()
+        greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        print("train greedy_output:\n")
+        print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
+
+
+        full_model.eval()
+        greedy_output = full_model.generate(**inputs,max_new_tokens=10)
+        print("eval full greedy_output:\n")
+        print(type(greedy_output),greedy_output.shape)
+        print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
+        vfl.eval()
+        greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        print("eval greedy_output:\n")
+        print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
         print()
 
 
         ######### VFL model ########
-        # GenerationModel = GenerationModel.to(args.device)
         print('Data Input:',inputs)
 
-        greedy_output = vfl.generate(**inputs, max_new_tokens=100)
-        print("greedy_output:\n")
-        print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+        # GenerationModel = GenerationModel.to(args.device)
+        # GenerationModel.train()
+        # greedy_output = GenerationModel.generate(**inputs,max_new_tokens=10)
+        # print("train greedy_output:\n")
+        # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
+        # GenerationModel.eval()
+        # greedy_output = GenerationModel.generate(**inputs,max_new_tokens=10)
+        # print("eval greedy_output:\n")
+        # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
+        # vfl.train()
+        # greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        # print("train greedy_output:\n")
+        # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
+
+
+        # vfl.eval()
+        # greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        # print("eval greedy_output:\n")
+        # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
 
         

@@ -23,14 +23,17 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 ##### Evaluation with pretrained models ######
-class MambaForCausalLM_pretrained(MambaPreTrainedModel):
+class MambaForCausalLM_pretrained(MambaForCausalLM):
     def __init__(self, global_mamba, lm_head, generation_config=None):
         super().__init__(global_mamba.config)
         self.backbone = global_mamba #MambaModel(config)
         self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.generation_config = generation_config
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.backbone.past_key_values = None
 
     def forward(
         self,
@@ -86,9 +89,9 @@ class MambaForCausalLM_pretrained(MambaPreTrainedModel):
         )
 
 ##################### Functional Global Models ######################
-class LocalMambaModel(MambaPreTrainedModel):
+class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
     def __init__(self, full_mamba, num_encoders):
-        super().__init__(full_mamba.config)
+        super(MambaPreTrainedModel,self).__init__(full_mamba.config)
 
         self.local_encoders_num = num_encoders
         self.num_encoders_all = full_mamba.config.num_hidden_layers
@@ -99,8 +102,13 @@ class LocalMambaModel(MambaPreTrainedModel):
 
         self.gradient_checkpointing = False
         self.norm_f = full_mamba.norm_f #MambaRMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
+        
+        
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
         self,
@@ -182,6 +190,9 @@ class GlobalMambaModel(MambaPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+        
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,

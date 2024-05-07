@@ -442,9 +442,9 @@ class GPT2forGeneration_pretrained(GPT2LMHeadModel):
 
 
 ##################### Functional Global Models ######################
-class LocalGPT2Model(GPT2PreTrainedModel):
+class LocalGPT2Model(GPT2LMHeadModel, GPT2PreTrainedModel):
     def __init__(self, full_gpt, num_encoders, generation_config=None):
-        super().__init__(full_gpt.config)
+        super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
         self.config = full_gpt.config
         self.generation_config = generation_config
 
@@ -467,7 +467,7 @@ class LocalGPT2Model(GPT2PreTrainedModel):
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
         self.embedding_output = None
         self.past_key_values = None

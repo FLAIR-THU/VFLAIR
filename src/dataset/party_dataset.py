@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 import string 
 from utils.squad_utils import normalize_answer
 from random import randrange 
+from typing import Dict, Optional, Sequence
+import copy
 
 class SimpleDataset(Dataset):
     """An abstract Dataset class wrapped around Pytorch Dataset class.
@@ -84,12 +86,6 @@ class PassiveDataset_LLM(Dataset):
         elif args.task_type == 'CausalLM':
             flag = 0
             for i in range(len(texts)):
-                # if split_name == 'test':
-                #     # ids = args.tokenizer(texts[i],return_tensors='pt')
-                #     ids = args.tokenizer(texts[i], \
-                #     padding=args.padding,truncation=args.truncation ,\
-                #     max_length=args.max_length,return_tensors='pt') 
-                # else:
                 ids = args.tokenizer(texts[i], \
                 padding=args.padding,truncation=args.truncation ,\
                 max_length=args.max_length,return_tensors='pt') 
@@ -97,7 +93,7 @@ class PassiveDataset_LLM(Dataset):
                 if flag == 0:
                     print('TEXT:',texts[i])
                     print('text_id:',ids['input_ids'].shape, ids['input_ids'])
-                    print('label:',labels[i])
+                    print('label:',labels[i],args.tokenizer.convert_tokens_to_ids( labels[i] ) )
                     print('-'*25)
                     flag = flag + 1
                 
@@ -138,6 +134,135 @@ class PassiveDataset_LLM(Dataset):
         label = torch.tensor(self.labels[item_idx]).squeeze().to(self.args.device)
         return input_dict, label
 
+
+class MMLUDataset_LLM(Dataset):
+    def __init__(self, args, texts ,labels, split_name='test'):
+        '''
+        texts: np.array
+        '''
+        self.args = args
+        self.labels = []
+        self.features = []
+        self.input_dicts = []
+
+        # if args.task_type == 'CausalLM':
+        for i in range(len(texts)):
+            ids = args.tokenizer(texts[i], \
+            padding=args.padding,truncation=args.truncation ,\
+            max_length=args.max_length,return_tensors='pt') 
+
+            if i==0:
+                print('TEXT:',texts[i])
+                print('text_id:',ids['input_ids'].shape, ids['input_ids'])
+                print('label:',labels[i], args.tokenizer.convert_tokens_to_ids( labels[i] ) )
+                print('-'*25)
+            
+            self.labels.append( args.tokenizer.convert_tokens_to_ids( labels[i] ) )
+            self.input_dicts.append(ids)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, item_idx):
+
+        input_dict = self.input_dicts[item_idx]
+
+        for key_name in input_dict.keys():
+            if not isinstance( input_dict[key_name] , dict):
+                input_dict[key_name] = torch.tensor(input_dict[key_name]).squeeze().to(self.args.device)
+        
+        label = torch.tensor(self.labels[item_idx]).squeeze().to(self.args.device)
+        return input_dict, label
+
+class AlpacaDataset_LLM(Dataset):
+    def __init__(self, args, sources ,targets, split_name='train'):
+        '''
+        texts: np.array
+        '''
+        self.args = args
+
+        IGNORE_INDEX = args.tokenizer.pad_token_id #-100
+        def _tokenize_fn(strings: Sequence[str], tokenizer) -> Dict:
+            """Tokenize a list of strings."""
+
+            tokenized_list = [
+                tokenizer(
+                    text,
+                    return_tensors="pt",
+                    padding=args.padding,#"longest",
+                    max_length=args.max_length, #tokenizer.model_max_length,
+                    truncation=args.truncation, #True,
+                )
+                for text in strings
+            ]
+
+            input_ids = labels = [tokenized.input_ids[0] for tokenized in tokenized_list]
+            attention_mask = [tokenized.attention_mask[0] for tokenized in tokenized_list]
+
+            input_ids_lens = labels_lens = [
+                tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item() for tokenized in tokenized_list
+            ]
+
+            return dict(
+                input_ids=input_ids,
+                attention_mask = attention_mask,
+                labels=labels,
+                input_ids_lens=input_ids_lens,
+                labels_lens=labels_lens,
+            )
+
+        def preprocess(
+            sources: Sequence[str],
+            targets: Sequence[str],
+            tokenizer,
+        ) -> Dict:
+            """Preprocess the data by tokenizing."""
+            if split_name == 'train':
+                examples = [s + t for s, t in zip(sources, targets)]
+                examples_tokenized, targets_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (examples, targets)]
+                
+                input_ids = examples_tokenized["input_ids"]
+                attention_mask = examples_tokenized["attention_mask"]
+
+                labels = copy.deepcopy(input_ids)
+                for label, target_len in zip(labels, targets_tokenized["input_ids_lens"]):
+                    label[:-target_len] = IGNORE_INDEX
+            else:
+                inputs_tokenized, targets_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (sources, targets)]
+                input_ids = inputs_tokenized["input_ids"]
+                attention_mask = inputs_tokenized["attention_mask"]
+                labels = targets_tokenized["input_ids"]
+            # input_ids: prompt +  target
+            # label: masked_prompt + target
+            return dict(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+
+        data_dict = preprocess(sources, targets, args.tokenizer)
+
+        self.input_dicts = [
+                {'input_ids':data_dict['input_ids'][i], 'attention_mask':data_dict['attention_mask'][i]}
+                for i in range( len(data_dict['input_ids']) )
+            ] # list of input_dicts
+        self.labels = data_dict["labels"] # list of tensor(labels)
+
+        # print(f'=== Dataset Split = {split_name} ===')
+        # print('text:',self.input_dicts[0]['input_ids'].shape, self.args.tokenizer.decode(self.input_dicts[0]['input_ids']))
+        # print('-'*25)
+        # print('label:',self.labels[0].shape, self.args.tokenizer.decode(self.labels[0]))
+        # print('='*50)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, item_idx):
+
+        input_dict = self.input_dicts[item_idx]
+
+        for key_name in input_dict.keys():
+            if not isinstance( input_dict[key_name] , dict):
+                input_dict[key_name] = torch.tensor(input_dict[key_name]).squeeze().to(self.args.device)
+        
+        label = torch.tensor(self.labels[item_idx]).squeeze().to(self.args.device)
+        return input_dict, label
 
 
 

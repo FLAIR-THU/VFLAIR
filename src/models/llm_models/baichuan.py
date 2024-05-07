@@ -1,5 +1,7 @@
 # from transformers import T5PreTrainedModel
 from .third_party_modeling.modeling_baichuan import Model as BaichuanModel
+from .third_party_modeling.modeling_baichuan import PreTrainedModel as BaichuanPreTrainedModel
+
 from .third_party_modeling.modeling_baichuan import BaiChuanForCausalLM
 from .third_party_modeling.configuration_baichuan import BaiChuanConfig
 
@@ -25,7 +27,10 @@ class BaiChuanForCausalLM_pretrained(BaiChuanForCausalLM):
         self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.generation_config = generation_config
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+    
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
 
     def forward(
             self,
@@ -116,7 +121,7 @@ class BaiChuanForCausalLM_pretrained(BaiChuanForCausalLM):
 ##### Evaluation with pretrained models ######
 
 ##################### Functional Global Models ######################
-class LocalBaichuanModel(BaichuanModel):
+class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`DecoderLayer`]
 
@@ -125,7 +130,7 @@ class LocalBaichuanModel(BaichuanModel):
     """
     
     def __init__(self, full_baichuan, num_encoders):
-        super().__init__(full_baichuan.config)
+        super(BaichuanPreTrainedModel,self).__init__(full_baichuan.config)
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_baichuan.config.num_hidden_layers
         
@@ -140,7 +145,10 @@ class LocalBaichuanModel(BaichuanModel):
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
             self,
@@ -192,16 +200,13 @@ class LocalBaichuanModel(BaichuanModel):
             inputs_embeds = self.embed_tokens(input_ids)
         
         # embed positions
-        print('local receive attention_mask:',attention_mask.shape)
         if attention_mask is None:
             attention_mask = torch.ones(
                 (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
             )
-        print('local receive attention_mask:',attention_mask.shape)
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
         )
-        print('local after attention_mask:',attention_mask.shape)
 
 
         hidden_states = inputs_embeds
@@ -305,6 +310,9 @@ class GlobalBaichuanModel(BaichuanModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+        
     def forward(
             self,
             input_ids: torch.LongTensor = None,
@@ -355,7 +363,6 @@ class GlobalBaichuanModel(BaichuanModel):
         # if inputs_embeds is None:
         #     inputs_embeds = self.embed_tokens(input_ids)
         
-        print('global receive attention_mask:',attention_mask.shape)
         # embed positions
         if attention_mask is None:
             attention_mask = torch.ones(

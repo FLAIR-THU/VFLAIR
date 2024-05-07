@@ -209,11 +209,11 @@ class WhiteBoxInversion(Attacker):
                         optimizer.step()
 
                         _iter+=1 
-                        if _iter%5 == 0:
-                            if last_cost.item() < cost_function.item():
-                                break
-                            last_cost = cost_function
-                            # print('=== iter ',_iter,'  cost:',cost_function)
+                        # if _iter%50 == 0:
+                        #     # if last_cost.item() < cost_function.item():
+                        #     #     break
+                        #     # last_cost = cost_function
+                        #     print('=== iter ',_iter,'  cost:',cost_function)
                     
                     ####### recover tokens from Z: [seq_length, vocab_size]
                     predicted_indexs = torch.argmax(Z, dim=-1) # torch.size[seq_length]

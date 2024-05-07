@@ -14,7 +14,7 @@ from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
 from party.llm_party import Party as Party_LLM
 
-from dataset.party_dataset import PassiveDataset, PassiveDataset_LLM
+from dataset.party_dataset import *
 from dataset.party_dataset import ActiveDataset
 from load.LoadModels import load_models_per_party, QuestionAnsweringModelOutput
 # load_models_per_party_new
@@ -32,6 +32,7 @@ from config import vfl_basic_config
 
 import time
 import numpy as np
+import pickle
 
 
 class PassiveParty(Party):
@@ -155,6 +156,7 @@ class PassiveParty_LLM(Party_LLM):
 
                 seq_length = self.args.defense_configs['seq_length']
                 embed_dim = self.args.model_embedded_dim #defense_configs['embed_dim']
+                mid_model_path = self.args.defense_configs['mid_model_path'] if 'mid_model_path' in self.args.defense_configs else None
 
                 if self.mid_position == "inner":
                     print('init defense: inner mid')
@@ -183,20 +185,19 @@ class PassiveParty_LLM(Party_LLM):
                 else:
                     print('init defense: out mid')
                     print(self.mid_model_name)
-                    if 'Squeeze' in self.mid_model_name:
-                        print('Squeeze')
-                        self.mid_model = globals()[self.mid_model_name](seq_length, embed_dim, \
-                                                                        mid_lambda=self.mid_lambda,
-                                                                        squeeze_dim=self.squeeze_dim,
-                                                                        bottleneck_scale=current_bottleneck_scale,
-                                                                        std_shift=std_shift_hyperparameter).to(
-                            self.args.device)
+
+                    if mid_model_path !=None and mid_model_path!="":
+                        print('Load Mid Model:',mid_model_path)
+                        with open(mid_model_path, 'rb') as f:
+                            self.mid_model  = pickle.load(f)
                     else:
-                        self.mid_model = globals()[self.mid_model_name](seq_length, embed_dim, \
-                                                                        mid_lambda=self.mid_lambda,
-                                                                        bottleneck_scale=current_bottleneck_scale,
-                                                                        std_shift=std_shift_hyperparameter).to(
-                            self.args.device)
+                        if 'Squeeze' in self.mid_model_name:
+                            print('Squeeze')
+                            self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                            mid_lambda=self.mid_lambda,squeeze_dim = self.squeeze_dim ,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                        else:
+                            self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
+                            mid_lambda=self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
 
                     if self.local_model_optimizer == None:
                         self.local_model_optimizer = torch.optim.Adam(self.mid_model.parameters(), lr=self.mid_lr)
@@ -210,12 +211,19 @@ class PassiveParty_LLM(Party_LLM):
         self.local_model.eval()
 
     def prepare_data(self, args, index):
-        if not args.dataset:
-            return None
-        super().prepare_data(args, index)  # Party_llm's prepare_data
+        super().prepare_data(args, index) # Party_llm's prepare_data
+ 
+        
+        if args.dataset in ['Alpaca','CodeAlpaca']:
+            self.train_dst = AlpacaDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = AlpacaDataset_LLM(args, self.test_data, self.test_label, 'test')
+        elif args.dataset == 'MMLU':
+            self.train_dst = MMLUDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = MMLUDataset_LLM(args, self.test_data, self.test_label, 'test')
+        else:
+            self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')
 
-        self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
-        self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')
 
     def update_local_pred(self, pred):
         self.pred_received[self.args.k - 1] = pred
@@ -248,7 +256,7 @@ class PassiveParty_LLM(Party_LLM):
         gt_one_hot_label = self.gt_one_hot_label  # label
 
         # ########### Normal Loss ###############
-        if self.args.task_type == 'SequenceClassification':
+        if self.args.model_architect=='CLS': #self.args.task_type == 'SequenceClassification':
             # loss = self.criterion(pred, gt_one_hot_label)
             pooled_logits = pred.logits
             labels = gt_one_hot_label
@@ -272,21 +280,34 @@ class PassiveParty_LLM(Party_LLM):
             #     loss_fct = BCEWithLogitsLoss()
             #     loss = loss_fct(pooled_logits, labels)
 
-        elif self.args.task_type == 'CausalLM':
-            #  ? pred: generated text ids [bs, new_token_num]
+        elif self.args.model_architect=='CLM': #self.args.task_type == 'CausalLM':
             lm_logits = pred.logits # [bs, seq_len, vocab_size]
-            next_token_logits = lm_logits[:,-1,:]
+            # move labels to correct device to enable model parallelism
+            labels = torch.tensor(gt_one_hot_label).to(lm_logits.device)
+            # print('cal loss labels.shape:',labels.shape)
+            if len(labels.shape)>1:
+                # Shift so that tokens < n predict n
+                shift_logits = lm_logits[..., :-1, :].contiguous()
+                shift_labels = labels[..., 1:].contiguous()
+                # Flatten the tokens
+                loss_fct = CrossEntropyLoss()
+                # print('shift_logits:',shift_logits.shape)
+                # print(shift_logits.view(-1, shift_logits.size(-1)).shape)
+                # print('shift_labels:',shift_labels.shape)
+                # print(shift_labels.view(-1).shape)
+                loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            else:
+                next_token_logits = lm_logits[:,-1,:]
+                # print('next_token_logits:',next_token_logits.shape)
+                # print('labels:',labels.shape)
+                labels = torch.tensor(labels.long()).to(self.args.device)
+                # Flatten the tokens
+                loss_fct = CrossEntropyLoss()
+                # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+                loss = loss_fct(next_token_logits, labels)
+                # print('loss:', loss)
 
-            labels = torch.tensor(gt_one_hot_label).squeeze()
-            label_id = torch.tensor(labels.long()).to(self.args.device)
-
-            # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
-            # loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-            loss = loss_fct(next_token_logits, label_id)
-            # print('loss:', loss)
-
-        elif self.args.task_type == 'QuestionAnswering':
+        elif self.args.model_architect=='TQA': #self.args.task_type == 'QuestionAnswering':
             start_logits = pred.start_logits
             end_logits = pred.end_logits
 

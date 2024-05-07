@@ -24,7 +24,7 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 ##### Evaluation with pretrained models ######
-class MistralForCausalLM_pretrained(MistralPreTrainedModel):
+class MistralForCausalLM_pretrained(MistralForCausalLM):
     _tied_weights_keys = ["lm_head.weight"]
 
     def __init__(self, global_mistral, lm_head, generation_config=None):
@@ -38,6 +38,9 @@ class MistralForCausalLM_pretrained(MistralPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    def _clear_past_key_values(self):
+        self.model._clear_past_key_values()
 
     def forward(
         self,
@@ -195,7 +198,7 @@ class MistralForCausalLM_pretrained(MistralPreTrainedModel):
 
 
 ##################### Functional Global Models ######################
-class LocalMistralModel(MistralPreTrainedModel):
+class LocalMistralModel(MistralForCausalLM, MistralPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MistralDecoderLayer`]
 
@@ -204,7 +207,7 @@ class LocalMistralModel(MistralPreTrainedModel):
     """
 
     def __init__(self, full_mistral , num_encoders):
-        super().__init__(full_mistral.config)
+        super(MistralPreTrainedModel,self).__init__(full_mistral.config)
 
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_mistral.config.num_hidden_layers
@@ -222,8 +225,12 @@ class LocalMistralModel(MistralPreTrainedModel):
         # self.norm = full_mistral.norm #MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
+        
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
+
+    def _clear_past_key_values(self):
+        self.past_key_values=None
 
     def forward(
         self,
@@ -243,7 +250,6 @@ class LocalMistralModel(MistralPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-        print('---------- Local use_cache:',use_cache)
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -271,8 +277,7 @@ class LocalMistralModel(MistralPreTrainedModel):
             if use_legacy_cache:
                 past_key_values = DynamicCache.from_legacy_cache(past_key_values)
             past_key_values_length = past_key_values.get_usable_length(seq_length)
-            print('init past_key_values:',type(past_key_values))
-            print(len(past_key_values))
+
 
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
@@ -356,7 +361,6 @@ class LocalMistralModel(MistralPreTrainedModel):
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
             
-            print('--layer past_key_values:',len(past_key_values))
 
         return {'inputs_embeds':hidden_states, 
                 'attention_mask':attention_mask,
@@ -418,6 +422,9 @@ class GlobalMistralModel(MistralPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+    def _clear_past_key_values(self):
+        self.past_key_values=None
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -436,10 +443,6 @@ class GlobalMistralModel(MistralPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-        print('-------- Global use_cache:',use_cache)
-        print('receive past_key_values:',type(past_key_values))
-        if past_key_values != None:
-            print(len(past_key_values))
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
@@ -467,8 +470,7 @@ class GlobalMistralModel(MistralPreTrainedModel):
             if use_legacy_cache:
                 past_key_values = DynamicCache.from_legacy_cache(past_key_values)
             past_key_values_length = past_key_values.get_usable_length(seq_length)
-            print('global init past_key_values:',type(past_key_values))
-            print(len(past_key_values))
+
 
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
@@ -554,7 +556,6 @@ class GlobalMistralModel(MistralPreTrainedModel):
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
 
-            print('--layer past_key_values:',len(past_key_values))
 
 
         hidden_states = self.norm(hidden_states)

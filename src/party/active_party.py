@@ -154,7 +154,7 @@ class ActiveParty_LLM(Party_LLM):
 
     def aggregate(self, pred_list, use_cache=False, test=False):
         # print(' == Active Aggregate == ')
-
+        
         self.passive_pred_list = pred_list
         self.passive_pred_list[0].update({'use_cache':use_cache})
         self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True

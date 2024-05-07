@@ -1,6 +1,8 @@
 import sys, os
 from os.path import join
-
+import io
+import json
+from typing import Dict, Optional, Sequence
 sys.path.append(os.pardir)
 
 import random
@@ -1811,12 +1813,11 @@ def load_dataset_per_party_llm(args, index):
     elif args.dataset == 'MMLU':
         subject_list = []
         choices = ["A", "B", "C", "D"]
-        option_dict = {option: idx for idx, option in enumerate('ABCD')}
-        args.label_dict = option_dict
+        args.label_dict = {0:'A', 1:'B', 2:'C', 3:'D'}
 
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
-            train_set_file = DATA_PATH + 'MMLU/dev/'
+            train_set_file = DATA_PATH + 'MMLU/auxiliary_train/'
             test_set_file = DATA_PATH + 'MMLU/test/'
 
         ### train ###
@@ -1824,16 +1825,17 @@ def load_dataset_per_party_llm(args, index):
         for name in sorted(os.listdir(train_set_file)):
             # print(name[:-4])
             _df = pd.read_csv(train_set_file + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
-            _name_list = name.split('_')[:-1]
-            subject_name = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
+            # _name_list = name.split('_')[:-1]
+            # subject_name = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
+            subject_name = name
             _df['subject'] = subject_name
             subject_list.append(subject_name)
             df_train = pd.concat([df_train, _df])
 
         prompt_list = []
         answer_list = []
-        for i in range(len(df_train)):
-            if df_train.iloc[i]['subject'] == args.subject:  # in subject_list:
+        for i in range(1000):#(len(df_train)):
+            if 1:#df_train.iloc[i]['subject'] == args.subject:  # in subject_list:
                 subject = df_train.iloc[i]['subject']
                 prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(
                     format_subject(subject))
@@ -1842,7 +1844,7 @@ def load_dataset_per_party_llm(args, index):
                 # if len(prompt) < args.max_sequence:
                 prompt_list.append(prompt)
                 answer_list.append(answer)
-        labels = [option_dict[choice] for choice in answer_list]
+        labels = answer_list 
 
         X_train = np.array(prompt_list)
         y_train = np.array(labels)
@@ -1857,14 +1859,12 @@ def load_dataset_per_party_llm(args, index):
             _df['subject'] = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
             df_test = pd.concat([df_test, _df])
 
-        labels = [option_dict[choice] for choice in df_test['answer']]
-
         num_train = args.n_shot
         print('num_train=', num_train)
         prompt_list = []
         answer_list = []
-        for i in range(len(df_test)):
-            if df_test.iloc[i]['subject'] == args.subject:  # in subject_list:
+        for i in range(100):#(len(df_test)):
+            if 1:#df_test.iloc[i]['subject'] == args.subject:  # in subject_list:
                 subject = df_test.iloc[i]['subject']
                 # if df_test.iloc[i]['subject'] == subject:
                 prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(
@@ -1880,7 +1880,7 @@ def load_dataset_per_party_llm(args, index):
                 # if len(prompt) < args.max_sequence:
                 prompt_list.append(prompt)
                 answer_list.append(answer)
-        labels = [option_dict[choice] for choice in answer_list]
+        labels = answer_list #[option_dict[choice] for choice in answer_list]
         X_test = np.array(prompt_list)
         y_test = np.array(labels)
 
@@ -2036,13 +2036,14 @@ def load_dataset_per_party_llm(args, index):
 
         print('X:',type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
         print('y',type(y_train), len(y_train), len(y_test), y_train[0])  #
-
-    elif args.dataset == 'CodeAlpaca':
-        dataset_path =  DATA_PATH+"/CodeAlpaca-20k"
-        dst = load_dataset(dataset_path,split="train")
-        split = dst.train_test_split(test_size=0.1,seed=42)
-
-
+    
+    elif args.dataset == 'Alpaca':
+        data_path = DATA_PATH + '/alpaca/alpaca_data.json'
+        DEFAULT_PAD_TOKEN = "[PAD]"
+        DEFAULT_EOS_TOKEN = "</s>"
+        DEFAULT_BOS_TOKEN = "<s>"
+        DEFAULT_UNK_TOKEN = "<unk>"
+        IGNORE_INDEX = args.tokenizer.pad_token_id #-100
         PROMPT_DICT = {
             "prompt_input": (
                 "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -2055,32 +2056,141 @@ def load_dataset_per_party_llm(args, index):
                 "### Instruction:\n{instruction}\n\n### Response:"
             ),
         }
+        def _make_r_io_base(f, mode: str):
+            if not isinstance(f, io.IOBase):
+                f = open(f, mode=mode)
+            return f
 
-        list_data_dict = split['train']
+        def jload(f, mode="r"):
+            """Load a .json file into a dictionary."""
+            f = _make_r_io_base(f, mode)
+            jdict = json.load(f)
+            f.close()
+            return jdict
+        
+        list_data_dict = jload(data_path)
+
+        prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
         sources = [
             prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
             for example in list_data_dict
-        ]
-        targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
+        ] # instructions
+        # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
+        targets = [f"{example['output']}" for example in list_data_dict] # local
 
-        X_train = sources
-        y_train = targets
+        X_data = sources[:1000] # list of instruction text
+        y_data = targets[:1000] # list of answer text
 
-        list_data_dict = split['test']
-        sources = [
-            prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
-            for example in list_data_dict
-        ]
-        targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
+        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1, random_state=args.current_seed)
 
-        X_test = sources
-        y_test = targets
+        print('train data:',len(X_train),len(y_train))
+        print('test data:',len(X_test),len(y_test))
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-        print('X:',type(X_train), len(X_train), len(X_test))  #
-        print('y',type(y_train), len(y_train), len(y_test))  #
+        # input_ids, labels = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels"))
+        # input_ids = torch.nn.utils.rnn.pad_sequence(
+        #     input_ids, batch_first=True, padding_value=args.tokenizer.pad_token_id
+        # )
+        # labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
+        
+
+    elif args.dataset == 'CodeAlpaca':
+        data_path = DATA_PATH + '/CodeAlpaca-20k/code_alpaca_20k.json'
+        DEFAULT_PAD_TOKEN = "[PAD]"
+        DEFAULT_EOS_TOKEN = "</s>"
+        DEFAULT_BOS_TOKEN = "<s>"
+        DEFAULT_UNK_TOKEN = "<unk>"
+        IGNORE_INDEX = args.tokenizer.pad_token_id #-100
+        PROMPT_DICT = {
+            "prompt_input": (
+                "Below is an instruction that describes a task, paired with an input that provides further context. "
+                "Write a response that appropriately completes the request.\n\n"
+                "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+            ),
+            "prompt_no_input": (
+                "Below is an instruction that describes a task. "
+                "Write a response that appropriately completes the request.\n\n"
+                "### Instruction:\n{instruction}\n\n### Response:"
+            ),
+        }
+        def _make_r_io_base(f, mode: str):
+            if not isinstance(f, io.IOBase):
+                f = open(f, mode=mode)
+            return f
+
+        def jload(f, mode="r"):
+            """Load a .json file into a dictionary."""
+            f = _make_r_io_base(f, mode)
+            jdict = json.load(f)
+            f.close()
+            return jdict
+        
+        list_data_dict = jload(data_path)
+
+        prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
+        sources = [
+            prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
+            for example in list_data_dict
+        ] # instructions
+        # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
+        targets = [f"{example['output']}" for example in list_data_dict] # local
+
+        X_data = sources[:1000] # list of instruction text
+        y_data = targets[:1000] # list of answer text
+
+        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1, random_state=args.current_seed)
+
+        print('train data:',len(X_train),len(y_train))
+        print('test data:',len(X_test),len(y_test))
+
+        train_dst = (X_train, y_train)
+        test_dst = (X_test, y_test)
+        
+    # elif args.dataset == 'CodeAlpaca':
+    #     dataset_path =  DATA_PATH+"/CodeAlpaca-20k"
+    #     dst = load_dataset(dataset_path,split="train")
+    #     split = dst.train_test_split(test_size=0.1,seed=42)
+
+    #     PROMPT_DICT = {
+    #         "prompt_input": (
+    #             "Below is an instruction that describes a task, paired with an input that provides further context. "
+    #             "Write a response that appropriately completes the request.\n\n"
+    #             "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+    #         ),
+    #         "prompt_no_input": (
+    #             "Below is an instruction that describes a task. "
+    #             "Write a response that appropriately completes the request.\n\n"
+    #             "### Instruction:\n{instruction}\n\n### Response:"
+    #         ),
+    #     }
+        
+    #     list_data_dict = split['train']
+    #     sources = [
+    #         prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
+    #         for example in list_data_dict
+    #     ]
+    #     targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
+
+    #     X_train = sources
+    #     y_train = targets
+
+    #     list_data_dict = split['test']
+    #     sources = [
+    #         prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
+    #         for example in list_data_dict
+    #     ]
+    #     targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
+
+    #     X_test = sources
+    #     y_test = targets
+
+    #     train_dst = (X_train, y_train)
+    #     test_dst = (X_test, y_test)
+
+    #     print('X:',type(X_train), len(X_train), len(X_test))  #
+    #     print('y',type(y_train), len(y_train), len(y_test))  #
 
 
     elif not args.dataset:

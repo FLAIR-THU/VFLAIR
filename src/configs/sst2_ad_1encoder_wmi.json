@@ -1,11 +1,11 @@
 {
-    "epochs": 1,
+    "epochs": 20,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 32,
+    "batch_size": 128,
     "pipeline": "finetune",
+    "model_architect":"CLS",
     "early_stop_threshold": 1,
-    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
@@ -37,7 +37,7 @@
         "1": {
             "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "head_layer_trainable": 1,
             "encoder_trainable": 0,
             "output_dim": 2,
             "model_type": "Bert",
@@ -51,27 +51,31 @@
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
+    "defense": {
+        "name": "AdversarialTraining",
+        "parameters": {
+            "party": [0],
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.0001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.0001,
+            "lambda": 0.001,
+            "seq_length": 70,
+            "embed_dim": 768
+        }
+    },
     "attack_list": {
         "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 2
-            }
-        },
-        "1":{
             "name": "WhiteBoxInversion",
             "parameters": {
                 "party": [1],
                 "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
+                "lr": 0.005,
+                "epochs": 500,
                 "batch_size": 32,
-                "attack_sample_num": 2
+                "attack_sample_num": 100
             }
+            
         }
     }
 }

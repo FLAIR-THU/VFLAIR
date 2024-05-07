@@ -1,10 +1,9 @@
 {
-    "epochs": 1,
-    "lr": 0.001,
+    "epochs": 20,
+    "lr": 0.002,
     "k": 2,
-    "batch_size": 4,
-    "test_batch_size": 1,
-    "early_stop_threshold": 2,
+    "batch_size": 16,
+    "early_stop_threshold": 1,
     "pipeline": "finetune",
     "model_architect":"CLM",
     "communication":{
@@ -21,7 +20,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "True",
-        "max_length": 64,
+        "max_length": 512,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -48,14 +47,15 @@
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 128,
+            "doc_stride" : 512,
             "max_seq_length": 512,
             "metric_type": "best_pred",
-            "n_best_size": 8
+            "n_best_size": 3
         },
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    
     },
     "attack_list": {
         "0":{
@@ -64,8 +64,8 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
-                "batch_size": 1,
-                "attack_sample_num": 5
+                "batch_size": 32,
+                "attack_sample_num": 500
             }
         },
         "1":{
@@ -73,10 +73,10 @@
             "parameters": {
                 "party": [1],
                 "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 1,
-                "attack_sample_num": 5
+                "lr": 0.005,
+                "epochs": 500,
+                "batch_size": 32,
+                "attack_sample_num": 500
             }
         }
     }

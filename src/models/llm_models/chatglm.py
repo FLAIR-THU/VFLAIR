@@ -1,5 +1,6 @@
 from .third_party_modeling.configuration_chatglm import ChatGLMConfig
 from .third_party_modeling.modeling_chatglm import *
+from .third_party_modeling.tokenization_chatglm import ChatGLMTokenizer
 
 
 import torch
@@ -26,20 +27,23 @@ import math
 from typing import List, Optional, Tuple, Union
 
 ##### Evaluation with pretrained models ######
-class ChatGLMForConditionalGeneration_pretrained(ChatGLMPreTrainedModel):
-    def __init__(self, global_chatglm, head_layer, empty_init=True, device=None):
+class ChatGLMForConditionalGeneration_pretrained(ChatGLMForConditionalGeneration):
+    def __init__(self, global_chatglm, head_layer, generation_config=None, empty_init=True, device=None):
         super().__init__(global_chatglm.config)
 
         self.max_sequence_length = global_chatglm.config.max_length
 
         self.transformer = global_chatglm #ChatGLMModel(config, empty_init=empty_init, device=device)
-        self.head_layer = head_layer
+        self.head_layer = head_layer #self.transformer.output_layer
         self.config = global_chatglm.config
         self.quantized = False
+        self.generation_config = generation_config
 
         if self.config.quantization_bit:
             self.quantize(self.config.quantization_bit, empty_init=True)
-        
+
+    def _clear_past_key_values(self):
+        self.transformer._clear_past_key_values()
 
     def forward(
             self,
@@ -110,9 +114,9 @@ class ChatGLMForConditionalGeneration_pretrained(ChatGLMPreTrainedModel):
 
 
 ##################### Functional Global Models ######################
-class LocalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
+class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
     def __init__(self, full_chatglm , num_encoders=1, device=None, empty_init=True):
-        super().__init__(full_chatglm.config)
+        super(ChatGLMPreTrainedModel,self).__init__(full_chatglm.config)
         if empty_init:
             init_method = skip_init
         else:
@@ -158,6 +162,9 @@ class LocalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
             self.prefix_encoder = PrefixEncoder(config)
             self.dropout = torch.nn.Dropout(0.1)
 
+    def _clear_past_key_values(self):
+        self.past_key_values = None
+
     def forward(
             self,
             input_ids,
@@ -169,6 +176,7 @@ class LocalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
             use_cache: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
+            **kwarg
     ):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -274,6 +282,9 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
             self.prefix_tokens = torch.arange(self.pre_seq_len).long()
             self.prefix_encoder = PrefixEncoder(config)
             self.dropout = torch.nn.Dropout(0.1)
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
             self,

@@ -35,6 +35,8 @@ from models.llm_models.mamba import *
 from models.llm_models.gemma import *
 from models.llm_models.mistral import *
 from models.llm_models.xlnet import *
+from models.llm_models.chatglm import *
+
 
 from models.llm_models.t5 import *
 # from models.llm_models.t5 import *
@@ -84,7 +86,18 @@ MODEL_PATH = {
     "AudreyTrungNguyenllama-qnli-p-tuning": YOUR_MODEL_PATH + "AudreyTrungNguyenllama-qnli-p-tuning",
 
     "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base",
-    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM'
+    "echarlaixtiny-random-mistral": YOUR_MODEL_PATH + "echarlaixtiny-random-mistral",
+    "baichuan-incBaichuan-7B": YOUR_MODEL_PATH + "baichuan-incBaichuan-7B",
+    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM',
+    "state-spacesmamba-130m-hf" : YOUR_MODEL_PATH + "state-spacesmamba-130m-hf",
+    "THUDMchatglm3-6b" : YOUR_MODEL_PATH + "THUDMchatglm3-6b",
+    "xlnetxlnet-base-cased" : YOUR_MODEL_PATH + "xlnetxlnet-base-cased",
+    "tiiuaefalcon-rw-1b" : YOUR_MODEL_PATH + "tiiuaefalcon-rw-1b",
+    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH+"fxmartytiny-random-GemmaForCausalLM",
+    "mistralaiMistral-7B-Instruct-v0.2":YOUR_MODEL_PATH+"mistralaiMistral-7B-Instruct-v0.2",
+
+    "googlegemma-2b":YOUR_MODEL_PATH+"googlegemma-2b",
+
 }
 MODEL_PATH.update({'Qwen/Qwen1.5-0.5B-Chat': None})
 
@@ -504,7 +517,6 @@ def load_basic_models_llm_bert(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-
 def load_basic_models_llm_t5(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -664,6 +676,7 @@ def load_basic_models_llm_gpt2(args, index):
 
     args.config = full_model.config
     args.generation_config = full_model.generation_config
+    print('gpt2 args.generation_config:',args.generation_config)
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.n_embd
 
@@ -887,13 +900,13 @@ def load_basic_models_llm_baichuan(args, index):
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
-    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
+    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True,trust_remote_code=True )
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
     if args.task_type == 'CausalLM':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+        full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
     elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+        full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
     # elif args.task_type == 'QuestionAnswering':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.task_type == 'SequenceClassification':
@@ -938,9 +951,8 @@ def load_basic_models_llm_baichuan(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalBaichuanModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
-
+        local_model = LocalBaichuanModel(full_llm, num_encoders = args.local_encoders_num)
+        
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -972,7 +984,7 @@ def load_basic_models_llm_baichuan(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalBaichuanModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
+        global_model = GlobalBaichuanModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
@@ -1024,7 +1036,7 @@ def load_basic_models_llm_xlnet(args, index):
     else:
         assert 1 > 2, "task type not supported"
 
-    full_llama = full_model.transformer
+    full_llm = full_model.transformer
 
     if args.task_type == 'CausalLM':
         head_layer = full_model.lm_loss
@@ -1062,7 +1074,7 @@ def load_basic_models_llm_xlnet(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalXLNetModel(full_llama, num_encoders = args.local_encoders_num)
+        local_model = LocalXLNetModel(full_llm, num_encoders = args.local_encoders_num)
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1077,11 +1089,11 @@ def load_basic_models_llm_xlnet(args, index):
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.word_embedding.parameters()))
-        for param in local_model.mask_emb.parameters():
+        for param in local_model.word_embedding.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.mask_emb.parameters()))
-
+            local_trainable_params.extend(list(local_model.word_embedding.parameters()))
+        
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layer.parameters():
             param.requires_grad = args.encoder_trainable[0]
@@ -1378,7 +1390,7 @@ def load_basic_models_llm_mamba(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalMambaModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
+        global_model = GlobalMambaModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
@@ -1540,13 +1552,13 @@ def load_basic_models_llm_chatglm(args, index):
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
-    args.tokenizer = ChatGLMTokenizer.from_pretrained(model_path, do_lower_case=True)
+    args.tokenizer = ChatGLMTokenizer.from_pretrained(model_path, do_lower_case=True, trust_remote_code=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
     if args.task_type == 'CausalLM':
-        full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path)
+        full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path, trust_remote_code=True)
     elif args.task_type == 'Generation':
-        full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path)
+        full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path, trust_remote_code=True)
     # elif args.task_type == 'QuestionAnswering':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.task_type == 'SequenceClassification':
@@ -1559,6 +1571,130 @@ def load_basic_models_llm_chatglm(args, index):
     head_layer = full_model.transformer.output_layer
 
     all_encoder_num = full_model.config.num_layers
+
+    if args.task_type == 'CausalLM':
+        head_layer = full_model.transformer.output_layer
+    elif args.task_type == 'Generation':
+        head_layer = full_model.transformer.output_layer
+    # elif args.task_type == 'QuestionAnswering':
+    #     head_layer = full_model.qa_outputs
+    # elif args.task_type == 'SequenceClassification':
+    #     head_layer = full_model.score
+    else:
+        head_layer = None
+        assert 1 > 2, "task type not supported"
+
+    if args.pad_token == "default":
+        if args.tokenizer.pad_token is None:
+            args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+            pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+            full_model.config.pad_token_id = pad_id
+        args.pad_token = "default_" + args.tokenizer.pad_token
+    else:
+        args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+        pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+        full_model.config.pad_token_id = pad_id
+
+    args.config = full_model.config
+    args.generation_config = full_model.generation_config
+    args.model_architectures = args.config.architectures
+    args.model_embedded_dim = args.config.hidden_size
+
+    all_encoder_num = args.config.num_layers
+    print('all_encoder_num:',all_encoder_num)
+
+    ########### Local Model ###########
+    local_model = None
+    local_model_optimizer = None
+    if index < args.k - 1:
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num)
+        
+        local_model = local_model.to(args.device)
+        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
+        for param in local_model.parameters():
+            param.requires_grad = False
+
+        local_trainable_params = []
+        local_model_optimizer = None
+
+        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
+        for param in local_model.embedding.parameters():
+            param.requires_grad = args.embedding_trainable[0]
+        if args.embedding_trainable[0]:
+            local_trainable_params.extend(list(local_model.embedding.parameters()))
+
+        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
+        for param in local_model.encoder.parameters():
+            param.requires_grad = args.encoder_trainable[0]
+        if args.encoder_trainable[0]:
+            local_trainable_params.extend(list(local_model.encoder.parameters()))
+
+        if len(local_trainable_params)<0:
+            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+    ########### Global Model ###########
+    global_model = None
+    global_model_optimizer = None
+    if index == args.k - 1:
+        global_encoders_num = all_encoder_num - args.local_encoders_num
+        print('global_encoders_num:',global_encoders_num)
+
+        # global part of llama(frozen)
+        global_model = GlobalChatGLMModel(full_llm, num_encoders = global_encoders_num)
+
+        # add Classification Layer(untrainable)
+        if args.task_type == "CausalLM":
+            global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
+        elif args.task_type == "Generation":
+            global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
+        # elif args.task_type == "SequenceClassification":
+        #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
+        else:
+            assert 1 > 2, "task type not supported"
+
+        print(f"global_model parameters: {sum(p.numel() for p in global_model.parameters())}")
+
+        # Freeze Backbone
+        for param in global_model.transformer.parameters():
+            param.requires_grad = False
+
+        # Head Layer Trainable/Freeze
+        if head_layer:  # head layer exists
+            print('Global Model : head_layer_trainable = ', args.head_layer_trainable[1])
+            for param in global_model.head_layer.parameters():
+                param.requires_grad = args.head_layer_trainable[1]
+            if args.head_layer_trainable[1]:
+                global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
+
+        global_model = global_model.to(args.device)
+
+    del (full_model)
+
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
+def load_basic_models_llm_mistral(args, index):
+    current_model_type = args.model_list[str(index)]['type']
+    current_output_dim = args.model_list[str(index)]['output_dim']
+    model_path = args.model_list[str(index)]['path']
+
+    print('load_basic_models_llm from:', current_model_type)
+    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
+    args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+
+    if args.task_type == 'CausalLM':
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    elif args.task_type == 'Generation':
+        full_model = AutoModelForCausalLM.from_pretrained(model_path)
+    # elif args.task_type == 'QuestionAnswering':
+    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    # elif args.task_type == 'SequenceClassification':
+    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
+    else:
+        assert 1 > 2, "task type not supported"
+
+    full_llm = full_model.model
 
     if args.task_type == 'CausalLM':
         head_layer = full_model.lm_head
@@ -1596,9 +1732,8 @@ def load_basic_models_llm_chatglm(args, index):
     local_model_optimizer = None
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num, model_type=args.model_type,\
-        generation_config=full_model.generation_config)
-
+        local_model = LocalMistralModel(full_llm, num_encoders = args.local_encoders_num)
+        
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1607,19 +1742,19 @@ def load_basic_models_llm_chatglm(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-
+        
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embedding.parameters():
+        for param in local_model.embed_tokens.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embedding.parameters()))
-
+            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
+        
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.encoder.parameters():
+        for param in local_model.layers.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.encoder.parameters()))
-
+            local_trainable_params.extend(list(local_model.layers.parameters()))
+        
         if len(local_trainable_params)<0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
@@ -1631,13 +1766,13 @@ def load_basic_models_llm_chatglm(args, index):
         print('global_encoders_num:',global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalChatGLMModel(full_llm, num_encoders = global_encoders_num, model_type=args.model_type)
+        global_model = GlobalMistralModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.task_type == "CausalLM":
-            global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
+            global_model = MistralForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
         elif args.task_type == "Generation":
-            global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
+            global_model = MistralForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
         # elif args.task_type == "SequenceClassification":
         #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
@@ -1681,10 +1816,11 @@ def load_basic_models_llm(args, index):
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_xlnet(args, index)
     elif args.model_type in ['Gemma']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gemma(args, index)
-
-    # elif str(args.model_type).lower() in ['qwen2']:
-    #     args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_qwen2(
-    #         args, index)
+    elif args.model_type in ['ChatGLM']:
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_chatglm(args, index)
+    elif args.model_type in ['Mistral']:
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_mistral(args, index)
+    
     elif args.model_type in ['T5']:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_t5(args, index)
     else:

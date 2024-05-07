@@ -33,6 +33,9 @@ class FalconForCausalLM_pretrained(FalconForCausalLM):
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def _clear_past_key_values(self):
+        self.transformer._clear_past_key_values()
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -97,9 +100,9 @@ class FalconForCausalLM_pretrained(FalconForCausalLM):
         )
 
 ##################### Functional Global Models ######################
-class LocalFalconModel(FalconPreTrainedModel):
+class LocalFalconModel(FalconForCausalLM,FalconPreTrainedModel):
     def __init__(self, full_falcon , num_encoders):
-        super().__init__(full_falcon.config)
+        super(FalconPreTrainedModel,self).__init__(full_falcon.config)
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_falcon.config.num_hidden_layers
 
@@ -123,10 +126,13 @@ class LocalFalconModel(FalconPreTrainedModel):
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
         self.past_key_values = None 
         self.embedding_output = None
+
+    def _clear_past_key_values(self):
+        self.past_key_values = None
 
     def forward(
         self,
@@ -203,6 +209,7 @@ class LocalFalconModel(FalconPreTrainedModel):
                 )
                 position_ids = position_ids.unsqueeze(0)
 
+        origin_attention_mask = attention_mask
         if self._use_flash_attention_2:
             # 2d mask is passed through the layers
             attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
@@ -294,7 +301,7 @@ class LocalFalconModel(FalconPreTrainedModel):
 
         self.past_key_values = presents
 
-        return {'inputs_embeds': hidden_states, 'attention_mask': attention_mask}
+        return {'inputs_embeds': hidden_states, 'attention_mask': origin_attention_mask}
 
         # # Add last hidden state
         # hidden_states = self.ln_f(hidden_states)
@@ -344,6 +351,9 @@ class GlobalFalconModel(FalconPreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        self.past_key_values = None
+
+    def _clear_past_key_values(self):
         self.past_key_values = None
 
     def forward(
@@ -420,54 +430,53 @@ class GlobalFalconModel(FalconPreTrainedModel):
                 )
                 position_ids = position_ids.unsqueeze(0)
 
-        ##### no need preparing attention_mask
-        # if self._use_flash_attention_2:
-        #     # 2d mask is passed through the layers
-        #     attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
-        # elif self._use_sdpa and not output_attentions:
-        #     # output_attentions=True can not be supported when using SDPA, and we fall back on
-        #     # the manual implementation that requires a 4D causal mask in all cases.
-        #     if alibi is None:
-        #         attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
-        #             attention_mask,
-        #             (batch_size, seq_length),
-        #             inputs_embeds,
-        #             past_key_values_length,
-        #         )
-        #     elif head_mask is None:
-        #         alibi = alibi.reshape(batch_size, -1, *alibi.shape[1:])
+        if self._use_flash_attention_2:
+            # 2d mask is passed through the layers
+            attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
+        elif self._use_sdpa and not output_attentions:
+            # output_attentions=True can not be supported when using SDPA, and we fall back on
+            # the manual implementation that requires a 4D causal mask in all cases.
+            if alibi is None:
+                attention_mask = _prepare_4d_causal_attention_mask_for_sdpa(
+                    attention_mask,
+                    (batch_size, seq_length),
+                    inputs_embeds,
+                    past_key_values_length,
+                )
+            elif head_mask is None:
+                alibi = alibi.reshape(batch_size, -1, *alibi.shape[1:])
 
-        #         attention_mask_2d = attention_mask
-        #         # We don't call _prepare_4d_causal_attention_mask_for_sdpa as we need to mask alibi using the 4D attention_mask untouched.
-        #         attention_mask = _prepare_4d_causal_attention_mask(
-        #             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        #         )
+                attention_mask_2d = attention_mask
+                # We don't call _prepare_4d_causal_attention_mask_for_sdpa as we need to mask alibi using the 4D attention_mask untouched.
+                attention_mask = _prepare_4d_causal_attention_mask(
+                    attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+                )
 
-        #         # We take care to integrate alibi bias in the attention_mask here.
-        #         if attention_mask_2d is None:
-        #             attention_mask = alibi / math.sqrt(self.config.hidden_size // self.num_heads)
-        #         else:
-        #             min_dtype = torch.finfo(alibi.dtype).min
-        #             attention_mask = torch.masked_fill(
-        #                 alibi / math.sqrt(self.config.hidden_size // self.num_heads),
-        #                 attention_mask < -1,
-        #                 min_dtype,
-        #             )
+                # We take care to integrate alibi bias in the attention_mask here.
+                if attention_mask_2d is None:
+                    attention_mask = alibi / math.sqrt(self.config.hidden_size // self.num_heads)
+                else:
+                    min_dtype = torch.finfo(alibi.dtype).min
+                    attention_mask = torch.masked_fill(
+                        alibi / math.sqrt(self.config.hidden_size // self.num_heads),
+                        attention_mask < -1,
+                        min_dtype,
+                    )
 
-        #             # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with the memory-efficient attention backend
-        #             # produces nans if sequences are completely unattended in the attention mask. Details: https://github.com/pytorch/pytorch/issues/110213
-        #             if seq_length > 1 and attention_mask.device.type == "cuda":
-        #                 attention_mask = AttentionMaskConverter._unmask_unattended(attention_mask, min_dtype=min_dtype)
-        #     else:
-        #         # PyTorch SDPA does not support head_mask, we fall back on the eager implementation in this case.
-        #         attention_mask = _prepare_4d_causal_attention_mask(
-        #             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        #         )
-        # else:
-        #     # 4d mask is passed through the layers
-        #     attention_mask = _prepare_4d_causal_attention_mask(
-        #         attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        #     )
+                    # From PyTorch 2.1 onwards, F.scaled_dot_product_attention with the memory-efficient attention backend
+                    # produces nans if sequences are completely unattended in the attention mask. Details: https://github.com/pytorch/pytorch/issues/110213
+                    if seq_length > 1 and attention_mask.device.type == "cuda":
+                        attention_mask = AttentionMaskConverter._unmask_unattended(attention_mask, min_dtype=min_dtype)
+            else:
+                # PyTorch SDPA does not support head_mask, we fall back on the eager implementation in this case.
+                attention_mask = _prepare_4d_causal_attention_mask(
+                    attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+                )
+        else:
+            # 4d mask is passed through the layers
+            attention_mask = _prepare_4d_causal_attention_mask(
+                attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
+            )
 
         # Prepare head mask if needed
         # 1.0 in head_mask indicate we keep the head

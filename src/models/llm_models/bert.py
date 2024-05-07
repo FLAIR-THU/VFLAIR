@@ -481,9 +481,9 @@ class GlobalBertEncoder(nn.Module):
         )
 
 
-class LocalBertModel(BertPreTrainedModel):
+class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
     def __init__(self, full_bert, num_encoders, model_type='Bert'):
-        super(LocalBertModel, self).__init__(full_bert.config)
+        super(BertPreTrainedModel, self).__init__(full_bert.config)
         self.model_type = model_type
         self.bert = full_bert
 
