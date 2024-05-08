@@ -24,6 +24,7 @@ import torch.nn as nn
 import torch
 import copy
 from loguru import logger
+from peft import LoraConfig, TaskType, get_peft_model, PeftModel, PeftModelForCausalLM
 
 from models.llm_models.bert import *
 from models.llm_models.gpt2 import *
@@ -39,7 +40,6 @@ from models.llm_models.chatglm import *
 
 
 from models.llm_models.t5 import *
-# from models.llm_models.t5 import *
 
 
 from models.bottom_models import *
@@ -80,6 +80,8 @@ MODEL_PATH = {
     "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA": YOUR_MODEL_PATH + "tanzeelabbasGPT-2_fine-tuned_squad_2.0_QA",
 
     'llama-2-7b': YOUR_MODEL_PATH + "llama-2-7b",
+    'chavinloalpaca-native': YOUR_MODEL_PATH + "chavinloalpaca-native",
+
     "HuggingFaceM4tiny-random-LlamaForCausalLM": YOUR_MODEL_PATH + "HuggingFaceM4tiny-random-LlamaForCausalLM",
     "HuggingFaceH4tiny-random-LlamaForSequenceClassification": YOUR_MODEL_PATH + "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
 
@@ -450,30 +452,73 @@ def load_basic_models_llm_bert(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
+        print('Local Model encoders_num:',args.local_encoders_num)
         local_model = LocalBertModel(full_llm, args.local_encoders_num, model_type=args.model_type)
-
-        # Freeze Backbone
-        for param in local_model.parameters():
-            param.requires_grad = False
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        local_model_optimizer = None
-        local_trainable_params = []
-        print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embeddings.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embeddings.parameters()))
+        if args.finetune_name == "LoRA":
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                #target_modules=["q", "v"],
+                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                inference_mode=False,  # 训练模式
+                r=4,  
+                lora_alpha=32, 
+                lora_dropout=0.1
+            )
 
-        print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.encoder_layer.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.encoder_layer.parameters()))
-        if len(local_trainable_params)>0:
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+            encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+            print('encoder_trainable_ids = ', encoder_trainable_ids)
+            for encoder_id in range(len(local_model.encoder_layer)):
+                if encoder_id not in encoder_trainable_ids:
+                    for param in local_model.encoder_layer.parameters():
+                        param.requires_grad = False
+            
+            print('embedding_trainable = ', args.embedding_trainable[0])
+            if args.embedding_trainable[0] == False:
+                for param in local_model.embeddings.parameters():
+                    param.requires_grad = False
+
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
+            local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+        else:
+            # Freeze Backbone
+            for param in local_model.parameters():
+                param.requires_grad = False
+            print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
+
+            local_model_optimizer = None
+            local_trainable_params = []
+            print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
+            for param in local_model.embeddings.parameters():
+                param.requires_grad = args.embedding_trainable[0]
+            if args.embedding_trainable[0]:
+                local_trainable_params.extend(list(local_model.embeddings.parameters()))
+
+            print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
+            for param in local_model.encoder_layer.parameters():
+                param.requires_grad = args.encoder_trainable[0]
+            if args.encoder_trainable[0]:
+                local_trainable_params.extend(list(local_model.encoder_layer.parameters()))
+        
+        
+        
+            if len(local_trainable_params)>0:
+                local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
     global_model = None

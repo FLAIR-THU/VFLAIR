@@ -10,31 +10,31 @@ for seed in {60,61,62,63,64,65}
     python main_pipeline_llm.py --seed $seed --configs yelp_wo
 
     # 50
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 60
     sed -i 's/"epsilon": 50/"epsilon": 60/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 70
     sed -i 's/"epsilon": 60/"epsilon": 70/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 80
     sed -i 's/"epsilon": 70/"epsilon": 80/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 90
     sed -i 's/"epsilon": 80/"epsilon": 90/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 100
     sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     # 500
     sed -i 's/"epsilon": 100/"epsilon": 500/g' ./configs/yelp_dp.json
-    python main_pipeline_llm.py --configs yelp_dp
+    python main_pipeline_llm.py --seed $seed --configs yelp_dp
 
     sed -i 's/"epsilon": 500/"epsilon": 50/g' ./configs/yelp_dp.json
 done

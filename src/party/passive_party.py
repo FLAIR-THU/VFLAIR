@@ -420,10 +420,10 @@ class PassiveParty_LLM(Party_LLM):
                 local_model_params,
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
-                # allow_unused = True
+                allow_unused = True
             )
             for w, g in zip(local_model_params, weights_grad_a):
-                if w.requires_grad:
+                if w.requires_grad and g!=None:
                     if w.grad != None:
                         w.grad += g.detach()
                     else:
@@ -433,6 +433,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.adversarial_model_loss,
                 self.adversarial_model.parameters(),
                 retain_graph=True,
+                allow_unused = True,
             )
             for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
                 if w.requires_grad:
@@ -463,6 +464,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.mid_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
+                allow_unused = True,
             )
             for w, g in zip(self.mid_model.parameters(), weights_grad_a):
                 if w.requires_grad:
@@ -482,9 +484,10 @@ class PassiveParty_LLM(Party_LLM):
                     local_model_params,  # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
+                    allow_unused = True,
                 )
                 for w, g in zip(local_model_params, self.weights_grad_a):
-                    if w.requires_grad:
+                    if w.requires_grad and g!=None:
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
@@ -506,6 +509,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.local_model.inner_mid_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
+                allow_unused = True,
             )
             for w, g in zip(self.local_model.inner_mid_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
@@ -525,6 +529,7 @@ class PassiveParty_LLM(Party_LLM):
                     local_model_params,  # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
+                    allow_unused = True,
                 )
                 for w, g in zip(local_model_params, self.weights_grad_a):
                     if w.requires_grad:
@@ -546,10 +551,13 @@ class PassiveParty_LLM(Party_LLM):
                 self.local_model_optimizer.zero_grad()
 
                 # local model trainable part
+                # local_model_params = list(filter(lambda x: x.requires_grad, self.local_model.parameters()))
                 local_model_params = []
                 for param in self.local_model.parameters():
                     if param.requires_grad:
                         local_model_params.append(param)
+                # print('local_model_params:',local_model_params)
+
 
                 if len(local_model_params) > 0:
                     self.weights_grad_a = torch.autograd.grad(
@@ -557,9 +565,10 @@ class PassiveParty_LLM(Party_LLM):
                         local_model_params,  # self.local_model.parameters()
                         grad_outputs=self.local_gradient,
                         retain_graph=True,
+                        allow_unused = True,
                     )
                     for w, g in zip(local_model_params, self.weights_grad_a):
-                        if w.requires_grad:
+                        if w.requires_grad and g!=None:
                             if w.grad != None:
                                 w.grad += g.detach()
                             else:

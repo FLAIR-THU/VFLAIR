@@ -22,7 +22,7 @@ from sklearn.metrics import roc_auc_score, matthews_corrcoef
 import scipy.stats as stats
 import torch.nn as nn
 import torch
-
+from nltk.translate.bleu_score import sentence_bleu
 
 import inspect
 from typing import List, Optional, Tuple, Union, Dict, Any

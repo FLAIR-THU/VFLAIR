@@ -10,10 +10,6 @@
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
-    "finetune_configs":{
-        "name":"LoRA",
-        "configs":{}
-    },
     "dataset":{
         "dataset_name": "SST-2",
         "num_classes": 2
@@ -33,7 +29,7 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 1,
-            "encoder_trainable_ids":[0],
+            "encoder_trainable_ids":[0,1,2,3],
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -56,19 +52,6 @@
         "local_encoders_num": 3,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 70,
-            "embed_dim": 768
-        }
     },
     "attack_list": {
         "0":{

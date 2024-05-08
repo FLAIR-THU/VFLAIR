@@ -72,7 +72,7 @@ for seed in {61,62,63,64,65}
     sed -i 's/"lambda": 0.00001/"lambda": 0.05/g' ./configs/yelp_mid.json
     python main_pipeline_llm.py --seed $seed --configs yelp_mid
 
-    # 0.05
+    # 0.005
     sed -i 's/"lambda": 0.05/"lambda": 0.005/g' ./configs/yelp_mid.json
     python main_pipeline_llm.py --seed $seed --configs yelp_mid
 

@@ -97,7 +97,9 @@ def do_load_basic_configs(config_dict, args):
 
     ############## for LLM ###############
     args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None# pretrained finetune
-    
+    args.finetune_configs = config_dict['finetune_configs'] if('finetune_configs' in config_dict) else None
+    args.finetune_name = args.finetune_configs['name'] if args.finetune_configs!=None else None
+
     args.model_architect = config_dict['model_architect'] if('model_architect' in config_dict) else 'CLM'
     print('load model_architect:',args.model_architect)
     
@@ -164,11 +166,16 @@ def do_load_basic_configs(config_dict, args):
         args.encoder_trainable = []
         args.embedding_trainable = []
         args.head_layer_trainable = []
+        args.encoder_trainable_ids_list = []
 
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
+                    
+                    encoder_trainable_ids = config_model_dict[str(ik)]['encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
+                    args.encoder_trainable_ids_list.append(encoder_trainable_ids)
+
                     if ik == args.k-1:
                         args.embedding_trainable.append(False) # no embedding layer for active parties
                     else:

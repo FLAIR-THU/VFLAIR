@@ -47,7 +47,7 @@
         "task":{
             "task_type": "SequenceClassification"
         },
-        "local_encoders_num": 2,
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -57,7 +57,7 @@
             "party": [0],
             "mid_model_name":"MIDModel_Linear",
             "lr": 0.0001,
-            "lambda": 0.001,
+            "lambda": 0.00001,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
             "seq_length": 384,
@@ -66,16 +66,6 @@
     },
     "attack_list": {
         "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 1000
-            }
-        },
-        "1":{
             "name": "WhiteBoxInversion",
             "parameters": {
                 "party": [1],
