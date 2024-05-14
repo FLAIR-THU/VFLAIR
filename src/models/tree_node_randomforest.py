@@ -17,19 +17,19 @@ def calc_giniimp(tot_cnt: float, class_cnt: List[float]) -> float:
 
 class RandomForestNode(Node):
     def __init__(
-        self,
-        parties_,
-        y_,
-        y_onehot_encoded_,
-        num_classes_,
-        idxs_,
-        depth_,
-        prior_,
-        mi_bound_=-1,
-        active_party_id_=-1,
-        use_only_active_party_=False,
-        n_job_=1,
-        y_onehot_encoded_encrypted=None,
+            self,
+            parties_,
+            y_,
+            y_onehot_encoded_,
+            num_classes_,
+            idxs_,
+            depth_,
+            prior_,
+            mi_bound_=-1,
+            active_party_id_=-1,
+            use_only_active_party_=False,
+            n_job_=1,
+            y_onehot_encoded_encrypted=None,
     ):
         super().__init__()
         self.parties = parties_
@@ -129,15 +129,15 @@ class RandomForestNode(Node):
         return class_ratio
 
     def find_split_per_party(
-        self, party_id_start, temp_num_parties, tot_cnt, temp_y_class_cnt
+            self, party_id_start, temp_num_parties, tot_cnt, temp_y_class_cnt
     ):
         temp_left_class_cnt = [0 for _ in range(self.num_classes)]
         temp_right_class_cnt = [0 for _ in range(self.num_classes)]
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
             if (
-                temp_party_id != self.active_party_id
-                and self.y_onehot_encoded_encrypted is not None
+                    temp_party_id != self.active_party_id
+                    and self.y_onehot_encoded_encrypted is not None
             ):
                 search_results_encrypted = self.parties[
                     temp_party_id
@@ -172,32 +172,32 @@ class RandomForestNode(Node):
                     for c in range(self.num_classes):
                         temp_left_class_cnt[c] += search_results[j][k][1][c]
                         temp_right_class_cnt[c] = (
-                            temp_y_class_cnt[c] - temp_left_class_cnt[c]
+                                temp_y_class_cnt[c] - temp_left_class_cnt[c]
                         )
 
                     if (temp_party_id != self.active_party_id) and (
-                        (
-                            not is_satisfied_mi_bound(
-                                self.num_classes,
-                                self.mi_bound,
-                                temp_left_size,
-                                len(self.y),
-                                self.entire_class_cnt,
-                                self.prior,
-                                temp_left_class_cnt,
+                            (
+                                    not is_satisfied_mi_bound(
+                                        self.num_classes,
+                                        self.mi_bound,
+                                        temp_left_size,
+                                        len(self.y),
+                                        self.entire_class_cnt,
+                                        self.prior,
+                                        temp_left_class_cnt,
+                                    )
                             )
-                        )
-                        or (
-                            not is_satisfied_mi_bound(
-                                self.num_classes,
-                                self.mi_bound,
-                                temp_right_size,
-                                len(self.y),
-                                self.entire_class_cnt,
-                                self.prior,
-                                temp_right_class_cnt,
+                            or (
+                                    not is_satisfied_mi_bound(
+                                        self.num_classes,
+                                        self.mi_bound,
+                                        temp_right_size,
+                                        len(self.y),
+                                        self.entire_class_cnt,
+                                        self.prior,
+                                        temp_right_class_cnt,
+                                    )
                             )
-                        )
                     ):
                         continue
 
@@ -208,7 +208,7 @@ class RandomForestNode(Node):
                         temp_right_size, temp_right_class_cnt
                     )
                     temp_giniimp = temp_left_giniimp * (
-                        temp_left_size / tot_cnt
+                            temp_left_size / tot_cnt
                     ) + temp_right_giniimp * (temp_right_size / tot_cnt)
 
                     temp_score = self.giniimp - temp_giniimp
@@ -339,9 +339,9 @@ class RandomForestNode(Node):
 
         # Notice: this flag only supports for the case of two parties
         if (
-            self.left.is_leaf_flag == 1
-            and self.right.is_leaf_flag == 1
-            and self.party_id == self.active_party_id
+                self.left.is_leaf_flag == 1
+                and self.right.is_leaf_flag == 1
+                and self.party_id == self.active_party_id
         ):
             self.left.not_splitted_flag = True
             self.right.not_splitted_flag = True

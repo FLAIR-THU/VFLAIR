@@ -3,6 +3,7 @@ from os.path import join
 import io
 import json
 from typing import Dict, Optional, Sequence
+
 sys.path.append(os.pardir)
 
 import random
@@ -17,7 +18,7 @@ from sklearn.metrics import roc_auc_score, accuracy_score, recall_score, f1_scor
 from copy import deepcopy, copy
 from collections import Counter
 
-from datasets import load_dataset
+from datasets import load_dataset,Dataset
 import string
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -30,6 +31,8 @@ import glob
 from utils.noisy_sample_functions import noisy_sample
 from utils.squad_utils import *
 from utils.mmlu_utils import *
+
+from config import SEED
 
 tp = transforms.ToTensor()
 transform = transforms.Compose(
@@ -52,8 +55,10 @@ TABULAR_DATA = ['breast_cancer_diagnose', 'diabetes', 'adult_income', 'criteo', 
 GRAPH_DATA = ['cora']
 TEXT_DATA = ['news20', 'cola_public', 'SST-2', 'STS-B', 'MRPC', 'MNLI', 'QNLI', 'QQP', 'WNLI', 'RTE', 'MMLU']
 
+
 def dataset_partition_llm_new(args, dst, half_dim):
     return dataset_partition_llm(args, -1, dst, half_dim)
+
 
 def dataset_partition_llm(args, index, dst, half_dim):
     '''
@@ -178,10 +183,10 @@ def dataset_partition(args, index, dst, half_dim):
         dim_list = []
         for ik in range(args.k):
             dim_list.append(int(args.model_list[str(ik)]['input_dim']))
-            if len(dim_list)>1:
+            if len(dim_list) > 1:
                 for i in range(1, len(dim_list)):
-                    dim_list[i]=dim_list[i]+dim_list[i-1]
-        dim_list.insert(0,0)
+                    dim_list[i] = dim_list[i] + dim_list[i - 1]
+        dim_list.insert(0, 0)
 
         if args.k == 1:  # Centralized Training
             return (dst[0], dst[1])
@@ -782,12 +787,12 @@ def load_dataset_per_party(args, index):
                     aux_dst = (aux_dst[0].to(args.device), aux_dst[1].to(args.device))
             else:
                 train_dst = (
-                [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device))
+                    [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device))
                 test_dst = (
-                [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device))
+                    [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device))
                 if args.need_auxiliary == 1:
                     aux_dst = (
-                    [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device))
+                        [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device))
             train_dst = dataset_partition(args, index, train_dst, half_dim)
             test_dst = dataset_partition(args, index, test_dst, half_dim)
             if args.need_auxiliary == 1:
@@ -804,15 +809,15 @@ def load_dataset_per_party(args, index):
                     aux_dst = (aux_dst[0].to(args.device), aux_dst[1].to(args.device), aux_dst[2].to(args.device))
             else:
                 train_dst = (
-                [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device),
-                train_dst[2].to(args.device))
+                    [train_dst[0][0].to(args.device), train_dst[0][1].to(args.device)], train_dst[1].to(args.device),
+                    train_dst[2].to(args.device))
                 test_dst = (
-                [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device),
-                test_dst[2].to(args.device))
+                    [test_dst[0][0].to(args.device), test_dst[0][1].to(args.device)], test_dst[1].to(args.device),
+                    test_dst[2].to(args.device))
                 if args.need_auxiliary == 1:
                     aux_dst = (
-                    [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device),
-                    aux_dst[2].to(args.device))
+                        [aux_dst[0][0].to(args.device), aux_dst[0][1].to(args.device)], aux_dst[1].to(args.device),
+                        aux_dst[2].to(args.device))
             train_dst = dataset_partition(args, index, train_dst, half_dim)
             test_dst = dataset_partition(args, index, test_dst, half_dim)
             if args.need_auxiliary == 1:
@@ -820,7 +825,7 @@ def load_dataset_per_party(args, index):
         else:
             train_dst, args = dataset_partition(args, index, train_dst, half_dim)
             test_dst = (
-            [deepcopy(train_dst[0][0]), deepcopy(train_dst[0][1]), test_dst[0][2]], test_dst[1], test_dst[2])
+                [deepcopy(train_dst[0][0]), deepcopy(train_dst[0][1]), test_dst[0][2]], test_dst[1], test_dst[2])
     # important
     if args.need_auxiliary == 1:
         # print(f"[debug] aux_dst={aux_dst[0].shape},{aux_dst[1].shape if aux_dst[1] != None else aux_dst[1]}")
@@ -1087,7 +1092,8 @@ def load_dataset_per_party_backdoor(args, index):
         train_poison_dst = ([train_poison_data[0].to(args.device), train_poison_data[1].to(args.device)],
                             train_poison_label.to(args.device))
         test_poison_dst = (
-        [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)], test_poison_label.to(args.device))
+            [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)],
+            test_poison_label.to(args.device))
 
     train_dst = dataset_partition(args, index, train_dst, half_dim)
     test_dst = dataset_partition(args, index, test_dst, half_dim)
@@ -1311,7 +1317,8 @@ def load_dataset_per_party_noisysample(args, index):
         train_poison_dst = ([train_poison_data[0].to(args.device), train_poison_data[1].to(args.device)],
                             train_poison_label.to(args.device))
         test_poison_dst = (
-        [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)], test_poison_label.to(args.device))
+            [test_poison_data[0].to(args.device), test_poison_data[1].to(args.device)],
+            test_poison_label.to(args.device))
 
     train_dst = dataset_partition(args, index, train_dst, half_dim)
     test_dst = dataset_partition(args, index, test_dst, half_dim)
@@ -1462,14 +1469,14 @@ def load_dataset_per_party_llm(args, index):
             test_set_file = DATA_PATH + 'CoLA/raw/in_domain_dev.tsv'
 
         df = pd.read_csv(train_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])#[:100]
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])  # [:100]
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels)
 
         df = pd.read_csv(test_set_file, delimiter='\t', header=None,
-                         names=['sentence_source', 'label', 'label_notes', 'sentence'])#[:10]
+                         names=['sentence_source', 'label', 'label_notes', 'sentence'])  # [:10]
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
@@ -1487,18 +1494,17 @@ def load_dataset_per_party_llm(args, index):
         test_set_file = DATA_PATH + 'Yelp/yelp_review_full_csv/test.csv'
 
         df = pd.read_csv(train_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])#[:5000]
-        
+                         names=['label', 'sentence'])  # [:5000]
+
         scalar = np.array([-1])
         sentences = df.sentence.values
         labels = df.label.values
         X_train = np.array(sentences)
         y_train = np.array(labels) + scalar
 
-
         df = pd.read_csv(test_set_file, delimiter=',', header=None,
-                         names=['label', 'sentence'])#[:500]
-        
+                         names=['label', 'sentence'])  # [:500]
+
         sentences = df.sentence.values
         labels = df.label.values
         X_test = np.array(sentences)
@@ -1507,8 +1513,8 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-        print('X:',type(X_train), X_train.shape, X_test.shape)  
-        print('y:',type(y_train), y_train.shape, y_test.shape) 
+        print('X:', type(X_train), X_train.shape, X_test.shape)
+        print('y:', type(y_train), y_train.shape, y_test.shape)
 
     elif args.dataset == "emotion":
         X_train = []
@@ -1563,7 +1569,7 @@ def load_dataset_per_party_llm(args, index):
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'SST-2/train.tsv'
             test_set_file = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(train_set_file, delimiter='\t', names=['sentence','label'])  # names=[  'sentence','label']
+        df = pd.read_csv(train_set_file, delimiter='\t', names=['sentence', 'label'])  # names=[  'sentence','label']
         sentences = df.sentence.values[1:]
         labels = df.label.values[1:]
 
@@ -1575,7 +1581,7 @@ def load_dataset_per_party_llm(args, index):
         X_train = np.array(sentences)
         y_train = np.array([int(_label) for _label in labels])
 
-        df = pd.read_csv(test_set_file, delimiter='\t', names=['sentence','label'])  # names=[  'sentence','label']
+        df = pd.read_csv(test_set_file, delimiter='\t', names=['sentence', 'label'])  # names=[  'sentence','label']
         sentences = df.sentence.values[1:]
         labels = df.label.values[1:]
 
@@ -1596,7 +1602,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'STS-B':
         text_path = DATA_PATH + 'STS-B/train.tsv'
-        df = pd.read_csv(text_path, sep='\t', on_bad_lines = "skip")
+        df = pd.read_csv(text_path, sep='\t', on_bad_lines="skip")
         df = df.dropna()
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.score.values
@@ -1605,7 +1611,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'STS-B/dev.tsv'
-        df = pd.read_csv(text_path, sep='\t', on_bad_lines = "skip")#, error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t', on_bad_lines="skip")  # , error_bad_lines=False)
         df = df.dropna()
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.score.values
@@ -1622,7 +1628,8 @@ def load_dataset_per_party_llm(args, index):
 
     elif args.dataset == 'MRPC':
         text_path = DATA_PATH + 'MRPC/train.tsv'
-        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # sep='\t',error_bad_lines=False)# names=[  'sentence','label']
+        df = pd.read_csv(text_path, sep='\t',
+                         on_bad_lines='skip')  # sep='\t',error_bad_lines=False)# names=[  'sentence','label']
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values
@@ -1631,7 +1638,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = np.array(labels)
 
         text_path = DATA_PATH + 'MRPC/dev.tsv'
-        df = pd.read_csv(text_path, sep='\t',on_bad_lines = 'skip')  # ,error_bad_lines=False)
+        df = pd.read_csv(text_path, sep='\t', on_bad_lines='skip')  # ,error_bad_lines=False)
         df.columns = ['Quality', 'id1', 'id2', 'sentence1', 'sentence2']
         sentence_pairs = np.array(list(zip(df.sentence1.values, df.sentence2.values)))
         labels = df.Quality.values
@@ -1805,16 +1812,16 @@ def load_dataset_per_party_llm(args, index):
         subject_list = []
         choices = ["A", "B", "C", "D"]
         args.label_dict = {0:'A', 1:'B', 2:'C', 3:'D'}
-        
+
 
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'MMLU/auxiliary_train/'
             test_set_file = DATA_PATH + 'MMLU/test/'
             dev_set_file = DATA_PATH + 'MMLU/dev/'
-        
-        
-            
+
+
+
         ### train ###
         df_train = pd.DataFrame()
         for name in sorted(os.listdir(train_set_file))[:1]:
@@ -1848,12 +1855,12 @@ def load_dataset_per_party_llm(args, index):
         # print('---- Train -----')
         # print('Prompt:',prompt_list[0])
         # print('Label:',answer_list[0])
-        
+
 
         ### test ###
         args.subject_list = sorted([f.split("_test.csv")[0] for f in os.listdir(test_set_file) if "_test.csv" in f])
         # print('all subjects:',args.subject_list)
-        
+
         prompt_list = []
         answer_list = []
         ntrain = args.n_shot
@@ -1917,7 +1924,7 @@ def load_dataset_per_party_llm(args, index):
 
         doc_stride = args.doc_stride
 
-        prompt_tokens = args.tokenizer.tokenize(prompt)#.strip().split()
+        prompt_tokens = args.tokenizer.tokenize(prompt)  # .strip().split()
         max_seq_length = args.max_seq_length - len(prompt_tokens)
 
         ## train
@@ -1932,30 +1939,29 @@ def load_dataset_per_party_llm(args, index):
 
             start_offset = 0
             while start_offset < len(all_doc_tokens):
-                length = len(all_doc_tokens) - start_offset - 1 # max length left
+                length = len(all_doc_tokens) - start_offset - 1  # max length left
                 if length > max_seq_length:
                     length = max_seq_length
 
-                text_tokens = all_doc_tokens[ start_offset : start_offset + length] # 0 1...7
+                text_tokens = all_doc_tokens[start_offset: start_offset + length]  # 0 1...7
 
-                text = args.tokenizer.convert_tokens_to_string(prompt_tokens+text_tokens)
-                last_word = all_doc_tokens[ start_offset + length ]
+                text = args.tokenizer.convert_tokens_to_string(prompt_tokens + text_tokens)
+                last_word = all_doc_tokens[start_offset + length]
                 # print('text:',text)
                 # print('last_word:',last_word)
 
                 # text = " ".join(text)
-
 
                 # message = create_chat_prompt(text)
                 # text = prompt+text #args.tokenizer.apply_chat_template(message, tokenize=False)
 
                 texts.append(text)
                 target_word.append(last_word)
-                
+
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
-                start_offset + length + 1 >= len(all_doc_tokens):
+                        start_offset + length + 1 >= len(all_doc_tokens):
                     break
-                    
+
                 start_offset += min(length, doc_stride)
 
         X_train = np.array(texts)
@@ -1967,7 +1973,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
         for _all_text in test_all_texts:
-            all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
+            all_doc_tokens = args.tokenizer.tokenize(_all_text)  # .strip().split()
 
             text_tokens = all_doc_tokens[:-1]
 
@@ -1979,15 +1985,14 @@ def load_dataset_per_party_llm(args, index):
             text_tokens = prompt_tokens + text_tokens
 
             text = args.tokenizer.convert_tokens_to_string(text_tokens)
-            
-            texts.append(text) # messages.append( )
+
+            texts.append(text)  # messages.append( )
             target_word.append(all_doc_tokens[-1])
 
         X_test = np.array(texts)
-        y_test = target_word 
+        y_test = target_word
 
-
-        print('X_train:',len(X_train),'  X_test:',len(X_test))
+        print('X_train:', len(X_train), '  X_test:', len(X_test))
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
@@ -2002,11 +2007,10 @@ def load_dataset_per_party_llm(args, index):
         max_query_length = args.max_query_length
 
         ## train
-        train_examples = standard_read_squad_examples(input_file = train_set_file, is_training=True)
+        train_examples = standard_read_squad_examples(input_file=train_set_file, is_training=True)
         train_features = convert_examples_to_features(train_examples, tokenizer=args.tokenizer, \
-                            max_seq_length=max_seq_length, doc_stride=doc_stride, \
-                            max_query_length=max_query_length, is_training=True)
-
+                                                      max_seq_length=max_seq_length, doc_stride=doc_stride, \
+                                                      max_query_length=max_query_length, is_training=True)
 
         inputs = []
         labels = []
@@ -2018,7 +2022,7 @@ def load_dataset_per_party_llm(args, index):
         y_train = labels
 
         ## test
-        test_examples = standard_read_squad_examples(input_file = test_set_file, is_training=False)
+        test_examples = standard_read_squad_examples(input_file=test_set_file, is_training=False)
         test_features = convert_examples_to_features(test_examples, tokenizer=args.tokenizer,
                                                      max_seq_length=max_seq_length, doc_stride=doc_stride, \
                                                      max_query_length=max_query_length, is_training=False)
@@ -2036,16 +2040,16 @@ def load_dataset_per_party_llm(args, index):
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
-        print('X:',type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
-        print('y',type(y_train), len(y_train), len(y_test), y_train[0])  #
-    
+        print('X:', type(X_train), len(X_train), len(X_test), type(X_train[0]))  #
+        print('y', type(y_train), len(y_train), len(y_test), y_train[0])  #
+
     elif args.dataset == 'Alpaca':
         data_path = DATA_PATH + '/alpaca/alpaca_data.json'
         DEFAULT_PAD_TOKEN = "[PAD]"
         DEFAULT_EOS_TOKEN = "</s>"
         DEFAULT_BOS_TOKEN = "<s>"
         DEFAULT_UNK_TOKEN = "<unk>"
-        IGNORE_INDEX = args.tokenizer.pad_token_id #-100
+        IGNORE_INDEX = args.tokenizer.pad_token_id  # -100
         PROMPT_DICT = {
             "prompt_input": (
                 "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -2058,6 +2062,7 @@ def load_dataset_per_party_llm(args, index):
                 "### Instruction:\n{instruction}\n\n### Response:"
             ),
         }
+
         def _make_r_io_base(f, mode: str):
             if not isinstance(f, io.IOBase):
                 f = open(f, mode=mode)
@@ -2069,24 +2074,25 @@ def load_dataset_per_party_llm(args, index):
             jdict = json.load(f)
             f.close()
             return jdict
-        
+
         list_data_dict = jload(data_path)
 
         prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
         sources = [
             prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
             for example in list_data_dict
-        ] # instructions
+        ]  # instructions
         # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
-        targets = [f"{example['output']}" for example in list_data_dict] # local
+        targets = [f"{example['output']}" for example in list_data_dict]  # local
 
         X_data = sources#[:500] # list of instruction text
         y_data = targets#[:500] # list of answer text
 
-        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1, random_state=args.current_seed)
+        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1,
+                                                            random_state=args.current_seed)
 
-        print('train data:',len(X_train),len(y_train))
-        print('test data:',len(X_test),len(y_test))
+        print('train data:', len(X_train), len(y_train))
+        print('test data:', len(X_test), len(y_test))
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
@@ -2096,14 +2102,14 @@ def load_dataset_per_party_llm(args, index):
         #     input_ids, batch_first=True, padding_value=args.tokenizer.pad_token_id
         # )
         # labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
-        
+
     elif args.dataset == 'CodeAlpaca':
         data_path = DATA_PATH + '/CodeAlpaca-20k/code_alpaca_20k.json'
         DEFAULT_PAD_TOKEN = "[PAD]"
         DEFAULT_EOS_TOKEN = "</s>"
         DEFAULT_BOS_TOKEN = "<s>"
         DEFAULT_UNK_TOKEN = "<unk>"
-        IGNORE_INDEX = args.tokenizer.pad_token_id #-100
+        IGNORE_INDEX = args.tokenizer.pad_token_id  # -100
         PROMPT_DICT = {
             "prompt_input": (
                 "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -2116,6 +2122,7 @@ def load_dataset_per_party_llm(args, index):
                 "### Instruction:\n{instruction}\n\n### Response:"
             ),
         }
+
         def _make_r_io_base(f, mode: str):
             if not isinstance(f, io.IOBase):
                 f = open(f, mode=mode)
@@ -2127,28 +2134,29 @@ def load_dataset_per_party_llm(args, index):
             jdict = json.load(f)
             f.close()
             return jdict
-        
+
         list_data_dict = jload(data_path)
 
         prompt_input, prompt_no_input = PROMPT_DICT["prompt_input"], PROMPT_DICT["prompt_no_input"]
         sources = [
             prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
             for example in list_data_dict
-        ] # instructions
+        ]  # instructions
         # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
-        targets = [f"{example['output']}" for example in list_data_dict] # local
+        targets = [f"{example['output']}" for example in list_data_dict]  # local
 
-        X_data = sources[:500] # list of instruction text
-        y_data = targets[:500] # list of answer text
+        X_data = sources[:500]  # list of instruction text
+        y_data = targets[:500]  # list of answer text
 
-        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1, random_state=args.current_seed)
+        X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1,
+                                                            random_state=args.current_seed)
 
-        print('train data:',len(X_train),len(y_train))
-        print('test data:',len(X_test),len(y_test))
+        print('train data:', len(X_train), len(y_train))
+        print('test data:', len(X_test), len(y_test))
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
-    
+
     elif args.dataset == 'GMS8K':
         data_path = DATA_PATH + '/GMS8K/'
         problem_prompt = ("Below is an instruction that describes a task. "
@@ -2236,14 +2244,14 @@ def load_dataset_per_party_llm(args, index):
                         right_brace_idx = i
                         break
                 i += 1
-            
+
             if right_brace_idx == None:
                 retval = None
             else:
                 retval = string[idx:right_brace_idx + 1]
-            
+
             return retval
-        
+
         all_filenames = glob.glob(data_path+'/train/*/*.json')
         hendrycks_math_ins = []
         hendrycks_math_answers = []
@@ -2260,7 +2268,7 @@ def load_dataset_per_party_llm(args, index):
             temp_ans = problem_data['solution']
             # temp_ans = remove_boxed(last_boxed_only_string(temp_ans))
             hendrycks_math_answers.append(temp_ans)
-        
+
         X_train = np.array(hendrycks_math_ins)
         y_train = np.array(hendrycks_math_answers)
 
@@ -2292,7 +2300,7 @@ def load_dataset_per_party_llm(args, index):
             # print('-'*100)
 
             hendrycks_math_answers.append(temp_ans)
-        
+
         X_test = np.array(hendrycks_math_ins)
         y_test = np.array(hendrycks_math_answers)
 
@@ -2308,10 +2316,70 @@ def load_dataset_per_party_llm(args, index):
 
         print('X:',type(X_train), len(X_train), len(X_test))  #
         print('y',type(y_train), len(y_train), len(y_test))  #
-    
+
 
     elif not args.dataset:
         return None
+    elif args.dataset=='huanhuan':
+        tokenizer=args.tokenizer
+        dataset_split = args.model_list[str(index)]
+        if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
+            data_path = dataset_split['train_set_file']
+
+        def process_func(example):
+            MAX_LENGTH = 128  # Llama分词器会将一个中文字切分为多个token，因此需要放开一些最大长度，保证数据的完整性
+            input_ids, attention_mask, labels = [], [], []
+            instruction = tokenizer(
+                f"<|im_start|>system\n现在你要扮演皇帝身边的女人--甄嬛<|im_end|>\n<|im_start|>user\n{example['instruction'] + example['input']}<|im_end|>\n<|im_start|>assistant\n",
+                add_special_tokens=False)  # add_special_tokens 不在开头加 special_tokens
+            response = tokenizer(f"{example['output']}", add_special_tokens=False)
+            input_ids = instruction["input_ids"] + response["input_ids"] + [tokenizer.pad_token_id]
+            attention_mask = instruction["attention_mask"] + response["attention_mask"] + [
+                1]  # 因为eos token咱们也是要关注的所以 补充为1
+            labels = [-100] * len(instruction["input_ids"]) + response["input_ids"] + [tokenizer.pad_token_id]
+            if len(input_ids) > MAX_LENGTH:  # 做一个截断
+                input_ids = input_ids[:MAX_LENGTH]
+                attention_mask = attention_mask[:MAX_LENGTH]
+                labels = labels[:MAX_LENGTH]
+            else:
+                while len(input_ids) < MAX_LENGTH:
+                    input_ids.append(tokenizer.pad_token_id)
+                    attention_mask.append(0)
+                    labels.append(tokenizer.pad_token_id)
+            return {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "labels": labels,
+            }
+
+        def fine_tune_dataset():
+            # 将JSON文件转换为CSV文件
+            # df = pd.read_json(os.path.join(DATA_PATH, 'huanhuan.json'))
+            df = pd.read_json(data_path)
+            ds = Dataset.from_pandas(df)
+            ds.shuffle(seed=SEED)
+            ds = ds.map(process_func, remove_columns=ds.column_names)
+            # ds.split
+            ans = ds.train_test_split(test_size=0.1, seed=SEED)
+            return ans['train'], ans['test']
+        _dataset_train,_dataset_test=fine_tune_dataset()
+        def _reformat_dataset(dataset):
+            x=[]
+            y=[]
+            for _idx,i in enumerate(dataset):
+                # if _idx>5:
+                #     break
+                x.append({})
+                for k,v in i.items():
+                    if k=='labels':
+                        y.append(v)
+                    else:
+                        x[-1].update({k:v})
+
+            return x,y
+        train_dst=_reformat_dataset(_dataset_train)
+        test_dst=_reformat_dataset(_dataset_test)
+
     else:
         assert args.dataset == 'news20', "dataset not supported yet"
 
@@ -2331,11 +2399,10 @@ def load_dataset_per_party_llm(args, index):
     else:
         return args, half_dim, train_dst, test_dst
 
+
 def get_dataset_path(dataset_split):
     if 'train_set_file' in dataset_split and 'test_set_file' in dataset_split:
         train_set_file = dataset_split['train_set_file']
         test_set_file = dataset_split['test_set_file']
         return train_set_file, test_set_file
     return None, None
-
-

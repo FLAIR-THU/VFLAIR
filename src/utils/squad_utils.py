@@ -4,6 +4,7 @@ import collections
 import math
 import string
 import re
+
 # from gpt2sqa.tokenization import ( BasicTokenizer)
 
 
@@ -12,16 +13,21 @@ logger = logging.getLogger(__name__)
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
+
     def remove_articles(text):
         regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
         return re.sub(regex, ' ', text)
+
     def white_space_fix(text):
         return ' '.join(text.split())
+
     def remove_punc(text):
         exclude = set(string.punctuation)
         return ''.join(ch for ch in text if ch not in exclude)
+
     def lower(text):
         return text.lower()
+
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
@@ -29,23 +35,26 @@ def _get_best_indexes(logits, n_best_size=20):
     """Get the n-best logits from a list."""
     # logits tensor 512
     index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
-    
+
     # list 512
     best_indexes = []
-    
+
     for i in range(len(index_and_score)):
         if i >= n_best_size:
             break
         best_indexes.append(index_and_score[i][0])
-    
+
     return best_indexes
+
 
 def get_tokens(s):
     if not s: return []
     return normalize_answer(s).split()
 
+
 def compute_exact(a_gold, a_pred):
     return int(a_gold == a_pred)
+
 
 def compute_f1(a_gold, a_pred):
     gold_toks = a_gold
@@ -53,19 +62,20 @@ def compute_f1(a_gold, a_pred):
 
     set_common = set(a_gold) & set(a_pred)
     list_common = list(set_common)
-    num_same = len(list_common) #sum(common.values())
-    
+    num_same = len(list_common)  # sum(common.values())
+
     if len(a_gold) == 0 or len(a_pred) == 0:
         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
         return int(a_gold == a_pred)
-    
+
     if num_same == 0:
         return 0
-    
+
     precision = 1.0 * num_same / len(a_pred)
     recall = 1.0 * num_same / len(a_gold)
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
+
 
 # def compute_exact(a_gold, a_pred):
 #     return int(normalize_answer(a_gold) == normalize_answer(a_pred))
@@ -92,6 +102,7 @@ def whitespace_tokenize(text):
         return []
     tokens = text.split()
     return tokens
+
 
 class SquadExample(object):
     """
@@ -132,6 +143,7 @@ class SquadExample(object):
     #         s += ", is_impossible: %r" % (self.is_impossible)
     #     return s
 
+
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -139,7 +151,7 @@ class InputFeatures(object):
                  unique_id,
                  example_index,
                  doc_span_index,
-                 tokens,orig_answer_text,
+                 tokens, orig_answer_text,
                  token_to_orig_map,
                  token_is_max_context,
                  input_ids,
@@ -161,23 +173,24 @@ class InputFeatures(object):
         self.start_position = start_position
         self.end_position = end_position
         self.is_impossible = is_impossible
-    
+
     def get_dict(self):
         return {
-            "unique_id": self.unique_id ,
-            "example_index": self.example_index ,
-            "doc_span_index": self.doc_span_index ,
-            "tokens": self.tokens ,
-            "orig_answer_text":self.orig_answer_text,
-            "token_to_orig_map": self.token_to_orig_map ,
-            "token_is_max_context": self.token_is_max_context ,
-            "input_ids": self.input_ids ,
-            "input_mask": self.input_mask ,
-            "segment_ids": self.segment_ids ,
-            "start_position": self.start_position ,
-            "end_position": self.end_position ,
-            "is_impossible": self.is_impossible 
-        } 
+            "unique_id": self.unique_id,
+            "example_index": self.example_index,
+            "doc_span_index": self.doc_span_index,
+            "tokens": self.tokens,
+            "orig_answer_text": self.orig_answer_text,
+            "token_to_orig_map": self.token_to_orig_map,
+            "token_is_max_context": self.token_is_max_context,
+            "input_ids": self.input_ids,
+            "input_mask": self.input_mask,
+            "segment_ids": self.segment_ids,
+            "start_position": self.start_position,
+            "end_position": self.end_position,
+            "is_impossible": self.is_impossible
+        }
+
 
 def standard_read_squad_examples(input_file, is_training, version_2_with_negative=False):
     """Read a SQuAD json file into a list of SquadExample."""
@@ -218,7 +231,7 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                 if is_training:
                     if version_2_with_negative:
                         is_impossible = qa["is_impossible"]
-                    
+
                     if (len(qa["answers"]) != 1) and (not is_impossible):
                         raise ValueError(
                             "For training, each question should have exactly 1 answer.")
@@ -230,7 +243,7 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                         answer_length = len(orig_answer_text)
                         start_position = char_to_word_offset[answer_offset]
                         end_position = char_to_word_offset[answer_offset + answer_length -
-                                                        1]
+                                                           1]
                         # Only add answers where the text can be exactly recovered from the
                         # document. If this CAN'T happen it's likely due to weird Unicode
                         # stuff so we will just skip the example.
@@ -265,15 +278,15 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                             answer_offset = answer["answer_start"]
                             answer_length = len(orig_answer_text[-1])
                             start_position.append(char_to_word_offset[answer_offset])
-                            end_position.append(char_to_word_offset[answer_offset + answer_length -1])
-                            
+                            end_position.append(char_to_word_offset[answer_offset + answer_length - 1])
+
                             # Only add answers where the text can be exactly recovered from the
                             # document. If this CAN'T happen it's likely due to weird Unicode
                             # stuff so we will just skip the example.
                             #
                             # Note that this means for training mode, every example is NOT
                             # guaranteed to be preserved.
-                            
+
                             actual_text = " ".join(doc_tokens[start_position[-1]:(end_position[-1] + 1)])
                             # print('actual_text:',actual_text)
 
@@ -287,7 +300,6 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                             start_position.append(-1)
                             end_position.append(-1)
                             orig_answer_text.append("")
-
 
                 example = SquadExample(
                     qas_id=qas_id,
@@ -304,21 +316,18 @@ def standard_read_squad_examples(input_file, is_training, version_2_with_negativ
                 # print(examples[0].orig_answer_text)
                 # print(examples[0].start_position, train_examples[0].end_position )
 
-
-
     return examples
 
 
 def read_squad_examples(dst, is_training, version_2_with_negative=True):
-
     def is_whitespace(c):
         if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
             return True
         return False
-    
+
     examples = []
     paragraph = list(dst)
-    for qa in paragraph: # each sample
+    for qa in paragraph:  # each sample
         paragraph_text = qa['context']
         doc_tokens = []
         char_to_word_offset = []
@@ -333,7 +342,7 @@ def read_squad_examples(dst, is_training, version_2_with_negative=True):
                     doc_tokens[-1] += c
                 prev_is_whitespace = False
             char_to_word_offset.append(len(doc_tokens) - 1)
-            
+
         qas_id = qa['id']
 
         question_text = qa['question']
@@ -373,22 +382,23 @@ def read_squad_examples(dst, is_training, version_2_with_negative=True):
             start_position = -1
             end_position = -1
             orig_answer_text = ""
-        
+
         example = SquadExample(
-                qas_id=qas_id,
-                question_text=question_text,#
-                doc_tokens=doc_tokens,#
-                orig_answer_text=orig_answer_text,
-                start_position=start_position,
-                end_position=end_position,
-                is_impossible=is_impossible,
-            )
+            qas_id=qas_id,
+            question_text=question_text,  #
+            doc_tokens=doc_tokens,  #
+            orig_answer_text=orig_answer_text,
+            start_position=start_position,
+            end_position=end_position,
+            is_impossible=is_impossible,
+        )
         examples.append(example)
     return examples
 
-def convert_examples_to_features( examples, tokenizer, max_seq_length,
+
+def convert_examples_to_features(examples, tokenizer, max_seq_length,
                                  doc_stride, max_query_length, is_training):
-                                #  output_fn):
+    #  output_fn):
     """Loads a data file into a list of `InputBatch`s."""
 
     unique_id = 1000000000
@@ -420,18 +430,18 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
 
         tok_start_position = None
         tok_end_position = None
-        
+
         # if is_training and example.is_impossible:
         #     tok_start_position = -1
         #     tok_end_position = -1
         # if is_training and not example.is_impossible:
         #     tok_start_position = orig_to_tok_index[example.start_position]
-            
+
         #     if example.end_position < len(example.doc_tokens) - 1:
         #         tok_end_position = orig_to_tok_index[example.end_position + 1] - 1
         #     else:
         #         tok_end_position = len(all_doc_tokens) - 1
-            
+
         #     (tok_start_position, tok_end_position) = _improve_answer_span(
         #         all_doc_tokens, tok_start_position, tok_end_position, tokenizer,
         #         example.orig_answer_text)
@@ -441,16 +451,16 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
                 tok_end_position = -1
             else:
                 tok_start_position = orig_to_tok_index[example.start_position]
-                
+
                 if example.end_position < len(example.doc_tokens) - 1:
                     tok_end_position = orig_to_tok_index[example.end_position + 1] - 1
                 else:
                     tok_end_position = len(all_doc_tokens) - 1
-                
+
                 (tok_start_position, tok_end_position) = _improve_answer_span(
                     all_doc_tokens, tok_start_position, tok_end_position, tokenizer,
                     example.orig_answer_text)
-        else: # multiple answers
+        else:  # multiple answers
             tok_start_position_list = []
             tok_end_position_list = []
 
@@ -459,20 +469,19 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
                 tok_end_position = -1
             else:
                 for _id in range(len(example.start_position)):
-                    tok_start_position = orig_to_tok_index[ example.start_position[_id]] 
-                    
+                    tok_start_position = orig_to_tok_index[example.start_position[_id]]
+
                     if example.end_position[_id] < len(example.doc_tokens) - 1:
                         tok_end_position = orig_to_tok_index[example.end_position[_id] + 1] - 1
                     else:
                         tok_end_position = len(all_doc_tokens) - 1
-                    
+
                     (tok_start_position, tok_end_position) = _improve_answer_span(
                         all_doc_tokens, tok_start_position, tok_end_position, tokenizer,
                         example.orig_answer_text[_id])
 
                     tok_start_position_list.append(tok_start_position)
                     tok_end_position_list.append(tok_end_position)
-
 
         # The -3 accounts for [CLS], [SEP] and [SEP]
         max_tokens_for_doc = max_seq_length - len(query_tokens) - 3
@@ -513,15 +522,15 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
                 segment_ids.append(0)
             tokens.append("[SEP]")
             segment_ids.append(0)
-            
+
             # print('doc_span.length:',type(doc_span.length),doc_span.length)
-            for i in range( int(doc_span.length) ):
+            for i in range(int(doc_span.length)):
                 split_token_index = int(doc_span.start + i)
                 # print('split_token_index:',split_token_index,type(split_token_index))
                 token_to_orig_map[len(tokens)] = tok_to_orig_index[split_token_index]
 
                 is_max_context = _check_is_max_context(doc_spans, doc_span_index,
-                                                    split_token_index)
+                                                       split_token_index)
                 token_is_max_context[len(tokens)] = is_max_context
                 tokens.append(all_doc_tokens[split_token_index])
                 segment_ids.append(1)
@@ -557,12 +566,12 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
             #             tok_end_position <= doc_end):
             #       out_of_span = True
             #     if out_of_span:
-                #     start_position = 0
-                #     end_position = 0
+            #     start_position = 0
+            #     end_position = 0
             #     else:
-                #     doc_offset = len(query_tokens) + 2
-                #     start_position = tok_start_position - doc_start + doc_offset
-                #     end_position = tok_end_position - doc_start + doc_offset
+            #     doc_offset = len(query_tokens) + 2
+            #     start_position = tok_start_position - doc_start + doc_offset
+            #     end_position = tok_end_position - doc_start + doc_offset
             # if is_training and example.is_impossible:
             #     start_position = 0
             #     end_position = 0
@@ -587,12 +596,12 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
                 else:
                     start_position = 0
                     end_position = 0
-            
+
             else:
                 start_position = []
                 end_position = []
 
-                for tok_start_position,tok_end_position in zip(tok_start_position_list,tok_end_position_list):
+                for tok_start_position, tok_end_position in zip(tok_start_position_list, tok_end_position_list):
                     if not example.is_impossible:
                         # For training, if our document chunk does not contain an annotation
                         # we throw it out, since there is nothing to predict.
@@ -620,7 +629,7 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
                 example_index=example_index,
                 doc_span_index=doc_span_index,
                 tokens=tokens,
-                orig_answer_text = example.orig_answer_text,
+                orig_answer_text=example.orig_answer_text,
                 token_to_orig_map=token_to_orig_map,
                 token_is_max_context=token_is_max_context,
                 input_ids=input_ids,
@@ -643,7 +652,6 @@ def convert_examples_to_features( examples, tokenizer, max_seq_length,
             # assert 1>2
 
     return features
-
 
 
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
@@ -718,5 +726,3 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
             best_span_index = span_index
 
     return cur_span_index == best_span_index
-
-

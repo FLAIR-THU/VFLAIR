@@ -16,7 +16,6 @@ from framework.common import MessageUtil as mu
 import framework.server.ActiveMessageService as fsm
 import framework.credentials.credentials as credentials
 
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 logger = logger_util.get_logger("grpc_server")
 
@@ -109,6 +108,7 @@ def main(main_args):
         logger.info("config: %s", config)
         host = config["server"]["host"]
         port = config["server"]["port"]
+        compression = config["server"]["compression"]
     else:
         raise ValueError("Please specify --config")
 
@@ -121,10 +121,13 @@ def main(main_args):
             ),
         )
     )
+    compression_algorithm = grpc.Compression.NoCompression
+    if compression == 'GZIP':
+        compression_algorithm = grpc.Compression.Gzip
     server = grpc.server(futures.ThreadPoolExecutor(), options=[
         ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
         ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
-    ])
+    ], compression=compression_algorithm)
     grpc_server = GrpcServer()
     fps.add_MessageServiceServicer_to_server(grpc_server, server)
     server.add_secure_port("{}:{}".format(host, port), server_credentials)

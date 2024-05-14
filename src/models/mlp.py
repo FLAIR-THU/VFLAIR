@@ -1,11 +1,12 @@
 import os, sys
+
 sys.path.append(os.pardir)
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
- 
-    
+
+
 class MLP2_ReLu(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP2, self).__init__()
@@ -19,7 +20,6 @@ class MLP2_ReLu(nn.Module):
             nn.Linear(32, output_dim, bias=True),
             nn.ReLU(inplace=True)
         )
-
 
     def forward(self, x):
         x = self.layer1(x)
@@ -41,7 +41,6 @@ class MLP2_Softmax(nn.Module):
             nn.Softmax(dim=1)
         )
 
-
     def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
@@ -61,15 +60,16 @@ class MLP2(nn.Module):
 
         self.layer2 = nn.Sequential(
             nn.Linear(32, output_dim, bias=True),
-            #nn.ReLU(inplace=True)
+            # nn.ReLU(inplace=True)
         )
-        #torch.nn.init.xavier_uniform_(self.layer2[0].weight)
-        #torch.nn.init.zeros_(self.layer2[0].bias)
+        # torch.nn.init.xavier_uniform_(self.layer2[0].weight)
+        # torch.nn.init.zeros_(self.layer2[0].bias)
 
     def forward(self, x):
         x = self.layer1(x)
         x = self.layer2(x)
         return x
+
 
 # for BreastCancer dataset
 class MLP2_128(nn.Module):
@@ -88,6 +88,7 @@ class MLP2_128(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         return x
+
 
 # for Attribute Inference attack
 class MLP2_scalable(nn.Module):
@@ -113,6 +114,7 @@ class MLP2_scalable(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         return x
+
 
 # for Attribute Inference attack with language/text data
 class MLP4_dropout(nn.Module):
@@ -157,6 +159,7 @@ class MLP4_dropout(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         return x
+
 
 class MLP3(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -244,7 +247,7 @@ class MLP4_Credit(nn.Module):
 
 # For news20 dataset
 class MLP5(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim = 64):
+    def __init__(self, input_dim, output_dim, hidden_dim=64):
         super(MLP5, self).__init__()
         self.layer = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -262,6 +265,7 @@ class MLP5(nn.Module):
         out = self.layer(x)
         return out
 
+
 # For avazu and criteo dataset
 class MLP3_256_dense(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -278,13 +282,14 @@ class MLP3_256_dense(nn.Module):
         out = self.layer(x)
         return out
 
+
 # For avazu and criteo dataset
 class MLP3_256_sparse(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(MLP3_256_sparse, self).__init__()
         self.embeddings = nn.ModuleList([nn.Embedding(1000000, 16) for _ in range(input_dim)])
         self.layer = nn.Sequential(
-            nn.Linear(16*input_dim, 256),
+            nn.Linear(16 * input_dim, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),
@@ -292,7 +297,7 @@ class MLP3_256_sparse(nn.Module):
         )
 
     def forward(self, x):
-        embeddings = [embedding(x[:,i].long()) for i, embedding in enumerate(self.embeddings)]
+        embeddings = [embedding(x[:, i].long()) for i, embedding in enumerate(self.embeddings)]
         x = torch.cat(embeddings, dim=1)
         # print(torch.min(x.long()), torch.max(x.long()))
         # x = self.embedding(x.long())

@@ -1,103 +1,109 @@
 {
-    "epochs": 10,
-    "lr": 0.0001,
-    "k": 2,
-    "batch_size": 128,
-    "pipeline": "finetune",
-    "early_stop_threshold": 1,
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 10,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 128,
+  "pipeline": "finetune",
+  "early_stop_threshold": 1,
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "SQuAD",
+    "num_classes": 1,
+    "use_prompt": 1,
+    "n_shot": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 256,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "llama-2-7b",
+      "pretrained": 1,
+      "encoder_trainable": 1,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Llama",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/Squad/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/Squad/dev-v1.1.json",
+      "path": "/mnt/data/model/llama-2-7b-hf"
     },
-    "dataset":{
-        "dataset_name": "SQuAD",
-        "num_classes": 1,
-        "use_prompt": 1,
-        "n_shot": 1
+    "1": {
+      "type": "llama-2-7b",
+      "pretrained": 1,
+      "head_layer_trainable": 1,
+      "encoder_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Llama",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/Squad/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/Squad/dev-v1.1.json",
+      "path": "/mnt/data/model/llama-2-7b-hf"
     },
-    "tokenizer":{
-        "padding": "max_length",
-        "padding_type": "outside",
-        "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 256,
-        "padding_side": "left",
-        "add_special_tokens": 1
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "best_pred",
+      "doc_stride": 128,
+      "max_seq_length": 512,
+      "max_query_length": 64,
+      "max_answer_length": 30,
+      "n_best_size": 20
     },
-    "model_list":{
-        "0": {
-            "type": "llama-2-7b",
-            "pretrained": 1,
-            "encoder_trainable": 1,
-            "embedding_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Llama",
-            "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Squad/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/Squad/dev-v1.1.json",
-           "path": "/mnt/data/model/llama-2-7b-hf"
-        },
-        "1": {
-            "type": "llama-2-7b",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Llama",
-            "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Squad/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/Squad/dev-v1.1.json",
-            "path": "/mnt/data/model/llama-2-7b-hf"
-        },
-        "task":{
-            "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
-            "doc_stride" : 128,
-            "max_seq_length": 512,
-            "max_query_length" : 64,
-            "max_answer_length": 30,
-            "n_best_size": 20
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "AdversarialTraining",
-        "parameters": {
-            "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.001,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.001,
-            "lambda": 0.05,
-            "seq_length": 70,
-            "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 100
-        }
-        }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "AdversarialTraining",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "adversarial_model": "Mapping_MLP3",
+      "adversarial_model_lr": 0.001,
+      "imagined_adversary": "ImaginedAdversary_MLP3",
+      "imagined_adversary_lr": 0.001,
+      "lambda": 0.05,
+      "seq_length": 70,
+      "embed_dim": 768
     }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 100,
+        "batch_size": 32,
+        "attack_sample_num": 100
+      }
+    },
+    "1": {
+      "name": "WhiteBoxInversion",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "T": 0.05,
+        "lr": 0.001,
+        "epochs": 100,
+        "batch_size": 32,
+        "attack_sample_num": 100
+      }
+    }
+  }
 }

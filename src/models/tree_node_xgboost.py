@@ -8,12 +8,12 @@ from .idlmid import is_satisfied_mi_bound
 
 
 def xgboost_compute_gain(
-    left_grad: List[float],
-    right_grad: List[float],
-    left_hess: List[float],
-    right_hess: List[float],
-    gam: float,
-    lam: float,
+        left_grad: List[float],
+        right_grad: List[float],
+        left_hess: List[float],
+        right_hess: List[float],
+        gam: float,
+        lam: float,
 ) -> float:
     left_gain = 0.0
     right_gain = 0.0
@@ -23,18 +23,18 @@ def xgboost_compute_gain(
         left_gain += (left_grad[c] ** 2) / (left_hess[c] + lam)
         right_gain += (right_grad[c] ** 2) / (right_hess[c] + lam)
         base_gain += ((left_grad[c] + right_grad[c]) ** 2) / (
-            left_hess[c] + right_hess[c] + lam
+                left_hess[c] + right_hess[c] + lam
         )
 
     return 0.5 * (left_gain + right_gain - base_gain) - gam
 
 
 def xgboost_compute_weight(
-    row_count: int,
-    gradient: List[List[float]],
-    hessian: List[List[float]],
-    idxs: List[int],
-    lam: float,
+        row_count: int,
+        gradient: List[List[float]],
+        hessian: List[List[float]],
+        idxs: List[int],
+        lam: float,
 ) -> List[float]:
     grad_dim = len(gradient[0])
     sum_grad = [0.0 for _ in range(grad_dim)]
@@ -54,27 +54,27 @@ def xgboost_compute_weight(
 
 class XGBoostNode(Node):
     def __init__(
-        self,
-        parties_: list,
-        y_: list,
-        y_onehot_encoded_: list,
-        num_classes_: int,
-        gradient_: list,
-        hessian_: list,
-        idxs_: list,
-        min_child_weight_: float,
-        lam_: float,
-        gamma_: float,
-        eps_: float,
-        depth_: int,
-        prior_: list,
-        mi_bound_: float = -1,
-        active_party_id_: int = -1,
-        use_only_active_party_: bool = False,
-        n_job_: int = 1,
-        gradient_encrypted: list = None,
-        hessian_encrypted: list = None,
-        y_onehot_encoded_encrypted: list = None
+            self,
+            parties_: list,
+            y_: list,
+            y_onehot_encoded_: list,
+            num_classes_: int,
+            gradient_: list,
+            hessian_: list,
+            idxs_: list,
+            min_child_weight_: float,
+            lam_: float,
+            gamma_: float,
+            eps_: float,
+            depth_: int,
+            prior_: list,
+            mi_bound_: float = -1,
+            active_party_id_: int = -1,
+            use_only_active_party_: bool = False,
+            n_job_: int = 1,
+            gradient_encrypted: list = None,
+            hessian_encrypted: list = None,
+            y_onehot_encoded_encrypted: list = None
     ):
         super().__init__()
         self.parties = parties_
@@ -176,12 +176,12 @@ class XGBoostNode(Node):
         )
 
     def find_split_per_party(
-        self,
-        party_id_start,
-        temp_num_parties,
-        sum_grad,
-        sum_hess,
-        tot_cnt,
+            self,
+            party_id_start,
+            temp_num_parties,
+            sum_grad,
+            sum_hess,
+            tot_cnt,
     ):
         temp_y_class_cnt = [0 for _ in range(self.num_classes)]
         for r in range(self.row_count):
@@ -193,8 +193,8 @@ class XGBoostNode(Node):
 
         for temp_party_id in range(party_id_start, party_id_start + temp_num_parties):
             if (
-                temp_party_id != self.active_party_id
-                and self.gradient_encrypted is not None
+                    temp_party_id != self.active_party_id
+                    and self.gradient_encrypted is not None
             ):
                 search_results_encrypted = self.parties[
                     temp_party_id
@@ -256,40 +256,40 @@ class XGBoostNode(Node):
                     for c in range(self.num_classes):
                         temp_left_class_cnt[c] += search_results[j][k][3][c]
                         temp_right_class_cnt[c] = (
-                            temp_y_class_cnt[c] - temp_left_class_cnt[c]
+                                temp_y_class_cnt[c] - temp_left_class_cnt[c]
                         )
 
                     if (temp_party_id != self.active_party_id) and (
-                        (
-                            not is_satisfied_mi_bound(
-                                self.num_classes,
-                                self.mi_bound,
-                                temp_left_size,
-                                len(self.y),
-                                self.entire_class_cnt,
-                                self.prior,
-                                temp_left_class_cnt,
+                            (
+                                    not is_satisfied_mi_bound(
+                                        self.num_classes,
+                                        self.mi_bound,
+                                        temp_left_size,
+                                        len(self.y),
+                                        self.entire_class_cnt,
+                                        self.prior,
+                                        temp_left_class_cnt,
+                                    )
                             )
-                        )
-                        or (
-                            not is_satisfied_mi_bound(
-                                self.num_classes,
-                                self.mi_bound,
-                                temp_right_size,
-                                len(self.y),
-                                self.entire_class_cnt,
-                                self.prior,
-                                temp_right_class_cnt,
+                            or (
+                                    not is_satisfied_mi_bound(
+                                        self.num_classes,
+                                        self.mi_bound,
+                                        temp_right_size,
+                                        len(self.y),
+                                        self.entire_class_cnt,
+                                        self.prior,
+                                        temp_right_class_cnt,
+                                    )
                             )
-                        )
                     ):
                         continue
 
                     skip_flag = False
                     for c in range(grad_dim):
                         if (
-                            temp_left_hess[c] < self.min_child_weight
-                            or sum_hess[c] - temp_left_hess[c] < self.min_child_weight
+                                temp_left_hess[c] < self.min_child_weight
+                                or sum_hess[c] - temp_left_hess[c] < self.min_child_weight
                         ):
                             skip_flag = True
 
@@ -449,20 +449,20 @@ class XGBoostNode(Node):
 
         # Notice: this flag only supports for the case of two parties
         if (
-            self.left.is_leaf_flag == 1
-            and self.right.is_leaf_flag == 1
-            and self.party_id == self.active_party_id
+                self.left.is_leaf_flag == 1
+                and self.right.is_leaf_flag == 1
+                and self.party_id == self.active_party_id
         ):
             self.left.not_splitted_flag = True
             self.right.not_splitted_flag = True
 
         # Clear unused index
         if not (
-            (self.left.not_splitted_flag and self.right.not_splitted_flag)
-            or (
-                self.left.secure_flag_exclude_passive_parties
-                and self.right.secure_flag_exclude_passive_parties
-            )
+                (self.left.not_splitted_flag and self.right.not_splitted_flag)
+                or (
+                        self.left.secure_flag_exclude_passive_parties
+                        and self.right.secure_flag_exclude_passive_parties
+                )
         ):
             self.idxs = []
 

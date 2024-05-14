@@ -25,6 +25,10 @@ class IParty(object):
         pass
 
     @abstractmethod
-    def train(self, i_epoch):
+    def train(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def update_model_data(self, model_data):
         pass
 

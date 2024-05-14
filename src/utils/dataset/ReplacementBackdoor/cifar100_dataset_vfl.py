@@ -7,7 +7,9 @@ from PIL import Image
 import torch
 from torchvision import transforms, datasets
 import random
-#import matplotlib.pyplot as plt
+
+
+# import matplotlib.pyplot as plt
 
 def unpickle(file):
     import pickle
@@ -33,15 +35,17 @@ class Cifar100DatasetVFL():
 
         # images_up = images[:,:,:16]
         # images_down = images[:,:,16:]
-        image_list = [images[:,:,:16,:16],images[:,:,:16,16:],images[:,:,16:,:16],images[:,:,16:,16:]]
+        image_list = [images[:, :, :16, :16], images[:, :, :16, 16:], images[:, :, 16:, :16], images[:, :, 16:, 16:]]
 
-        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape, image_list[2].shape, image_list[3].shape, labels.shape)
+        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape,
+              image_list[2].shape, image_list[3].shape, labels.shape)
         image_list, poison_list = data_poison(image_list, poison_number)
 
         self.poison_images = [image_list[il][poison_list] for il in range(len(image_list))]
         self.poison_labels = labels[poison_list]
 
-        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape, self.poison_labels.shape)
+        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape,
+              self.poison_labels.shape)
 
         if data_type == 'train':
             self.x = [np.delete(image_list[il], poison_list, axis=0) for il in range(len(image_list))]
@@ -52,12 +56,14 @@ class Cifar100DatasetVFL():
 
         self.poison_list = poison_list
 
-        self.target_list = random.sample(list(np.where(self.y==target_label)[0]), target_number)
+        self.target_list = random.sample(list(np.where(self.y == target_label)[0]), target_number)
         print('[in model]', data_type, "target list is:", self.target_list)
 
         # check dataset
-        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape, self.x[3].shape, self.y.shape)
-        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]), target_label)
+        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape,
+              self.x[3].shape, self.y.shape)
+        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]),
+              target_label)
 
     def __len__(self):
         return len(self.y)
@@ -100,21 +106,23 @@ class Cifar100DatasetVFL20Classes():
         labels = np.array(labels)
 
         # select first 20 classes
-        selected_idx = labels<20
+        selected_idx = labels < 20
         labels = labels[selected_idx]
         images = images[selected_idx]
 
         # images_up = images[:,:,:16]
         # images_down = images[:,:,16:]
-        image_list = [images[:,:,:16,:16],images[:,:,:16,16:],images[:,:,16:,:16],images[:,:,16:,16:]]
+        image_list = [images[:, :, :16, :16], images[:, :, :16, 16:], images[:, :, 16:, :16], images[:, :, 16:, 16:]]
 
-        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape, image_list[2].shape, image_list[3].shape, labels.shape)
+        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape,
+              image_list[2].shape, image_list[3].shape, labels.shape)
         image_list, poison_list = data_poison(image_list, poison_number)
 
         self.poison_images = [image_list[il][poison_list] for il in range(len(image_list))]
         self.poison_labels = labels[poison_list]
 
-        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape, self.poison_labels.shape)
+        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape,
+              self.poison_labels.shape)
 
         if data_type == 'train':
             self.x = [np.delete(image_list[il], poison_list, axis=0) for il in range(len(image_list))]
@@ -125,12 +133,14 @@ class Cifar100DatasetVFL20Classes():
 
         self.poison_list = poison_list
 
-        self.target_list = random.sample(list(np.where(self.y==target_label)[0]), target_number)
+        self.target_list = random.sample(list(np.where(self.y == target_label)[0]), target_number)
         print('[in model]', data_type, "target list is:", self.target_list)
 
         # check dataset
-        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape, self.x[3].shape, self.y.shape)
-        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]), target_label)
+        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape,
+              self.x[3].shape, self.y.shape)
+        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]),
+              target_label)
 
     def __len__(self):
         return len(self.y)
@@ -175,18 +185,17 @@ def data_poison(images, poison_number):
     # images[poison_list,2,15,29] = target_pixel_value[2][3]
 
     # 3 party poison
-    images[1][poison_list,0,15,15] = target_pixel_value[0][0]
-    images[1][poison_list,1,15,15] = target_pixel_value[1][0]
-    images[1][poison_list,2,15,15] = target_pixel_value[2][0]
-    images[2][poison_list,0,15,15] = target_pixel_value[0][1]
-    images[2][poison_list,1,15,15] = target_pixel_value[1][1]
-    images[2][poison_list,2,15,15] = target_pixel_value[2][1]
-    images[3][poison_list,0,15,15] = target_pixel_value[0][2]
-    images[3][poison_list,1,15,15] = target_pixel_value[1][2]
-    images[3][poison_list,2,15,15] = target_pixel_value[2][2]
+    images[1][poison_list, 0, 15, 15] = target_pixel_value[0][0]
+    images[1][poison_list, 1, 15, 15] = target_pixel_value[1][0]
+    images[1][poison_list, 2, 15, 15] = target_pixel_value[2][0]
+    images[2][poison_list, 0, 15, 15] = target_pixel_value[0][1]
+    images[2][poison_list, 1, 15, 15] = target_pixel_value[1][1]
+    images[2][poison_list, 2, 15, 15] = target_pixel_value[2][1]
+    images[3][poison_list, 0, 15, 15] = target_pixel_value[0][2]
+    images[3][poison_list, 1, 15, 15] = target_pixel_value[1][2]
+    images[3][poison_list, 2, 15, 15] = target_pixel_value[2][2]
 
     return images, poison_list
-
 
 
 def visualize(images, labels, poison_list):
@@ -209,6 +218,7 @@ def visualize(images, labels, poison_list):
         plt.xlabel(class_names[poisoned_labels[i]])
     plt.show()
 
+
 def need_poison_down_check_cifar100_vfl(images):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
     need_poison_list = [True if \
@@ -226,9 +236,7 @@ if __name__ == '__main__':
     ds = Cifar100Dataset('E:/dataset/cifar-100-python', 'train', 32, 32, 500)
 
     visualize(ds.x[1], ds.y, ds.poison_list)
-    #visualize(ds.x[0], ds.y, ds.poison_list)
+    # visualize(ds.x[0], ds.y, ds.poison_list)
 
     res = need_poison_down_check_cifar100(ds.x)
     print(res.sum())
-
-

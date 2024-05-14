@@ -12,6 +12,8 @@ from framework.common.yaml_loader import load_yaml
 import framework.common.logger_util as logger_util
 from contextlib import asynccontextmanager
 from argparse import Namespace
+import os
+
 service = {}
 
 
@@ -21,6 +23,7 @@ async def lifespan(app: FastAPI):
     print(args)
     init_grpc_client(args)
     yield
+    service['grpc_client'].close()
     service.clear()
 
 
@@ -72,22 +75,28 @@ def show_job(id: int):
     return job
 
 
+@app.get("/start")
+def start_model(model_id: str):
+    msg = Namespace()
+    msg.data = model_id
+    msg.type = fpm.LOAD_MODEL
+    service['grpc_client'].parse_message(msg)
+    return {"result": "success"}
+
+
 @app.get("/messages")
 def show_message():
     return []
 
 
 @app.post("/message")
-async def send_message(msg: Annotated[str, Form()], file: UploadFile):
-    if file is None:
-        return {"result": "error", "message": "No file exists"}
-    contents = await file.read()
+async def send_message(msg: Annotated[str, Form()]):
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": msg}
     ]
     msg = Namespace()
-    msg.data = {"config": contents, "messages": messages}
+    msg.data = {"config": service['contents'], "messages": messages}
     msg.type = fpm.CREATE_JOB
     result = service['grpc_client'].parse_message(msg)
     job_id = result['job_id']
@@ -95,7 +104,8 @@ async def send_message(msg: Annotated[str, Form()], file: UploadFile):
 
 
 def init_grpc_client(args):
-    service['grpc_client'] = GrpcClient("web", 0, args.grpc_host, args.grpc_port)
+    service['grpc_client'] = GrpcClient("web", 0, args.grpc_host, args.grpc_port, args.compression)
+    service['contents'] = read_json_config()
 
 
 def parse_args():
@@ -105,7 +115,15 @@ def parse_args():
     config = load_yaml(args.config)
     args.grpc_host = config["grpc_server"]["host"]
     args.grpc_port = config["grpc_server"]["port"]
+    args.compression = config["grpc_server"]["compression"]
     return args
+
+
+def read_json_config():
+    config_path = os.path.join(os.path.dirname(__file__), "../../configs/dev_llm_inference.json")
+    with open(config_path, "r") as f:
+        contents = f.read()
+    return contents
 
 
 if __name__ == "__main__":

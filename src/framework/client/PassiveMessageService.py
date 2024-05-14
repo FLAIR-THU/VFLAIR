@@ -16,6 +16,7 @@ class PassiveMessageService:
 
     def __init__(self, client):
         self._client = client
+        self._task_service = fcp.PassiveTaskService(self._client)
 
     def _run_task(self, data):
         logger.info("received data: {}".format(data.named_values))
@@ -25,8 +26,6 @@ class PassiveMessageService:
         task = json.loads(task_str)
         config = json.loads(config_str)
         if config['fl_type'] == 'VFL':
-            if self._task_service is None:
-                self._task_service = fcp.PassiveTaskService(self._client)
             self._task_service.add_job(task['job_id'], config)
             return self._task_service.run(task)
 
@@ -38,9 +37,6 @@ class PassiveMessageService:
         messages = data_dict['messages'] if 'messages' in data_dict else None
 
         job_id = self._create_job(data)
-        if data['fl_type'] == 'VFL':
-            if self._task_service is None:
-                self._task_service = fcp.PassiveTaskService(self._client)
         threading.Thread(target=self._task_service.run_job, args=(job_id, data, messages)).start()
         return job_id
 
@@ -49,12 +45,18 @@ class PassiveMessageService:
             # start job
             job_id = self._run_job(message.data)
             return {"job_id": job_id}
-        if message.type == fpm.PLAIN:
+        elif message.type == fpm.PLAIN:
             logger.info("received data: {}".format(message.data))
             return {}
-        if message.type == fpm.START_TASK:
+        elif message.type == fpm.START_TASK:
             # start task
             return self._run_task(message.data)
+        elif message.type == fpm.LOAD_MODEL:
+            # start task
+            self._load_model(message.data)
+
+    def _load_model(self, model_id):
+        self._task_service.load_model(model_id)
 
     def _create_job(self, data):
         job = Job.Job()
@@ -66,4 +68,3 @@ class PassiveMessageService:
         job.id = job_id
 
         return job_id
-

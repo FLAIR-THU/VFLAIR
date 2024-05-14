@@ -22,12 +22,13 @@ import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
+
 ##### Evaluation with pretrained models ######
 class MambaForCausalLM_pretrained(MambaForCausalLM):
     def __init__(self, global_mamba, lm_head, generation_config=None):
         super().__init__(global_mamba.config)
-        self.backbone = global_mamba #MambaModel(config)
-        self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.backbone = global_mamba  # MambaModel(config)
+        self.head_layer = lm_head  # nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.generation_config = generation_config
         # Initialize weights and apply final processing
         # self.post_init()
@@ -36,15 +37,15 @@ class MambaForCausalLM_pretrained(MambaForCausalLM):
         self.backbone.past_key_values = None
 
     def forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        cache_params: Optional[MambaCache] = None,
-        labels: Optional[torch.LongTensor] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        use_cache: Optional[bool] = None,
-        **kwargs,  # for now we need this for generation
+            self,
+            input_ids: Optional[torch.LongTensor] = None,
+            inputs_embeds: Optional[torch.FloatTensor] = None,
+            cache_params: Optional[MambaCache] = None,
+            labels: Optional[torch.LongTensor] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            use_cache: Optional[bool] = None,
+            **kwargs,  # for now we need this for generation
     ) -> Union[Tuple, MambaCausalLMOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -88,22 +89,22 @@ class MambaForCausalLM_pretrained(MambaForCausalLM):
             hidden_states=mamba_outputs.hidden_states,
         )
 
+
 ##################### Functional Global Models ######################
 class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
     def __init__(self, full_mamba, num_encoders):
-        super(MambaPreTrainedModel,self).__init__(full_mamba.config)
+        super(MambaPreTrainedModel, self).__init__(full_mamba.config)
 
         self.local_encoders_num = num_encoders
         self.num_encoders_all = full_mamba.config.num_hidden_layers
 
-        self.embeddings = full_mamba.embeddings #nn.Embedding(config.vocab_size, config.hidden_size)
+        self.embeddings = full_mamba.embeddings  # nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList([full_mamba.layers[idx] for idx in range(self.local_encoders_num)])
-        #nn.ModuleList([MambaBlock(config, layer_idx=idx) for idx in range(config.num_hidden_layers)])
+        # nn.ModuleList([MambaBlock(config, layer_idx=idx) for idx in range(config.num_hidden_layers)])
 
         self.gradient_checkpointing = False
-        self.norm_f = full_mamba.norm_f #MambaRMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
-        
-        
+        self.norm_f = full_mamba.norm_f  # MambaRMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
+
         # Initialize weights and apply final processing
         # self.post_init()
 
@@ -114,14 +115,14 @@ class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
         self.past_key_values = None
 
     def forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        inputs_embeds: Optional[torch.LongTensor] = None,
-        cache_params: Optional[MambaCache] = None,
-        use_cache: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs,  # `attention_mask` is passed by the tokenizer and we don't want it
+            self,
+            input_ids: Optional[torch.LongTensor] = None,
+            inputs_embeds: Optional[torch.LongTensor] = None,
+            cache_params: Optional[MambaCache] = None,
+            use_cache: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs,  # `attention_mask` is passed by the tokenizer and we don't want it
     ) -> Union[Tuple, MambaOutput]:
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -156,7 +157,7 @@ class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
             if output_hidden_states:
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
-        return {'inputs_embeds':hidden_states}
+        return {'inputs_embeds': hidden_states}
 
         # if use_cache:
         #     cache_params.seqlen_offset += inputs_embeds.shape[1]
@@ -182,29 +183,30 @@ class GlobalMambaModel(MambaPreTrainedModel):
 
         self.global_encoders_num = num_encoders
         self.num_encoders_all = full_mamba.config.num_hidden_layers
-        self.local_encoders_num = self.num_encoders_all - self.global_encoders_num 
+        self.local_encoders_num = self.num_encoders_all - self.global_encoders_num
 
         # self.embeddings = full_mamba.embeddings #nn.Embedding(config.vocab_size, config.hidden_size)
-        self.layers = nn.ModuleList([full_mamba.layers[idx] for idx in range(self.local_encoders_num,self.num_encoders_all)])
-        #nn.ModuleList([MambaBlock(config, layer_idx=idx) for idx in range(config.num_hidden_layers)])
+        self.layers = nn.ModuleList(
+            [full_mamba.layers[idx] for idx in range(self.local_encoders_num, self.num_encoders_all)])
+        # nn.ModuleList([MambaBlock(config, layer_idx=idx) for idx in range(config.num_hidden_layers)])
 
         self.gradient_checkpointing = False
-        self.norm_f = full_mamba.norm_f #MambaRMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
+        self.norm_f = full_mamba.norm_f  # MambaRMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
         # Initialize weights and apply final processing
         self.post_init()
 
     def _clear_past_key_values(self):
         self.past_key_values = None
-        
+
     def forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        inputs_embeds: Optional[torch.LongTensor] = None,
-        cache_params: Optional[MambaCache] = None,
-        use_cache: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs,  # `attention_mask` is passed by the tokenizer and we don't want it
+            self,
+            input_ids: Optional[torch.LongTensor] = None,
+            inputs_embeds: Optional[torch.LongTensor] = None,
+            cache_params: Optional[MambaCache] = None,
+            use_cache: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs,  # `attention_mask` is passed by the tokenizer and we don't want it
     ) -> Union[Tuple, MambaOutput]:
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -216,7 +218,7 @@ class GlobalMambaModel(MambaPreTrainedModel):
             raise ValueError(
                 "You cannot specify both input_ids and inputs_embeds at the same time, and must specify either one"
             )
-        
+
         # no need
         # if inputs_embeds is None:
         #     inputs_embeds = self.embeddings(input_ids)
@@ -256,4 +258,3 @@ class GlobalMambaModel(MambaPreTrainedModel):
             cache_params=cache_params if use_cache else None,
             hidden_states=all_hidden_states,
         )
-

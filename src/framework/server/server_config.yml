@@ -7,3 +7,4 @@
 server:
   host: 0.0.0.0
   port: ${GRPC_PORT:3333}
+  compression: None

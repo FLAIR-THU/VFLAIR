@@ -1,9 +1,10 @@
 # from transformers import T5PreTrainedModel
-from transformers.models.xlnet.modeling_xlnet import * #XLNetModel, XLNetPreTrainedModel, XLNetLMHeadModel
+from transformers.models.xlnet.modeling_xlnet import *  # XLNetModel, XLNetPreTrainedModel, XLNetLMHeadModel
 
 # from transformers import PreTrainedModel, add_start_docstrings
 from transformers.activations import ACT2FN
-from transformers.modeling_utils import PoolerAnswerClass, PoolerEndLogits, PoolerStartLogits, PreTrainedModel, SequenceSummary
+from transformers.modeling_utils import PoolerAnswerClass, PoolerEndLogits, PoolerStartLogits, PreTrainedModel, \
+    SequenceSummary
 from transformers.pytorch_utils import apply_chunking_to_forward
 from transformers.utils import (
     ModelOutput,
@@ -21,6 +22,7 @@ import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
+
 ##### Evaluation with pretrained models ######
 class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
 
@@ -29,8 +31,8 @@ class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
         self.attn_type = global_xlnet.config.attn_type
         self.same_length = global_xlnet.config.same_length
 
-        self.transformer = global_xlnet #XLNetModel(config)
-        self.head_layer = lm_loss # nn.Linear(config.d_model, config.vocab_size, bias=True)
+        self.transformer = global_xlnet  # XLNetModel(config)
+        self.head_layer = lm_loss  # nn.Linear(config.d_model, config.vocab_size, bias=True)
 
         self.generation_config = generation_config
 
@@ -41,22 +43,22 @@ class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
         self.transformer._clear_past_key_values()
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        mems: Optional[torch.Tensor] = None,
-        perm_mask: Optional[torch.Tensor] = None,
-        target_mapping: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        input_mask: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
-        use_mems: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs,  # delete when `use_cache` is removed in XLNetModel
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            mems: Optional[torch.Tensor] = None,
+            perm_mask: Optional[torch.Tensor] = None,
+            target_mapping: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            input_mask: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            labels: Optional[torch.Tensor] = None,
+            use_mems: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs,  # delete when `use_cache` is removed in XLNetModel
     ) -> Union[Tuple, XLNetLMHeadModelOutput]:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, num_predict)`, *optional*):
@@ -145,7 +147,6 @@ class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
             **kwargs,
         )
         logits = self.head_layer(transformer_outputs[0])
-        
 
         loss = None
         if labels is not None:
@@ -165,14 +166,14 @@ class XLNetLMHeadModel_pretrained(XLNetLMHeadModel):
             attentions=transformer_outputs.attentions,
         )
 
+
 ##################### Functional Global Models ######################
-class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLNetPreTrainedModel XLNetModel
+class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel):  # XLNetPreTrainedModel XLNetModel
     def __init__(self, full_xlnet, num_encoders=1):
-        super(XLNetPreTrainedModel,self).__init__(full_xlnet.config)
+        super(XLNetPreTrainedModel, self).__init__(full_xlnet.config)
 
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_xlnet.config.n_layer
-
 
         self.mem_len = full_xlnet.config.mem_len
         self.reuse_len = full_xlnet.config.reuse_len
@@ -183,10 +184,10 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         self.clamp_len = full_xlnet.config.clamp_len
         self.n_layer = full_xlnet.config.n_layer
 
-        self.word_embedding = full_xlnet.word_embedding #nn.Embedding(config.vocab_size, config.d_model)
-        self.mask_emb = full_xlnet.mask_emb #nn.Parameter(torch.FloatTensor(1, 1, config.d_model))
+        self.word_embedding = full_xlnet.word_embedding  # nn.Embedding(config.vocab_size, config.d_model)
+        self.mask_emb = full_xlnet.mask_emb  # nn.Parameter(torch.FloatTensor(1, 1, config.d_model))
         self.layer = nn.ModuleList([full_xlnet.layer[i] for i in range(self.local_num_encoders)])
-        self.dropout = full_xlnet.dropout #nn.Dropout(config.dropout)
+        self.dropout = full_xlnet.dropout  # nn.Dropout(config.dropout)
 
         # Initialize weights and apply final processing
         # self.post_init()
@@ -195,24 +196,24 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         return self.word_embedding
 
     def _clear_past_key_values(self):
-        self.past_key_values=None
+        self.past_key_values = None
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        mems: Optional[torch.Tensor] = None,
-        perm_mask: Optional[torch.Tensor] = None,
-        target_mapping: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        input_mask: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        use_mems: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs,  # delete after depreciation warning is removed
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            mems: Optional[torch.Tensor] = None,
+            perm_mask: Optional[torch.Tensor] = None,
+            target_mapping: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            input_mask: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            use_mems: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs,  # delete after depreciation warning is removed
     ) -> Union[Tuple, XLNetModelOutput]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -268,14 +269,13 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
             attn_mask = None
         else:
             raise ValueError(f"Unsupported attention type: {self.attn_type}")
-        
 
         # data mask: input mask & perm mask
         assert input_mask is None or attention_mask is None, "You can only use one of input_mask (uses 1 for padding) "
         "or attention_mask (uses 0 for padding, added for compatibility with BERT). Please choose one."
         if input_mask is None and attention_mask is not None:
             input_mask = 1.0 - attention_mask
-        
+
         if input_mask is not None and perm_mask is not None:
             data_mask = input_mask[None] + perm_mask
         elif input_mask is not None and perm_mask is None:
@@ -298,7 +298,6 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         if attn_mask is not None:
             attn_mask = (attn_mask > 0).to(dtype_float)
 
-
         if attn_mask is not None:
             non_tgt_mask = -torch.eye(qlen).to(attn_mask)
             if mlen > 0:
@@ -314,7 +313,7 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         else:
             word_emb_k = self.word_embedding(input_ids)
         output_h = self.dropout(word_emb_k)
-        
+
         # target_mapping --> output_g
         if target_mapping is not None:
             word_emb_q = self.mask_emb.expand(target_mapping.shape[0], bsz, -1)
@@ -345,8 +344,6 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         pos_emb = self.relative_positional_encoding(qlen, klen, bsz=bsz)
         pos_emb = pos_emb.to(output_h.device)
         pos_emb = self.dropout(pos_emb)
-        
-
 
         # Prepare head mask if needed
         # 1.0 in head_mask indicate we keep the head
@@ -380,13 +377,13 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
                 hidden_states.append((output_h, output_g) if output_g is not None else output_h)
 
             outputs = layer_module(
-                output_h, # inputs_embeds
-                output_g, # target_mapping
-                attn_mask_h=non_tgt_mask, # attn_mask
+                output_h,  # inputs_embeds
+                output_g,  # target_mapping
+                attn_mask_h=non_tgt_mask,  # attn_mask
                 attn_mask_g=attn_mask,
                 r=pos_emb,
-                seg_mat=seg_mat, # token_type_ids
-                mems=mems[i], 
+                seg_mat=seg_mat,  # token_type_ids
+                mems=mems[i],
                 target_mapping=target_mapping,
                 head_mask=head_mask[i],
                 output_attentions=output_attentions,
@@ -395,11 +392,10 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
             if output_attentions:
                 attentions.append(outputs[2])
 
-
-        return {'inputs_embeds':output_h,'output_g':output_g,
-                'target_mapping':target_mapping,
-                'input_mask':input_mask,'perm_mask':perm_mask,
-                'token_type_ids':token_type_ids}
+        return {'inputs_embeds': output_h, 'output_g': output_g,
+                'target_mapping': target_mapping,
+                'input_mask': input_mask, 'perm_mask': perm_mask,
+                'token_type_ids': token_type_ids}
         # # Add last hidden state
         # if output_hidden_states:
         #     hidden_states.append((output_h, output_g) if output_g is not None else output_h)
@@ -434,6 +430,7 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         #     last_hidden_state=output, mems=new_mems, hidden_states=hidden_states, attentions=attentions
         # )
 
+
 class GlobalXLNetModel(XLNetModel):
     def __init__(self, full_xlnet, num_encoders=1):
         super().__init__(full_xlnet.config)
@@ -441,7 +438,6 @@ class GlobalXLNetModel(XLNetModel):
         self.global_num_encoders = num_encoders
         self.num_encoders_all = full_xlnet.config.n_layer
         self.local_num_encoders = self.num_encoders_all - self.global_num_encoders
-
 
         self.mem_len = full_xlnet.config.mem_len
         self.reuse_len = full_xlnet.config.reuse_len
@@ -454,33 +450,33 @@ class GlobalXLNetModel(XLNetModel):
 
         # self.word_embedding = full_xlnet.word_embedding #nn.Embedding(config.vocab_size, config.d_model)
         # self.mask_emb = full_xlnet.mask_emb #nn.Parameter(torch.FloatTensor(1, 1, config.d_model))
-        
+
         self.layer = nn.ModuleList([full_xlnet.layer[i] for i in range(self.local_num_encoders, self.num_encoders_all)])
-        self.dropout = full_xlnet.dropout #nn.Dropout(config.dropout)
+        self.dropout = full_xlnet.dropout  # nn.Dropout(config.dropout)
 
         # Initialize weights and apply final processing
         # self.post_init()
 
     def _clear_past_key_values(self):
-        self.past_key_values=None
-        
-    def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        mems: Optional[torch.Tensor] = None,
-        perm_mask: Optional[torch.Tensor] = None,
-        target_mapping: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        input_mask: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        use_mems: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
+        self.past_key_values = None
 
-        **kwargs,  # delete after depreciation warning is removed
+    def forward(
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            mems: Optional[torch.Tensor] = None,
+            perm_mask: Optional[torch.Tensor] = None,
+            target_mapping: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            input_mask: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            use_mems: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+
+            **kwargs,  # delete after depreciation warning is removed
     ) -> Union[Tuple, XLNetModelOutput]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -500,7 +496,6 @@ class GlobalXLNetModel(XLNetModel):
             use_mems = use_mems if use_mems is not None else self.config.use_mems_train
         else:
             use_mems = use_mems if use_mems is not None else self.config.use_mems_eval
-
 
         # the original code for XLNet uses shapes [len, bsz] with the batch dimension at the end
         # but we want a unified interface in the library with the batch size on the first dimension
@@ -526,7 +521,6 @@ class GlobalXLNetModel(XLNetModel):
 
         mlen = mems[0].shape[0] if mems is not None and mems[0] is not None else 0
         klen = mlen + qlen
-
 
         dtype_float = self.dtype
         device = self.device
@@ -596,7 +590,6 @@ class GlobalXLNetModel(XLNetModel):
         # else:
         #     output_g = None
         output_g = kwargs['output_g']
-        
 
         # Segment embedding
         if token_type_ids is not None:
@@ -612,7 +605,7 @@ class GlobalXLNetModel(XLNetModel):
             seg_mat = nn.functional.one_hot(seg_mat, num_classes=2).to(dtype_float)
         else:
             seg_mat = None
-        
+
         # Positional encoding
         pos_emb = self.relative_positional_encoding(qlen, klen, bsz=bsz)
         pos_emb = pos_emb.to(output_h.device)

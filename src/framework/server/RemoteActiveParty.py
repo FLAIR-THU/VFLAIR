@@ -61,14 +61,32 @@ class RemoteActiveParty(IParty):
         )
         return output
 
-    def train(self, i_epoch):
-        pass
+    def train(self, *args, **kwargs):
+        task = Task()
+        task.run = "train"
+        task.party = "active"
+        task.job_id = self._job_id
+        response = self._client.open_and_send(task)
 
     '''
     compatible with local mode
     '''
+
     def receive_pred(self, pred_list, ik):
         pass
+
+    def update_model_data(self, model_data):
+        pass
+
+    def save_pretrained(self, model_index, model_id, **kwargs):
+        task = Task()
+        task.run = "save_pretrained_remote"
+        task.party = "active"
+        task.job_id = self._job_id
+        task.params = {"model_index": model_index, "model_id": model_id}
+        if kwargs:
+            task.params.update(kwargs)
+        response = self._client.open_and_send(task)
 
     def __call__(self, *args, **kwargs):
         return self.predict(kwargs)

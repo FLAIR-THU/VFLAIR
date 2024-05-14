@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 import torch.nn.init as init
+
+
 def weights_init(m):
     # classname = m.__class__.__name__
     # print(classname)
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         init.kaiming_normal_(m.weight)
+
 
 class TopModelForCifar10(nn.Module):
     def __init__(self, hidden_dim=20, num_classes=10):
@@ -42,8 +44,8 @@ class ClassificationModelHostHead(nn.Module):
 
     def forward(self, z_list):
         out = z_list[0]
-        for i in range(len(z_list)-1):
-            out = out.add(z_list[i+1])
+        for i in range(len(z_list) - 1):
+            out = out.add(z_list[i + 1])
         return out
 
 
@@ -55,10 +57,9 @@ class ClassificationModelHostHeadWithSoftmax(nn.Module):
 
     def forward(self, z_list):
         out = z_list[0]
-        for i in range(len(z_list)-1):
-            out = out.add(z_list[i+1])
+        for i in range(len(z_list) - 1):
+            out = out.add(z_list[i + 1])
         return self.softmax(out)
-
 
 
 class ClassificationModelHostTrainableHead(nn.Module):
@@ -67,7 +68,7 @@ class ClassificationModelHostTrainableHead(nn.Module):
         super().__init__()
         self.classifier_head = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self,  z_list):
+    def forward(self, z_list):
         out = torch.cat(z_list, dim=1)
         return self.classifier_head(out)
 
@@ -76,8 +77,8 @@ class ClassificationModelHostTrainableHead2(nn.Module):
 
     def __init__(self, hidden_dim, num_classes):
         super().__init__()
-        self.fc1_top = nn.Linear(hidden_dim, hidden_dim//2)
-        self.fc2_top = nn.Linear(hidden_dim//2, num_classes)
+        self.fc1_top = nn.Linear(hidden_dim, hidden_dim // 2)
+        self.fc2_top = nn.Linear(hidden_dim // 2, num_classes)
 
     def forward(self, z_list):
         out = torch.cat(z_list, dim=1)
@@ -93,8 +94,8 @@ class ClassificationModelHostTrainableHead3(nn.Module):
     def __init__(self, hidden_dim, num_classes):
         super().__init__()
         self.fc1_top = nn.Linear(hidden_dim, hidden_dim)
-        self.fc2_top = nn.Linear(hidden_dim, hidden_dim//2)
-        self.fc3_top = nn.Linear(hidden_dim//2, num_classes)
+        self.fc2_top = nn.Linear(hidden_dim, hidden_dim // 2)
+        self.fc3_top = nn.Linear(hidden_dim // 2, num_classes)
         # self.apply(weights_init)
 
     def forward(self, z_list):
@@ -107,6 +108,7 @@ class ClassificationModelHostTrainableHead3(nn.Module):
         x = self.fc3_top(x)
         return x
 
+
 class ClassificationModelHostTrainableHeadGCN(nn.Module):
 
     def __init__(self, hidden_dim, num_classes):
@@ -116,4 +118,4 @@ class ClassificationModelHostTrainableHeadGCN(nn.Module):
     def forward(self, z_list, data):
         adj = data[0]
         out = torch.cat(z_list, dim=1)
-        return self.gc(out,adj)
+        return self.gc(out, adj)

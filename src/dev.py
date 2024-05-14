@@ -1,12 +1,16 @@
 import datetime
 import os
+if not os.getenv('CUDA_VISIBLE_DEVICES'):
+    os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in range(6,7)])
 
-import torch
+import sys
+
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 # 定义模型训练函数
 import torch
+import random
 from transformers import AutoTokenizer, AutoConfig, AutoModel, DataCollatorForSeq2Seq, TrainingArguments, Trainer, \
     GenerationConfig, PreTrainedModel, PreTrainedTokenizer
 from datasets import Dataset
@@ -24,15 +28,17 @@ from peft import LoraConfig, TaskType, get_peft_model, PeftModel, PeftModelForCa
 import numpy as np
 from tqdm import tqdm
 
-pynvml.nvmlInit()
+try:
+    pynvml.nvmlInit()
+except:
+    pass
 # device_count = pynvml.nvmlDeviceGetCount()
 
-os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(i) for i in range(8)])
 
 GPU_IDX = [int(i) for i in os.getenv('CUDA_VISIBLE_DEVICES').split(',')]
 
 SEED = 7
-BATCH_SIZE = 2
+BATCH_SIZE = 16
 sample_rng = np.random.default_rng(SEED)
 
 _qwen_72b_device_map = {'model.embed_tokens': 0,
@@ -120,7 +126,18 @@ _qwen_72b_device_map = {'model.embed_tokens': 0,
                         'lm_head': 7}
 
 
+def set_seed(seed=60):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+
 def log_gpu_memory_usage():
+    return None
     total_memery = len(GPU_IDX) * 24
     total_used = 0
     max_memery = {}
@@ -154,11 +171,15 @@ def device_map_setter(kwargs: dict, add_model_prefix=False):
 
 # MODEL_PATH = '/dev/data/sunl0/model'
 MODEL_PATH = '/mnt/data/model'
+# MODEL_PATH='D:\project\PrivacyCompute\model'
 # DATA_PATH = '/dev/data/sunl0/data'
 DATA_PATH = '/mnt/data/data'
+# DATA_PATH=r'D:\project\data'
 SPLIT_INDEX = (2, -2)
-IS_TEST = True
-
+IS_TEST = False
+if not IS_TEST:
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
 # model_path = '/dev/data/sunl0/model/test/qwen/Qwen1___5-72B-Chat'
 model_path = os.path.join(MODEL_PATH, 'Qwen/Qwen1.5-0.5B-Chat')
 # model_path = os.path.join(MODEL_PATH, 'Qwen/Qwen1___5-72B-Chat')
@@ -166,13 +187,13 @@ model_path = os.path.join(MODEL_PATH, 'Qwen/Qwen1.5-0.5B-Chat')
 vfl_folder = model_path + f'_vfl_{SPLIT_INDEX}'
 model_path_head = os.path.join(vfl_folder, 'model_head')
 model_path_tail = os.path.join(vfl_folder, 'model_tail')
-# lora_path = model_path + '-lora_all'
-lora_path = model_path + f'_lora_{SPLIT_INDEX}'
+lora_path = '/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat_3_test'
+# lora_path = model_path + f'_lora_{SPLIT_INDEX}'
 
 load_kwargs = {
     'device_map': 'auto',
     'torch_dtype': torch.bfloat16,
-    'max_memory':{0:'20GB'}
+    'max_memory': {0: '20GB'}
     # 'max_memory': {0: '21GB', 1: '22GB', 2: '18GB', 3: '20GB', 4: '22GB', 5: '22GB', 6: '22GB', 7: '20GB'},
 }
 
@@ -340,13 +361,16 @@ def transformers_register():
 def process_func(example):
     MAX_LENGTH = 128  # Llama分词器会将一个中文字切分为多个token，因此需要放开一些最大长度，保证数据的完整性
     input_ids, attention_mask, labels = [], [], []
-    instruction = tokenizer(
+
+    instruction_token = tokenizer(
         f"<|im_start|>system\n现在你要扮演皇帝身边的女人--甄嬛<|im_end|>\n<|im_start|>user\n{example['instruction'] + example['input']}<|im_end|>\n<|im_start|>assistant\n",
         add_special_tokens=False)  # add_special_tokens 不在开头加 special_tokens
     response = tokenizer(f"{example['output']}", add_special_tokens=False)
-    input_ids = instruction["input_ids"] + response["input_ids"] + [tokenizer.pad_token_id]
-    attention_mask = instruction["attention_mask"] + response["attention_mask"] + [1]  # 因为eos token咱们也是要关注的所以 补充为1
-    labels = [-100] * len(instruction["input_ids"]) + response["input_ids"] + [tokenizer.pad_token_id]
+    input_ids = instruction_token["input_ids"] + response["input_ids"] + [tokenizer.pad_token_id]
+    attention_mask = instruction_token["attention_mask"] + response["attention_mask"] + [1]  # 因为eos token咱们也是要关注的所以 补充为1
+    labels = [-100] * len(instruction_token["input_ids"]) + response["input_ids"] + [tokenizer.pad_token_id]
+    # labels = instruction_token["input_ids"] + response["input_ids"] + [tokenizer.pad_token_id]
+
     if len(input_ids) > MAX_LENGTH:  # 做一个截断
         input_ids = input_ids[:MAX_LENGTH]
         attention_mask = attention_mask[:MAX_LENGTH]
@@ -378,9 +402,9 @@ def dataset_batch_processor(batch):
     for i, row in enumerate(batch):
         for k, v in row.items():
             if k not in res:
-                res.update({k: v})
+                res.update({k: [v]})
             else:
-                res[k].extend(v)
+                res[k].append(v)
     return res
 
 
@@ -399,8 +423,8 @@ lora_config = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
     inference_mode=False,  # 训练模式
-    r=4,  # Lora 秩
-    lora_alpha=32,  # Lora alaph，具体作用参见 Lora 原理
+    r=8,  # Lora 秩
+    lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理
     lora_dropout=0.1,  # Dropout 比例
     # layers_to_transform=[0, 1]
 )
@@ -414,31 +438,31 @@ class PipelineLoraFinetune:
                 logging_dir=os.path.join(path_save, 'logs',
                                          f'{datetime.datetime.now().strftime("%Y%m%d_%H-%M-%S")}_test'),
                 per_device_train_batch_size=BATCH_SIZE,
-                gradient_accumulation_steps=8,
+                gradient_accumulation_steps=1,
                 logging_steps=10,
-                num_train_epochs=10,
+                num_train_epochs=2,
                 save_steps=50,
                 learning_rate=1e-5,
                 save_on_each_node=True,
                 gradient_checkpointing=True,
                 report_to=['tensorboard'],
-                eval_steps=50
+                eval_steps=210
             )
         else:
             self.train_args = TrainingArguments(
                 output_dir=os.path.join(path_save),
                 logging_dir=os.path.join(path_save, 'logs', f'{datetime.datetime.now().strftime("%Y%m%d_%H-%M-%S")}'),
                 per_device_train_batch_size=BATCH_SIZE,
-                gradient_accumulation_steps=8,
+                gradient_accumulation_steps=1,
                 logging_steps=10,
                 num_train_epochs=10,
-                save_steps=200,
+                save_steps=210,
                 # save_steps=50,
                 learning_rate=1e-5,
                 save_on_each_node=True,
                 gradient_checkpointing=True,
                 report_to=['tensorboard'],
-                eval_steps=200
+                eval_steps=210
             )
 
     @staticmethod
@@ -483,16 +507,19 @@ class PipelineLoraFinetune:
         # 定义优化器和学习率调度器
         optimizer = torch.optim.AdamW(trainable_params, lr=training_args.learning_rate)
         # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10)
-        scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=4)
+        scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=10)
 
         # 开始训练
         forward_step = 0
         backward_step = 0
         # best_eval_loss = float('inf')
         dataset_train = DataLoader(dataset_train, batch_size=self.train_args.per_device_train_batch_size,
-                                   collate_fn=dataset_batch_processor)
+                                   collate_fn=dataset_batch_processor
+                                   )
+        eval_loss = self.validate_model(model, dataset_validate)
+        tensorboard_writer.add_scalar('train/eval_loss', eval_loss, backward_step)
+        tensorboard_writer.add_scalar('train/epoch', 0, backward_step)
         for epoch in range(training_args.num_train_epochs):
-            total_loss = 0
             for batch in tqdm(dataset_train, desc=f"Epoch {epoch + 1}/{training_args.num_train_epochs}", leave=False):
                 # 将数据传递给设备
                 # inputs = batch['input_ids'].to(training_args.device)
@@ -503,18 +530,15 @@ class PipelineLoraFinetune:
                 outputs = model(**self.__class__.data_collator(batch, model.device,
                                                                batch_size=self.train_args.per_device_train_batch_size))
                 forward_step += 1
-                if not forward_step % self.train_args.gradient_accumulation_steps == 0:
-                    continue
+                # if not forward_step % self.train_args.gradient_accumulation_steps == 0:
+                #     continue
 
                 loss = outputs.loss
 
                 # 反向传播
-                loss.backward()
+                loss.backward(retain_graph=IS_TEST)
                 optimizer.step()
                 optimizer.zero_grad()
-
-                # 累积总损失
-                total_loss += loss.item()
 
                 backward_step += 1
 
@@ -523,8 +547,9 @@ class PipelineLoraFinetune:
                 tensorboard_writer.add_scalar('train/learning_rate', optimizer.param_groups[0]['lr'], backward_step)
                 if backward_step % training_args.eval_steps == 0:
                     # 在验证集上评估模型
-                    eval_loss = self.__class__.validate_model(model, dataset_validate)
+                    eval_loss = self.validate_model(model, dataset_validate)
                     tensorboard_writer.add_scalar('train/eval_loss', eval_loss, backward_step)
+                    optimizer.zero_grad()
 
                 if backward_step % training_args.save_steps == 0:
                     model.save_pretrained(os.path.join(training_args.output_dir, f'checkpoint-{backward_step}'))
@@ -544,13 +569,16 @@ class PipelineLoraFinetune:
 
     # 定义模型评估函数
 
-    @staticmethod
-    def validate_model(model, validation_dataloader):
+
+    def validate_model(self,model, validation_dataloader):
         model.eval()
         count, loss = 0, 0
+        _validation_dataloader = DataLoader(validation_dataloader, batch_size=self.train_args.per_device_train_batch_size,
+                                   collate_fn=dataset_batch_processor
+                                   )
         with torch.no_grad():
-            for example in validation_dataloader:
-                output = model(**PipelineLoraFinetune.data_collator(example, model.device))
+            for example in tqdm(_validation_dataloader, desc="Validating",leave=False):
+                output = model(**self.data_collator(example, model.device,batch_size=self.train_args.per_device_train_batch_size))
                 if output.loss.item() != output.loss.item():
                     continue
                     # return example
@@ -561,14 +589,17 @@ class PipelineLoraFinetune:
     @staticmethod
     def data_collator(data, device, batch_size=1):
         new_data = {}
-        new_data["input_ids"] = torch.Tensor(data["input_ids"]).int().reshape([batch_size, -1]).to(device)
-        new_data["attention_mask"] = torch.Tensor(data["attention_mask"]).int().reshape([batch_size, -1]).to(device)
-        new_data["labels"] = torch.Tensor(data["labels"]).long().reshape([batch_size, -1]).to(device)
+        new_data["input_ids"] = torch.Tensor(data["input_ids"]).int().to(device)
+        new_data["attention_mask"] = torch.Tensor(data["attention_mask"]).int().to(device)
+        new_data["labels"] = torch.Tensor(data["labels"]).long().to(device)
         return new_data
 
 
 def gen(model: Qwen2ForCausalLM, tokenizer: PreTrainedTokenizer, prompt: str = '你是谁',
         prompt_system: str = "现在你要扮演皇帝身边的女人--甄嬛"):
+
+    start_time = time.time()
+
     messages = [
         {"role": "system", "content": prompt_system},
         {"role": "user", "content": prompt}
@@ -577,7 +608,6 @@ def gen(model: Qwen2ForCausalLM, tokenizer: PreTrainedTokenizer, prompt: str = '
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
     model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
-
     generated_ids = model.generate(
         model_inputs.input_ids,
         max_new_tokens=50,
@@ -588,12 +618,13 @@ def gen(model: Qwen2ForCausalLM, tokenizer: PreTrainedTokenizer, prompt: str = '
     ]
 
     response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-    print(response)
+    end_time=time.time()
+    logger.info(f"Took: {end_time-start_time} s\nGenerated: {response}")
     return response
 
 
 if __name__ == '__main__':
+    set_seed()
     log_gpu_memory_usage()
     # m=check1()
     # sd=torch.load(os.path.join(model_path_tail,'model.safetensors'))
@@ -701,7 +732,7 @@ if __name__ == '__main__':
                 log_gpu_memory_usage()
 
     if "dev VFL":
-        models = load_vfl_model(split_idx=SPLIT_INDEX, is_from_raw=True, save_model=True)
+        models = load_vfl_model(split_idx=SPLIT_INDEX, is_from_raw=True, save_model=False)
         local_model, global_model = models[0], models[1]
         logger.info("finish load model")
         model_inputs.to(local_model.device)
@@ -739,12 +770,20 @@ if __name__ == '__main__':
                                           position_ids=intermediate.position_ids, use_cache=False)
             log_gpu_memory_usage()
         if "e2e":
-            if train_lora := not 'lora':
-                global_model = p_lora.get_lora_model(global_model)
+            if train_lora := 'lora':
+                for p in models[0].parameters():
+                    p.requires_grad = False
+                if 2 in models:
+                    models[2]=p_lora.get_lora_model(models[2])
+                models[1] = p_lora.get_lora_model(models[1])
             elif not 'lora inference':
-                global_model = PeftModelForCausalLM.from_pretrained(global_model, model_id=os.path.join(lora_path,
-                                                                                                        'checkpoint-manual'),
-                                                                    config=lora_config)
+                for i,m in models:
+                    _model_path=os.path.join(lora_path,f'model_{i}')
+                    if os.path.exists(_model_path):
+                        models[i]=PeftModel.from_pretrained(m,model_id=_model_path)
+                # global_model = PeftModelForCausalLM.from_pretrained(global_model,
+                #                                                     model_id=os.path.join(lora_path,'checkpoint-manual'),
+                #                                                     config=lora_config)
 
             logger.info(f"start Loading e2e model")
             log_gpu_memory_usage()
@@ -774,6 +813,7 @@ if __name__ == '__main__':
                         optimizer.zero_grad()
                     e2e_model.eval()
             # p_lora.validate_model(e2e_model,dataset_validate)
-            ans = gen(e2e_model, tokenizer=tokenizer, prompt='你可以做哪些事情？',
-                      prompt_system='你是一个经验丰富的python程序员')
+            gen(e2e_model,tokenizer)
+            ans = gen(e2e_model, tokenizer=tokenizer, prompt='You are a python programmer, what can you do?',
+                      prompt_system='You are a helpful assistant.')
     pynvml.nvmlShutdown()

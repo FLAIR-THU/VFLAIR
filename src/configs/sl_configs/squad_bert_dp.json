@@ -1,86 +1,89 @@
 {
-    "epochs": 1,
-    "lr": 0.0001,
-    "k": 2,
-    "batch_size": 16,
-    "pipeline": "finetune",
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 16,
+  "pipeline": "finetune",
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "SQuAD",
+    "num_classes": 1,
+    "use_prompt": 1,
+    "n_shot": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 256,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "textattackbert-base-uncased-SST-2",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
+      "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
     },
-    "dataset":{
-        "dataset_name": "SQuAD",
-        "num_classes": 1,
-        "use_prompt": 1,
-        "n_shot": 1
+    "1": {
+      "type": "textattackbert-base-uncased-SST-2",
+      "pretrained": 1,
+      "head_layer_trainable": 1,
+      "encoder_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
+      "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
     },
-    "tokenizer":{
-        "padding": "max_length",
-        "padding_type": "outside",
-        "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 256,
-        "padding_side": "left",
-        "add_special_tokens": 1
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "best_pred",
+      "doc_stride": 128,
+      "max_seq_length": 512,
+      "max_query_length": 64,
+      "max_answer_length": 30,
+      "n_best_size": 20
     },
-    "model_list":{
-        "0": {
-            "type": "textattackbert-base-uncased-SST-2",
-            "pretrained": 1,
-            "encoder_trainable": 0,
-            "embedding_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Bert",
-            "max_sequence": 512,
-            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
-        },
-        "1": {
-            "type": "textattackbert-base-uncased-SST-2",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Bert",
-            "max_sequence": 512,
-            "path": "/mnt/data/model/textattack/bert-base-uncased-SST-2",
-            "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
-            "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json"
-        },
-        "task":{
-            "task_type": "QuestionAnswering",
-            "metric_type": "best_pred",
-            "doc_stride" : 128,
-            "max_seq_length": 512,
-            "max_query_length" : 64,
-            "max_answer_length": 30,
-            "n_best_size": 20
-
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "LaplaceDP",
-        "parameters": {
-            "party": [0],
-            "epsilon": 50
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 1,
-                "batch_size": 16,
-                "attack_sample_num": 100
-            }
-        }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "LaplaceDP",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "epsilon": 50
     }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 1,
+        "batch_size": 16,
+        "attack_sample_num": 100
+      }
+    }
+  }
 }

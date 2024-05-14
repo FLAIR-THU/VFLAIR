@@ -9,5 +9,7 @@ RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simpl
 ENV PYTHONPATH "${PYTHONPATH}:/vflair"
 ENV GRPC_SERVER "localhost"
 ENV GRPC_PORT "3333"
+ENV CUDA_VISIBLE_DEVICES "${CUDA_VISIBLE_DEVICES}:0"
+
 EXPOSE 5000
 CMD ["python", "./framework/web/main.py", "--config=./framework/web/web_config.yml"]

@@ -7,7 +7,7 @@ class LocalCommunication(ICommunication):
     def __init__(self, active_party):
         self.__active_party = active_party
 
-    def send_pred_message(self, pred_list, parse_result_fn=None, use_cache=False,  test="True"):
+    def send_pred_message(self, pred_list, parse_result_fn=None, use_cache=False, test="True"):
         return self.__active_party.aggregate(pred_list, use_cache=use_cache, test=test)
 
     def send_global_backward_message(self):
@@ -25,5 +25,4 @@ class LocalCommunication(ICommunication):
         self.__active_party.global_LR_decay(i_epoch)
 
     def send_global_model_train_message(self):
-        self.__active_party.train_model()
-
+        self.__active_party.train()

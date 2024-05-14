@@ -4,6 +4,7 @@ from datetime import datetime
 from framework.database.sql.engine import engine
 import json
 
+
 class JobRepository:
     def create(self, job: Job.Job):
         with Session(engine) as session:

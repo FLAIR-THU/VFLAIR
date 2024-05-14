@@ -16,15 +16,24 @@ import logging
 import copy
 import math
 import threading
+from loguru import logger
 
 
 def get_size_of(target_tensor):
+    logger.debug(f"n: {target_tensor.nelement()}, size: {target_tensor.element_size()}")
     return target_tensor.nelement() * target_tensor.element_size() / (1024 * 1024)  # mb
     # _size = 1
     # for _dim in target_tensor.shape:
     #     _size = _size*_dim
     # return _size*4/(1024*1024) # MB
 
+def get_total_size(tensor_dict:dict):
+    total_size=0.0
+    for t in tensor_dict.values():
+        if isinstance(t, torch.Tensor):
+            total_size += get_size_of(t)
+    logger.debug(f"total size: {total_size}MB")
+    return total_size
 
 # CELU
 class Cache(object):

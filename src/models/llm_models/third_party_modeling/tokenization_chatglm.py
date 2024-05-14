@@ -75,7 +75,6 @@ class ChatGLMTokenizer(PreTrainedTokenizer):
             "<pad>": self.tokenizer.pad_id
         }
         super().__init__(padding_side=padding_side, clean_up_tokenization_spaces=clean_up_tokenization_spaces, **kwargs)
-        
 
     def get_command(self, token):
         if token in self.special_tokens:

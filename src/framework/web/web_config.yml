@@ -4,3 +4,4 @@ database:
 grpc_server:
   host: ${GRPC_SERVER:localhost}
   port: ${GRPC_PORT:3333}
+  compression: None

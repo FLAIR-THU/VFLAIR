@@ -2,7 +2,6 @@ from .third_party_modeling.configuration_chatglm import ChatGLMConfig
 from .third_party_modeling.modeling_chatglm import *
 from .third_party_modeling.tokenization_chatglm import ChatGLMTokenizer
 
-
 import torch
 import torch.utils.checkpoint
 import torch.nn.functional as F
@@ -22,9 +21,9 @@ from transformers.utils import logging
 from transformers.generation.logits_process import LogitsProcessor
 from transformers.generation.utils import LogitsProcessorList, StoppingCriteriaList, GenerationConfig, ModelOutput
 
-
 import math
 from typing import List, Optional, Tuple, Union
+
 
 ##### Evaluation with pretrained models ######
 class ChatGLMForConditionalGeneration_pretrained(ChatGLMForConditionalGeneration):
@@ -33,8 +32,8 @@ class ChatGLMForConditionalGeneration_pretrained(ChatGLMForConditionalGeneration
 
         self.max_sequence_length = global_chatglm.config.max_length
 
-        self.transformer = global_chatglm #ChatGLMModel(config, empty_init=empty_init, device=device)
-        self.head_layer = head_layer #self.transformer.output_layer
+        self.transformer = global_chatglm  # ChatGLMModel(config, empty_init=empty_init, device=device)
+        self.head_layer = head_layer  # self.transformer.output_layer
         self.config = global_chatglm.config
         self.quantized = False
         self.generation_config = generation_config
@@ -112,11 +111,10 @@ class ChatGLMForConditionalGeneration_pretrained(ChatGLMForConditionalGeneration
         )
 
 
-
 ##################### Functional Global Models ######################
-class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
-    def __init__(self, full_chatglm , num_encoders=1, device=None, empty_init=True):
-        super(ChatGLMPreTrainedModel,self).__init__(full_chatglm.config)
+class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel):  # ChatGLMPreTrainedModel
+    def __init__(self, full_chatglm, num_encoders=1, device=None, empty_init=True):
+        super(ChatGLMPreTrainedModel, self).__init__(full_chatglm.config)
         if empty_init:
             init_method = skip_init
         else:
@@ -125,12 +123,12 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         if device is not None:
             init_kwargs["device"] = device
 
-        self.local_num_encoders = num_encoders # local model hidden layers
-        self.num_encoders_all = full_chatglm.config.num_layers # all hidden layers num
-        
-        self.embedding = full_chatglm.embedding #init_method(Embedding, config, **init_kwargs)
-        
-        self.num_layers = self.local_num_encoders #full_chatglm.config.num_layers
+        self.local_num_encoders = num_encoders  # local model hidden layers
+        self.num_encoders_all = full_chatglm.config.num_layers  # all hidden layers num
+
+        self.embedding = full_chatglm.embedding  # init_method(Embedding, config, **init_kwargs)
+
+        self.num_layers = self.local_num_encoders  # full_chatglm.config.num_layers
         self.multi_query_group_num = full_chatglm.config.multi_query_group_num
         self.kv_channels = full_chatglm.config.kv_channels
 
@@ -143,16 +141,16 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         self.rotary_pos_emb = full_chatglm.rotary_pos_emb
         # RotaryEmbedding(rotary_dim // 2, original_impl=config.original_rope, device=device,
         #                                       dtype=config.torch_dtype)
-        
-        self.encoder = LocalGLMTransformer(full_chatglm.encoder, config = full_chatglm.config ,num_encoders=self.local_num_encoders)
-        
-        
+
+        self.encoder = LocalGLMTransformer(full_chatglm.encoder, config=full_chatglm.config,
+                                           num_encoders=self.local_num_encoders)
+
         # init_method(GLMTransformer, config, **init_kwargs)
-        
+
         # self.output_layer = full_chatglm.output_layer
         # init_method(nn.Linear, config.hidden_size, config.padded_vocab_size, bias=False,
         #                                 dtype=config.torch_dtype, **init_kwargs)
-        
+
         self.pre_seq_len = full_chatglm.config.pre_seq_len
         self.prefix_projection = full_chatglm.config.prefix_projection
         if self.pre_seq_len is not None:
@@ -212,7 +210,6 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
             rotary_pos_emb = rotary_pos_emb[None, :seq_length]
         rotary_pos_emb = rotary_pos_emb.transpose(0, 1).contiguous()
 
-
         # Run encoder.
         local_encoder_output_dict = self.encoder(
             inputs_embeds, full_attention_mask, rotary_pos_emb=rotary_pos_emb,
@@ -221,12 +218,12 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         # hidden_states, presents, all_hidden_states, all_self_attentions
         # print('local end hidden_states:',local_encoder_output_dict['hidden_states'])
 
-        return {'inputs_embeds':local_encoder_output_dict['hidden_states'],
+        return {'inputs_embeds': local_encoder_output_dict['hidden_states'],
                 'attention_mask': local_encoder_output_dict['attention_mask'],
-                'position_ids':position_ids
+                'position_ids': position_ids
                 # 'all_hidden_states':all_hidden_states,
                 # 'all_self_attentions':all_self_attentions
-                } 
+                }
 
         # if not return_dict:
         #     return tuple(v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None)
@@ -239,8 +236,8 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         # )
 
 
-class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
-    def __init__(self, full_chatglm , num_encoders=1, device=None, empty_init=True):
+class GlobalChatGLMModel(ChatGLMPreTrainedModel):  # ChatGLMPreTrainedModel
+    def __init__(self, full_chatglm, num_encoders=1, device=None, empty_init=True):
         super().__init__(full_chatglm.config)
         if empty_init:
             init_method = skip_init
@@ -250,13 +247,13 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
         if device is not None:
             init_kwargs["device"] = device
 
-        self.global_num_encoders = num_encoders # global model hidden layers
-        self.num_encoders_all = full_chatglm.config.num_layers # all hidden layers num
-        self.local_num_encoders = self.num_encoders_all - self.global_num_encoders # local model hidden layers
-        
-        self.embedding = full_chatglm.embedding #init_method(Embedding, config, **init_kwargs)
-        
-        self.num_layers = self.local_num_encoders #full_chatglm.config.num_layers
+        self.global_num_encoders = num_encoders  # global model hidden layers
+        self.num_encoders_all = full_chatglm.config.num_layers  # all hidden layers num
+        self.local_num_encoders = self.num_encoders_all - self.global_num_encoders  # local model hidden layers
+
+        self.embedding = full_chatglm.embedding  # init_method(Embedding, config, **init_kwargs)
+
+        self.num_layers = self.local_num_encoders  # full_chatglm.config.num_layers
         self.multi_query_group_num = full_chatglm.config.multi_query_group_num
         self.kv_channels = full_chatglm.config.kv_channels
 
@@ -269,14 +266,15 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
         self.rotary_pos_emb = full_chatglm.rotary_pos_emb
         # RotaryEmbedding(rotary_dim // 2, original_impl=config.original_rope, device=device,
         #                                       dtype=config.torch_dtype)
-        
-        self.encoder = GlobalGLMTransformer(full_chatglm.encoder,config = full_chatglm.config , num_encoders=self.global_num_encoders)
+
+        self.encoder = GlobalGLMTransformer(full_chatglm.encoder, config=full_chatglm.config,
+                                            num_encoders=self.global_num_encoders)
         # init_method(GLMTransformer, config, **init_kwargs)
-        
+
         # self.output_layer = full_chatglm.output_layer
         # init_method(nn.Linear, config.hidden_size, config.padded_vocab_size, bias=False,
         #                                 dtype=config.torch_dtype, **init_kwargs)
-        
+
         self.pre_seq_len = full_chatglm.config.pre_seq_len
         self.prefix_projection = full_chatglm.config.prefix_projection
         if self.pre_seq_len is not None:
@@ -307,7 +305,7 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-        
+
         ## load batch_size, seq_length from inputs_embeds
         # batch_size, seq_length = input_ids.shape
         if input_ids is not None and inputs_embeds is not None:
@@ -316,10 +314,9 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
             batch_size, seq_length = input_ids.shape
         elif inputs_embeds is not None:
             # [seq_length, batch_size, embed_dim]
-            seq_length, batch_size= inputs_embeds.size()[:-1]
+            seq_length, batch_size = inputs_embeds.size()[:-1]
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
-        
 
         ## no need
         # if inputs_embeds is None:
@@ -338,7 +335,7 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
         # if full_attention_mask is None:
         #     if (attention_mask is not None and not attention_mask.all()) or (past_key_values and seq_length != 1):
         #         full_attention_mask = self.get_masks(input_ids, past_key_values, padding_mask=attention_mask)
-        full_attention_mask = attention_mask 
+        full_attention_mask = attention_mask
 
         # Rotary positional embeddings
         rotary_pos_emb = self.rotary_pos_emb(self.seq_length)
@@ -354,7 +351,6 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
             kv_caches=past_key_values, use_cache=use_cache, output_hidden_states=output_hidden_states
         )
 
-
         if not return_dict:
             return tuple(v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None)
 
@@ -366,11 +362,10 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel): # ChatGLMPreTrainedModel
         )
 
 
-
 class LocalGLMTransformer(torch.nn.Module):
     """Transformer class."""
 
-    def __init__(self, full_glm_transformer, config: ChatGLMConfig, num_encoders=1,  device=None):
+    def __init__(self, full_glm_transformer, config: ChatGLMConfig, num_encoders=1, device=None):
         super(LocalGLMTransformer, self).__init__()
 
         self.fp32_residual_connection = config.fp32_residual_connection
@@ -443,8 +438,8 @@ class LocalGLMTransformer(torch.nn.Module):
             if use_cache:
                 presents = presents + (kv_cache,)
 
-        return {'hidden_states':hidden_states,
-                'attention_mask':attention_mask
+        return {'hidden_states': hidden_states,
+                'attention_mask': attention_mask
                 }
         # if output_hidden_states:
         #     all_hidden_states = all_hidden_states + (hidden_states,)
@@ -459,7 +454,7 @@ class LocalGLMTransformer(torch.nn.Module):
 class GlobalGLMTransformer(torch.nn.Module):
     """Transformer class."""
 
-    def __init__(self, full_glm_transformer,  config: ChatGLMConfig, num_encoders=1, device=None):
+    def __init__(self, full_glm_transformer, config: ChatGLMConfig, num_encoders=1, device=None):
         super(GlobalGLMTransformer, self).__init__()
 
         self.fp32_residual_connection = config.fp32_residual_connection
@@ -475,14 +470,15 @@ class GlobalGLMTransformer(torch.nn.Module):
         def build_layer(layer_number):
             return GLMBlock(config, layer_number, device=device)
 
-        self.layers = torch.nn.ModuleList([full_glm_transformer.layers[i] for i in range(self.local_num_encoders, self.num_layers)])
+        self.layers = torch.nn.ModuleList(
+            [full_glm_transformer.layers[i] for i in range(self.local_num_encoders, self.num_layers)])
         # torch.nn.ModuleList([build_layer(i + 1) for i in range(self.num_layers)])
 
         if self.post_layer_norm:
             LayerNormFunc = RMSNorm if config.rmsnorm else LayerNorm
             # Final layer norm before output.
-            self.final_layernorm = full_glm_transformer.final_layernorm 
-            #LayerNormFunc(config.hidden_size, eps=config.layernorm_epsilon, device=device,dtype=config.torch_dtype)
+            self.final_layernorm = full_glm_transformer.final_layernorm
+            # LayerNormFunc(config.hidden_size, eps=config.layernorm_epsilon, device=device,dtype=config.torch_dtype)
 
         self.gradient_checkpointing = False
 
@@ -533,15 +529,14 @@ class GlobalGLMTransformer(torch.nn.Module):
                 presents = presents + (kv_cache,)
             # if index in [0,1]:
             #     print('global next hidden_states:',hidden_states)
-        
+
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
-
 
         # Final layer norm.
         if self.post_layer_norm:
             hidden_states = self.final_layernorm(hidden_states)
-        
+
         # print('global end hidden_states:',hidden_states)
 
         return hidden_states, presents, all_hidden_states, all_self_attentions

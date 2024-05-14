@@ -20,6 +20,7 @@ def _path_constructor(_loader: Any, node: Any):
     def replace_fn(match):
         envparts = f"{match.group(1)}:".split(":")
         return os.environ.get(envparts[0], envparts[1])
+
     return _var_matcher.sub(replace_fn, node.value)
 
 

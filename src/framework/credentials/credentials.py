@@ -12,4 +12,3 @@ def _load_credential_from_file(filepath):
 SERVER_CERTIFICATE = _load_credential_from_file("server.pem")
 SERVER_CERTIFICATE_KEY = _load_credential_from_file("server.key")
 ROOT_CERTIFICATE = _load_credential_from_file("server.pem")
-

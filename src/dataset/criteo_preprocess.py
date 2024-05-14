@@ -49,7 +49,6 @@ train_txt_file_path = '../../../../share_dataset/Criteo/train.txt'
 output_file_path = '../../../../share_dataset/Criteo/criteo.csv'
 reader = DictReader(open(train_txt_file_path), header, delimiter='\t')
 
-
 # df = pd.read_csv(output_file_path)
 
 

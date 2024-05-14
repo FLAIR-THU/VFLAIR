@@ -1,4 +1,5 @@
 import os, sys
+
 sys.path.append(os.pardir)
 
 import torch
@@ -39,7 +40,7 @@ class LeNet_LeCun(nn.Module):
         # [debug] in LeNet_LeCun, out.view(-1).shape=torch.Size([128, 256])
         self.body1 = nn.Sequential(
             # input [batch_size, 3, 50, 25]
-            nn.Conv2d(3, 16, kernel_size=3, padding=(0,1), stride=1, bias=False),
+            nn.Conv2d(3, 16, kernel_size=3, padding=(0, 1), stride=1, bias=False),
             # [batch_size, 3, 48, 24]
             act(),
             nn.BatchNorm2d(16),
@@ -47,7 +48,7 @@ class LeNet_LeCun(nn.Module):
             # [batch_size, 16, 24, 12]
             nn.Dropout(self.drop_rate),
         )
-        self.body2 = nn.Sequential(        
+        self.body2 = nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=3, padding=0, stride=1, bias=False),
             # [batch_size, 32, 22, 10]
             act(),
@@ -56,8 +57,8 @@ class LeNet_LeCun(nn.Module):
             # [batch_size, 32, 11, 5]
             nn.Dropout(self.drop_rate),
         )
-        self.body3 = nn.Sequential(      
-            nn.Conv2d(32, 64, kernel_size=3, padding=(1,1), stride=1, bias=False),
+        self.body3 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, padding=(1, 1), stride=1, bias=False),
             # [batch_size, 64, 10, 4]
             act(),
             nn.BatchNorm2d(64),
@@ -66,7 +67,7 @@ class LeNet_LeCun(nn.Module):
             nn.Dropout(self.drop_rate),
         )
         self.fc = nn.Sequential(
-            nn.Linear(64*5*2, 128, bias=False),
+            nn.Linear(64 * 5 * 2, 128, bias=False),
             act(),
             nn.BatchNorm1d(128),
             nn.Dropout(self.drop_rate),
@@ -120,7 +121,7 @@ class LeNet_LeCun(nn.Module):
         # )
 
     def forward(self, x):
-        x = x.permute(0,3,1,2)
+        x = x.permute(0, 3, 1, 2)
         # print(f"[debug] in LeNet_LeCun, input.shape={x.shape}")
         out = self.body1(x)
         # print(f"[debug] in LeNet_LeCun, conv1.out.shape={out.shape}")
@@ -184,7 +185,7 @@ class CNN_3(nn.Module):
         # )
         self.body1 = nn.Sequential(
             # input [batch_size, 3, 50, 50]
-            nn.Conv2d(3, 16, kernel_size=3, padding=(0,0), stride=1, bias=False),
+            nn.Conv2d(3, 16, kernel_size=3, padding=(0, 0), stride=1, bias=False),
             # [batch_size, 3, 48, 48]
             act(),
             nn.BatchNorm2d(16),
@@ -192,8 +193,8 @@ class CNN_3(nn.Module):
             # [batch_size, 16, 24, 24]
             nn.Dropout(self.drop_rate),
         )
-        self.body2 = nn.Sequential(        
-            nn.Conv2d(16, 32, kernel_size=3, padding=(0,0), stride=1, bias=False),
+        self.body2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=3, padding=(0, 0), stride=1, bias=False),
             # [batch_size, 32, 22, 22]
             act(),
             nn.BatchNorm2d(32),
@@ -201,8 +202,8 @@ class CNN_3(nn.Module):
             # [batch_size, 32, 11, 11]
             nn.Dropout(self.drop_rate),
         )
-        self.body3 = nn.Sequential(      
-            nn.Conv2d(32, 32, kernel_size=3, padding=(1,1), stride=1, bias=False),
+        self.body3 = nn.Sequential(
+            nn.Conv2d(32, 32, kernel_size=3, padding=(1, 1), stride=1, bias=False),
             # [batch_size, 64, 10, 10]
             act(),
             nn.BatchNorm2d(32),
@@ -211,14 +212,14 @@ class CNN_3(nn.Module):
             nn.Dropout(self.drop_rate),
         )
         self.fc = nn.Sequential(
-            nn.Linear(32*5*5, self.output_dim, bias=False),
+            nn.Linear(32 * 5 * 5, self.output_dim, bias=False),
             act(),
             nn.BatchNorm1d(self.output_dim),
             nn.Dropout(0.5),
         )
 
     def forward(self, x):
-        x = x.permute(0,3,1,2)
+        x = x.permute(0, 3, 1, 2)
         # print(f"[debug] in CNN_3, input.shape={x.shape}")
         out = self.body1(x)
         # print(f"[debug] in CNN_3, conv1.out.shape={out.shape}")
@@ -240,17 +241,17 @@ class LeNet(nn.Module):
         super(LeNet, self).__init__()
         act = nn.Sigmoid
         self.body = nn.Sequential(
-            nn.Conv2d(3, 12, kernel_size=5, padding=5//2, stride=2),
+            nn.Conv2d(3, 12, kernel_size=5, padding=5 // 2, stride=2),
             act(),
-            nn.Conv2d(12, 12, kernel_size=5, padding=5//2, stride=2),
+            nn.Conv2d(12, 12, kernel_size=5, padding=5 // 2, stride=2),
             act(),
-            nn.Conv2d(12, 12, kernel_size=5, padding=5//2, stride=1),
+            nn.Conv2d(12, 12, kernel_size=5, padding=5 // 2, stride=1),
             act(),
         )
         self.fc = nn.Sequential(
             nn.Linear(768, self.output_dim)
         )
-        
+
     def forward(self, x):
         out = self.body(x)
         out = out.view(out.size(0), -1)
@@ -260,16 +261,16 @@ class LeNet(nn.Module):
 
 
 class LeNet2(nn.Module):
-    def __init__(self, classes = 2):
+    def __init__(self, classes=2):
         super(LeNet2, self).__init__()
         act = nn.Sigmoid
         self.body = nn.Sequential(
-            nn.Conv2d(3, 12, kernel_size=5, padding=5//2, stride=2),
-            act(), # 16 * 8 * 12
-            nn.Conv2d(12, 12, kernel_size=5, padding=5//2, stride=2),
-            act(), # 8 * 4 * 12
-            nn.Conv2d(12, 12, kernel_size=5, padding=5//2, stride=1),
-            act(), # 8 * 4 * 12
+            nn.Conv2d(3, 12, kernel_size=5, padding=5 // 2, stride=2),
+            act(),  # 16 * 8 * 12
+            nn.Conv2d(12, 12, kernel_size=5, padding=5 // 2, stride=2),
+            act(),  # 8 * 4 * 12
+            nn.Conv2d(12, 12, kernel_size=5, padding=5 // 2, stride=1),
+            act(),  # 8 * 4 * 12
         )
         self.fc = nn.Sequential(
             nn.Linear(384, classes)
@@ -350,11 +351,13 @@ class LeNet5(nn.Module):
         logits = self.classifier(x)
         return logits
 
+
 # changed from AlexNet in https://github.com/dansuh17/alexnet-pytorch/blob/d0c1b1c52296ffcbecfbf5b17e1d1685b4ca6744/model.py#L40
 class AlexNet(nn.Module):
     """
     Neural network model consisting of layers propsed by AlexNet paper.
     """
+
     def __init__(self, output_dim=1000):
         """
         Define and allocate layers for this neural net.
@@ -371,14 +374,14 @@ class AlexNet(nn.Module):
             nn.ReLU(),
             nn.LocalResponseNorm(size=5, alpha=0.0001, beta=0.75, k=2),  # section 3.3
             nn.MaxPool2d(kernel_size=3, stride=2),  # (b x 96 x 27 x 27)
-        )    
-        self.net2 = nn.Sequential(    
+        )
+        self.net2 = nn.Sequential(
             nn.Conv2d(48, 64, 5, padding=2),  # (b x 256 x 27 x 27)
             nn.ReLU(),
             nn.LocalResponseNorm(size=5, alpha=0.0001, beta=0.75, k=2),
             nn.MaxPool2d(kernel_size=3, stride=2),  # (b x 256 x 13 x 13)
         )
-        self.net3 = nn.Sequential( 
+        self.net3 = nn.Sequential(
             nn.Conv2d(64, 96, 3, padding=1),  # (b x 384 x 13 x 13)
             nn.ReLU(),
             # nn.Conv2d(96, 96, 3, padding=1),  # (b x 384 x 13 x 13)
@@ -415,7 +418,7 @@ class AlexNet(nn.Module):
         # nn.init.constant_(self.net3[4].bias, 1)
 
     def forward(self, x):
-        x = x.permute(0,3,1,2)
+        x = x.permute(0, 3, 1, 2)
         print(f"[debug] in AlexNet, input.shape={x.shape}")
         out = self.net1(x)
         print(f"[debug] in AlexNet, conv1.out.shape={out.shape}")

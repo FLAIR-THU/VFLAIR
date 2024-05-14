@@ -15,17 +15,17 @@ from loguru import logger
 
 # indicator whether to use the new pipeline
 _new_pipeline = False
-is_test = True
+is_test = False
+SEED=7
+# os.environ.update({'IS_TEST':is_test})
+train_output_dir = os.path.join(os.path.dirname(__file__), 'exp_result', 'dev', )
+logger.debug(f"train_output_dir: {train_output_dir}")
 if not is_test:
     logger.remove()
     logger.add(sys.stderr, level="INFO")
 
 
 class VFLBasicConfig(object):
-    kwargs_model_loading = {'device_map': 'auto',
-                            # 'max_memory': {0: '22Gib'},
-                            'torch_dtype': torch.bfloat16,
-                            }
 
     def __init__(self, **kwargs):
         self.split_index = kwargs.get('split_index', (2,))
@@ -44,26 +44,36 @@ class VFLBasicConfig(object):
     def is_inference(self):
         return not self.vfl_training_config
 
+    @property
+    def kwargs_model_loading(self):
+        """
+        env var might not be ready when imported
+        :return:
+        """
+        return {'device_map': 'auto',
+                'torch_dtype': torch.bfloat16,
+                'ignore_mismatched_sizes': True,
+                }
+
 
 class VFLTrainingConfig(object):
     def __init__(self, vbc: VFLBasicConfig):
         self.is_training = True
         self.vfl_basic_config = vbc
-        self.__trainable_slice = (-1, -2)
+        self.__trainable_slice = (-1,-2)
         self.peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
             inference_mode=False,  # 训练模式
-            r=4,  # Lora 秩
-            lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理
+            r=8,  # Lora 秩 推荐设为 lora_alpha/2
+            lora_alpha=16,  # Lora alaph，具体作用参见 Lora 原理, 推荐设为 16
             lora_dropout=0.1,  # Dropout 比例
             # layers_to_transform=[0, 1]
         )  # type:PeftConfig
         self.training_args = TrainingArguments(
-            # todo: save path
-            output_dir=os.path.join('/mnt/data/projects/PlatForm/src/exp_result/dev'),
-            logging_dir=os.path.join('/mnt/data/projects/PlatForm/src/exp_result/dev', 'logs',
-                                     f'{datetime.datetime.now().strftime("%Y%m%d_%H-%M-%S")}_{"test" if is_test else "prod"}_{self.vfl_basic_config.num_of_slice}_{self.__trainable_slice}'),
+            output_dir=os.path.join(train_output_dir),
+            logging_dir=os.path.join(train_output_dir, 'logs',
+                                     f'{datetime.datetime.now().strftime("%Y%m%d_%H-%M-%S")}_{"test" if is_test else "prod"}_{self.vfl_basic_config.split_index}_{self.__trainable_slice}'),
             per_device_train_batch_size=2,
             gradient_accumulation_steps=8,
             logging_steps=10,

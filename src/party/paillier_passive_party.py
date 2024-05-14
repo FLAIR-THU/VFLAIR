@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.append(os.pardir)
 import torch
 from torch.utils.data import DataLoader
@@ -21,7 +22,7 @@ class PaillierPassiveParty(PassiveParty):
         # ####### Noisy Sample #########
         if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
             scale = self.args.attack_configs['noise_lambda']
-            self.local_pred = self.local_model(noisy_sample(self.local_batch_data,scale))
+            self.local_pred = self.local_model(noisy_sample(self.local_batch_data, scale))
         # ####### Noisy Sample #########
         else:
             self.local_pred = self.local_model(self.local_batch_data)

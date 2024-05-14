@@ -26,4 +26,3 @@ class MessageUtil:
             type=msg_type
         )
         return message
-

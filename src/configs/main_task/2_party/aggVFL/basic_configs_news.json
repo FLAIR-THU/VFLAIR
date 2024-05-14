@@ -1,40 +1,42 @@
 {
-    "epochs": 30,
-    "lr": 0.001,
-    "k": 2,
-    "batch_size": 2048,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 30,
+  "lr": 0.001,
+  "k": 2,
+  "batch_size": 2048,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "news20",
+    "num_classes": 20
+  },
+  "model_list": {
+    "0": {
+      "type": "MLP5",
+      "input_dim": 42491,
+      "output_dim": 20,
+      "vocab_size": 214874,
+      "path": ""
     },
-    "dataset":{
-        "dataset_name": "news20",
-        "num_classes": 20
+    "1": {
+      "type": "MLP5",
+      "input_dim": 42492,
+      "output_dim": 20,
+      "vocab_size": 214874,
+      "path": ""
     },
-    "model_list":{
-        "0": {
-            "type": "MLP5",
-            "input_dim": 42491,
-            "output_dim": 20,
-            "vocab_size": 214874,
-            "path": ""
-        },
-        "1": {
-            "type": "MLP5",
-            "input_dim": 42492,
-            "output_dim": 20,
-            "vocab_size": 214874,
-            "path": ""
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "attack": {
-        "name": "BatchLabelReconstruction",
-        "parameters": {
-            "party": [0],
-            "lr": 0.05,
-            "epochs": 10000
-        }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "attack": {
+    "name": "BatchLabelReconstruction",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "lr": 0.05,
+      "epochs": 10000
     }
+  }
 }

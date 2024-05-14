@@ -15,16 +15,19 @@ import torch
 # from tensorboardX import SummaryWriter
 from peft.peft_model import PeftModel
 
-from load.LoadConfigs import * #load_configs
+from load.LoadConfigs import *  # load_configs
 from load.LoadParty import load_parties, load_parties_llm
 
 from evaluates.MainTaskVFL_LLM import *
 from utils.basic_functions import append_exp_res
+from utils import recorder
 
 from load.LoadConfigs import INVERSION
 
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -35,6 +38,7 @@ def set_seed(seed=0):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
+
 
 def evaluate_no_attack_pretrained(args):
     # No Attack
@@ -49,8 +53,9 @@ def evaluate_no_attack_pretrained(args):
     exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}" + exp_result
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
-    
+
     return vfl, metric_val
+
 
 def evaluate_no_attack_finetune(args):
     # No Attack
@@ -66,12 +71,13 @@ def evaluate_no_attack_finetune(args):
 
     # # Save record 
     exp_result = f"NoAttack|{args.pad_info}|finetune={args.finetune_name}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|" \
-        + exp_result
+                 + exp_result
     print(exp_result)
 
     append_exp_res(args.exp_res_path, exp_result)
 
     return vfl, metric_val
+
 
 def evaluate_inversion_attack(args):
     for index in args.inversion_index:
@@ -79,9 +85,9 @@ def evaluate_inversion_attack(args):
         set_seed(args.current_seed)
 
         args = load_attack_configs(args.configs, args, index)
-        print('======= Test Attack',index,': ',args.attack_name,' =======')
-        print('attack configs:',args.attack_configs)
-        
+        print('======= Test Attack', index, ': ', args.attack_name, ' =======')
+        print('attack configs:', args.attack_configs)
+
         if args.basic_vfl != None:
             vfl = args.basic_vfl
             main_tack_acc = args.main_acc_noattack
@@ -92,14 +98,14 @@ def evaluate_inversion_attack(args):
             vfl.init_communication()
 
             if args.pipeline == 'finetune':
-                _exp_result, metric_val, training_time= vfl.train_vfl()
+                _exp_result, metric_val, training_time = vfl.train_vfl()
             elif args.pipeline == 'pretrained':
-                _exp_result, metric_val= vfl.inference()
+                _exp_result, metric_val = vfl.inference()
             main_tack_acc = metric_val
             print(_exp_result)
-            
+
         print('=== Begin Attack ===')
-        training_time = vfl.training_time 
+        training_time = vfl.training_time
         train_party_time = vfl.train_party_time
         inference_party_time = vfl.inference_party_time
         precision, recall , attack_total_time= vfl.evaluate_attack()
@@ -109,10 +115,14 @@ def evaluate_inversion_attack(args):
         append_exp_res(args.exp_res_path, exp_result)
         return precision, recall
 
-def get_cls_ancestor(model_type: str='qwen2'):
-    from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+
+def get_cls_ancestor(model_type: str = 'qwen2', architecture: str = 'CLM'):
+    from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES, \
+        MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES, MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES
     target_module = __import__('transformers')
-    aa = MODEL_FOR_CAUSAL_LM_MAPPING_NAMES[model_type]
+    aa = {"CLM": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
+          "TQA": MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
+          "CLS": MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES}[architecture][model_type]
     target_cls = getattr(target_module, aa)
     return target_cls
 
@@ -126,19 +136,19 @@ if __name__ == '__main__':
     parser.add_argument('--save_model', type=bool, default=False, help='whether to save the trained model')
     args = parser.parse_args()
 
-    # for seed in range(97,102): # test 5 times 
+    # for seed in range(97,102): # test 5 times
     # for seed in [97]:
     if args.seed != 97:
         seed_list = [args.seed]
     else:
-        seed_list = [60,61,62,63,64]
-    for seed in seed_list: #[60,61,62,63,64]: # test 5 times 
+        seed_list = [60, 61, 62, 63, 64]
+    for seed in seed_list:  # [60,61,62,63,64]: # test 5 times
         args.current_seed = seed
         set_seed(seed)
-        print('================= iter seed ',seed,' =================')
-        
+        print('================= iter seed ', seed, ' =================')
+
         args = load_basic_configs(args.configs, args)
-        args.need_auxiliary = 0 # no auxiliary dataset for attackerB
+        args.need_auxiliary = 0  # no auxiliary dataset for attackerB
 
         if args.device == 'cuda':
             cuda_id = args.gpu
@@ -147,32 +157,31 @@ if __name__ == '__main__':
         else:
             print('running on cpu')
 
-        
         ####### load configs from *.json files #######
         ############ Basic Configs ############
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
         print('======= Defense ========')
-        print('Defense_Name:',args.defense_name)
-        print('Defense_Config:',str(args.defense_configs))
-        print('===== Total Attack Tested:',args.attack_num,' ======')
-        print('inversion:',args.inversion_list,args.inversion_index)
+        print('Defense_Name:', args.defense_name)
+        print('Defense_Config:', str(args.defense_configs))
+        print('===== Total Attack Tested:', args.attack_num, ' ======')
+        print('inversion:', args.inversion_list, args.inversion_index)
 
         # Save record for different defense method
         args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
-        model_name = args.model_list[str(0)]["type"] #.replace('/','-')
-        if args.pipeline=='pretrained':
+        model_name = args.model_list[str(0)]["type"]  # .replace('/','-')
+        if args.pipeline == 'pretrained':
             filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
             filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
-        args.exp_res_path = args.exp_res_dir + str(filename).replace('/','')
+        args.exp_res_path = args.exp_res_dir + str(filename).replace('/', '')
         print(args.exp_res_path)
         print('=================================\n')
 
-        iterinfo='===== iter '+str(seed)+' ===='
+        iterinfo = '===== iter ' + str(seed) + ' ===='
         # append_exp_res(args.exp_res_path, iterinfo)
         print(iterinfo)
 
@@ -197,7 +206,7 @@ if __name__ == '__main__':
             # 'jurisprudence', 'logical_fallacies', 'machine_learning', 'management', 'marketing', 'medical_genetics', 'miscellaneous', 'moral_disputes', \
             # 'moral_scenarios', 'nutrition', 'philosophy', 'prehistory', 'professional_accounting', 'professional_law', 'professional_medicine', 'professional_psychology', \
             # 'public_relations', 'security_studies', 'sociology', 'us_foreign_policy', 'virology', 'world_religions']
-            
+
             # acc_list = []
             # for _subject in subject_list:
             #     print(' ===== Subject ',_subject,' ===== ')
@@ -214,7 +223,7 @@ if __name__ == '__main__':
             if issubclass(ancestor_cls,PeftModel):
                 ancestor_cls=get_cls_ancestor(args.config.model_type)
             MainTaskVFL_LLM = create_main_task(ancestor_cls)
-            
+
             # vanilla
             if args.pipeline == 'pretrained':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
@@ -229,9 +238,9 @@ if __name__ == '__main__':
                 precision, recall = evaluate_inversion_attack(args)
                 precision_list.append(precision)
                 recall_list.append(recall)
-            
+
             torch.cuda.empty_cache()
-            
+
             # avg_acc = np.mean(acc_list)
             # avg_precision = np.mean(precision_list)
             # avg_recall = np.mean(recall_list)
@@ -248,10 +257,10 @@ if __name__ == '__main__':
             if issubclass(ancestor_cls,PeftModel):
                 ancestor_cls=get_cls_ancestor(args.config.model_type)
             MainTaskVFL_LLM = create_main_task(ancestor_cls)
-            
+
             commuinfo='== metrics:'+args.metric_type
             # append_exp_res(args.exp_res_path, commuinfo)
-            
+
             # vanilla
             if args.pipeline == 'pretrained':
                 args.basic_vfl, args.main_acc_noattack = evaluate_no_attack_pretrained(args)
@@ -262,7 +271,4 @@ if __name__ == '__main__':
             if args.inversion_list != []:
                 evaluate_inversion_attack(args)
 
-
-
-
-
+            logger.info(recorder)

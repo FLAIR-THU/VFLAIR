@@ -27,10 +27,12 @@ from nltk.translate.bleu_score import sentence_bleu
 import inspect
 from typing import List, Optional, Tuple, Union, Dict, Any
 from torch.utils.tensorboard import SummaryWriter
+from datetime import datetime
 
 import warnings
 from typing import List, Optional, Tuple, Union
 
+from transformers import Qwen2ForCausalLM
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 from transformers.generation import GenerationMixin
 from transformers.models.auto import (
@@ -42,10 +44,10 @@ from transformers.models.auto import (
 )
 # from models.vision import resnet18, MLP2
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res, multiclass_auc
-from utils.communication_protocol_funcs import get_size_of
+from utils.communication_protocol_funcs import get_size_of,get_total_size
 
 # from evaluates.attacks.attack_api import apply_attack
-
+from utils import timer
 from utils.constants import *
 import utils.constants as shared_var
 from utils.marvell_functions import KL_gradient_perturb
@@ -59,16 +61,16 @@ from evaluates.defenses.defense_api import apply_defense
 from evaluates.defenses.defense_functions import *
 from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
-from config import vfl_basic_config, _new_pipeline
+from config import vfl_basic_config, is_test
 
 from load.LoadModels import QuestionAnsweringModelOutput
-from models.llm_models.qwen2 import E2EModel
 from party.LocalCommunication import LocalCommunication
-
+from framework.client.DistributedCommunication import convert_msg_to_pred
 import warnings
+
 warnings.filterwarnings("ignore")
 
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 torch.backends.cudnn.enable = True
 torch.backends.cudnn.benchmark = True
 
@@ -79,22 +81,23 @@ STOPPING_ACC = {'mnist': 0.977, 'cifar10': 0.80, 'cifar100': 0.40, 'diabetes': 0
                 'SST-2': 0.9}  # add more about stopping accuracy for different datasets when calculating the #communication-rounds needed
 
 
-def create_main_task(global_model_type):
-    # todo: when 3slice inherit from passive party
-    print('inherited:',global_model_type)
-    class MainTaskVFL_LLM( global_model_type, nn.Module): #GenerationMixin object,
+def create_main_task(global_model_type: GenerationMixin):
+    print('inherited:', global_model_type)
+
+    class MainTaskVFL_LLM(global_model_type, nn.Module):  # GenerationMixin object,
         def __init__(self, args, job_id=None):
             self.job_id = job_id
-            
-            super(global_model_type,self).__init__(args.config)
+
             self.args = args
             ## generation related
-            self.config  = args.config # model config
-            self.generation_config  = args.generation_config
+            self.config = args.config  # model config
+            with init_empty_weights():
+                super().__init__(self.config)  # init CauselLM
+            self.generation_config = args.generation_config
             self.k = args.k
 
             self.current_device = args.device
-            self._device = args.parties[-1].global_model.device
+            self._device = torch.device(self.current_device)
 
             self.dataset_name = args.dataset
 
@@ -232,6 +235,7 @@ def create_main_task(global_model_type):
                 # result_dict['attention_mask'] = attention_mask
 
                 pred_list = result_dict
+                get_total_size(pred_list)
                 self.parties[self.k - 1].receive_pred(pred_list, ik)
                 self.parties[ik].update_local_pred(pred_clone)
 
@@ -246,88 +250,44 @@ def create_main_task(global_model_type):
             self.all_pred_list = all_pred_list
             return all_pred_list
 
-        def parse_pred_message_result(self, test_logit):
-            if self.args.model_type == 'Bert':
-                if self.args.task_type == 'SequenceClassification':
-                    logits = torch.Tensor(test_logit['logits'])
-                    if test_logit['requires_grad']:
-                        logits.requires_grad_()
-                    return logits.to(self.args.device)
-                elif self.args.task_type == 'QuestionAnswering':
-                    start_logits = torch.Tensor(test_logit['start_logits'])
-                    end_logits = torch.Tensor(test_logit['end_logits'])
-                    if test_logit['requires_grad']:
-                        start_logits.requires_grad_()
-                        end_logits.requires_grad_()
-                    return QuestionAnsweringModelOutput(
-                        loss=None,
-                        start_logits=start_logits.to(self.args.device),
-                        end_logits=end_logits.to(self.args.device),
-                        hidden_states=None,
-                        attentions=None,
-                    )
-            elif self.args.model_type == 'GPT2':
-                if self.args.task_type == 'CausalLM':
-                    logits = torch.Tensor(test_logit['logits'])
-                    if test_logit['requires_grad']:
-                        logits.requires_grad_()
-                    return logits.to(self.args.device)
-                elif self.args.task_type == 'SequenceClassification':
-                    logits = torch.Tensor(test_logit['logits'])
-                    if test_logit['requires_grad']:
-                        logits.requires_grad_()
-                    return logits.to(self.args.device)
-                elif self.args.task_type == 'QuestionAnswering':
-                    start_logits = torch.Tensor(test_logit['start_logits'])
-                    end_logits = torch.Tensor(test_logit['end_logits'])
-                    if test_logit['requires_grad']:
-                        start_logits.requires_grad_()
-                        end_logits.requires_grad_()
-                    return QuestionAnsweringModelOutput(
-                        loss=None,
-                        start_logits=start_logits.to(self.args.device),
-                        end_logits=end_logits.to(self.args.device),
-                        hidden_states=None,
-                        attentions=None,
-                    )
-                else:
-                    assert 1 > 2, 'Task type no supported'
-            elif self.args.model_type == 'Llama':
-                if self.args.task_type == 'SequenceClassification':
-                    logits = torch.Tensor(test_logit['logits'])
-                    if test_logit['requires_grad']:
-                        logits.requires_grad_()
-                    return logits.to(self.args.device)
-                elif self.args.task_type == 'CausalLM':
-                    logits = torch.Tensor(test_logit['logits'])
-                    if test_logit['requires_grad']:
-                        logits.requires_grad_()
-                    return logits.to(self.args.device)
-                elif self.args.task_type == 'QuestionAnswering':
-                    start_logits = torch.Tensor(test_logit['start_logits'])
-                    end_logits = torch.Tensor(test_logit['end_logits'])
-                    if test_logit['requires_grad']:
-                        start_logits.requires_grad_()
-                        end_logits.requires_grad_()
-                    return QuestionAnsweringModelOutput(
-                        loss=None,
-                        start_logits=start_logits.to(self.args.device),
-                        end_logits=end_logits.to(self.args.device),
-                        hidden_states=None,
-                        attentions=None,
-                    )
-                else:
-                    assert 1 > 2, 'Task type no supported'
+        def parse_pred_message_result(self, result):
+            if self.args.task_type == 'SequenceClassification':
+                logits = torch.Tensor(result['logits'])
+                if result['requires_grad']:
+                    logits.requires_grad_()
+                return logits.to(self.args.device)
+            elif self.args.task_type == 'CausalLM':
+                return convert_msg_to_pred(result, self.args.device, dtype=torch.bfloat16)
+            elif self.args.task_type == 'QuestionAnswering':
+                start_logits = torch.Tensor(result['start_logits'])
+                end_logits = torch.Tensor(result['end_logits'])
+                if result['requires_grad']:
+                    start_logits.requires_grad_()
+                    end_logits.requires_grad_()
+                return QuestionAnsweringModelOutput(
+                    loss=None,
+                    start_logits=start_logits.to(self.args.device),
+                    end_logits=end_logits.to(self.args.device),
+                    hidden_states=None,
+                    attentions=None,
+                )
+            elif self.args.task_type == 'DevLLMInference':
+                return convert_msg_to_pred(result, self.args.device, dtype=torch.bfloat16)
+            else:
+                assert 1 > 2, 'Task type no supported'
 
+        @timer()
         def global_pred_transmit(self, pred_list, use_cache=None, count_time=False):
             start_time = time.time()
-            final_pred = self._communication.send_pred_message(pred_list,use_cache=use_cache)#
+            global_pred = self._communication.send_pred_message(pred_list, self.parse_pred_message_result,
+                                                                use_cache=use_cache)  #
+            get_total_size(global_pred)
             end_time = time.time()
             if count_time == 'train':
                 self.train_party_time[-1] += end_time - start_time
             elif count_time == 'inference':
                 self.inference_party_time[-1] += end_time - start_time
-            return final_pred
+            return global_pred
 
         def local_gradient_transmit(self, count_time='train'):
             for ik in range(self.k - 1):
@@ -353,7 +313,8 @@ def create_main_task(global_model_type):
 
             self.communication_cost += get_size_of(global_gradients)
 
-            self._communication.send_global_loss_and_gradients(self.parties[0].global_gradients)  # self.parties[0].global_loss,
+            self._communication.send_global_loss_and_gradients(
+                self.parties[0].global_gradients)  # self.parties[0].global_loss,
             return global_loss
 
 
@@ -368,7 +329,7 @@ def create_main_task(global_model_type):
             suc_cnt = 0
             sample_cnt = 0
 
-            if self.args.model_architect=='CLS': #task_type == "SequenceClassification":
+            if self.args.model_architect == 'CLS':  # task_type == "SequenceClassification":
                 if self.args.num_classes == 1:  # regression
                     predict_label = model_output.logits.detach().cpu()
                     actual_label = gt_one_hot_label.detach().cpu()
@@ -387,9 +348,9 @@ def create_main_task(global_model_type):
                     suc_cnt += torch.sum(predict_label == actual_label).item()
                     return list(predict_label), list(actual_label), sample_cnt
 
-            elif self.args.model_architect=='CLM': #.task_type == "CausalLM":
-                if self.args.task_type == "CausalLM":#dataset == "Lambada": 
-                    if isinstance(model_output,torch.Tensor): # generation -- generated token ids
+            elif self.args.model_architect == 'CLM':  # .task_type == "CausalLM":
+                if self.args.task_type == "CausalLM":  # dataset == "Lambada":
+                    if isinstance(model_output, torch.Tensor):  # generation -- generated token ids
                         # model_output: torch.tensor : bs, seq_len+generated_len
                         predict_label_list = model_output[:,self.seq_length:] # [bs, max_new_tokens]
                         # print('model_output:',model_output.shape, predict_label_list.shape)
@@ -491,7 +452,7 @@ def create_main_task(global_model_type):
                         gold_start_index = int(gold_start_indexs[_i])
                         gold_end_index = int(gold_end_indexs[_i])
 
-                        gold_ans_text = list(range(gold_start_index,gold_end_index+1))
+                        gold_ans_text = list(range(gold_start_index, gold_end_index + 1))
                         gold_ans.append(gold_ans_text)
 
                     batch_gold_ans_list.append(gold_ans)
@@ -499,8 +460,8 @@ def create_main_task(global_model_type):
                     ############ Pred ################
                     _start_logits = start_logits[i]
                     _end_logits = end_logits[i]
-                    _start_indexes = start_indexes[i] #[nbest start index] list  n_best_size
-                    _end_indexes = end_indexes[i] #[nbest end index] list  n_best_size
+                    _start_indexes = start_indexes[i]  # [nbest start index] list  n_best_size
+                    _end_indexes = end_indexes[i]  # [nbest end index] list  n_best_size
 
                     _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
                         "PrelimPrediction",
@@ -514,9 +475,9 @@ def create_main_task(global_model_type):
                             # We could hypothetically create invalid predictions, e.g., predict
                             # that the start of the span is in the question. We throw out all
                             # invalid predictions.
-                            if start_index >= feature['len_tokens']: #len(feature["tokens"]):
+                            if start_index >= feature['len_tokens']:  # len(feature["tokens"]):
                                 continue
-                            if end_index >= feature['len_tokens']: #len(feature["tokens"]):
+                            if end_index >= feature['len_tokens']:  # len(feature["tokens"]):
                                 continue
                             if start_index not in feature["token_to_orig_map"]:
                                 continue
@@ -555,7 +516,7 @@ def create_main_task(global_model_type):
                         # pred_ans_text = " ".join(feature_tokens[start_index:(end_index + 1)])
                         # pred_ans_text = normalize_answer(pred_ans_text)
 
-                        pred_ans_text = list(range(start_index,end_index+1))
+                        pred_ans_text = list(range(start_index, end_index + 1))
                         nbest.append(
                             _NbestPrediction(
                                 text=pred_ans_text,
@@ -583,10 +544,12 @@ def create_main_task(global_model_type):
 
             predict_label_list = []
             actual_label_list = []
-
+            self._loss = 0
+            _batch_cnt = 0
             total_sample_cnt = 0
             with torch.no_grad():
-                for parties_data in zip(*data_loader_list):#tqdm(zip(*data_loader_list),desc="inference process"):
+                for parties_data in tqdm(zip(*data_loader_list), desc="inference process"):
+                    _batch_cnt += 1
                     _parties_data = []
                     for party_id in range(len(parties_data)):  # parties_data[party_id]: list of bs
                         batch_input_dicts = []
@@ -599,13 +562,12 @@ def create_main_task(global_model_type):
                         _parties_data.append([batch_input_dicts, batch_label])
                     parties_data = _parties_data
 
-                    if self.args.model_architect=='CLS' and self.args.num_classes > 1:  # classification
+                    if self.args.model_architect == 'CLS' and self.args.num_classes > 1:  # classification
                         gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.args.num_classes)
-                    elif self.args.model_architect=='TQA':
+                    elif self.args.model_architect == 'TQA':
                         gt_one_hot_label = list(parties_data[0][1])
                     else:
                         gt_one_hot_label = parties_data[0][1]
-
 
                     data_inputs = {}
                     for key_name in parties_data[0][0][0].keys():
@@ -616,14 +578,15 @@ def create_main_task(global_model_type):
                     self.seq_length = data_inputs['input_ids'].shape[-1]
 
                     # test_logit -> standard output for each task
-                    if self.args.model_architect=='CLS': #task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
+                    if self.args.model_architect == 'CLS':  # task_type == "SequenceClassification":  # and self.args.num_classes > 1: # classification
                         global_output = self.forward(**data_inputs)
-                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(global_output, gt_one_hot_label)
+                        batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(global_output,
+                                                                                                   gt_one_hot_label)
                         predict_label_list.extend(batch_predict_label)
                         actual_label_list.extend(batch_actual_label)
                         if sample_cnt is not None:
                             total_sample_cnt += sample_cnt
-                    elif self.args.model_architect=='TQA': #task_type == "QuestionAnswering":
+                    elif self.args.model_architect == 'TQA':  # task_type == "QuestionAnswering":
                         global_output = self.forward(**data_inputs)
                         feature_list = data_inputs['feature']
                         batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label, feature_list)
@@ -644,6 +607,9 @@ def create_main_task(global_model_type):
                                         )
                             else: # next token prediction
                                 generation_output = self.forward(**data_inputs)
+                                self._loss += self.shift_logits_loss(generation_output.logits,
+                                                                     torch.stack(gt_one_hot_label),
+                                                                     self.args.config).item()
                             self._clear_past_key_values()
 
                             batch_target_word, batch_predict_word, sample_cnt = self.generate_result(generation_output, gt_one_hot_label)
@@ -662,10 +628,11 @@ def create_main_task(global_model_type):
                         assert 1 > 2, 'Task type not supported'
 
                     del parties_data
-
-            if self.args.model_architect=='CLS':  # and self.args.num_classes > 1: # classification
+            if self._loss:
+                self._loss = self._loss / _batch_cnt
+            if self.args.model_architect == 'CLS':  # and self.args.num_classes > 1: # classification
                 return predict_label_list, actual_label_list, total_sample_cnt
-            elif self.args.model_architect=='TQA':
+            elif self.args.model_architect == 'TQA':
                 return nbest_list, gold_ans_list, total_sample_cnt
             elif self.args.model_architect=='CLM':
                 if self.args.task_type == "CausalLM":
@@ -683,7 +650,7 @@ def create_main_task(global_model_type):
                 best_non_null_entry = None
                 exact_score_list = []
                 f1_list = []
-                for nbest, gold_ans in zip(nbest_list, gold_ans_list): # iterate through each sample
+                for nbest, gold_ans in zip(nbest_list, gold_ans_list):  # iterate through each sample
                     exact_score = 0
                     f1 = 0
                     best_non_null_entry = None
@@ -714,7 +681,7 @@ def create_main_task(global_model_type):
 
                 exact_score = np.mean(exact_score_list)
                 f1 = np.mean(f1_list)
-                return {'exact_score':exact_score, 'f1':f1}
+                return {'exact_score': exact_score, 'f1': f1}
 
             elif self.args.model_architect == 'CLM':
                 if self.args.task_type == "CausalLM":
@@ -1003,19 +970,20 @@ def create_main_task(global_model_type):
                         (torch.tensor(predict_labels) - torch.tensor(actual_labels)) ** 2).item()
                     pearson_corr = stats.pearsonr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
                     spearmanr_corr = stats.spearmanr(torch.tensor(predict_labels), torch.tensor(actual_labels))[0]
-                    return {'mse':mse, 'pearson_corr':pearson_corr, 'spearmanr_corr':spearmanr_corr}
+                    return {'mse': mse, 'pearson_corr': pearson_corr, 'spearmanr_corr': spearmanr_corr}
                 else:
                     suc_cnt = torch.sum(torch.tensor(predict_labels) == \
                                         torch.tensor(actual_labels)).item()
                     acc = suc_cnt / torch.tensor(predict_labels).shape[0]  # ACC
                     mcc = matthews_corrcoef(np.array(predict_labels), np.array(actual_labels))  # MCC
 
-                    return {'acc':acc, 'mcc':mcc}
+                    return {'acc': acc, 'mcc': mcc}
 
+        @timer()
         def _llm_inference(self, **kwargs):
             if self.k > 2:
                 raise ValueError('llm_inference only supports k=2')
-
+            start_time = time.time()
             format_kwargs = self._format_forward_kwargs(**kwargs)
             generate_ids = self.generate(format_kwargs.get('input_ids'), max_new_tokens=20)
             generate_ids = [
@@ -1023,7 +991,8 @@ def create_main_task(global_model_type):
             ]
             resp = self.args.tokenizer.batch_decode(generate_ids, skip_special_tokens=True,
                                                     clean_up_tokenization_spaces=False)
-            logger.debug(f"text generation: {resp}")
+            end_time = time.time()
+            logger.info(f"Took: {end_time - start_time} s\nGenerated: {resp}")
             return '', ''
 
         def _format_forward_kwargs(self, **kwargs):
@@ -1041,10 +1010,10 @@ def create_main_task(global_model_type):
                 add_generation_prompt=True
             )
             model_inputs = tokenizer([text], return_tensors="pt")
-            kwargs.update({'input_ids': model_inputs.input_ids.to(self.parties[0].device),
+            kwargs.update({'input_ids': model_inputs.input_ids.to(self.device),
                            'output_hidden_states': True})
             logger.debug(f"default inference, kwargs.keys: {kwargs.keys()}")
-            
+
             base_dict = {'input_ids': None,
                          'attention_mask': None,
                          'position_ids': None,
@@ -1083,16 +1052,18 @@ def create_main_task(global_model_type):
         def causal_lm_inference(self):
             self.eval()
             predict_word_list, target_word_list, total_sample_cnt = self.predict()
-            
+
             # print('causal_lm_inference target_word_list:',target_word_list )
             # print('causal_lm_inference predict_word_list:',predict_word_list )
+            try:
+                result_dict = self.generate_assessment(predict_word_list, target_word_list)
+                self.test_acc = result_dict['acc']
+                exp_result = f'|test_acc={self.test_acc}'
+                # print(exp_result)
+                return exp_result, self.test_acc
+            except:
+                return '',0
 
-            result_dict = self.generate_assessment(predict_word_list, target_word_list)
-            self.test_acc = result_dict['acc']
-            exp_result = f'|test_acc={self.test_acc}'
-            # print(exp_result)
-
-            return exp_result, self.test_acc
 
         def qa_inference(self):
             # generate all model prediction
@@ -1113,44 +1084,34 @@ def create_main_task(global_model_type):
             self.parties[0].obtain_local_data(kwargs)
 
             # passive party do local pred
-            pred_list = self.pred_transmit(use_cache=False,count_time=count_time)
+            pred_list = self.pred_transmit(use_cache=False, count_time=count_time)
 
             # passive party inform active party to do global pred
-            resp = self.global_pred_transmit(pred_list, use_cache=False,count_time=count_time)
-
-            if not isinstance(resp,(dict,torch.Tensor)):
-                resp=resp.prepare_for_forward()
-                t=resp['inputs_embeds']
-                req_grad=t.requires_grad
-                resp['inputs_embeds']=t.detach().clone()
-                if req_grad:
-                    resp['inputs_embeds'].requires_grad=True
-
+            resp = self.global_pred_transmit(pred_list, use_cache=False, count_time=count_time)
             if vfl_basic_config.num_of_slice > 2:
-                # todo: deal with 3-slice inference
-                final_output=self.parties[0].forward(2,**resp)
+                p = self.parties[0]
+                p._tensor_to_device(resp, p.models[2].device)
+                final_output = p.forward(2, **resp)
             else:
-                # todo: use global_pred_transmit return instead
-                final_output = self.parties[1].global_output
+                final_output = resp
+            p=self.parties[0]
+            p._tensor_to_device(final_output,self.device)
 
             return final_output
 
-        def backward(self,final_pred):
+        def backward(self, final_pred):
             # passive party -> global gradient -> active party
-            loss=self.global_gradient_transmit(final_pred, count_time = 'train')
+            loss = self.global_gradient_transmit(final_pred, count_time='train')
             # active party -> local gradient -> passive party
-            self.local_gradient_transmit(count_time = 'train')
-            if vfl_basic_config.num_of_slice==3:
-                # todo: deal with 3-slice backward
-                loss.backward()
-                # self.parties[0].backward(2)
-                self.parties[0].optimizer_step(2)
+            self.local_gradient_transmit(count_time='train')
 
+        @timer()
         def inference(self, **kwargs):
 
             if self.args.task_type == "DevLLMInference":
                 # LLM推理入口，兼容forward格式入参
-                result = self._llm_inference(**kwargs)
+                for i in range(20):
+                    result = self._llm_inference(**kwargs)
                 return result
             # set inference time back to 0
             self.inference_party_time = [0 for i in range(self.k)]
@@ -1161,7 +1122,7 @@ def create_main_task(global_model_type):
                 self.parties[ik].eval()
             self.parties[self.k - 1].eval()
 
-            if self.args.model_architect == 'TQA': #task_type == "QuestionAnswering":
+            if self.args.model_architect == 'TQA':  # task_type == "QuestionAnswering":
                 exp_result, main_task_result = self.qa_inference()
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
@@ -1169,7 +1130,7 @@ def create_main_task(global_model_type):
                 exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
-            if self.args.model_architect=='CLS':#task_type == "SequenceClassification":
+            if self.args.model_architect == 'CLS':  # task_type == "SequenceClassification":
                 # exp_result, self.test_acc =
                 exp_result, main_task_result = self.seq_inference()
                 self.final_state = self.save_state()
@@ -1178,14 +1139,13 @@ def create_main_task(global_model_type):
                 exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
                 return exp_result, main_task_result
 
-            if self.args.model_architect=='CLM':#task_type == "CausalLM":
+            if self.args.model_architect == 'CLM':  # task_type == "CausalLM":
                 exp_result, main_task_result = self.causal_lm_inference()
                 self.final_state = self.save_state()
                 # self.final_state.update(self.save_state(False))
                 self.final_state.update(self.save_party_data())
-                exp_result = f'|inference_party_time={self.inference_party_time}' + exp_result
+                exp_result = f'|inference_party_time={self.inference_party_time}' + str(exp_result)
                 return exp_result, main_task_result
-
 
         def train_batch(self, parties_data, batch_label):
             ############### allocate data ###############
@@ -1196,9 +1156,11 @@ def create_main_task(global_model_type):
                 data_inputs = {}
                 for key_name in parties_data[ik][0][0].keys():
                     if isinstance(parties_data[ik][0][0][key_name], torch.Tensor):
-                        data_inputs[key_name] = torch.stack( [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))] )
+                        data_inputs[key_name] = torch.stack(
+                            [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))])
                     else:
-                        data_inputs[key_name] =  [parties_data[ik][0][i][key_name] for i in range(len(parties_data[ik][0]))]
+                        data_inputs[key_name] = [parties_data[ik][0][i][key_name] for i in
+                                                 range(len(parties_data[ik][0]))]
                 self.parties[ik].obtain_local_data(data_inputs)
                 self.parties[ik].gt_one_hot_label = gt_one_hot_label
                 self.seq_length = data_inputs['input_ids'].shape[-1]
@@ -1220,6 +1182,8 @@ def create_main_task(global_model_type):
             # self.local_gradient_transmit(count_time = 'train')
 
             # ============= Model Update =============
+            if vfl_basic_config.num_of_slice == 3:
+                self.passive_party.optimizer_step(2)
             start_time = time.time()
             self._communication.send_global_backward_message()
             end_time = time.time()
@@ -1234,8 +1198,8 @@ def create_main_task(global_model_type):
             ################ normal vertical federated learning ################
 
             # print train_acc each batch
-            if self.args.model_architect=='TQA': #self.args.task_type == 'QuestionAnswering':
-                pred = self.parties[self.k - 1].global_output  # QuestionAnsweringModelOutput
+            if self.args.model_architect == 'TQA':  # self.args.task_type == 'QuestionAnswering':
+                pred = final_pred  # QuestionAnsweringModelOutput
                 loss = self.parties[0].global_loss
                 feature_list = data_inputs['feature']
                 batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(pred, gt_one_hot_label, feature_list)
@@ -1245,13 +1209,13 @@ def create_main_task(global_model_type):
                 exact_score = result_dict['exact_score']
                 return loss.item(), exact_score
 
-            elif self.args.model_architect=='CLS': #self.args.task_type == 'SequenceClassification':
+            elif self.args.model_architect == 'CLS':  # self.args.task_type == 'SequenceClassification':
 
                 if self.args.num_classes == 1:
                     pred = self.parties[self.k - 1].global_output
                     loss = self.parties[0].global_loss
 
-                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label)          
+                    batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label)
                     result_dict = self.generate_assessment(batch_predict_label, batch_actual_label)
 
                     batch_mse = result_dict['mse']
@@ -1262,7 +1226,7 @@ def create_main_task(global_model_type):
                 else:
                     pred = self.parties[self.k - 1].global_output
                     loss = self.parties[0].global_loss
-                    
+
                     batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label)
                     result_dict = self.generate_assessment(batch_predict_label, batch_actual_label)
 
@@ -1270,21 +1234,21 @@ def create_main_task(global_model_type):
                     return loss.item(), batch_train_acc
 
             elif self.args.model_architect=='CLM':  #self.args.task_type == 'CausalLM':
-                pred = self.parties[self.k - 1].global_output  # logits
+                pred = final_pred
                 loss = self.parties[0].global_loss
-                
+
                 batch_train_acc = 0
-                
+
                 # batch_target_word, batch_predict_word, sample_cnt = self.generate_result(pred, gt_one_hot_label, parties_data)
                 # print('train_batch batch_target_word:',type(batch_target_word),type(batch_target_word[0]))
                 # print('len:',batch_target_word[0].shape) # torch.size[512]  # torch.size[]
-                
+
                 # print('train_batch batch_predict_word:',type(batch_predict_word),type(batch_predict_word[0]))
                 # print('len:',batch_predict_word[0].shape)# torch.size[]  # torch.size[]
-                
+
                 # result_dict = self.generate_assessment(batch_predict_word, batch_target_word)
                 # batch_train_acc = result_dict['acc']
-                
+
                 # if self.args.dataset == "Lambada":
                 #     # print('gt_one_hot_label:',type(gt_one_hot_label),gt_one_hot_label)
                 #     target_label_list = [int(_p) for _p in gt_one_hot_label]
@@ -1313,7 +1277,6 @@ def create_main_task(global_model_type):
                 #     else:
                 #         assert 1 > 2, 'metric type not supported'
 
-
                 # else:  # MMLU
                 #     choice_id_list = []
                 #     for choice in self.args.label_dict.keys():
@@ -1333,13 +1296,35 @@ def create_main_task(global_model_type):
                 #     suc_cnt += torch.sum(predict_label == actual_label).item()
 
                 return loss.item(), batch_train_acc
+        def train(self,*args,**kwargs):
+            for p in self.parties:
+                p.train(*args,**kwargs)
 
-            
-        def train_vfl(self,**kwargs): # def train(self):
+        def eval(self):
+            for p in self.parties:
+                p.eval()
+
+
+        def get_base_model(self):
+            model_folder = self.passive_party.get_model_folder()
+            if not self.args.model_path and self.args.model_path:
+                raise ValueError('model_path must not be empty and should contain /')
+            base_model = self.args.model_path[len(model_folder)+1:]
+            return base_model
+
+        def create_model_id(self):
+            base_model = self.get_base_model()
+            job_id = self.job_id
+            if job_id is None:
+                current_datetime = datetime.now()
+                job_id = current_datetime.strftime("%Y%m%d%H:%M:%S")
+            return f'{base_model}_{job_id}'
+
+        def train_vfl(self, model_id=None, **kwargs):  # def train(self):
             training_args = vfl_basic_config.vfl_training_config.training_args
             if self.args.model_type.lower() == 'qwen2':
                 # 创建 TensorBoard 摘要写入器
-                tensorboard_writer = SummaryWriter(training_args.logging_dir)#training_args.logging_dir)
+                tensorboard_writer = SummaryWriter(training_args.logging_dir)  # training_args.logging_dir)
 
             print_every = 1
 
@@ -1364,20 +1349,17 @@ def create_main_task(global_model_type):
             optimize_step = 0
 
             data_record = pd.DataFrame(columns=['Epoch', 'train_loss', 'train_acc', 'test_acc'])
-            if self.args.model_type.lower() == 'qwen2':
-                if "validation_before_epoch":
-                    for p in self.parties:
-                        p.eval()
-                    with torch.no_grad():
-                        _exp_result, test_acc = self.inference()
-                    tensorboard_writer.add_scalar('train/test_acc', test_acc, 0)
-            
+            if (not is_test) and (self.args.model_type.lower() == 'qwen2'):
+                self.eval()
+                with torch.no_grad():
+                    _exp_result, test_acc = self.inference()
+                tensorboard_writer.add_scalar('train/eval_loss', self._loss, 0)
             for i_epoch in range(self.epochs):
                 self.train()
                 self.current_epoch = i_epoch
                 if self.args.model_type.lower() == 'qwen2':
                     tensorboard_writer.add_scalar('train/epoch', i_epoch, optimize_step)
-                
+
                 postfix = {'train_loss': 0.0, 'train_acc': 0.0, 'test_acc': 0.0}
                 i = -1
                 print_every = 1
@@ -1392,7 +1374,7 @@ def create_main_task(global_model_type):
                         for bs_id in range(len(parties_data[party_id])):
                             # Input Dict
                             batch_input_dicts.append(parties_data[party_id][bs_id][0])
-                             # Label
+                            # Label
                             if type(parties_data[party_id][bs_id][1]) != str:
                                 batch_label.append(parties_data[party_id][bs_id][1].tolist())
                             else:
@@ -1400,7 +1382,7 @@ def create_main_task(global_model_type):
                         _parties_data.append([batch_input_dicts, batch_label])
                     parties_data = _parties_data
 
-                    if self.args.model_architect=='CLS' and self.num_classes > 1:  # self.args.task_type == "SequenceClassification"
+                    if self.args.model_architect == 'CLS' and self.num_classes > 1:  # self.args.task_type == "SequenceClassification"
                         gt_one_hot_label = self.label_to_one_hot(parties_data[0][1], self.num_classes)
                     else:
                         gt_one_hot_label = torch.tensor(parties_data[0][1]).to(self.current_device)
@@ -1422,22 +1404,22 @@ def create_main_task(global_model_type):
                         # todo： 添加逻辑，通过判断训练的层来获取lr
                         try:
                             tensorboard_writer.add_scalar('train/lr_local',
-                                                        self.parties[0].local_model_optimizer.param_groups[0]['lr'],
-                                                        optimize_step)
+                                                          self.parties[0].local_model_optimizer.param_groups[0]['lr'],
+                                                          optimize_step)
                         except Exception as e:
                             logger.debug(repr(e))
                             pass
                         try:
                             tensorboard_writer.add_scalar('train/lr_global',
-                                                        self.parties[1].global_model_optimizer.param_groups[0]['lr'],
-                                                        optimize_step)
+                                                          self.parties[1].global_model_optimizer.param_groups[0]['lr'],
+                                                          optimize_step)
                         except Exception as e:
                             logger.debug(repr(e))
                             pass
                         try:
                             tensorboard_writer.add_scalar('train/lr_model_2',
-                                                        self.parties[0].optimizers[2].param_groups[0]['lr'],
-                                                        optimize_step)
+                                                          self.parties[0].optimizers[2].param_groups[0]['lr'],
+                                                          optimize_step)
                         except Exception as e:
                             logger.debug(repr(e))
                             pass
@@ -1453,7 +1435,7 @@ def create_main_task(global_model_type):
 
                 # LR decay
                 self.LR_Decay(i_epoch)
-                if vfl_basic_config.num_of_slice==3:
+                if vfl_basic_config.num_of_slice == 3:
                     self.parties[0].lr_schedulers[2].step()
                 # _lr = self.parties[0].global_LR_decay(i_epoch, is_return=True)
 
@@ -1488,9 +1470,9 @@ def create_main_task(global_model_type):
                         print(exp_result)
 
                         self.final_epoch = i_epoch + 1
-                    
+
                     if self.args.model_type.lower() == 'qwen2':
-                        tensorboard_writer.add_scalar('train/test_acc', self.test_acc, optimize_step)
+                        tensorboard_writer.add_scalar('train/eval_loss', self._loss, optimize_step)
 
                 data_record.loc[len(data_record)] = [i_epoch, self.loss, self.train_acc, self.test_acc]
 
@@ -1501,7 +1483,10 @@ def create_main_task(global_model_type):
                     self.final_epoch = i_epoch + 1
                     break
                 last_loss = min(last_loss, self.loss)
-
+            try:
+                self.save_pretrained(model_index=[1,2], model_id=model_id)
+            except Exception as e:
+                logger.warning(repr(e))
             self.training_time = total_time
             if self.args.task_type == 'SequenceClassification' and self.args.num_classes == 1:
                 exp_result = f'|train_party_time={self.train_party_time}|training_time={total_time}|train_loss:{self.loss}|\
@@ -1565,7 +1550,7 @@ def create_main_task(global_model_type):
             return {
                 # "aux_data": [copy.deepcopy(self.parties[ik].aux_data) for ik in range(self.k)],
                 # "train_data": [copy.deepcopy(self.parties[ik].train_data) for ik in range(self.k)],
-                "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k)],
+                "test_data": [copy.deepcopy(self.parties[ik].test_data) for ik in range(self.k - 1)],
 
                 # "aux_dst": [self.parties[ik].aux_dst for ik in range(self.k)],
                 # "train_dst": [self.parties[ik].train_dst for ik in range(self.k)],
@@ -1573,7 +1558,7 @@ def create_main_task(global_model_type):
 
                 # "aux_label": [copy.deepcopy(self.parties[ik].aux_label) for ik in range(self.k)],
                 # "train_label": [copy.deepcopy(self.parties[ik].train_label) for ik in range(self.k)],
-                "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k)],
+                "test_label": [copy.deepcopy(self.parties[ik].test_label) for ik in range(self.k - 1)],
 
                 # "aux_attribute": [copy.deepcopy(self.parties[ik].aux_attribute) for ik in range(self.k)],
                 # "train_attribute": [copy.deepcopy(self.parties[ik].train_attribute) for ik in range(self.k)],
@@ -1596,20 +1581,20 @@ def create_main_task(global_model_type):
                 file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
                 with open(file_path, 'wb') as f:
                     pickle.dump(self.parties[0].mid_model, f)
-            
+
                 file_path = dir_path + f'head_{self.args.defense_name}_{self.args.defense_configs}.pkl'
                 with open(file_path, 'wb') as f:
                         pickle.dump(self.parties[1].global_model.head_layer, f)
-            
+
             if self.args.apply_adversarial:
                 file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
                 with open(file_path, 'wb') as f:
                     pickle.dump(self.parties[0].adversarial_model, f)
-            
+
                 file_path = dir_path + f'head_{self.args.defense_name}_{self.args.defense_configs}.pkl'
                 with open(file_path, 'wb') as f:
                         pickle.dump(self.parties[1].global_model.head_layer, f)
-            
+
             # with open('my_model.pkl', 'rb') as f:
             #     model = pickle.load(f)
             # torch.save(self.parties[0].mid_model.state_dict(),self.trained_models["model_names"],
@@ -1628,6 +1613,21 @@ def create_main_task(global_model_type):
                  self.trained_models["model_names"]),
                 file_path)
 
+        def save_pretrained(self,model_index,model_id,**kwargs):
+            """
+            :param model_index:
+            :param kwargs: refer PretrainedModel
+            :return:
+            """
+            if model_id is None:
+                model_id = self.create_model_id()
+            logger.info(f"save trained models {model_id}")
+            for p in self.parties:
+                p.save_pretrained(model_index,
+                                  model_id=model_id,
+                                  model_folder=self.passive_party.get_model_folder(),
+                                  **kwargs)
+
         def evaluate_attack(self):
             self.attacker = AttackerLoader(self, self.args)
             if self.attacker != None:
@@ -1645,6 +1645,11 @@ def create_main_task(global_model_type):
                 return gradients_list
 
         def _validate_model_kwargs(self, model_kwargs: Dict[str, Any]):
+            if vfl_basic_config.num_of_slice == 3:
+                # todo: bug caused from def of self.forward
+                #   better align with transformers
+                return
+                # return super()._validate_model_kwargs(model_kwargs)
             """Validates model kwargs for generation. Generate argument typos will also be caught here."""
             # If a `Cache` instance is passed, checks whether the model is compatible with it
             if isinstance(model_kwargs.get("past_key_values", None), Cache) and not self._supports_cache_class:
@@ -1730,24 +1735,30 @@ def create_main_task(global_model_type):
             #     raise TypeError(exception_message)
 
         def prepare_inputs_for_generation(self, input_ids, **model_kwargs):
-            # todo: fix 3-slice Compatibility
-            if vfl_basic_config.num_of_slice==3:
-                return super(global_model_type).prepare_inputs_for_generation(input_ids,**model_kwargs)
+            if vfl_basic_config.num_of_slice == 3:
+                return super().prepare_inputs_for_generation(input_ids, **model_kwargs)
             else:
                 # return self.parties[-1].global_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
                 return self.parties[0].local_model.prepare_inputs_for_generation(input_ids=input_ids, **model_kwargs)
 
-        def _prepare_encoder_decoder_kwargs_for_generation(self, inputs_tensor: torch.Tensor, model_kwargs, model_input_name: Optional[str] = None):
-            return self.parties[-1].global_model._prepare_encoder_decoder_kwargs_for_generation(\
-                inputs_tensor=inputs_tensor, model_kwargs = model_kwargs, model_input_name= model_input_name)
+        def _prepare_encoder_decoder_kwargs_for_generation(self, inputs_tensor: torch.Tensor, model_kwargs,
+                                                           model_input_name: Optional[str] = None):
+            if vfl_basic_config.num_of_slice == 3:
+                return super()._prepare_encoder_decoder_kwargs_for_generation(inputs_tensor=inputs_tensor,
+                                                                              model_kwargs=model_kwargs,
+                                                                              model_input_name=model_input_name)
+            else:
+                return self.parties[-1].global_model._prepare_encoder_decoder_kwargs_for_generation(
+                    inputs_tensor=inputs_tensor, model_kwargs=model_kwargs, model_input_name=model_input_name)
 
         def __call__(self, **kwargs):
             return self.forward(**kwargs)
 
         def _clear_past_key_values(self):
-            for i in range(self.k-1):
+            for i in range(self.k - 1):
                 self.parties[i].local_model._clear_past_key_values()
-            self.parties[-1].global_model._clear_past_key_values()
+            # todo: clear global model's past_key_values
+            # self.parties[-1].global_model._clear_past_key_values()
 
         def _init_e2e_model(self):
             return
@@ -1772,113 +1783,56 @@ def create_main_task(global_model_type):
                 logger.error(f"No model config for E2E_model")
             with init_empty_weights():
                 self.e2e_model = E2EModel(model_config,
-                                            {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
+                                          {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
             # self.e2e_model.to(self.e2e_model.local_model.device)
 
         @property
         def passive_party(self):
             return self.parties[0]
 
-        def _train_e2e_model(self):
-            """
-            当前按照 MainTask, MainTask.e2emodel, e2emodel.models[0] 在同一个端可直接访问的结构来设计
-            :return:
-            """
-            training_args = vfl_basic_config.vfl_training_config.training_args
-            logger.info(f"Training saving to {training_args.output_dir}")
-            # 创建 TensorBoard 摘要写入器
-            tensorboard_writer = SummaryWriter(training_args.logging_dir)
+        def gen(self, prompt: str = '你是谁',
+                prompt_system: str = "现在你要扮演皇帝身边的女人--甄嬛"):
+            start_time = time.time()
+            tokenizer = self.args.tokenizer
+            messages = [
+                {"role": "system", "content": prompt_system},
+                {"role": "user", "content": prompt}
+            ]
 
-            # # 创建 DataLoader 加载训练和验证数据集
-            # # train_dataloader = DataLoader(train_dataset, batch_size=training_args.per_device_train_batch_size, shuffle=False)
-            # # eval_dataloader = DataLoader(eval_dataset, batch_size=training_args.per_device_eval_batch_size)
-            # if isinstance(model, E2EModel):
-            #     trainable_params = filter(lambda x: x.requires_grad, model.global_model.parameters())
-            # elif isinstance(model, E2EModelV2):
-            #     trainable_params = filter(lambda x: x.requires_grad, model.parameters())
-            # else:
-            #     # trainable_params = get_trainable_parameters(model)
-            #     trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+            text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-            # 开始训练
-            forward_step = 0
-            optimize_step = 0
-            # best_eval_loss = float('inf')
-            # todo: fix self.passive_party.dataset_train
-            dataset_train = DataLoader(self.passive_party.dataset_train,
-                                       batch_size=training_args.per_device_train_batch_size,
-                                       collate_fn=dataset_batch_processor)
-            for epoch in range(training_args.num_train_epochs):
-                total_loss = 0
-                for batch in tqdm(dataset_train, desc=f"Epoch {epoch + 1}/{training_args.num_train_epochs}",
-                                  leave=False):
-                    # 将数据传递给设备
-                    # inputs = batch['input_ids'].to(training_args.device)
-                    # labels = batch['labels'].to(training_args.device)
+            model_inputs = tokenizer([text], return_tensors="pt").to(self.device)
+            generated_ids = self.generate(
+                model_inputs.input_ids,
+                max_new_tokens=20,
+                use_cache=False
+            )
+            generated_ids = [
+                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
 
-                    # 前向传播
-                    self.e2e_model.train()
-                    outputs = self.e2e_model(**self.__class__.data_collator(batch, self.e2e_model.device,
-                                                                            batch_size=training_args.per_device_train_batch_size))
-                    forward_step += 1
+            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            end_time = time.time()
+            logger.info(f"Took: {end_time - start_time} s\nGenerated: {response}")
+            return response
 
-                    loss = outputs.loss
+        def shift_logits_loss(self, logits, labels, model_config):
+            from torch.nn import CrossEntropyLoss
 
-                    # 反向传播
-                    # loss.backward()
-                    self.e2e_model.backward()
-                    if not forward_step % training_args.gradient_accumulation_steps == 0:
-                        continue
-                    # optimizer.step()
-                    # optimizer.zero_grad()
-                    self.e2e_model.optimizer_step()
-                    self.e2e_model.optimizer_zero_grad()
+            logits = logits.float()
 
-                    # 累积总损失
-                    total_loss += loss.item()
-
-                    optimize_step += 1
-
-                    # 记录训练损失
-                    tensorboard_writer.add_scalar('train/loss', loss, optimize_step)
-                    tensorboard_writer.add_scalar('train/learning_rate', self.e2e_model.optimizer.param_groups[0]['lr'],
-                                                  optimize_step)
-                    if optimize_step % training_args.eval_steps == 0:
-                        # 在验证集上评估模型
-                        eval_loss = self.__class__.validate_model(self.e2e_model, dataset_validate)
-                        tensorboard_writer.add_scalar('train/eval_loss', eval_loss, optimize_step)
-
-                    if optimize_step % training_args.save_steps == 0:
-                        self.e2e_model.save_pretrained(
-                            os.path.join(training_args.output_dir, f'checkpoint-{optimize_step}'))
-
-                self.e2e_model.lr_scheduler_step()
-
-                tensorboard_writer.add_scalar('train/epoch', epoch + 1, optimize_step)
-
-                # 如果当前模型性能优于之前的最佳性能，则保存当前模型
-                # if eval_loss < best_eval_loss:
-                #     best_eval_loss = eval_loss
-                # torch.save(model.state_dict(), f"{training_args.output_dir}/best_model.pt")
-
-                # 更新学习率
-
-            tensorboard_writer.close()
-
-        def _validate_e2e_model(self):
-            self.e2e_model.eval()
-            count, loss = 0, 0
-            _dataset = DataLoader(self.passive_party.dataset_train,
-                                  batch_size=vfl_basic_config.vfl_training_config.training_args.per_device_train_batch_size,
-                                  collate_fn=dataset_batch_processor)
-            with torch.no_grad():
-                for batch in tqdm(_dataset, leave=False):
-                    output = self.e2e_model(**data_collator(batch, model.device))
-                    if output.loss.item() != output.loss.item():
-                        continue
-                        # return example
-                    loss += output.loss.item()
-                    count += 1
-                return loss / count
+            loss = None
+            if labels is not None:
+                # Shift so that tokens < n predict n
+                shift_logits = logits[..., :-1, :].contiguous()
+                shift_labels = labels[..., 1:].contiguous()
+                # Flatten the tokens
+                loss_fct = CrossEntropyLoss()
+                shift_logits = shift_logits.view(-1, self.args.config.vocab_size)
+                shift_labels = shift_labels.view(-1)
+                # Enable model parallelism
+                shift_labels = shift_labels.to(shift_logits.device)
+                loss = loss_fct(shift_logits, shift_labels)
+            return loss
 
     return MainTaskVFL_LLM

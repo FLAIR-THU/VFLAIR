@@ -7,14 +7,14 @@ from .tree_core_party import Party
 
 class RandomForestParty(Party):
     def __init__(
-        self,
-        x: List[List[float]],
-        num_classes: int,
-        feature_id: List[int],
-        party_id: int,
-        min_leaf: int,
-        subsample_cols: float,
-        seed: int = 0,
+            self,
+            x: List[List[float]],
+            num_classes: int,
+            feature_id: List[int],
+            party_id: int,
+            min_leaf: int,
+            subsample_cols: float,
+            seed: int = 0,
     ):
         super().__init__(
             x, num_classes, feature_id, party_id, min_leaf, subsample_cols, False, seed
@@ -27,7 +27,7 @@ class RandomForestParty(Party):
         return threshold_candidates
 
     def greedy_search_split(
-        self, idxs: List[int], y: List[List[int]]
+            self, idxs: List[int], y: List[List[int]]
     ) -> List[List[Tuple[float, List[float]]]]:
         num_thresholds = self.subsample_col_count
         split_candidates_leftsize_leftposcnt = [[] for _ in range(num_thresholds)]
@@ -75,8 +75,8 @@ class RandomForestParty(Party):
                         break
 
                 if (
-                    cumulative_left_size >= self.min_leaf
-                    and row_count - cumulative_left_size >= self.min_leaf
+                        cumulative_left_size >= self.min_leaf
+                        and row_count - cumulative_left_size >= self.min_leaf
                 ):
                     split_candidates_leftsize_leftposcnt[i].append(
                         (temp_left_size, temp_left_y_class_cnt)
@@ -88,16 +88,16 @@ class RandomForestParty(Party):
 
 class XGBoostParty(Party):
     def __init__(
-        self,
-        x,
-        num_classes,
-        feature_id,
-        party_id,
-        min_leaf,
-        subsample_cols,
-        num_precentile_bin,
-        use_missing_value=False,
-        seed=0,
+            self,
+            x,
+            num_classes,
+            feature_id,
+            party_id,
+            min_leaf,
+            subsample_cols,
+            num_precentile_bin,
+            use_missing_value=False,
+            seed=0,
     ):
         super().__init__(
             x,
@@ -175,8 +175,8 @@ class XGBoostParty(Party):
                         current_min_idx = r
                         break
                 if (
-                    cumulative_left_size >= self.min_leaf
-                    and row_count - cumulative_left_size >= self.min_leaf
+                        cumulative_left_size >= self.min_leaf
+                        and row_count - cumulative_left_size >= self.min_leaf
                 ):
                     split_candidates_grad_hess[i].append(
                         (temp_grad, temp_hess, temp_left_size, temp_left_y_class_cnt)
@@ -206,8 +206,8 @@ class XGBoostParty(Party):
                             current_max_idx = r
                             break
                     if (
-                        cumulative_right_size >= self.min_leaf
-                        and row_count - cumulative_right_size >= self.min_leaf
+                            cumulative_right_size >= self.min_leaf
+                            and row_count - cumulative_right_size >= self.min_leaf
                     ):
                         split_candidates_grad_hess[i + self.subsample_col_count].append(
                             (

@@ -40,9 +40,10 @@ class Cifar100DatasetVFLPERROUND():
 
         # images_up = images[:, :, :16]
         # images_down = images[:, :, 16:]
-        image_list = [images[:, :, :16, :16],images[:, :, :16, 16:],images[:, :, 16:, :16],images[:, :, 16:, 16:]]
+        image_list = [images[:, :, :16, :16], images[:, :, :16, 16:], images[:, :, 16:, :16], images[:, :, 16:, 16:]]
 
-        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape, image_list[2].shape, image_list[3].shape, labels.shape)
+        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape,
+              image_list[2].shape, image_list[3].shape, labels.shape)
         image_list, poison_list = data_poison(image_list, poison_number)
 
         self.poison_images = [image_list[il][poison_list] for il in range(len(image_list))]
@@ -105,16 +106,15 @@ def data_poison(images, poison_number):
     # images[poison_list, 2, 15, 29] = target_pixel_value[2][3]
 
     # 3 party poison
-    images[1][poison_list,0,15,15] = target_pixel_value[0][0]
-    images[1][poison_list,1,15,15] = target_pixel_value[1][0]
-    images[1][poison_list,2,15,15] = target_pixel_value[2][0]
-    images[2][poison_list,0,15,15] = target_pixel_value[0][1]
-    images[2][poison_list,1,15,15] = target_pixel_value[1][1]
-    images[2][poison_list,2,15,15] = target_pixel_value[2][1]
-    images[3][poison_list,0,15,15] = target_pixel_value[0][2]
-    images[3][poison_list,1,15,15] = target_pixel_value[1][2]
-    images[3][poison_list,2,15,15] = target_pixel_value[2][2]
-
+    images[1][poison_list, 0, 15, 15] = target_pixel_value[0][0]
+    images[1][poison_list, 1, 15, 15] = target_pixel_value[1][0]
+    images[1][poison_list, 2, 15, 15] = target_pixel_value[2][0]
+    images[2][poison_list, 0, 15, 15] = target_pixel_value[0][1]
+    images[2][poison_list, 1, 15, 15] = target_pixel_value[1][1]
+    images[2][poison_list, 2, 15, 15] = target_pixel_value[2][1]
+    images[3][poison_list, 0, 15, 15] = target_pixel_value[0][2]
+    images[3][poison_list, 1, 15, 15] = target_pixel_value[1][2]
+    images[3][poison_list, 2, 15, 15] = target_pixel_value[2][2]
 
     return images, poison_list
 

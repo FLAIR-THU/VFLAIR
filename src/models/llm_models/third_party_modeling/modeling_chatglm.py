@@ -647,10 +647,10 @@ class GLMTransformer(torch.nn.Module):
             hidden_states, kv_cache = layer_ret
             if use_cache:
                 presents = presents + (kv_cache,)
-            
+
             # if index in [0,1,2]:
             #     print(index,' : ',hidden_states)
-        
+
         if output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
 
@@ -767,7 +767,7 @@ class ChatGLMModel(ChatGLMPreTrainedModel):
             self.prefix_tokens = torch.arange(self.pre_seq_len).long()
             self.prefix_encoder = PrefixEncoder(config)
             self.dropout = torch.nn.Dropout(0.1)
-        
+
     def get_input_embeddings(self):
         return self.embedding.word_embeddings
 
@@ -863,7 +863,6 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
         if self.config.quantization_bit:
             self.quantize(self.config.quantization_bit, empty_init=True)
 
-    
     def _update_model_kwargs_for_generation(
             self,
             outputs: ModelOutput,
@@ -952,7 +951,7 @@ class ChatGLMForConditionalGeneration(ChatGLMPreTrainedModel):
         hidden_states = transformer_outputs[0]
         if return_last_logit:
             hidden_states = hidden_states[-1:]
-        
+
         lm_logits = self.transformer.output_layer(hidden_states)
         lm_logits = lm_logits.transpose(0, 1).contiguous()
 

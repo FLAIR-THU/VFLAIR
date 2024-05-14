@@ -17,7 +17,6 @@
 #         self.__output_tensor = None  # type: torch.Tensor
 #
 #     def forward(self, **kwargs):
-#         # todo: Shannon check torch.no_grad() state and do the same in remote
 #         if self.model_index == 0:
 #             params = self._format_forward_kwargs(**kwargs)
 #         else:
@@ -33,7 +32,6 @@
 #         self.output_tensor = self._extract_output_tensor(outputs)
 #         logger.debug(f'finish model forward {self.model_index}')
 #         logger.debug(self.output_tensor)
-#         # todo : Shannon 发送outputs 以及哪些tensor.requires_grad
 #         if self.model_index == 0:
 #             if isinstance(self.party._communication, LocalCommunication):
 #                 return outputs

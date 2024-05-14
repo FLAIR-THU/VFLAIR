@@ -1,31 +1,31 @@
 {
-    "epochs": 80,
-    "lr": 0.05,
-    "k": 2,
-    "batch_size": 64,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 80,
+  "lr": 0.05,
+  "k": 2,
+  "batch_size": 64,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "num_exp": 10,
+  "dataset": {
+    "dataset_name": "diabetes",
+    "num_classes": 2
+  },
+  "model_list": {
+    "0": {
+      "type": "LogisticRegressionModel",
+      "input_dim": 4,
+      "output_dim": 2,
+      "path": ""
     },
-    "num_exp": 10,
-    "dataset":{
-        "dataset_name": "diabetes",
-        "num_classes": 2
+    "1": {
+      "type": "LogisticRegressionModel",
+      "input_dim": 4,
+      "output_dim": 2,
+      "path": ""
     },
-    "model_list":{
-        "0": {
-            "type": "LogisticRegressionModel",
-            "input_dim": 4,
-            "output_dim": 2,
-            "path": ""
-        },
-        "1": {
-            "type": "LogisticRegressionModel",
-            "input_dim": 4,
-            "output_dim": 2,
-            "path": ""
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  }
 }

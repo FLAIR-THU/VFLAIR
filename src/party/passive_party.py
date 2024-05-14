@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
-from loguru import  logger
+from loguru import logger
 
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor
 from party.party import Party
@@ -51,13 +51,10 @@ class PassiveParty(Party):
 
 
 class PassiveParty_LLM(Party_LLM):
-    def __init__(self, args, index, need_data=True):
+    def __init__(self, args, index, need_data=True, need_model=True):
         print(f'==== initialize PassiveParty_LLM : party {index}======')
-        super().__init__(args, index, need_data=need_data)
-        if args.device == 'cuda':
-            cuda_id = args.gpu
-            torch.cuda.set_device(cuda_id)
-            print(f'running on cuda{torch.cuda.current_device()}')
+        super().__init__(args, index, need_data=need_data, need_model=need_model)
+        logger.debug(f'running on cuda{os.getenv("CUDA_VISIBLE_DEVICES").split(",")[torch.cuda.current_device()]}')
 
         self.init_apply_defense(args.apply_defense, args.apply_adversarial, args.defense_configs, args.main_lr,
                                 args.device)
@@ -106,7 +103,7 @@ class PassiveParty_LLM(Party_LLM):
                     adversarial_model_name = defense_configs['adversarial_model']
 
                 seq_length = defense_configs['seq_length']
-                embed_dim = self.args.model_embedded_dim #defense_configs['embed_dim']
+                embed_dim = self.args.model_embedded_dim  # defense_configs['embed_dim']
 
                 # prepare adversarial model --  for adversarial training
                 self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim,
@@ -155,8 +152,9 @@ class PassiveParty_LLM(Party_LLM):
                     std_shift_hyperparameter = 5
 
                 seq_length = self.args.defense_configs['seq_length']
-                embed_dim = self.args.model_embedded_dim #defense_configs['embed_dim']
-                mid_model_path = self.args.defense_configs['mid_model_path'] if 'mid_model_path' in self.args.defense_configs else None
+                embed_dim = self.args.model_embedded_dim  # defense_configs['embed_dim']
+                mid_model_path = self.args.defense_configs[
+                    'mid_model_path'] if 'mid_model_path' in self.args.defense_configs else None
 
                 if self.mid_position == "inner":
                     print('init defense: inner mid')
@@ -186,18 +184,25 @@ class PassiveParty_LLM(Party_LLM):
                     print('init defense: out mid')
                     print(self.mid_model_name)
 
-                    if mid_model_path !=None and mid_model_path!="":
-                        print('Load Mid Model:',mid_model_path)
+                    if mid_model_path != None and mid_model_path != "":
+                        print('Load Mid Model:', mid_model_path)
                         with open(mid_model_path, 'rb') as f:
-                            self.mid_model  = pickle.load(f)
+                            self.mid_model = pickle.load(f)
                     else:
                         if 'Squeeze' in self.mid_model_name:
                             print('Squeeze')
-                            self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
-                            mid_lambda=self.mid_lambda,squeeze_dim = self.squeeze_dim ,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                            self.mid_model = globals()[self.mid_model_name](seq_length, embed_dim, \
+                                                                            mid_lambda=self.mid_lambda,
+                                                                            squeeze_dim=self.squeeze_dim,
+                                                                            bottleneck_scale=current_bottleneck_scale,
+                                                                            std_shift=std_shift_hyperparameter).to(
+                                self.args.device)
                         else:
-                            self.mid_model = globals()[self.mid_model_name](seq_length,embed_dim,\
-                            mid_lambda=self.mid_lambda,bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter).to(self.args.device)
+                            self.mid_model = globals()[self.mid_model_name](seq_length, embed_dim, \
+                                                                            mid_lambda=self.mid_lambda,
+                                                                            bottleneck_scale=current_bottleneck_scale,
+                                                                            std_shift=std_shift_hyperparameter).to(
+                                self.args.device)
 
                     if self.local_model_optimizer == None:
                         self.local_model_optimizer = torch.optim.Adam(self.mid_model.parameters(), lr=self.mid_lr)
@@ -207,14 +212,13 @@ class PassiveParty_LLM(Party_LLM):
 
                 print(f'self.mid_model_name:{self.mid_model_name}')
 
-    def eval(self, **kwargs):
-        self.local_model.eval()
 
     def prepare_data(self, args, index):
-        super().prepare_data(args, index) # Party_llm's prepare_data
- 
-        
-        if args.dataset in ['Alpaca','CodeAlpaca']:
+        if not args.dataset:
+            return None
+        super().prepare_data(args, index)  # Party_llm's prepare_data
+
+        if args.dataset in ['Alpaca', 'CodeAlpaca']:
             self.train_dst = AlpacaDataset_LLM(args, self.train_data, self.train_label, 'train')
             self.test_dst = AlpacaDataset_LLM(args, self.test_data, self.test_label, 'test')
         elif args.dataset == 'Lambada':
@@ -232,7 +236,6 @@ class PassiveParty_LLM(Party_LLM):
         else:
             self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
             self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')
-
 
     def update_local_pred(self, pred):
         self.pred_received[self.args.k - 1] = pred
@@ -252,12 +255,15 @@ class PassiveParty_LLM(Party_LLM):
             global_gradients_clone = global_gradients_clone / 2
             self.global_gradients = global_gradients_clone
         else:
+            logits_gradients = torch.autograd.grad(global_loss, global_pred.logits, retain_graph=True)[0]
             if vfl_basic_config.num_of_slice==2:
-                _input_tensor = global_pred.logits
+                global_gradients_clone = logits_gradients.detach().clone()
             else:
-                _input_tensor = self.input_tensors[2]
-            global_gradients = torch.autograd.grad(global_loss, _input_tensor, retain_graph=True)
-            global_gradients_clone = global_gradients[0].detach().clone()
+                self.backward(2,retain_graph=True,gradient=logits_gradients)
+                if self.input_tensors[2].grad is not None:
+                    global_gradients_clone=self.input_tensors[2].grad.detach().clone()
+                else:
+                    global_gradients_clone=torch.autograd.grad(self.output_tensors[2],self.input_tensors[2],grad_outputs=logits_gradients,retain_graph=True)[0]
             self.global_gradients = global_gradients_clone
         return global_gradients_clone
 
@@ -265,7 +271,7 @@ class PassiveParty_LLM(Party_LLM):
         gt_one_hot_label = self.gt_one_hot_label  # label
 
         # ########### Normal Loss ###############
-        if self.args.model_architect=='CLS': #self.args.task_type == 'SequenceClassification':
+        if self.args.model_architect == 'CLS':  # self.args.task_type == 'SequenceClassification':
             # loss = self.criterion(pred, gt_one_hot_label)
             pooled_logits = pred.logits
             labels = gt_one_hot_label
@@ -289,12 +295,12 @@ class PassiveParty_LLM(Party_LLM):
             #     loss_fct = BCEWithLogitsLoss()
             #     loss = loss_fct(pooled_logits, labels)
 
-        elif self.args.model_architect=='CLM': #self.args.task_type == 'CausalLM':
-            lm_logits = pred.logits # [bs, seq_len, vocab_size]
+        elif self.args.model_architect == 'CLM':  # self.args.task_type == 'CausalLM':
+            lm_logits = pred.logits  # [bs, seq_len, vocab_size]
             # move labels to correct device to enable model parallelism
             labels = torch.tensor(gt_one_hot_label).to(lm_logits.device)
             # print('cal loss labels.shape:',labels.shape)
-            if len(labels.shape)>1:
+            if len(labels.shape) > 1:
                 # Shift so that tokens < n predict n
                 shift_logits = lm_logits[..., :-1, :].contiguous()
                 shift_labels = labels[..., 1:].contiguous()
@@ -306,7 +312,7 @@ class PassiveParty_LLM(Party_LLM):
                 # print(shift_labels.view(-1).shape)
                 loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
             else:
-                next_token_logits = lm_logits[:,-1,:]
+                next_token_logits = lm_logits[:, -1, :]
                 # print('next_token_logits:',next_token_logits.shape)
                 # print('labels:',labels.shape)
                 labels = torch.tensor(labels.long()).to(self.args.device)
@@ -316,7 +322,7 @@ class PassiveParty_LLM(Party_LLM):
                 loss = loss_fct(next_token_logits, labels)
                 # print('loss:', loss)
 
-        elif self.args.model_architect=='TQA': #self.args.task_type == 'QuestionAnswering':
+        elif self.args.model_architect == 'TQA':  # self.args.task_type == 'QuestionAnswering':
             start_logits = pred.start_logits
             end_logits = pred.end_logits
 
@@ -363,7 +369,7 @@ class PassiveParty_LLM(Party_LLM):
 
         # ########### Defense on Loss ###############
         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
-            intermediate = self.local_pred # pred after adversarial model: bs, seq, embed_dim768
+            intermediate = self.local_pred  # pred after adversarial model: bs, seq, embed_dim768
             adversary_recovered_embedding = self.imagined_adversary(intermediate)
 
             real_embedding = self.local_model.embedding_output
@@ -428,15 +434,16 @@ class PassiveParty_LLM(Party_LLM):
             for param in self.local_model.parameters():
                 if param.requires_grad:
                     local_model_params.append(param)
+            self.local_gradient=self.local_gradient.to(self.local_pred.device)
             weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 local_model_params,
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
-                allow_unused = True
+                allow_unused=True
             )
             for w, g in zip(local_model_params, weights_grad_a):
-                if w.requires_grad and g!=None:
+                if w.requires_grad and g != None:
                     if w.grad != None:
                         w.grad += g.detach()
                     else:
@@ -446,7 +453,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.adversarial_model_loss,
                 self.adversarial_model.parameters(),
                 retain_graph=True,
-                allow_unused = True,
+                allow_unused=True,
             )
             for w, g in zip(self.adversarial_model.parameters(), weights_grad_a):
                 if w.requires_grad:
@@ -477,7 +484,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.mid_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
-                allow_unused = True,
+                allow_unused=True,
             )
             for w, g in zip(self.mid_model.parameters(), weights_grad_a):
                 if w.requires_grad:
@@ -497,10 +504,10 @@ class PassiveParty_LLM(Party_LLM):
                     local_model_params,  # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
-                    allow_unused = True,
+                    allow_unused=True,
                 )
                 for w, g in zip(local_model_params, self.weights_grad_a):
-                    if w.requires_grad and g!=None:
+                    if w.requires_grad and g != None:
                         if w.grad != None:
                             w.grad += g.detach()
                         else:
@@ -522,7 +529,7 @@ class PassiveParty_LLM(Party_LLM):
                 self.local_model.inner_mid_model.parameters(),
                 grad_outputs=self.local_gradient,
                 retain_graph=True,
-                allow_unused = True,
+                allow_unused=True,
             )
             for w, g in zip(self.local_model.inner_mid_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
@@ -542,7 +549,7 @@ class PassiveParty_LLM(Party_LLM):
                     local_model_params,  # self.local_model.parameters()
                     grad_outputs=self.local_gradient,
                     retain_graph=True,
-                    allow_unused = True,
+                    allow_unused=True,
                 )
                 for w, g in zip(local_model_params, self.weights_grad_a):
                     if w.requires_grad:
@@ -571,24 +578,22 @@ class PassiveParty_LLM(Party_LLM):
                         local_model_params.append(param)
                 # print('local_model_params:',local_model_params)
 
-
                 if len(local_model_params) > 0:
                     self.weights_grad_a = torch.autograd.grad(
                         self.local_pred,
                         local_model_params,  # self.local_model.parameters()
                         grad_outputs=self.local_gradient,
                         retain_graph=True,
-                        allow_unused = True,
+                        allow_unused=True,
                     )
                     for w, g in zip(local_model_params, self.weights_grad_a):
-                        if w.requires_grad and g!=None:
+                        if w.requires_grad and g != None:
                             if w.grad != None:
                                 w.grad += g.detach()
                             else:
                                 w.grad = g.detach()
 
                     self.local_model_optimizer.step()
-
 
     # def calculate_gradient_each_class(self, global_pred, local_pred_list, test=False):
     #     # print(f"global_pred.shape={global_pred.size()}") # (batch_size, num_classes)

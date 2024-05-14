@@ -12,6 +12,7 @@ from loguru import logger
 import torch
 import copy
 import os
+from peft.peft_model import PeftModel
 from .base import VFLPipeline, VFLModel
 
 
@@ -74,9 +75,19 @@ class Qwen2DecoderLayerParam(object):
         return Qwen2DecoderLayerParam(**new_dict)
 
     def get(self, key, default=None):
-        if key == 'input_embeds':
+        if key == 'inputs_embeds':
             key = 'hidden_states'
         return self.__dict__.get(key, default)
+
+    def items(self):
+        for k, v in self.__dict__.items():
+            yield k, v
+
+    def __getitem__(self, item):
+        return self.__dict__[item]
+
+    def __setitem__(self, key, value):
+        self.__dict__[key] = value
 
 
 class Qwen2ModelSplitter(Qwen2Model, VFLModel):
@@ -100,7 +111,8 @@ class Qwen2ModelSplitter(Qwen2Model, VFLModel):
 class Qwen2ModelHead(Qwen2ModelSplitter):
     def __init__(self, config: Qwen2Config):
         super().__init__(config)
-        del self.norm
+        # todo: del norm will cause error when load from original model weight
+        # del self.norm
 
     def forward(
             self,
@@ -128,7 +140,7 @@ class Qwen2ModelHead(Qwen2ModelSplitter):
         :param return_dict:
         :return:
         """
-        logger.debug("run local Qwen model forward")
+        logger.debug(f"{self.__class__.__name__} forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -273,7 +285,8 @@ class Qwen2ModelHead(Qwen2ModelSplitter):
 class Qwen2ModelBody(Qwen2ModelSplitter):
     def __init__(self, config: Qwen2Config):
         super().__init__(config)
-        del self.norm
+        # todo: remove self.norm is required
+        # del self.norm
 
     def forward(
             self,
@@ -288,7 +301,7 @@ class Qwen2ModelBody(Qwen2ModelSplitter):
             return_dict: Optional[bool] = None,
             **kwargs
     ) -> Union[Tuple, BaseModelOutputWithPast]:
-        logger.debug(f"{self.__class__.__name__} run forward")
+        logger.debug(f"{self.__class__.__name__} forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -459,7 +472,7 @@ class Qwen2ModelTail(Qwen2ModelSplitter):
         :param return_dict:
         :return:
         """
-        logger.debug("run global Qwen model forward")
+        logger.debug(f"{self.__class__.__name__} forward")
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -611,6 +624,7 @@ class Qwen2TailForCausalLM(Qwen2ForCausalLM, VFLModel):
     def _clear_past_key_values(self):
         self.model._clear_past_key_values()
 
+
 class E2EModel(Qwen2ForCausalLM):
     def __init__(self, model_config: Qwen2Config, models: Dict[int, Union[PreTrainedModel
         # , ProxyModel
@@ -621,13 +635,15 @@ class E2EModel(Qwen2ForCausalLM):
         self.model = None
         self.lm_head = None
         self.models = models
+        self.tensor_in = {}  # type: Dict[int, torch.Tensor]
+        self.tensor_out = {}  # type: Dict[int, torch.Tensor]
 
     def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
         for i in range(len(self.models)):
-            if isinstance(self.models[i], PreTrainedModel):
+            if isinstance(self.models[i], (PreTrainedModel, PeftModel)):
                 yield from self.models[i].parameters()
             else:
-                logger.warning(f"Parameter type {type(i)} is not supported")
+                logger.warning(f"Parameter type {type(self.models[i])} is not supported")
                 continue
 
     def can_generate(self) -> bool:
@@ -684,8 +700,6 @@ class E2EModel(Qwen2ForCausalLM):
             **kwargs
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         intermediate = None
-        # dev_in = {}
-        # dev_out = {}
         for i in range(self.num_of_slice):
             model = self.models[i]
             if i == 0:
@@ -706,9 +720,11 @@ class E2EModel(Qwen2ForCausalLM):
                     intermediate.labels = labels
                 intermediate.to(model.device)
                 _input = intermediate.prepare_for_forward()
-            # dev_in[i] = _input
+            if (t := _input.get('inputs_embeds')) is not None:
+                self.tensor_in[i] = t
             intermediate = model(**_input)
-            # dev_out[i] = intermediate
+            if (t := intermediate.get('hidden_states')) is not None:
+                self.tensor_out[i] = t
         for k, v in intermediate.items():
             if isinstance(v, torch.Tensor):
                 intermediate[k] = v.to(self.device)
@@ -778,7 +794,7 @@ class VFLPipelineQwen(VFLPipeline):
 
     def _load_model_head(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
         model_head = Qwen2ModelHead.from_pretrained(model_name_or_path, **kwargs)
-        if do_split is not None:
+        if do_split:
             model_head.vfl_split(range(0, self.split_index[0]))
         return model_head
 
@@ -793,8 +809,9 @@ class VFLPipelineQwen(VFLPipeline):
 
     def _load_model_body(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
         model_body = Qwen2ModelBody.from_pretrained(model_name_or_path, **kwargs)
-        split_index = self.split_index
-        model_body.vfl_split(range(split_index[0],
-                                   split_index[1] if split_index[1] > 0 else
-                                   split_index[1] + model_body.config.num_hidden_layers))
+        if do_split:
+            split_index = self.split_index
+            model_body.vfl_split(range(split_index[0],
+                                       split_index[1] if split_index[1] > 0 else
+                                       split_index[1] + model_body.config.num_hidden_layers))
         return model_body

@@ -37,9 +37,9 @@ class AutoEncoder(nn.Module):
         )
         initialize_weights(self)
 
-    def decode(self,d_y):
+    def decode(self, d_y):
         return self.decoder(d_y)
-        
+
     def forward(self, x):
         z = self.encoder(x.view(-1, self.d))
         d_y = F.softmax(z, dim=1)
@@ -48,14 +48,14 @@ class AutoEncoder(nn.Module):
         # return self.decoder(z), d_y
 
     def load_model(self, model_full_name, target_device='cuda:0'):
-        self.load_state_dict(torch.load(model_full_name,map_location=target_device))
+        self.load_state_dict(torch.load(model_full_name, map_location=target_device))
 
     def save_model(self, model_full_name):
         torch.save(self.state_dict(), model_full_name)
 
 
 class AutoEncoder_large(nn.Module):
-    def __init__(self, real_dim=100,input_dim=20, encode_dim=122 ):
+    def __init__(self, real_dim=100, input_dim=20, encode_dim=122):
         super(AutoEncoder_large, self).__init__()
         self.d = input_dim
         self.real_dim = real_dim
@@ -73,19 +73,19 @@ class AutoEncoder_large(nn.Module):
         )
         initialize_weights(self)
 
-    def decode(self,d_y):
-        return self.decoder(d_y.view(-1, self.d)).view(-1,self.real_dim)
+    def decode(self, d_y):
+        return self.decoder(d_y.view(-1, self.d)).view(-1, self.real_dim)
 
     def forward(self, x):
         z = self.encoder(x.view(-1, self.d))
-        z = z.view(-1,self.real_dim)
+        z = z.view(-1, self.real_dim)
         d_y = F.softmax(z, dim=1)
         d_y = sharpen(d_y, T=1.0)
-        return self.decoder(d_y.view(-1, self.d)).view(-1,self.real_dim), d_y
+        return self.decoder(d_y.view(-1, self.d)).view(-1, self.real_dim), d_y
         # return self.decoder(z), d_y
 
     def load_model(self, model_full_name, target_device='cuda:0'):
-        self.load_state_dict(torch.load(model_full_name,map_location=target_device))
+        self.load_state_dict(torch.load(model_full_name, map_location=target_device))
 
     def save_model(self, model_full_name):
         torch.save(self.state_dict(), model_full_name)
@@ -95,7 +95,7 @@ class AutoEncoder_extend(nn.Module):
     def __init__(self, input_dim=2, encode_dim=3, extend_rate=2):
         super(AutoEncoder_extend, self).__init__()
         self.d = input_dim
-        self.extend_d = encode_dim*extend_rate
+        self.extend_d = encode_dim * extend_rate
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, encode_dim ** 2),
             nn.ReLU(),
@@ -145,14 +145,14 @@ class AutoEncoder_adversarial(nn.Module):
             nn.Softmax(dim=1)
         )
         initialize_weights(self)
-    
+
     def forward(self, x):
         # print(x.shape)
         z = self.encoder(x.view(-1, self.d))
         z = F.softmax(z, dim=1)
         z = sharpen(z, T=1.0)
         # print(z.shape)
-        return self.decoder(z), z # decoder(encoder(x)), encoder(x)
+        return self.decoder(z), z  # decoder(encoder(x)), encoder(x)
 
     def load_model(self, model_full_name):
         self.load_state_dict(torch.load(model_full_name))

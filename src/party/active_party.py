@@ -1,5 +1,6 @@
 import json
 import sys, os
+
 sys.path.append(os.pardir)
 import numpy as np
 import torch
@@ -8,23 +9,22 @@ from loguru import logger
 from party.party import Party
 from party.llm_party import Party as Party_LLM
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor, pairwise_dist
+from utils import timer
 from dataset.party_dataset import ActiveDataset
-from load.LoadModels import load_models_per_party
+from framework.client.DistributedCommunication import convert_pred_to_msg, convert_msg_to_pred
 
 from config import vfl_basic_config
+
 
 # load_models_per_party_new
 
 
 class ActiveParty_LLM(Party_LLM):
-    def __init__(self, args, index, need_data=True):
+    def __init__(self, args, index, need_data=True, need_model=True):
         print(f'==== initialize ActiveParty_LLM : party {index}======')
-        if args.device == 'cuda':
-            cuda_id = args.gpu
-            torch.cuda.set_device(cuda_id)
-            print(f'running on cuda{torch.cuda.current_device()}')
+        logger.debug(f'running on cuda{os.getenv("CUDA_VISIBLE_DEVICES").split(",")[torch.cuda.current_device()]}')
 
-        super().__init__(args, index, need_data=need_data)
+        super().__init__(args, index, need_data=need_data, need_model=need_model)
         self.name = "server#" + str(index + 1)
         self.criterion = cross_entropy_for_onehot
         # self.encoder = args.encoder
@@ -38,9 +38,9 @@ class ActiveParty_LLM(Party_LLM):
         for _ in range(args.k):
             self.pred_received.append([])
 
-        self.global_output = None # transmitted to passive party
-        self.global_loss = None # transmitted from passive party
-        self.global_gradients = None # transmitted from passive party
+        self.global_output = None  # transmitted to passive party
+        self.global_loss = None  # transmitted from passive party
+        self.global_gradients = None  # transmitted from passive party
 
         self.weights_grad_a = None
 
@@ -50,8 +50,6 @@ class ActiveParty_LLM(Party_LLM):
     # def prepare_data_loader(self, **kwargs):
     #     super().prepare_data_loader(self.args.batch_size, self.args.need_auxiliary)
 
-    def eval(self, **kwargs):
-        self.global_model.eval()
 
     def prepare_data(self, args, index):
         print('Active Party has no data, only global model')
@@ -65,115 +63,55 @@ class ActiveParty_LLM(Party_LLM):
     def receive_token_type_ids(self, token_type_ids):
         self.local_batch_token_type_ids = token_type_ids
 
-    def train_model(self):
-        self.global_model.train()
 
     def _do_aggregate_remote(self, pred_list):
-        t1 = torch.Tensor(pred_list[0])
-        t2 = torch.Tensor(pred_list[1])
-        t3 = None
-        t4 = None
+        new_dict = convert_msg_to_pred(pred_list, self.device, dtype=torch.bfloat16)
+        result = self.aggregate([new_dict])
 
-        t1 = t1.to(self.args.device)
-        t2 = t2.to(self.args.device)
-        if len(pred_list) > 2 and pred_list[2] is not None:
-            t3 = torch.Tensor(pred_list[2])
-            t3 = t3.to(self.args.device)
-        if len(pred_list) > 3 and pred_list[3] is not None:
-            t4 = torch.Tensor(pred_list[3])
-            t4 = t4.to(self.args.device, dtype=torch.int)
-        result = self.aggregate([[t1, t2, t3, t4]])
-
-        if self.args.model_type in ['Bert', 'Roberta']:
-            if self.args.task_type == 'SequenceClassification':
-                return {
-                    "requires_grad": result.requires_grad,
-                    "grad_fn": result.grad_fn.name(),
-                    "logits": result.tolist()
-                }
-            elif self.args.task_type == 'QuestionAnswering':
-                return {
-                    "requires_grad": True,
-                    # "loss": result.total_loss.float(),
-                    "start_logits": result.start_logits.tolist(),
-                    "end_logits": result.end_logits.tolist(),
-                    # "hidden_states": result.outputs.hidden_states,
-                    # "attentions": result.outputs.attentions,
-                }
-        elif self.args.model_type == 'GPT2':  # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
-            if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
-                return {
-                    "requires_grad": result.requires_grad,
-                    "grad_fn": result.grad_fn.name(),
-                    "logits": result.tolist()
-                }
-            elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                return {
-                    "requires_grad": result.requires_grad,
-                    "grad_fn": result.grad_fn.name(),
-                    "logits": result.tolist()
-                }
-            elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
-                return {
-                    "requires_grad": True,
-                    # "loss": result.total_loss.float(),
-                    "start_logits": result.start_logits.tolist(),
-                    "end_logits": result.end_logits.tolist(),
-                    # "hidden_states": result.outputs.hidden_states,
-                    # "attentions": result.outputs.attentions,
-                }
-            else:
-                assert 1 > 2, 'Task type no supported'
-        elif self.args.model_type == 'Llama':  # self.passive_pred_list[0] = [intermediate, sequence_lengths, attention_mask]
-            if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
-                return {
-                    "requires_grad": result.requires_grad,
-                    "grad_fn": result.grad_fn.name(),
-                    "logits": result.tolist()
-                }
-            elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
-                return {
-                    "requires_grad": result.requires_grad,
-                    "grad_fn": result.grad_fn.name(),
-                    "logits": result.tolist()
-                }
-            elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
-                return {
-                    "requires_grad": True,
-                    # "loss": result.total_loss.float(),
-                    "start_logits": result.start_logits.tolist(),
-                    "end_logits": result.end_logits.tolist(),
-                    # "hidden_states": result.outputs.hidden_states,
-                    # "attentions": result.outputs.attentions,
-                }
-            else:
-                assert 1 > 2, 'Task type no supported'
+        if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
+            return convert_pred_to_msg(result)
+        elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
+            return {
+                "requires_grad": result.requires_grad,
+                "grad_fn": result.grad_fn.name(),
+                "logits": result.tolist()
+            }
+        elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
+            return {
+                "requires_grad": True,
+                # "loss": result.total_loss.float(),
+                "start_logits": result.start_logits.tolist(),
+                "end_logits": result.end_logits.tolist(),
+                # "hidden_states": result.outputs.hidden_states,
+                # "attentions": result.outputs.attentions,
+            }
+        elif self.args.task_type == 'DevLLMInference':
+            return convert_pred_to_msg(result)
+        else:
+            assert 1 > 2, 'Task type no supported'
 
     def aggregate_remote(self, pred_list):
         return self._do_aggregate_remote(pred_list)
 
+    def save_pretrained_remote(self, data):
+        model_index = data['model_index']
+        model_id = data['model_id']
+        self.save_pretrained(model_index, model_id)
+
+    @timer()
     def aggregate(self, pred_list, use_cache=False, test=False):
         # print(' == Active Aggregate == ')
-        
+
         self.passive_pred_list = pred_list
         self.passive_pred_list[0].update({'use_cache':use_cache})
-        self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
+        self._tensor_to_device(self.passive_pred_list[0],self.device)
+        self.global_output = self.forward(model_index=1,**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
         if not isinstance(self.global_output,dict):
-            self.global_output=self.global_output.prepare_for_forward()
-        
-        
-        if vfl_basic_config.num_of_slice==2:
-            if self.args.model_architect == 'TQA':
-                self.output_tensors[1]=None
-            else:
-                self.output_tensors[1]=self.global_output['logits']
-        else:
-            self.output_tensors[1]=self.global_output['inputs_embeds']
-
-        return self.global_output
+            self.global_output = self.global_output.prepare_for_forward()
+        return self._detach_tensor(self.global_output)
 
     def receive_loss_and_gradients_remote(self, data):
-        gradients = torch.Tensor(data['gradients']).to(self.args.device)
+        gradients = torch.Tensor(data['gradients']).to(self.device)
         self.receive_loss_and_gradients(gradients)
 
     def receive_loss_and_gradients(self, gradients):
@@ -182,25 +120,27 @@ class ActiveParty_LLM(Party_LLM):
         # print('Active Party receive self.global_gradients:')
         # print(self.global_gradients)
 
-
     def global_LR_decay(self, i_epoch):
-        if self.global_model_optimizer != None:
+        if self.global_model_optimizer != None and (not self.lr_schedulers.get(1)):
             eta_0 = self.args.main_lr
             eta_t = eta_0 / (np.sqrt(int(i_epoch) + 1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
+        elif self.lr_schedulers[1]:
+            self.lr_schedulers[1].step()
 
     def cal_passive_local_gradient(self, ik, remote=True):
         if remote:
             ik = int(ik)
         if self.args.task_type == 'QuestionAnswering':
-            passive_local_gradient = torch.autograd.grad(self.global_output.start_logits+self.global_output.end_logits, self.passive_pred_list[ik]['inputs_embeds'], \
-            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
+            passive_local_gradient = \
+            torch.autograd.grad(self.global_output.start_logits + self.global_output.end_logits,
+                                self.passive_pred_list[ik]['inputs_embeds'], \
+                                grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
         else:
-            passive_local_gradient = torch.autograd.grad(self.global_output.logits, self.passive_pred_list[ik]['inputs_embeds'], \
-            grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
-
-
+            passive_local_gradient = \
+                torch.autograd.grad(self.output_tensors[1], self.passive_pred_list[ik]['inputs_embeds'], \
+                                    grad_outputs=self.global_gradients, retain_graph=True)[0].detach().clone()
         if remote:
             return passive_local_gradient.tolist()
         return passive_local_gradient
@@ -212,20 +152,22 @@ class ActiveParty_LLM(Party_LLM):
             if self.args.model_architect == 'TQA': #self.args.task_type == 'QuestionAnswering':
                 # update global model
                 self.global_model_optimizer.zero_grad()
-                
+
                 # trainable layer parameters
                 parameters = []
 
                 # load grads into parameters
-                weights_grad_a_start = torch.autograd.grad(self.global_output.start_logits, self.global_model.head_layer.parameters(), \
-                    grad_outputs=self.global_gradients, retain_graph=True)
-                weights_grad_a_end = torch.autograd.grad(self.global_output.end_logits, self.global_model.head_layer.parameters(),\
-                     grad_outputs=self.global_gradients, retain_graph=True)
+                weights_grad_a_start = torch.autograd.grad(self.global_output.start_logits,
+                                                           self.global_model.head_layer.parameters(),
+                                                           grad_outputs=self.global_gradients, retain_graph=True)
+                weights_grad_a_end = torch.autograd.grad(self.global_output.end_logits,
+                                                         self.global_model.head_layer.parameters(),
+                                                         grad_outputs=self.global_gradients, retain_graph=True)
+
                 self.weights_grad_a = []
-                for _i in range( len(weights_grad_a_start) ):
-                    self.weights_grad_a.append(weights_grad_a_start[_i]+weights_grad_a_end[_i])
-                self.weights_grad_a = tuple( self.weights_grad_a )
-                
+                for _i in range(len(weights_grad_a_start)):
+                    self.weights_grad_a.append(weights_grad_a_start[_i] + weights_grad_a_end[_i])
+                self.weights_grad_a = tuple(self.weights_grad_a)
 
                 for w, g in zip(self.global_model.head_layer.parameters(), self.weights_grad_a):
                     if w.requires_grad:
@@ -238,9 +180,10 @@ class ActiveParty_LLM(Party_LLM):
                 try:
                     # todo: here should update all trainable params
                     self.global_model_optimizer.zero_grad()
-
-                    weights_grad_a = torch.autograd.grad(self.global_output.logits, self.global_model.head_layer.parameters(), \
-                        grad_outputs=self.global_gradients, retain_graph=True)
+                    self.global_gradients = self.global_gradients.to(self.global_output.logits.device)
+                    weights_grad_a = torch.autograd.grad(self.global_output.logits,
+                                                         self.global_model.head_layer.parameters(), \
+                                                         grad_outputs=self.global_gradients, retain_graph=True)
                     self.weights_grad_a = weights_grad_a
 
                     for w, g in zip(self.global_model.head_layer.parameters(), weights_grad_a):
@@ -248,14 +191,18 @@ class ActiveParty_LLM(Party_LLM):
                             w.grad = g.detach()
 
                     self.global_model_optimizer.step()
-                
+
                 except Exception as e:
                     logger.debug(f"active party step optimizer 1")
                     self.global_model_optimizer.zero_grad()
+                    self.global_gradients=self.global_gradients.to(self.output_tensors[1].device)
                     self.output_tensors[1].backward(gradient=self.global_gradients, retain_graph=True)
                     self.global_model_optimizer.step()
                     self.global_model_optimizer.zero_grad()
 
+    @property
+    def device(self):
+        return self.models[1].device
 
 class ActiveParty(Party):
     def __init__(self, args, index):

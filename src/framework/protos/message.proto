@@ -16,6 +16,9 @@ enum MessageType {
   FINISH_TASK = 3;
   START_TASK = 4;
   UNREGISTER = 5;
+  CLOSE_JOB = 6;
+  LOAD_MODEL = 7;
+  UPDATE_MODEL_DATA = 8;
 }
 
 message Message{
@@ -26,6 +29,25 @@ message Message{
   MessageType type = 5;
 }
 
+message tensor_double{
+    repeated double value = 1;
+    repeated int32 shape = 2;
+}
+
+message tensor_int{
+    repeated int64 value = 1;
+    repeated int32 shape = 2;
+}
+
+message HiddenStates{
+    tensor_double inputs_embeds = 1;
+    tensor_double attention_mask = 2;
+    tensor_int position_ids = 3;
+    repeated string requires_grads = 4;
+    bool use_cache = 5;
+    bool output_hidden_states = 6;
+}
+
 message Value {
   oneof value {
     // Single element
@@ -34,6 +56,7 @@ message Value {
     bool bool = 3;
     string string = 4;
     bytes bytes = 5;
+    HiddenStates hidden_states = 6;
   }
 }
 

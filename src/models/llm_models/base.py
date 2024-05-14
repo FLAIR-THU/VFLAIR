@@ -59,7 +59,8 @@ class VFLPipeline(ABC):
             logger.warning(f"{repr(e)}\nTry to load from raw model")
             return self._from_raw(model_name_or_path, **kwargs)
 
-    def _save_pretrained(self, model_name_or_path: str, models: Dict[int, PreTrainedModel], **kwargs):
+    @staticmethod
+    def save_pretrained(model_name_or_path: str, models: Dict[int, PreTrainedModel], **kwargs):
         for i, m in models.items():
             m.save_pretrained(os.path.join(model_name_or_path, f"model_{i}"), **kwargs)
 
@@ -105,7 +106,7 @@ class VFLPipeline(ABC):
                 _model = self._load_model_tail(model_name_or_path, do_split=True, **kwargs)
             else:
                 _model = self._load_model_body(model_name_or_path, do_split=True, **kwargs)
-            self._save_pretrained(self._vfl_model_folder(model_name_or_path), models={i: _model})
+            self.save_pretrained(self._vfl_model_folder(model_name_or_path), models={i: _model})
             del _model
             gc.collect()
             torch.cuda.empty_cache()

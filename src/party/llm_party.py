@@ -15,6 +15,7 @@ from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_llm,
     load_dataset_per_party_noisysample
 from load.LoadModels import load_models_per_party
 
+from utils import timer
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor, pairwise_dist
@@ -24,15 +25,16 @@ import torch
 import re
 import collections
 from transformers import PreTrainedModel, AutoTokenizer
-from peft import get_peft_model
+from peft import get_peft_model,PeftModel
 from config import vfl_basic_config
 from models.llm_models.qwen2 import VFLPipelineQwen
+from models.llm_models.base import VFLPipeline
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 
 class Party(object):
-    def __init__(self, args, index, need_data=True,need_model=True):
+    def __init__(self, args, index, need_data=True, need_model=True):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
@@ -120,7 +122,24 @@ class Party(object):
         return self.index == self.args.k - 1
 
     def eval(self):
-        pass
+        for m in self.models.values():
+            if m:
+                m.eval()
+
+    def train(self,*args,**kwargs):
+        for m in self.models.values():
+            if m:
+                m.train(*args,**kwargs)
+
+    def update_model_data(self, model_data):
+        self.args.tokenizer = model_data['tokenizer']
+        self.models = model_data['models']
+        self.args.config = model_data['config']
+        self.args.model_architectures = self.args.config.architectures
+        self.args.model_embedded_dim = self.args.config.hidden_size
+        if model_data['generation_config']:
+            self.args.generation_config = model_data['generation_config']
+        self._set_peft()
 
     def prepare_data(self, args, index):
         (
@@ -132,6 +151,8 @@ class Party(object):
 
         self.train_data, self.train_label = train_dst
         self.test_data, self.test_label = test_dst
+        # self.train_data, self.train_label = train_dst[0][:20],train_dst[1][:20]
+        # self.test_data, self.test_label = train_dst[0][:20],train_dst[1][:20]
 
     def prepare_data_loader(self, need_auxiliary=0, **kwargs):
         # self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , 
@@ -150,14 +171,12 @@ class Party(object):
     def prepare_model(self, args, index):
         if args.model_type.lower() == 'qwen2':
             model_path = args.model_list[str(index)]['path']
-            args.tokenizer = AutoTokenizer.from_pretrained(model_path,padding_side='left')
+            args.tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side='left')
             p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
             self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
             self._prepare_model_update_args(args)
+            self._set_peft()
 
-            if _train_conf := vfl_basic_config.vfl_training_config:
-                if _train_conf.peft_config:
-                    self._peft_model_setting()
 
         else:
             (
@@ -167,35 +186,55 @@ class Party(object):
                 self.global_model,
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
-        
+
+
     def _prepare_model_update_args(self, args):
         for m in self.models.values():
             if m:
-                model=m
+                model = m
         args.config = model.config
         args.model_architectures = args.config.architectures
         args.model_embedded_dim = args.config.hidden_size
         if m and m.generation_config:
             args.generation_config = model.generation_config
 
+    def _set_peft(self):
+        """
+        peft training or load trained peft weights
+        :return:
+        """
+        if peft_model_path:=self.args.model_list[str(self.index)].get('peft_model_path'):
+            for i,m in self.models.items():
+                _model_path=os.path.join(peft_model_path,f"model_{i}")
+                if m and os.path.exists(_model_path):
+                    self.models[i]=PeftModel.from_pretrained(m, _model_path).train()
+
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            if _train_conf.peft_config:
+                self._peft_model_setting()
+
+
+
     def _peft_model_setting(self):
         _train_conf = vfl_basic_config.vfl_training_config
         logger.info(f"enable peft model setting: \n{str(_train_conf.peft_config)}")
 
         for i in _train_conf.trainable_slice:
-            if i in self.models:
-                model = self.models[i]
-                if model:
-                    model.enable_input_require_grads()
+            model = self.models.get(i,None)
+            if model:
+                model.enable_input_require_grads()
+                if not isinstance(model,PeftModel):
                     peft_model = get_peft_model(model, _train_conf.peft_config)
                     peft_model.print_trainable_parameters()
                     self.models.update({i: peft_model})
-                    trainable_params = filter(lambda x: x.requires_grad, model.parameters())
-                    # 定义优化器和学习率调度器
-                    optimizer = torch.optim.AdamW(trainable_params, lr=_train_conf.training_args.learning_rate)
-                    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=4)
-                    self.optimizers.update({i: optimizer})
-                    self.lr_schedulers.update({i: scheduler})
+                else:
+                    model.set_adapter('default')
+                trainable_params = filter(lambda x: x.requires_grad, model.parameters())
+                # 定义优化器和学习率调度器
+                optimizer = torch.optim.AdamW(trainable_params, lr=_train_conf.training_args.learning_rate)
+                scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, end_factor=0.01, total_iters=10)
+                self.optimizers.update({i: optimizer})
+                self.lr_schedulers.update({i: scheduler})
 
     def label_to_one_hot(self, target, num_classes=10):
         target = target.long()
@@ -405,10 +444,17 @@ class Party(object):
         #     if self.args.task_type == 'CausalLM':
         #         return self.local_pred, self.local_pred_clone,self.local_attention_mask, self.transferred_past_key_values
 
+    def _tensor_to_device(self,dict_like:dict,device):
+        for k,v in dict_like.items():
+            if isinstance(v,torch.Tensor):
+                dict_like[k] = v.to(device)
+
+    @timer()
     def give_pred(self, use_cache=False):
         # print('give_pred_dev:',self.local_data_input.keys())
         self.local_data_input['use_cache'] = use_cache
-        intermediate = self.local_model(**self.local_data_input)
+        self._tensor_to_device(self.local_data_input,self.models[0].device)
+        intermediate = self.forward(model_index=0,**self.local_data_input)
         if not isinstance(intermediate, dict):
             intermediate = intermediate.prepare_for_forward()
         self.local_pred = intermediate['inputs_embeds']
@@ -474,33 +520,60 @@ class Party(object):
         # self.past_key_values = past_key_values
         # print('obtain_local_data_dev:',kwargs.keys())
         if data_input_dict:
+            self._tensor_to_device(data_input_dict,self.models[0].device)
             self.local_data_input = data_input_dict
         else:
             pass
 
     @property
     def local_model(self):
-        return self.models[0]
+        if 0 in self.models:
+            return self.models[0]
+        else:
+            return None
 
     @local_model.setter
     def local_model(self, model):
-        self.models.update({0: model})
+        if model is None:
+            pass
+        else:
+            self.models.update({0: model})
 
     @property
     def local_model_optimizer(self):
-        return self.optimizers[0]
+        if 0 in self.optimizers:
+            return self.optimizers[0]
+        else:
+            return None
 
     @local_model_optimizer.setter
     def local_model_optimizer(self, optimizer):
-        self.optimizers.update({0: optimizer})
+        if optimizer is None:
+            pass
+        else:
+            self.optimizers.update({0: optimizer})
+
+    @property
+    def local_pred(self):
+        return self.output_tensors[0]
+
+    @local_pred.setter
+    def local_pred(self, tensor):
+        self.output_tensors[0]=tensor
 
     @property
     def global_model(self):
-        return self.models[1]
+        if 1 in self.models:
+            return self.models[1]
+        else:
+            return None
 
     @global_model.setter
     def global_model(self, model):
-        self.models.update({1: model})
+        if model is None:
+            pass
+        else:
+            self.models.update({1: model})
 
     @property
     def global_model_optimizer(self):
@@ -510,25 +583,50 @@ class Party(object):
     def global_model_optimizer(self, optimizer):
         self.optimizers.update({1: optimizer})
 
+
     def local_forward(self):
         # args.local_model()
         pass
 
+    @timer()
     def forward(self, model_index, **kwargs):
         logger.debug(f"model_{model_index} forward")
         self.input_tensors[model_index] = kwargs.get('inputs_embeds')
         resp = self.models[model_index](**kwargs)
         if model_index == vfl_basic_config.num_of_slice - 1:
-            self.output_tensors[model_index] = resp['logits']
+            self.output_tensors[model_index] = resp.get('logits')
         else:
-            self.output_tensors[model_index] = resp['hidden_states']
-        return resp
+            self.output_tensors[model_index] = resp['inputs_embeds']
+        return self._detach_tensor(resp)
+
+    def _detach_tensor(self, dict_like: dict):
+        for key, value in dict_like.items():
+            if isinstance(value, torch.Tensor) and value.requires_grad:
+                dict_like[key] = value.detach().clone()
+                dict_like[key].requires_grad = True
+        return dict_like
 
     def backward(self, model_index, **kwargs):
         logger.debug(f"model_{model_index} backward")
         self.output_tensors[model_index].backward(**kwargs)
 
     def optimizer_step(self, model_index):
-        logger.debug(f"model_{model_index} {__name__}")
+        logger.debug(f"model_{model_index} optimize")
         self.optimizers[model_index].step()
         self.optimizers[model_index].zero_grad()
+
+    def get_model_folder(self):
+        model_folder = os.getenv('MODEL_FOLDER')
+        if model_folder is None:
+            raise ValueError('MODEL_FOLDER env must not be empty and should contain /')
+        return model_folder
+
+    def save_pretrained(self,model_index,model_id,model_folder=None,**kwargs):
+        if model_folder is None:
+            model_folder = self.get_model_folder()
+        for i,m in self.models.items():
+            if m and i in model_index:
+                logger.debug(f"save model {i}")
+                VFLPipeline.save_pretrained(model_name_or_path=os.path.join(*filter(lambda x:x is not None,[model_folder,model_id])),
+                                            models={i:m},
+                                            **kwargs)

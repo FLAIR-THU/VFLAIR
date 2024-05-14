@@ -106,7 +106,7 @@ if __name__ == "__main__":
             X_d[X_d.columns[: int(len(X_d.columns) / 2)]], drop_first=True, dtype=int
         )
         X_p = pd.get_dummies(
-            X_d[X_d.columns[int(len(X_d.columns) / 2) :]], drop_first=True, dtype=int
+            X_d[X_d.columns[int(len(X_d.columns) / 2):]], drop_first=True, dtype=int
         )
         featureid_lists = [
             list(range(X_a.shape[1])),

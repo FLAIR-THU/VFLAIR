@@ -8,22 +8,22 @@ class Reconstructor(nn.Module):
         super(Reconstructor, self).__init__()
         self.layer1 = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(input_dim, input_dim<<2, bias=True),
+            nn.Linear(input_dim, input_dim << 2, bias=True),
             nn.ReLU(inplace=True)
         )
 
         self.layer2 = nn.Sequential(
-            nn.Linear(input_dim<<2, input_dim<<2, bias=True),
+            nn.Linear(input_dim << 2, input_dim << 2, bias=True),
             nn.ReLU(inplace=True)
         )
 
         self.layer3 = nn.Sequential(
-            nn.Linear(input_dim<<2, input_dim<<1, bias=True),
+            nn.Linear(input_dim << 2, input_dim << 1, bias=True),
             nn.ReLU(inplace=True)
         )
 
         self.layer4 = nn.Sequential(
-            nn.Linear(input_dim<<1, input_dim, bias=True),
+            nn.Linear(input_dim << 1, input_dim, bias=True),
             nn.ReLU(inplace=True)
         )
 

@@ -1,29 +1,31 @@
 import sys, os
+
 sys.path.append(os.pardir)
 import math
 import json
 import argparse
 from models.autoencoder import AutoEncoder
 
-TARGETED_BACKDOOR = ['ReplacementBackdoor','ASB']
-UNTARGETED_BACKDOOR = ['NoisyLabel','MissingFeature','NoisySample']
-LABEL_INFERENCE = ['BatchLabelReconstruction','DirectLabelScoring','NormbasedScoring',\
-'DirectionbasedScoring','PassiveModelCompletion','ActiveModelCompletion']
+TARGETED_BACKDOOR = ['ReplacementBackdoor', 'ASB']
+UNTARGETED_BACKDOOR = ['NoisyLabel', 'MissingFeature', 'NoisySample']
+LABEL_INFERENCE = ['BatchLabelReconstruction', 'DirectLabelScoring', 'NormbasedScoring', \
+                   'DirectionbasedScoring', 'PassiveModelCompletion', 'ActiveModelCompletion']
 ATTRIBUTE_INFERENCE = ['AttributeInference']
-FEATURE_INFERENCE = ['GenerativeRegressionNetwork','ResSFL']
+FEATURE_INFERENCE = ['GenerativeRegressionNetwork', 'ResSFL']
 # LLM attacks
-INVERSION = ["VanillaModelInversion_WhiteBox","VanillaModelInversion_BlackBox","WhiteBoxInversion"]
+INVERSION = ["VanillaModelInversion_WhiteBox", "VanillaModelInversion_BlackBox", "WhiteBoxInversion"]
 
-communication_protocol_list = ['FedSGD','FedBCD_p','FedBCD_s','CELU','Quantization','Topk']
+communication_protocol_list = ['FedSGD', 'FedBCD_p', 'FedBCD_s', 'CELU', 'Quantization', 'Topk']
+
 
 def load_llm_configs(config_dict):
     args = do_load_basic_configs(config_dict, argparse.Namespace())
     # args.tasks = config_dict['tasks']
     args.device = config_dict['device']
     args.gpu = config_dict['gpu']
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     args.fl_type = config_dict['fl_type']
     return args
+
 
 def load_basic_configs(config_file_name, args):
     config_file_path = './configs/' + config_file_name + '.json'
@@ -32,24 +34,27 @@ def load_basic_configs(config_file_name, args):
     args = do_load_basic_configs(config_dict, args)
     return args
 
+
 def do_load_basic_configs(config_dict, args):
     # print(config_dict)
-    args.passive_party_class = config_dict['passive_party_class'] if ('passive_party_class' in config_dict) else "PassiveParty_LLM"
-    args.active_party_class = config_dict['active_party_class'] if ('active_party_class' in config_dict) else "ActiveParty_LLM"
-    
+    args.passive_party_class = config_dict['passive_party_class'] if (
+                'passive_party_class' in config_dict) else "PassiveParty_LLM"
+    args.active_party_class = config_dict['active_party_class'] if (
+                'active_party_class' in config_dict) else "ActiveParty_LLM"
+
     # args.main_lr, learning rate for main task
-    args.main_lr = config_dict['lr'] if('lr' in config_dict) else 0.001
-    assert (args.main_lr>0), "main learning rate should be >0"
+    args.main_lr = config_dict['lr'] if ('lr' in config_dict) else 0.001
+    assert (args.main_lr > 0), "main learning rate should be >0"
 
     # args.main_epochs, iterations for main task
-    args.main_epochs = config_dict['epochs'] if('epochs' in config_dict) else 50
-    
+    args.main_epochs = config_dict['epochs'] if ('epochs' in config_dict) else 50
+
     # args.early_stop_threshold, early stop max epoch
-    args.early_stop_threshold = config_dict['early_stop_threshold'] if('early_stop_threshold' in config_dict) else 5
-    
+    args.early_stop_threshold = config_dict['early_stop_threshold'] if ('early_stop_threshold' in config_dict) else 5
+
     # args.k, number of participants
-    args.k = config_dict['k'] if('k' in config_dict) else 2
-    assert (args.k % 1 == 0 and args.k>0), "k should be positive integers"
+    args.k = config_dict['k'] if ('k' in config_dict) else 2
+    assert (args.k % 1 == 0 and args.k > 0), "k should be positive integers"
 
     # args.batch_size for main task
     args.batch_size = config_dict['batch_size'] if ('batch_size' in config_dict) else 2048
@@ -57,80 +62,88 @@ def do_load_basic_configs(config_dict, args):
 
     # Communication Protocol
     communication_protocol_dict = config_dict['communication'] if ('communication' in config_dict) else None
-    
-    args.communication_protocol = communication_protocol_dict['communication_protocol'] if ('communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
+
+    args.communication_protocol = communication_protocol_dict['communication_protocol'] if (
+                'communication_protocol' in communication_protocol_dict) else 'FedBCD_p'
     assert (args.communication_protocol in communication_protocol_list), "communication_protocol not available"
-    
-    args.Q = communication_protocol_dict['iteration_per_aggregation'] if ('iteration_per_aggregation' in communication_protocol_dict) else 1
-    assert (args.Q % 1 == 0 and args.Q>0), "iteration_per_aggregation should be positive integers"
-    
-    args.quant_level = communication_protocol_dict['quant_level'] if ('quant_level' in communication_protocol_dict) else 0
+
+    args.Q = communication_protocol_dict['iteration_per_aggregation'] if (
+                'iteration_per_aggregation' in communication_protocol_dict) else 1
+    assert (args.Q % 1 == 0 and args.Q > 0), "iteration_per_aggregation should be positive integers"
+
+    args.quant_level = communication_protocol_dict['quant_level'] if (
+                'quant_level' in communication_protocol_dict) else 0
     args.vecdim = communication_protocol_dict['vecdim'] if ('vecdim' in communication_protocol_dict) else 1
-    args.num_update_per_batch = communication_protocol_dict['num_update_per_batch'] if ('num_update_per_batch' in communication_protocol_dict) else 5
-    args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if ('num_batch_per_workset' in communication_protocol_dict) else 5
-    args.smi_thresh = communication_protocol_dict['smi_thresh'] if ('smi_thresh' in communication_protocol_dict) else 0.5
+    args.num_update_per_batch = communication_protocol_dict['num_update_per_batch'] if (
+                'num_update_per_batch' in communication_protocol_dict) else 5
+    args.num_batch_per_workset = communication_protocol_dict['num_batch_per_workset'] if (
+                'num_batch_per_workset' in communication_protocol_dict) else 5
+    args.smi_thresh = communication_protocol_dict['smi_thresh'] if (
+                'smi_thresh' in communication_protocol_dict) else 0.5
     if args.quant_level > 0:
-        args.ratio = math.log(args.quant_level,2)/32
+        args.ratio = math.log(args.quant_level, 2) / 32
     args.ratio = communication_protocol_dict['ratio'] if ('ratio' in communication_protocol_dict) else 0.5
     # print('Topk Ratio:',args.ratio)
     if args.communication_protocol == 'FedSGD':
         args.Q = 1
-    print('communication_protocol:',args.communication_protocol)
+    print('communication_protocol:', args.communication_protocol)
 
-    
     args.attacker_id = []
     # # args.early_stop, if use early stop
     # args.main_early_stop = config_dict['main_early_stop'] if ('main_early_stop' in config_dict) else 0
     # args.main_early_stop_param = config_dict['main_early_stop_param'] if ('main_early_stop_param' in config_dict) else 0.0001
     # # args.num_exp number of repeat experiments for main task
     # args.num_exp = config_dict['num_exp'] if ('num_exp' in config_dict) else 10
-    
+
     # args.dataset_split  configuration for dataste
-    args.dataset_split = config_dict['dataset'] if('dataset' in config_dict) else None
+    args.dataset_split = config_dict['dataset'] if ('dataset' in config_dict) else None
     if args.dataset_split == None:
         args.num_classes = 10
         args.use_prompt = 0
         args.n_shot = 0
-    args.num_classes = args.dataset_split['num_classes'] if('num_classes' in args.dataset_split) else 10
-    args.use_prompt = args.dataset_split['use_prompt'] if('use_prompt' in args.dataset_split) else 0
-    args.n_shot = args.dataset_split['n_shot'] if('n_shot' in args.dataset_split) else 0
+    args.num_classes = args.dataset_split['num_classes'] if ('num_classes' in args.dataset_split) else 10
+    args.use_prompt = args.dataset_split['use_prompt'] if ('use_prompt' in args.dataset_split) else 0
+    args.n_shot = args.dataset_split['n_shot'] if ('n_shot' in args.dataset_split) else 0
 
     ############## for LLM ###############
     args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None# pretrained finetune
     args.finetune_configs = config_dict['finetune_configs'] if('finetune_configs' in config_dict) else None
     args.finetune_name = args.finetune_configs['name'] if args.finetune_configs!=None else 'Vanilla'
 
-    args.model_architect = config_dict['model_architect'] if('model_architect' in config_dict) else 'CLM'
-    print('load model_architect:',args.model_architect)
-    
+    args.model_architect = config_dict['model_architect'] if ('model_architect' in config_dict) else 'CLM'
+    print('load model_architect:', args.model_architect)
+
     # Tokenizer
-    args.tokenizer = None # for LLM if needed
+    args.tokenizer = None  # for LLM if needed
     args.tokenizer_dict = config_dict['tokenizer'] if ('tokenizer' in config_dict) else None
     if args.tokenizer_dict != None:
-        
-        args.padding = args.tokenizer_dict['padding'] if('padding' in args.tokenizer_dict) else 0
+
+        args.padding = args.tokenizer_dict['padding'] if ('padding' in args.tokenizer_dict) else 0
         # "longest"  "max_length"  "do_not_pad"
-        args.padding_type = args.tokenizer_dict['padding_type'] if('padding_type' in args.tokenizer_dict) else 'outside'
+        args.padding_type = args.tokenizer_dict['padding_type'] if (
+                    'padding_type' in args.tokenizer_dict) else 'outside'
         # "inside" "outside"
-        args.pad_token = args.tokenizer_dict['pad_token'] if('pad_token' in args.tokenizer_dict) else 'default'
+        args.pad_token = args.tokenizer_dict['pad_token'] if ('pad_token' in args.tokenizer_dict) else 'default'
         # default
-        args.truncation = args.tokenizer_dict['truncation'] if('truncation' in args.tokenizer_dict) else "do_not_truncate"
+        args.truncation = args.tokenizer_dict['truncation'] if (
+                    'truncation' in args.tokenizer_dict) else "do_not_truncate"
         # "only first"  "only_second"  "longest_first"  "do_not_truncate"
         if args.truncation == "True":
             args.truncation = True
         elif args.truncation == "False":
             args.truncation = False
-            
-        args.max_length = args.tokenizer_dict['max_length'] if('max_length' in args.tokenizer_dict) else None
-        args.padding_side = args.tokenizer_dict['padding_side'] if('padding_side' in args.tokenizer_dict) else "left"
-        args.add_special_tokens = args.tokenizer_dict['add_special_tokens'] if('add_special_tokens' in args.tokenizer_dict) else 0
+
+        args.max_length = args.tokenizer_dict['max_length'] if ('max_length' in args.tokenizer_dict) else None
+        args.padding_side = args.tokenizer_dict['padding_side'] if ('padding_side' in args.tokenizer_dict) else "left"
+        args.add_special_tokens = args.tokenizer_dict['add_special_tokens'] if (
+                    'add_special_tokens' in args.tokenizer_dict) else 0
         if args.add_special_tokens == 0:
             args.add_special_tokens = False
         else:
             args.add_special_tokens = True
     else:
         args.padding = 'do_not_pad'
-    
+
     if args.padding == 'do_not_pad':
         args.pad_info = f'donotpad-{str(args.add_special_tokens)}'
     elif args.padding == 'longest':
@@ -139,25 +152,24 @@ def do_load_basic_configs(config_dict, args):
         args.pad_info = f'maxlength-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     ############## for LLM ###############
 
-
     # args.model_list, specify the types of models
     if 'model_list' in config_dict:
         config_model_dict = config_dict['model_list']
-        #print('config_model_dict:',(len(config_model_dict)-2))
+        # print('config_model_dict:',(len(config_model_dict)-2))
         # assert ((len(config_model_dict)-3)==args.k), 'please alter party number k, model number should be equal to party number'
-        
+
         ############## for LLM ###############
         args.max_sequence = config_model_dict['0']['max_sequence'] if ('max_sequence' in config_model_dict['0']) else -1
-        
+
         model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10', 'input_dim': 392, 'output_dim': 10}
-        
+
         # Task Description
         args.task_dict = config_model_dict['task']
         args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
-        
+
         args.generation_config_dict = args.task_dict['generation_config_dict'] if('generation_config_dict' in args.task_dict) else {}
-        
+
 
         args.metric_type = args.task_dict['metric_type'] if('metric_type' in args.task_dict) else "n_best"
         args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
@@ -175,30 +187,37 @@ def do_load_basic_configs(config_dict, args):
         for ik in range(args.k):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
-                    args.model_type = config_model_dict[str(ik)]['model_type'] if  'model_type' in config_model_dict[str(ik)] else None # Overall Model Type
-                    
-                    encoder_trainable_ids = config_model_dict[str(ik)]['encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
+                    args.model_type = config_model_dict[str(ik)]['model_type'] if 'model_type' in config_model_dict[
+                        str(ik)] else None  # Overall Model Type
+
+                    encoder_trainable_ids = config_model_dict[str(ik)][
+                        'encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
                     args.encoder_trainable_ids_list.append(encoder_trainable_ids)
 
-                    if ik == args.k-1:
-                        args.embedding_trainable.append(False) # no embedding layer for active parties
+                    if ik == args.k - 1:
+                        args.embedding_trainable.append(False)  # no embedding layer for active parties
                     else:
-                        embedding_trainable = int(config_model_dict[str(ik)]['embedding_trainable']) if 'embedding_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+                        embedding_trainable = int(
+                            config_model_dict[str(ik)]['embedding_trainable']) if 'embedding_trainable' in \
+                                                                                  config_model_dict[
+                                                                                      str(ik)] else 0  # Overall Model Type
                         if embedding_trainable == 1:
                             embedding_trainable = True
                         else:
                             embedding_trainable = False
                         args.embedding_trainable.append(embedding_trainable)
-                    
-                    encoder_trainable = int(config_model_dict[str(ik)]['encoder_trainable']) if 'encoder_trainable' in config_model_dict[str(ik)] else 0 # Overall Model Type
+
+                    encoder_trainable = int(config_model_dict[str(ik)]['encoder_trainable']) if 'encoder_trainable' in \
+                                                                                                config_model_dict[
+                                                                                                    str(ik)] else 0  # Overall Model Type
                     if encoder_trainable == 1:
                         encoder_trainable = True
                     else:
                         encoder_trainable = False
                     args.encoder_trainable.append(encoder_trainable)
-                    
-                    if ik != args.k-1:
-                        args.head_layer_trainable.append(False) # no head layer for passive parties
+
+                    if ik != args.k - 1:
+                        args.head_layer_trainable.append(False)  # no head layer for passive parties
                     else:
                         head_layer_trainable = int(config_model_dict[str(ik)]['head_layer_trainable'])
                         if head_layer_trainable == 1:
@@ -207,14 +226,14 @@ def do_load_basic_configs(config_dict, args):
                             head_layer_trainable = False
                         args.head_layer_trainable.append(head_layer_trainable)
 
-                    
-                    if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and ('output_dim' in config_model_dict[str(ik)])):
+                    if 'path' in config_model_dict[str(ik)] or (('input_dim' in config_model_dict[str(ik)]) and (
+                            'output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']
                         args.pretrained = config_model_dict[str(ik)]['pretrained']
                     else:
-                        model_type_name = config_model_dict[str(ik)]['type'] # specific model type
-                        temp = {'type':model_type_name, 'path':'../models/'+model_type_name+'/random'}
+                        model_type_name = config_model_dict[str(ik)]['type']  # specific model type
+                        temp = {'type': model_type_name, 'path': '../models/' + model_type_name + '/random'}
                         model_dict[str(ik)] = temp
                         args.model_path = ""
                         args.pretrained = 0
@@ -222,16 +241,19 @@ def do_load_basic_configs(config_dict, args):
                     model_dict[str(ik)] = default_dict_element
             else:
                 model_dict[str(ik)] = default_dict_element
-        
-        print('args.encoder_trainable:',args.encoder_trainable)
-        print('args.embedding_trainable:',args.embedding_trainable)
-        print('args.head_layer_trainable:',args.head_layer_trainable)
-        
+
+        print('args.encoder_trainable:', args.encoder_trainable)
+        print('args.embedding_trainable:', args.embedding_trainable)
+        print('args.head_layer_trainable:', args.head_layer_trainable)
+
         args.model_list = model_dict
-        args.local_encoders_num = config_model_dict['local_encoders_num'] if 'local_encoders_num' in config_model_dict else 1
-        args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if ('apply_trainable_layer' in config_model_dict) else 0
-        args.global_model = config_model_dict['global_model'] if ('global_model' in config_model_dict) else 'ClassificationModelHostHead'
-        print('args.local_encoders_num:',args.local_encoders_num)
+        args.local_encoders_num = config_model_dict[
+            'local_encoders_num'] if 'local_encoders_num' in config_model_dict else 1
+        args.apply_trainable_layer = config_model_dict['apply_trainable_layer'] if (
+                    'apply_trainable_layer' in config_model_dict) else 0
+        args.global_model = config_model_dict['global_model'] if (
+                    'global_model' in config_model_dict) else 'ClassificationModelHostHead'
+        print('args.local_encoders_num:', args.local_encoders_num)
 
     else:
         default_model_dict = {}
@@ -241,39 +263,40 @@ def do_load_basic_configs(config_dict, args):
         args.model_list = default_model_dict
         args.apply_trainable_layer = 0
         args.global_model = 'ClassificationModelHostHead'
-    
+
     # Check: Centralized Training
-    if args.k ==1 :
+    if args.k == 1:
         print('k=1, Launch Centralized Training, All Attack&Defense dismissed, Q set to 1')
-        args.apply_attack = False # bli/ns/ds attack
-        args.apply_backdoor = False # replacement backdoor attack
-        args.apply_nl = False # noisy label attack
-        args.apply_ns = False # noisy sample attack
-        args.apply_mf = False # missing feature attack
+        args.apply_attack = False  # bli/ns/ds attack
+        args.apply_backdoor = False  # replacement backdoor attack
+        args.apply_nl = False  # noisy label attack
+        args.apply_ns = False  # noisy sample attack
+        args.apply_mf = False  # missing feature attack
         args.apply_defense = False
         args.apply_mid = False
         args.apply_cae = False
         args.apply_dcae = False
         args.apply_dp = False
-        args.Q=1
+        args.Q = 1
         # return args
 
     # if defense appears
     args.apply_defense = False
     args.apply_dp = False
-    args.apply_mid = False # mid defense
-    args.apply_cae = False # cae defense
-    args.apply_dcae = False # dcae defense
-    args.apply_adversarial = False # adversarial
-    args.bin_size = [None for _ in range(args.k)] # for discrete bins
-    args.gradients_res_a = [None for _ in range(args.k)] # for gradient sparsification
-    args.apply_dcor = False # distance corrilation
+    args.apply_mid = False  # mid defense
+    args.apply_cae = False  # cae defense
+    args.apply_dcae = False  # dcae defense
+    args.apply_adversarial = False  # adversarial
+    args.bin_size = [None for _ in range(args.k)]  # for discrete bins
+    args.gradients_res_a = [None for _ in range(args.k)]  # for gradient sparsification
+    args.apply_dcor = False  # distance corrilation
     if 'defense' in config_dict:
         print(config_dict['defense'].keys())
         if 'name' in config_dict['defense']:
             args.apply_defense = True
             args.defense_name = config_dict['defense']['name']
-            args.defense_configs = config_dict['defense']['parameters'] if('parameters' in config_dict['defense']) else None
+            args.defense_configs = config_dict['defense']['parameters'] if (
+                        'parameters' in config_dict['defense']) else None
             assert 'party' in config_dict['defense']['parameters'], '[Error] Defense party not specified'
             print(f"in load configs, defense_configs is type {type(args.defense_configs)}")
             print(f"in load configs, defense_configs is type {type(dict(args.defense_configs))}")
@@ -301,9 +324,10 @@ def do_load_basic_configs(config_dict, args):
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name in ["MID"]:
-            args.defense_param = str(args.defense_configs['mid_model_name'])+'_'+str(args.defense_configs['mid_position'])+'_'+str(args.defense_configs['lambda'])
+            args.defense_param = str(args.defense_configs['mid_model_name']) + '_' + str(
+                args.defense_configs['mid_position']) + '_' + str(args.defense_configs['lambda'])
             args.defense_param_name = 'lambda'
-        elif args.defense_name == "GaussianDP" or args.defense_name=="LaplaceDP":
+        elif args.defense_name == "GaussianDP" or args.defense_name == "LaplaceDP":
             if 'dp_strength' in args.defense_configs:
                 args.defense_param = args.defense_configs['dp_strength']
                 args.defense_param_name = 'dp_strength'
@@ -322,14 +346,13 @@ def do_load_basic_configs(config_dict, args):
     else:
         args.defense_param = 'None'
         args.defense_param_name = 'No_Defense'
-    
-    # Detail Specifications about defense_name
-    if args.defense_name=="MID":
-        if args.defense_configs['party'] == [0]:
-            args.defense_name="MID_Passive"
-        else:
-            args.defense_name="MID_Active"
 
+    # Detail Specifications about defense_name
+    if args.defense_name == "MID":
+        if args.defense_configs['party'] == [0]:
+            args.defense_name = "MID_Passive"
+        else:
+            args.defense_name = "MID_Active"
 
     # if there's attack   Mark attack type
     args.attack_num = 0
@@ -347,7 +370,7 @@ def do_load_basic_configs(config_dict, args):
     args.inversion_index = []
     args.apply_attack = False
     if 'attack_list' in config_dict:
-        if len(config_dict['attack_list'])>0:
+        if len(config_dict['attack_list']) > 0:
             attack_config_dict = config_dict['attack_list']
             args.attack_num = len(attack_config_dict)
             args.apply_attack = True
@@ -357,11 +380,11 @@ def do_load_basic_configs(config_dict, args):
                     if _name in TARGETED_BACKDOOR:
                         args.targeted_backdoor_list.append(_name)
                         args.targeted_backdoor_index.append(ik)
-                    
+
                     elif _name in UNTARGETED_BACKDOOR:
                         args.untargeted_backdoor_list.append(_name)
                         args.untargeted_backdoor_index.append(ik)
-                    
+
                     elif _name in LABEL_INFERENCE:
                         args.label_inference_list.append(_name)
                         args.label_inference_index.append(ik)
@@ -373,7 +396,7 @@ def do_load_basic_configs(config_dict, args):
                     elif _name in FEATURE_INFERENCE:
                         args.feature_inference_list.append(_name)
                         args.feature_inference_index.append(ik)
-                    
+
                     # LLM attacks
                     elif _name in INVERSION:
                         args.inversion_list.append(_name)
@@ -381,50 +404,51 @@ def do_load_basic_configs(config_dict, args):
                 else:
                     assert 'name' in attack_config_dict[str(ik)], 'missing attack name'
         else:
-            assert len(config_dict['attack_list'])>0, 'empty attack_list'
+            assert len(config_dict['attack_list']) > 0, 'empty attack_list'
     else:
         print('===== No Attack ======')
-    
+
     return args
+
 
 def load_attack_configs(config_file_name, args, index):
     '''
     load attack[index] in attack_list
     '''
-    config_file_path = './configs/'+config_file_name+'.json'
-    config_file = open(config_file_path,"r")
+    config_file_path = './configs/' + config_file_name + '.json'
+    config_file = open(config_file_path, "r")
     config_dict = json.load(config_file)
 
     args.attack_type = None
-    args.apply_backdoor = False # replacement backdoor attack
-    args.apply_nl = False # noisy label attack
-    args.apply_ns = False # noisy sample attack
-    args.apply_mf = False # missing feature attack
-    
+    args.apply_backdoor = False  # replacement backdoor attack
+    args.apply_nl = False  # noisy label attack
+    args.apply_ns = False  # noisy sample attack
+    args.apply_mf = False  # missing feature attack
+
     # No Attack
     if index == -1:
         print('No Attack==============================')
-        args.attack_name='No_Attack'
+        args.attack_name = 'No_Attack'
         args.attack_param_name = 'None'
         args.attack_param = None
         return args
-    
+
     # init args about attacks
-    assert args.apply_attack == True 
+    assert args.apply_attack == True
     # choose attack[index]
     attack_config_dict = config_dict['attack_list'][str(index)]
 
-    args.attaker_id = attack_config_dict['party'] if('party' in attack_config_dict) else []
+    args.attaker_id = attack_config_dict['party'] if ('party' in attack_config_dict) else []
 
     if 'name' in attack_config_dict:
         args.attack_name = attack_config_dict['name']
-        args.attack_configs = attack_config_dict['parameters'] if('parameters' in attack_config_dict) else None
-        
+        args.attack_configs = attack_config_dict['parameters'] if ('parameters' in attack_config_dict) else None
+
         if args.attack_name in TARGETED_BACKDOOR:
             args.attack_type = 'targeted_backdoor'
             if 'backdoor' in args.attack_name.casefold():
                 args.apply_backdoor = True
-            
+
         elif args.attack_name in UNTARGETED_BACKDOOR:
             args.attack_type = 'untargeted_backdoor'
             if 'noisylabel' in args.attack_name.casefold():
@@ -442,16 +466,17 @@ def load_attack_configs(config_file_name, args, index):
 
         elif args.attack_name in FEATURE_INFERENCE:
             args.attack_type = 'feature_inference'
-        
+
         elif args.attack_name in INVERSION:
             args.attack_type = 'inversion'
 
         else:
-            assert 0 , 'attack type not supported'
-        
+            assert 0, 'attack type not supported'
+
         if args.attack_name == 'NoisyLabel':
             args.attack_param_name = 'noise_type'
-            args.attack_param = str(attack_config_dict['parameters']['noise_type'])+'_'+str(attack_config_dict['parameters']['noise_rate'])
+            args.attack_param = str(attack_config_dict['parameters']['noise_type']) + '_' + str(
+                attack_config_dict['parameters']['noise_rate'])
         elif args.attack_name == 'MissingFeature':
             args.attack_param_name = 'missing_rate'
             args.attack_param = str(attack_config_dict['parameters']['missing_rate'])
@@ -464,40 +489,40 @@ def load_attack_configs(config_file_name, args, index):
         else:
             args.attack_param_name = 'None'
             args.attack_param = None
-        
+
     else:
         assert 'name' in attack_config_dict, "missing attack name"
 
     # Check: Centralized Training
-    if args.k ==1:
+    if args.k == 1:
         print('k=1, Launch Centralized Training, All Attack&Defense dismissed, Q set to 1')
-        args.apply_attack = False # bli/ns/ds attack
-        args.apply_backdoor = False # replacement backdoor attack
-        args.apply_nl = False # noisy label attack
-        args.apply_ns = False # noisy sample attack
-        args.apply_mf = False # missing feature attack
+        args.apply_attack = False  # bli/ns/ds attack
+        args.apply_backdoor = False  # replacement backdoor attack
+        args.apply_nl = False  # noisy label attack
+        args.apply_ns = False  # noisy sample attack
+        args.apply_mf = False  # missing feature attack
         args.apply_defense = False
         args.apply_mid = False
         args.apply_cae = False
         args.apply_dcae = False
         args.apply_dp = False
-        args.Q=1
+        args.Q = 1
 
     return args
 
+
 def init_attack_defense(args):
-    args.apply_attack = False 
-    args.apply_backdoor = False # replacement backdoor attack
-    args.apply_nl = False # noisy label attack
-    args.apply_ns = False # noisy sample attack
-    args.apply_mf = False # missing feature attack
+    args.apply_attack = False
+    args.apply_backdoor = False  # replacement backdoor attack
+    args.apply_nl = False  # noisy label attack
+    args.apply_ns = False  # noisy sample attack
+    args.apply_mf = False  # missing feature attack
     args.apply_defense = False
     args.apply_mid = False
     args.apply_cae = False
     args.apply_dcae = False
     args.apply_dp = False
     return args
-    
 
 
 if __name__ == '__main__':

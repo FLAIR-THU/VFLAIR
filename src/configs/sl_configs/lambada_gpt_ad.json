@@ -1,99 +1,105 @@
 {
-    "epochs": 1,
-    "lr": 0.0001,
-    "k": 2,
-    "batch_size": 16,
-    "pipeline": "finetune",
-    "early_stop_threshold": 1,
-    "device": "cuda",
-    "gpu": 0,
-    "fl_type": "VFL",
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 16,
+  "pipeline": "finetune",
+  "early_stop_threshold": 1,
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "Lambada",
+    "num_classes": 2
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 70,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "encoder_trainable": 1,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/Lambada",
+      "test_set_file": "/mnt/data/data/Lambada",
+      "path": "/mnt/data/model/gpt2"
     },
-    "dataset":{
-        "dataset_name": "Lambada",
-        "num_classes": 2
+    "1": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "head_layer_trainable": 1,
+      "encoder_trainable": 0,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/Lambada",
+      "test_set_file": "/mnt/data/data/Lambada",
+      "path": "/mnt/data/model/gpt2"
     },
-    "tokenizer":{
-        "padding": "max_length",
-        "padding_type": "outside",
-        "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 70,
-        "padding_side": "left",
-        "add_special_tokens": 1
+    "task": {
+      "task_type": "CausalLM",
+      "doc_stride": 128,
+      "max_seq_length": 128,
+      "metric_type": "best_pred",
+      "n_best_size": 8
     },
-    "model_list":{
-        "0": {
-            "type": "gpt2",
-            "pretrained": 1,
-            "encoder_trainable": 1,
-            "embedding_trainable": 0,
-            "output_dim": 2,
-            "model_type": "GPT2",
-            "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-            "path": "/mnt/data/model/gpt2"
-        },
-        "1": {
-            "type": "gpt2",
-            "pretrained": 1,
-            "head_layer_trainable": 1,
-            "encoder_trainable": 0,
-            "output_dim": 2,
-            "model_type": "GPT2",
-            "max_sequence": 512,
-            "train_set_file": "/mnt/data/data/Lambada",
-            "test_set_file": "/mnt/data/data/Lambada",
-             "path": "/mnt/data/model/gpt2"
-        },
-        "task":{
-            "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 128,
-            "metric_type": "best_pred",
-            "n_best_size": 8
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "AdversarialTraining",
-        "parameters": {
-            "party": [0],
-            "adversarial_model": "Mapping_MLP3",
-            "adversarial_model_lr": 0.001,
-            "imagined_adversary": "ImaginedAdversary_MLP3",
-            "imagined_adversary_lr": 0.001,
-            "lambda": 0.05,
-            "seq_length": 70,
-            "embed_dim": 768
-        }
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 1,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.001,
-                "epochs": 1,
-                "batch_size": 32,
-                "attack_sample_num": 500
-            }
-        }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "AdversarialTraining",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "adversarial_model": "Mapping_MLP3",
+      "adversarial_model_lr": 0.001,
+      "imagined_adversary": "ImaginedAdversary_MLP3",
+      "imagined_adversary_lr": 0.001,
+      "lambda": 0.05,
+      "seq_length": 70,
+      "embed_dim": 768
     }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 1,
+        "batch_size": 32,
+        "attack_sample_num": 500
+      }
+    },
+    "1": {
+      "name": "WhiteBoxInversion",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "T": 0.05,
+        "lr": 0.001,
+        "epochs": 1,
+        "batch_size": 32,
+        "attack_sample_num": 500
+      }
+    }
+  }
 }

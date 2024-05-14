@@ -1,4 +1,5 @@
-from transformers import BertTokenizer, BertModel,BertConfig,PretrainedConfig, BertPreTrainedModel, BertForSequenceClassification
+from transformers import BertTokenizer, BertModel, BertConfig, PretrainedConfig, BertPreTrainedModel, \
+    BertForSequenceClassification
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
@@ -21,13 +22,15 @@ from transformers.models.bert.modeling_bert import *
 '''
 Models with specific usage based on BERT
 '''
+
+
 ##### Evaluation with pretrained models ######
 class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
     def __init__(self, global_bert, qa_outputs):
         super().__init__(global_bert.config)
         self.num_labels = global_bert.config.num_labels
-        self.bert = global_bert # BertModel(config, add_pooling_layer=False) bert
-        self.head_layer = qa_outputs #nn.Linear(config.hidden_size, config.num_labels)
+        self.bert = global_bert  # BertModel(config, add_pooling_layer=False) bert
+        self.head_layer = qa_outputs  # nn.Linear(config.hidden_size, config.num_labels)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -36,19 +39,19 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
         pass
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None, 
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        start_positions: Optional[torch.Tensor] = None,
-        end_positions: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            start_positions: Optional[torch.Tensor] = None,
+            end_positions: Optional[torch.Tensor] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs
     ) -> Union[Tuple[torch.Tensor], QuestionAnsweringModelOutput]:
         r"""
         start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
@@ -111,15 +114,15 @@ class BertForQuestionAnswering_pretrained(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
+
 class BertForSequenceClassification_pretrained(BertPreTrainedModel):
-    def __init__(self, globalbert, classifier,dropout=0.5):
+    def __init__(self, globalbert, classifier, dropout=0.5):
         super().__init__(globalbert.config)
-        self.bert = globalbert #BertModel.from_pretrained('bert-base-cased')
+        self.bert = globalbert  # BertModel.from_pretrained('bert-base-cased')
         self.model_type = globalbert.model_type
 
         self.head_layer = classifier
         # self.head_layer = classifier
-
 
         classifier_dropout = (
             globalbert.config.classifier_dropout if globalbert.config.classifier_dropout is not None else globalbert.config.hidden_dropout_prob
@@ -133,18 +136,18 @@ class BertForSequenceClassification_pretrained(BertPreTrainedModel):
         pass
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs): # 
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            labels: Optional[torch.Tensor] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs):  #
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         outputs = self.bert(
@@ -194,7 +197,7 @@ class BertForSequenceClassification_pretrained(BertPreTrainedModel):
             elif self.config.problem_type == "multi_label_classification":
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits, labels)
-        
+
         if not return_dict:
             output = (logits,) + outputs[2:]
             return ((loss,) + output) if loss is not None else output
@@ -206,6 +209,7 @@ class BertForSequenceClassification_pretrained(BertPreTrainedModel):
             attentions=outputs.attentions,
         )
 
+
 class BertLMHeadModel_pretrained(BertLMHeadModel):
     def __init__(self, global_bert, cls):
         super().__init__(global_bert.config)
@@ -213,8 +217,8 @@ class BertLMHeadModel_pretrained(BertLMHeadModel):
         if not global_bert.config.is_decoder:
             logger.warning("If you want to use `BertLMHeadModel` as a standalone, add `is_decoder=True.`")
 
-        self.bert = global_bert # BertModel(config, add_pooling_layer=False)
-        self.head_layer = cls #BertOnlyMLMHead(config)
+        self.bert = global_bert  # BertModel(config, add_pooling_layer=False)
+        self.head_layer = cls  # BertOnlyMLMHead(config)
 
         # Initialize weights and apply final processing
         # self.post_init()
@@ -225,22 +229,22 @@ class BertLMHeadModel_pretrained(BertLMHeadModel):
         self.bert._clear_past_key_values()
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
-        past_key_values: Optional[List[torch.Tensor]] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            encoder_hidden_states: Optional[torch.Tensor] = None,
+            encoder_attention_mask: Optional[torch.Tensor] = None,
+            labels: Optional[torch.Tensor] = None,
+            past_key_values: Optional[List[torch.Tensor]] = None,
+            use_cache: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs
     ) -> Union[Tuple[torch.Tensor], CausalLMOutputWithCrossAttentions]:
         r"""
         encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -319,21 +323,21 @@ class LocalBertEncoder(nn.Module):
     def __init__(self, config, layer):
         super().__init__()
         self.config = config
-        self.layer = layer #nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
+        self.layer = layer  # nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
     
     def forward(
-        self,
-        hidden_states: torch.Tensor, # input_ids
-        attention_mask: Optional[torch.FloatTensor] = None,
-        head_mask: Optional[torch.FloatTensor] = None,
-        encoder_hidden_states: Optional[torch.FloatTensor] = None,
-        encoder_attention_mask: Optional[torch.FloatTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = False,
-        output_hidden_states: Optional[bool] = False,
-        return_dict: Optional[bool] = True,
+            self,
+            hidden_states: torch.Tensor,  # input_ids
+            attention_mask: Optional[torch.FloatTensor] = None,
+            head_mask: Optional[torch.FloatTensor] = None,
+            encoder_hidden_states: Optional[torch.FloatTensor] = None,
+            encoder_attention_mask: Optional[torch.FloatTensor] = None,
+            past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+            use_cache: Optional[bool] = None,
+            output_attentions: Optional[bool] = False,
+            output_hidden_states: Optional[bool] = False,
+            return_dict: Optional[bool] = True,
     ):
         all_hidden_states = () if output_hidden_states else None
         all_self_attentions = () if output_attentions else None
@@ -353,11 +357,13 @@ class LocalBertEncoder(nn.Module):
                         "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
                     )
                     use_cache = False
+
                 def create_custom_forward(module):
                     def custom_forward(*inputs):
                         return module(*inputs, past_key_value, output_attentions)
 
                     return custom_forward
+
                 layer_outputs = torch.utils.checkpoint.checkpoint(
                     create_custom_forward(layer_module),
                     hidden_states,
@@ -383,30 +389,31 @@ class LocalBertEncoder(nn.Module):
             if output_attentions:
                 all_self_attentions = all_self_attentions + (layer_outputs[1],)
                 if self.config.add_cross_attention:
-                    all_cross_attentions = all_cross_attentions + (layer_outputs[2],)        
+                    all_cross_attentions = all_cross_attentions + (layer_outputs[2],)
         return hidden_states
+
 
 class GlobalBertEncoder(nn.Module):
     def __init__(self, config, layer, num_encoders):
         super().__init__()
         self.config = config
-        self.layer = layer #nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
+        self.layer = layer  # nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
         self.num_encoders = num_encoders
 
     def forward(
-        self,
-        hidden_states: torch.Tensor, # input_ids
-        attention_mask: Optional[torch.FloatTensor] = None,
-        head_mask: Optional[torch.FloatTensor] = None,
-        encoder_hidden_states: Optional[torch.FloatTensor] = None,
-        encoder_attention_mask: Optional[torch.FloatTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = False,
-        output_hidden_states: Optional[bool] = False,
-        return_dict: Optional[bool] = True,
+            self,
+            hidden_states: torch.Tensor,  # input_ids
+            attention_mask: Optional[torch.FloatTensor] = None,
+            head_mask: Optional[torch.FloatTensor] = None,
+            encoder_hidden_states: Optional[torch.FloatTensor] = None,
+            encoder_attention_mask: Optional[torch.FloatTensor] = None,
+            past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+            use_cache: Optional[bool] = None,
+            output_attentions: Optional[bool] = False,
+            output_hidden_states: Optional[bool] = False,
+            return_dict: Optional[bool] = True,
     ):
         all_hidden_states = () if output_hidden_states else None
         all_self_attentions = () if output_attentions else None
@@ -417,8 +424,8 @@ class GlobalBertEncoder(nn.Module):
             if output_hidden_states:
                 all_hidden_states = all_hidden_states + (hidden_states,)
 
-            layer_head_mask = head_mask[i+self.num_encoders] if head_mask is not None else None
-            past_key_value = past_key_values[i+self.num_encoders] if past_key_values is not None else None
+            layer_head_mask = head_mask[i + self.num_encoders] if head_mask is not None else None
+            past_key_value = past_key_values[i + self.num_encoders] if past_key_values is not None else None
 
             if self.gradient_checkpointing and self.training:
                 if use_cache:
@@ -426,11 +433,13 @@ class GlobalBertEncoder(nn.Module):
                         "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
                     )
                     use_cache = False
+
                 def create_custom_forward(module):
                     def custom_forward(*inputs):
                         return module(*inputs, past_key_value, output_attentions)
 
                     return custom_forward
+
                 layer_outputs = torch.utils.checkpoint.checkpoint(
                     create_custom_forward(layer_module),
                     hidden_states,
@@ -488,20 +497,22 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
         self.bert = full_bert
 
         self.config = full_bert.config
-        self.embeddings = full_bert.embeddings #BertEmbeddings(config)
-        self.pooler = full_bert.pooler  #BertPooler(config) if add_pooling_layer else None
+        self.embeddings = full_bert.embeddings  # BertEmbeddings(config)
+        self.pooler = full_bert.pooler  # BertPooler(config) if add_pooling_layer else None
 
         self.embedding_output = None
 
         self.num_encoders = num_encoders
         if self.model_type == 'Albert':
             self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders)])
+            self.encoder_layer = nn.ModuleList(
+                [copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders)])
         else:
             self.num_encoders_all = len(full_bert.encoder.layer)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
-        self.encoder = LocalBertEncoder(self.config,self.encoder_layer) #full_bert.encoder #BertEncoder(config)
-        
+            self.encoder_layer = nn.ModuleList(
+                [copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders)])
+        self.encoder = LocalBertEncoder(self.config, self.encoder_layer)  # full_bert.encoder #BertEncoder(config)
+
         # for MID defense
         self.inner_mid_model = None
         self.mid_loss = None
@@ -515,31 +526,32 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
         return self.embeddings.word_embeddings
 
     def forward(
-        self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        inputs_embeds: Optional[torch.Tensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.Tensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs
+            self,
+            input_ids: Optional[torch.Tensor] = None,
+            attention_mask: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            inputs_embeds: Optional[torch.Tensor] = None,
+            encoder_hidden_states: Optional[torch.Tensor] = None,
+            encoder_attention_mask: Optional[torch.Tensor] = None,
+            past_key_values: Optional[List[torch.FloatTensor]] = None,
+            use_cache: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs
     ):
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if self.config.is_decoder:
             use_cache = use_cache if use_cache is not None else self.config.use_cache
         else:
             use_cache = False
-        
+
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
@@ -550,7 +562,7 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
             raise ValueError("You have to specify either input_ids or inputs_embeds")
 
         # print('input_shape:', input_shape)
-        
+
         batch_size, seq_length = input_shape[:2]
         # print('batch_size:',batch_size,' seq_length',seq_length)
 
@@ -575,7 +587,7 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
                 # [1,512]
                 buffered_token_type_ids_expanded = buffered_token_type_ids.expand(batch_size, seq_length)
                 # print('buffered_token_type_ids_expanded:',type(buffered_token_type_ids_expanded),buffered_token_type_ids_expanded.shape)
-                
+
                 token_type_ids = buffered_token_type_ids_expanded
             else:
                 token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
@@ -611,7 +623,7 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
             inputs_embeds=inputs_embeds,
             past_key_values_length=past_key_values_length,
         )
-        
+
         # if embedding_output == None:
         #     input_ids = input_ids.long()
 
@@ -631,7 +643,7 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
             self.embedding_output = embedding_output
         ############ mid ############
 
-        intermediate_embedding =self.encoder(
+        intermediate_embedding = self.encoder(
             hidden_states=embedding_output,
             attention_mask=extended_attention_mask,
             head_mask=head_mask,
@@ -644,65 +656,72 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        return { 'inputs_embeds':intermediate_embedding, 
-                 'attention_mask': attention_mask} 
+        return {'inputs_embeds': intermediate_embedding,
+                'attention_mask': attention_mask}
+
 
 class GlobalBertModel(BertPreTrainedModel):
-    def __init__(self, full_bert, num_encoders, model_type = 'Bert'):
+    def __init__(self, full_bert, num_encoders, model_type='Bert'):
         super(GlobalBertModel, self).__init__(full_bert.config)
         self.model_type = model_type
         self.bert = full_bert
 
         self.config = full_bert.config
-        self.embeddings = full_bert.embeddings #BertEmbeddings(config)
-        self.pooler = full_bert.pooler  #BertPooler(config) if add_pooling_layer else None
-        
+        self.embeddings = full_bert.embeddings  # BertEmbeddings(config)
+        self.pooler = full_bert.pooler  # BertPooler(config) if add_pooling_layer else None
+
         # 创建指定数量的encoder层
         self.num_encoders = num_encoders
         if self.model_type == 'Albert':
             self.num_encoders_all = len(full_bert.encoder.albert_layer_groups)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in range(self.num_encoders_all - self.num_encoders,self.num_encoders_all)])
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.albert_layer_groups[i]) for i in
+                                                range(self.num_encoders_all - self.num_encoders,
+                                                      self.num_encoders_all)])
         else:
             self.num_encoders_all = len(full_bert.encoder.layer)
-            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in range(self.num_encoders_all - self.num_encoders,self.num_encoders_all)])
-        
+            self.encoder_layer = nn.ModuleList([copy.deepcopy(self.bert.encoder.layer[i]) for i in
+                                                range(self.num_encoders_all - self.num_encoders,
+                                                      self.num_encoders_all)])
+
         self.local_num_encoders = self.num_encoders_all - self.num_encoders
-        self.encoder = GlobalBertEncoder(self.config,self.encoder_layer,self.local_num_encoders) #full_bert.encoder #BertEncoder(config)
-        
+        self.encoder = GlobalBertEncoder(self.config, self.encoder_layer,
+                                         self.local_num_encoders)  # full_bert.encoder #BertEncoder(config)
+
         self.past_key_values = None
-    
+
     def _clear_past_key_values(self):
         self.past_key_values = None
 
     def forward(
-        self,
-        inputs_embeds: Optional[torch.Tensor] = None,# local_pred: intermediate_embedding
-        attention_mask: Optional[torch.Tensor] = None, # local_attention_mask
-        input_ids: Optional[torch.Tensor] = None,
-        token_type_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.Tensor] = None,
-        head_mask: Optional[torch.Tensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.Tensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        **kwargs
+            self,
+            inputs_embeds: Optional[torch.Tensor] = None,  # local_pred: intermediate_embedding
+            attention_mask: Optional[torch.Tensor] = None,  # local_attention_mask
+            input_ids: Optional[torch.Tensor] = None,
+            token_type_ids: Optional[torch.Tensor] = None,
+            position_ids: Optional[torch.Tensor] = None,
+            head_mask: Optional[torch.Tensor] = None,
+            encoder_hidden_states: Optional[torch.Tensor] = None,
+            encoder_attention_mask: Optional[torch.Tensor] = None,
+            past_key_values: Optional[List[torch.FloatTensor]] = None,
+            use_cache: Optional[bool] = None,
+            output_attentions: Optional[bool] = None,
+            output_hidden_states: Optional[bool] = None,
+            return_dict: Optional[bool] = None,
+            **kwargs
     ):
         # print(' === Global Bert ===')
         # input_shape = inputs_embeds.shape[:2]
         # print('input_shape:',type(input_shape),input_shape)
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         if self.config.is_decoder:
             use_cache = use_cache if use_cache is not None else self.config.use_cache
         else:
             use_cache = False
-        
+
         if input_ids is not None and inputs_embeds is not None:
             raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
         elif input_ids is not None:
@@ -758,9 +777,8 @@ class GlobalBertModel(BertPreTrainedModel):
         # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
 
-
         encoder_outputs = self.encoder(
-            hidden_states=inputs_embeds,#intermediate,
+            hidden_states=inputs_embeds,  # intermediate,
             attention_mask=extended_attention_mask,
             head_mask=head_mask,
             encoder_hidden_states=encoder_hidden_states,
@@ -774,7 +792,6 @@ class GlobalBertModel(BertPreTrainedModel):
 
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output) if self.pooler is not None else None
-
 
         if not return_dict:
             return (sequence_output, pooled_output) + encoder_outputs[1:]
@@ -944,4 +961,3 @@ class GlobalBertModel(BertPreTrainedModel):
 #             attentions=encoder_outputs.attentions,
 #             cross_attentions=encoder_outputs.cross_attentions,
 #         )
-

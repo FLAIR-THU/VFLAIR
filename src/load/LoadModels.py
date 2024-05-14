@@ -7,8 +7,8 @@ import numpy as np
 import pickle
 from transformers import BertTokenizer, GPT2Tokenizer, LlamaTokenizer
 from transformers import BertModel, GPT2Model, LlamaModel
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForSeq2SeqLM,\
-AutoModelForCausalLM, AutoModelForQuestionAnswering
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForSeq2SeqLM, \
+    AutoModelForCausalLM, AutoModelForQuestionAnswering
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     BaseModelOutputWithPoolingAndCrossAttentions,
@@ -38,9 +38,7 @@ from models.llm_models.mistral import *
 from models.llm_models.xlnet import *
 from models.llm_models.chatglm import *
 
-
 from models.llm_models.t5 import *
-
 
 from models.bottom_models import *
 from models.global_models import *
@@ -50,27 +48,27 @@ from config import vfl_basic_config
 
 YOUR_MODEL_PATH = "/home/DAIR/guzx/Git_FedProject/Models/"
 MODEL_PATH = {
-    'bert-base-uncased': YOUR_MODEL_PATH+"bert-base-uncased",
-    "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
-    "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH+"textattackbert-base-uncased-yelp-polarity",
-    "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH+"textattackbert-base-uncased-SST-2",
-    "textattackbert-base-cased-STS-B": YOUR_MODEL_PATH+"textattackbert-base-cased-STS-B",
-    "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH+"textattackbert-base-uncased-MRPC",
-    "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-MNLI",
-    "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-QNLI",
-    "textattackbert-base-uncased-QQP": YOUR_MODEL_PATH+"textattackbert-base-uncased-QQP",
-    "textattackbert-base-uncased-WNLI": YOUR_MODEL_PATH+"textattackbert-base-uncased-WNLI",
-    "textattackbert-base-uncased-RTE": YOUR_MODEL_PATH+"textattackbert-base-uncased-RTE",
-    "textattackroberta-base-CoLA":YOUR_MODEL_PATH+"textattackbert-base-uncased-CoLA",
-    "textattackroberta-base-SST-2":YOUR_MODEL_PATH+"textattackroberta-base-SST-2",
-    "textattackalbert-base-v2-CoLA":YOUR_MODEL_PATH+"textattackalbert-base-v2-CoLA",
-    "textattackroberta-base-MNLI":YOUR_MODEL_PATH+"textattackroberta-base-MNLI",
-    "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH+"nihaldsouza1yelp-rating-classification",
-    "deepsetroberta-base-squad2": YOUR_MODEL_PATH+"deepsetroberta-base-squad2",
-    "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH+"rsvp-aibertserini-bert-base-squad",
-    "FabianWillnerdistilbert-base-uncased-finetuned-squad": YOUR_MODEL_PATH+"FabianWillnerdistilbert-base-uncased-finetuned-squad",
-    "google-bertbert-large-uncased-whole-word-masking-finetuned-squad": YOUR_MODEL_PATH+"google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
-    "Shunianyelp_review_classification": YOUR_MODEL_PATH+"Shunianyelp_review_classification",
+    'bert-base-uncased': YOUR_MODEL_PATH + "bert-base-uncased",
+    "textattackbert-base-uncased-CoLA": YOUR_MODEL_PATH + "textattackbert-base-uncased-CoLA",
+    "textattackbert-base-uncased-yelp-polarity": YOUR_MODEL_PATH + "textattackbert-base-uncased-yelp-polarity",
+    "textattackbert-base-uncased-SST-2": YOUR_MODEL_PATH + "textattackbert-base-uncased-SST-2",
+    "textattackbert-base-cased-STS-B": YOUR_MODEL_PATH + "textattackbert-base-cased-STS-B",
+    "textattackbert-base-uncased-MRPC": YOUR_MODEL_PATH + "textattackbert-base-uncased-MRPC",
+    "textattackbert-base-uncased-MNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-MNLI",
+    "textattackbert-base-uncased-QNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-QNLI",
+    "textattackbert-base-uncased-QQP": YOUR_MODEL_PATH + "textattackbert-base-uncased-QQP",
+    "textattackbert-base-uncased-WNLI": YOUR_MODEL_PATH + "textattackbert-base-uncased-WNLI",
+    "textattackbert-base-uncased-RTE": YOUR_MODEL_PATH + "textattackbert-base-uncased-RTE",
+    "textattackroberta-base-CoLA": YOUR_MODEL_PATH + "textattackbert-base-uncased-CoLA",
+    "textattackroberta-base-SST-2": YOUR_MODEL_PATH + "textattackroberta-base-SST-2",
+    "textattackalbert-base-v2-CoLA": YOUR_MODEL_PATH + "textattackalbert-base-v2-CoLA",
+    "textattackroberta-base-MNLI": YOUR_MODEL_PATH + "textattackroberta-base-MNLI",
+    "nihaldsouza1yelp-rating-classification": YOUR_MODEL_PATH + "nihaldsouza1yelp-rating-classification",
+    "deepsetroberta-base-squad2": YOUR_MODEL_PATH + "deepsetroberta-base-squad2",
+    "rsvp-aibertserini-bert-base-squad": YOUR_MODEL_PATH + "rsvp-aibertserini-bert-base-squad",
+    "FabianWillnerdistilbert-base-uncased-finetuned-squad": YOUR_MODEL_PATH + "FabianWillnerdistilbert-base-uncased-finetuned-squad",
+    "google-bertbert-large-uncased-whole-word-masking-finetuned-squad": YOUR_MODEL_PATH + "google-bertbert-large-uncased-whole-word-masking-finetuned-squad",
+    "Shunianyelp_review_classification": YOUR_MODEL_PATH + "Shunianyelp_review_classification",
 
     "gpt2": YOUR_MODEL_PATH + "gpt2",
     "gpt2-medium": YOUR_MODEL_PATH + "gpt2-medium",
@@ -92,15 +90,15 @@ MODEL_PATH = {
     "googleflan-t5-base": YOUR_MODEL_PATH + "googleflan-t5-base",
     "echarlaixtiny-random-mistral": YOUR_MODEL_PATH + "echarlaixtiny-random-mistral",
     "baichuan-incBaichuan-7B": YOUR_MODEL_PATH + "baichuan-incBaichuan-7B",
-    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM',
-    "state-spacesmamba-130m-hf" : YOUR_MODEL_PATH + "state-spacesmamba-130m-hf",
-    "THUDMchatglm3-6b" : YOUR_MODEL_PATH + "THUDMchatglm3-6b",
-    "xlnetxlnet-base-cased" : YOUR_MODEL_PATH + "xlnetxlnet-base-cased",
-    "tiiuaefalcon-rw-1b" : YOUR_MODEL_PATH + "tiiuaefalcon-rw-1b",
-    "fxmartytiny-random-GemmaForCausalLM":YOUR_MODEL_PATH+"fxmartytiny-random-GemmaForCausalLM",
-    "mistralaiMistral-7B-Instruct-v0.2":YOUR_MODEL_PATH+"mistralaiMistral-7B-Instruct-v0.2",
+    "fxmartytiny-random-GemmaForCausalLM": YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM',
+    "state-spacesmamba-130m-hf": YOUR_MODEL_PATH + "state-spacesmamba-130m-hf",
+    "THUDMchatglm3-6b": YOUR_MODEL_PATH + "THUDMchatglm3-6b",
+    "xlnetxlnet-base-cased": YOUR_MODEL_PATH + "xlnetxlnet-base-cased",
+    "tiiuaefalcon-rw-1b": YOUR_MODEL_PATH + "tiiuaefalcon-rw-1b",
+    "fxmartytiny-random-GemmaForCausalLM": YOUR_MODEL_PATH + "fxmartytiny-random-GemmaForCausalLM",
+    "mistralaiMistral-7B-Instruct-v0.2": YOUR_MODEL_PATH + "mistralaiMistral-7B-Instruct-v0.2",
 
-    "googlegemma-2b":YOUR_MODEL_PATH+"googlegemma-2b",
+    "googlegemma-2b": YOUR_MODEL_PATH + "googlegemma-2b",
 
 }
 MODEL_PATH.update({'Qwen/Qwen1.5-0.5B-Chat': None})
@@ -138,7 +136,8 @@ def load_models(args):
     for ik in range(args.k):
         current_model_type = args.model_list[str(ik)]['type']
         current_model_path = args.model_list[str(ik)]['path']
-        args.net_list[ik] = pickle.load(open('.././src/models/model_parameters/' + current_model_type + '/' + current_model_path + '.pkl', "rb"))
+        args.net_list[ik] = pickle.load(
+            open('.././src/models/model_parameters/' + current_model_type + '/' + current_model_path + '.pkl', "rb"))
         args.net_list[ik] = args.net_list[ik].to(args.device)
     # important
     return args
@@ -148,16 +147,19 @@ def load_basic_models(args, index):
     current_model_type = args.model_list[str(index)]['type']
     print(f"current_model_type={current_model_type}")
     current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else -1
-    current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[str(index)] else -1
+    current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[
+        str(index)] else -1
     current_output_dim = args.model_list[str(index)]['output_dim']
-    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[str(index)] else -1
+    current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[
+        str(index)] else -1
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
     # current_model_path = args.model_list[str(index)]['path']
     # local_model = pickle.load(open('.././model_parameters/'+current_model_type+'/'+current_model_path+'.pkl',"rb"))
     if 'resnet' in current_model_type.lower() or 'lenet' in current_model_type.lower() or 'cnn' in current_model_type.lower() or 'alexnet' in current_model_type.lower():
         local_model = globals()[current_model_type](current_output_dim)
     elif 'gcn' in current_model_type.lower():
-        local_model = globals()[current_model_type](nfeat=current_input_dim, nhid=current_hidden_dim, nclass=current_output_dim, device=args.device,
+        local_model = globals()[current_model_type](nfeat=current_input_dim, nhid=current_hidden_dim,
+                                                    nclass=current_output_dim, device=args.device,
                                                     dropout=0.0, lr=args.main_lr)
     elif 'lstm' in current_model_type.lower():
         local_model = globals()[current_model_type](current_vocab_size, current_output_dim)
@@ -203,12 +205,14 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
     args.encoder = None
     # some defense need model, add here
     if args.apply_defense == True:
-        current_bottleneck_scale = int(args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
+        current_bottleneck_scale = int(
+            args.defense_configs['bottleneck_scale']) if 'bottleneck_scale' in args.defense_configs else 1
 
         if 'std_shift_hyperparameter' in args.defense_configs:
             std_shift_hyperparameter = int(args.defense_configs['std_shift_hyperparameter'])
         else:
-            std_shift_hyperparameter = 5 if ('mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5
+            std_shift_hyperparameter = 5 if (
+                        'mnist' in args.dataset.lower() or 'nuswide' == args.dataset.lower() or 'cifar' in args.dataset.lower()) else 0.5
 
         if 'MID' in args.defense_name.upper():
             if not 'party' in args.defense_configs:
@@ -227,17 +231,22 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
             if index in args.defense_configs['party']:
                 print(f"begin to load mid model for party {index}")
                 if index == args.k - 1:
-                    print(f"load global mid model for party {index},std_shift_hyperparameter={std_shift_hyperparameter}")
+                    print(
+                        f"load global mid model for party {index},std_shift_hyperparameter={std_shift_hyperparameter}")
                     # add args.k-1 MID model at active party with global_model
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
                         mid_model_list = [
-                            MID_model_small(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'], args.defense_configs['lambda'],
-                                            bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
+                            MID_model_small(args.model_list[str(_ik)]['output_dim'],
+                                            args.model_list[str(_ik)]['output_dim'], args.defense_configs['lambda'],
+                                            bottleneck_scale=current_bottleneck_scale,
+                                            std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
                     else:
                         mid_model_list = [
-                            MID_model(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'], args.defense_configs['lambda'],
-                                      bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for _ik in range(args.k - 1)]
+                            MID_model(args.model_list[str(_ik)]['output_dim'], args.model_list[str(_ik)]['output_dim'],
+                                      args.defense_configs['lambda'],
+                                      bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter) for
+                            _ik in range(args.k - 1)]
                     mid_model_list = [model.to(args.device) for model in mid_model_list]
                     global_model = Active_global_MID_model(global_model, mid_model_list)
                     global_model = global_model.to(args.device)
@@ -263,12 +272,16 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     print('lambda for passive party local mid model:', args.defense_configs['lambda'])
                     if 'nuswide' in args.dataset.lower() or 'nus-wide' in args.dataset.lower():
                         print(f"small MID model for nuswide")
-                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'], args.model_list[str(index)]['output_dim'],
-                                                    args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale,
+                        mid_model = MID_model_small(args.model_list[str(index)]['output_dim'],
+                                                    args.model_list[str(index)]['output_dim'],
+                                                    args.defense_configs['lambda'],
+                                                    bottleneck_scale=current_bottleneck_scale,
                                                     std_shift=std_shift_hyperparameter)
                     else:
-                        mid_model = MID_model(args.model_list[str(index)]['output_dim'], args.model_list[str(index)]['output_dim'],
-                                              args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale, std_shift=std_shift_hyperparameter)
+                        mid_model = MID_model(args.model_list[str(index)]['output_dim'],
+                                              args.model_list[str(index)]['output_dim'],
+                                              args.defense_configs['lambda'], bottleneck_scale=current_bottleneck_scale,
+                                              std_shift=std_shift_hyperparameter)
                     mid_model = mid_model.to(args.device)
                     local_model = Passive_local_MID_model(local_model, mid_model)
                     local_model = local_model.to(args.device)
@@ -332,10 +345,12 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                     args.defense_configs['encode_dim'] = 2 + 6 * args.defense_configs['input_dim']
                     print('[warning] default encode_dim selected as 2+6*input_dim for applying CAE')
                 if args.num_classes > 20:
-                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20, encode_dim=args.defense_configs['encode_dim']).to(
+                    encoder = AutoEncoder_large(real_dim=args.defense_configs['input_dim'], input_dim=20,
+                                                encode_dim=args.defense_configs['encode_dim']).to(
                         args.device)
                 else:
-                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'], encode_dim=args.defense_configs['encode_dim']).to(args.device)
+                    encoder = AutoEncoder(input_dim=args.defense_configs['input_dim'],
+                                          encode_dim=args.defense_configs['encode_dim']).to(args.device)
                 encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
                 args.encoder = encoder
 
@@ -390,7 +405,6 @@ def load_defense_models_llm(args, index, local_model, local_model_optimizer, glo
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
 
 
-
 def load_basic_models_llm_bert(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -432,7 +446,7 @@ def load_basic_models_llm_bert(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     if args.pad_token == "default":
         print('Default pad')
@@ -450,18 +464,18 @@ def load_basic_models_llm_bert(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('Local Model encoders_num:',args.local_encoders_num)
+        print('Local Model encoders_num:', args.local_encoders_num)
         local_model = LocalBertModel(full_llm, args.local_encoders_num, model_type=args.model_type)
         local_model = local_model.to(args.device)
 
         if args.finetune_name == "LoRA":
             lora_config = LoraConfig(
                 task_type=TaskType.CAUSAL_LM,
-                #target_modules=["q", "v"],
-                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                # target_modules=["q", "v"],
+                # ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                 inference_mode=False,  # 训练模式
-                r=4,  
-                lora_alpha=32, 
+                r=4,
+                lora_alpha=32,
                 lora_dropout=0.1
             )
 
@@ -480,7 +494,7 @@ def load_basic_models_llm_bert(args, index):
                 if encoder_id not in encoder_trainable_ids:
                     for param in local_model.encoder_layer.parameters():
                         param.requires_grad = False
-            
+
             print('embedding_trainable = ', args.embedding_trainable[0])
             if args.embedding_trainable[0] == False:
                 for param in local_model.embeddings.parameters():
@@ -512,10 +526,8 @@ def load_basic_models_llm_bert(args, index):
                 param.requires_grad = args.encoder_trainable[0]
             if args.encoder_trainable[0]:
                 local_trainable_params.extend(list(local_model.encoder_layer.parameters()))
-        
-        
-        
-            if len(local_trainable_params)>0:
+
+            if len(local_trainable_params) > 0:
                 local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -523,10 +535,10 @@ def load_basic_models_llm_bert(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of gpt2(frozen)
-        global_model = GlobalBertModel(full_llm, global_encoders_num,model_type=args.model_type)
+        global_model = GlobalBertModel(full_llm, global_encoders_num, model_type=args.model_type)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -556,9 +568,10 @@ def load_basic_models_llm_bert(args, index):
 
         global_model = global_model.to(args.device)
 
-    del(full_model)
+    del (full_model)
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 def load_basic_models_llm_t5(args, index):
     current_model_type = args.model_list[str(index)]['type']
@@ -596,7 +609,7 @@ def load_basic_models_llm_t5(args, index):
     args.model_embedded_dim = args.config.d_model
 
     all_encoder_num = args.config.num_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     if args.pad_token == "default":
         print('Default pad')
@@ -614,8 +627,8 @@ def load_basic_models_llm_t5(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalT5Model(full_t5, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalT5Model(full_t5, num_encoders=args.local_encoders_num)
 
         # Freeze Backbone
         for param in local_model.parameters():
@@ -636,7 +649,7 @@ def load_basic_models_llm_t5(args, index):
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.encoder.parameters()))
 
-        if len(local_trainable_params)>0:
+        if len(local_trainable_params) > 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -644,10 +657,10 @@ def load_basic_models_llm_t5(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of gpt2(frozen)
-        global_t5 = GlobalT5Model(full_t5, num_encoders = global_encoders_num)
+        global_t5 = GlobalT5Model(full_t5, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -657,7 +670,8 @@ def load_basic_models_llm_t5(args, index):
         # elif args.model_architect == 'CLS':
         #     global_model = GPT2ForSequenceClassification_pretrained(global_t5, head_layer)
         elif args.task_type == "Generation":
-            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer, generation_config=full_model.generation_config)
+            global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer,
+                                                                 generation_config=full_model.generation_config)
         else:
             assert 1 > 2, "task type not supported"
 
@@ -679,6 +693,7 @@ def load_basic_models_llm_t5(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_gpt2(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -688,39 +703,39 @@ def load_basic_models_llm_gpt2(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    print('load gpt:',args.model_architect)
-    if args.model_architect == 'CLM':#task_type == 'CausalLM':
+    print('load gpt:', args.model_architect)
+    if args.model_architect == 'CLM':  # task_type == 'CausalLM':
         print('gpt AutoModelForCausalLM')
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
     # elif args.task_type == "Generation":
     #     full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.model_architect == 'TQA':#.task_type == 'QuestionAnswering':
+    elif args.model_architect == 'TQA':  # .task_type == 'QuestionAnswering':
         print('gpt AutoModelForQuestionAnswering')
         full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    elif args.model_architect == 'CLS':#.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':  # .task_type == 'SequenceClassification':
         full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
-    full_llm = full_model.transformer # Active
+    full_llm = full_model.transformer  # Active
     # full_qwen = full_model.model
-    if args.model_architect == 'CLM':#.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':  # .task_type == 'CausalLM':
         head_layer = full_model.lm_head
     elif args.model_architect == 'TQA':#.task_type == 'QuestionAnswering':
         head_layer = full_model.qa_outputs
-    elif args.model_architect == 'CLS':#.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':  # .task_type == 'SequenceClassification':
         head_layer = full_model.score
     else:
         head_layer = None
 
     args.config = full_model.config
     args.generation_config = full_model.generation_config
-    print('gpt2 args.generation_config:',args.generation_config)
+    print('gpt2 args.generation_config:', args.generation_config)
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.n_embd
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     if args.pad_token == "default":
         print('Default pad')
@@ -737,7 +752,7 @@ def load_basic_models_llm_gpt2(args, index):
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
-    if index < args.k - 1:       
+    if index < args.k - 1:
         #############
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalGPT2Model(full_llm, args.local_encoders_num)
@@ -749,8 +764,8 @@ def load_basic_models_llm_gpt2(args, index):
                 #target_modules=["q", "v"],
                 #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                 inference_mode=False,  # 训练模式
-                r=4,  
-                lora_alpha=32, 
+                r=4,
+                lora_alpha=32,
                 lora_dropout=0.1
             )
 
@@ -762,7 +777,7 @@ def load_basic_models_llm_gpt2(args, index):
             local_model = get_lora_model(local_model)
             print('after lora')
             local_model.print_trainable_parameters()
-        
+
 
         encoder_trainable_ids = args.encoder_trainable_ids_list[index]
         print('encoder_trainable_ids = ', encoder_trainable_ids)
@@ -770,7 +785,7 @@ def load_basic_models_llm_gpt2(args, index):
             if encoder_id not in encoder_trainable_ids:
                 for param in local_model.h.parameters():
                     param.requires_grad = False
-        
+
         print('embedding_trainable = ', args.embedding_trainable[0])
         if args.embedding_trainable[0] == False:
             for param in local_model.wte.parameters():
@@ -814,17 +829,18 @@ def load_basic_models_llm_gpt2(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of gpt2(frozen)
         global_model = GlobalGPT2Model(full_llm, global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.model_architect == 'CLM':#.task_type == "CausalLM":
-            global_model = GPT2LMHeadModel_pretrained(global_model, head_layer, generation_config=full_model.generation_config)
-        elif args.model_architect == 'TQA':#.task_type == "QuestionAnswering":
+        if args.model_architect == 'CLM':  # .task_type == "CausalLM":
+            global_model = GPT2LMHeadModel_pretrained(global_model, head_layer,
+                                                      generation_config=full_model.generation_config)
+        elif args.model_architect == 'TQA':  # .task_type == "QuestionAnswering":
             global_model = GPT2ForQuestionAnswering_pretrained(global_model, head_layer)
-        elif args.model_architect == 'CLS':# .task_type == "SequenceClassification":
+        elif args.model_architect == 'CLS':  # .task_type == "SequenceClassification":
             global_model = GPT2ForSequenceClassification_pretrained(global_model, head_layer)
         # elif args.task_type == "Generation":
         #     global_model = GPT2LMHeadModel_pretrained(global_model, head_layer, generation_config=full_model.generation_config)
@@ -847,8 +863,9 @@ def load_basic_models_llm_gpt2(args, index):
 
         global_model = global_model.to(args.device)
 
-    del(full_model)
+    del (full_model)
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
 
 def load_basic_models_llm_llama(args, index):
     current_model_type = args.model_list[str(index)]['type']
@@ -899,14 +916,14 @@ def load_basic_models_llm_llama(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalLlamaModel(full_llm, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalLlamaModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
             lora_config = LoraConfig(
@@ -914,8 +931,8 @@ def load_basic_models_llm_llama(args, index):
                 #target_modules=["q", "v"],
                 #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                 inference_mode=False,  # 训练模式
-                r=4,  
-                lora_alpha=32, 
+                r=4,
+                lora_alpha=32,
                 lora_dropout=0.1
             )
 
@@ -927,7 +944,7 @@ def load_basic_models_llm_llama(args, index):
             local_model = get_lora_model(local_model)
             print('after lora')
             local_model.print_trainable_parameters()
-        
+
 
         encoder_trainable_ids = args.encoder_trainable_ids_list[index]
         print('encoder_trainable_ids = ', encoder_trainable_ids)
@@ -935,7 +952,7 @@ def load_basic_models_llm_llama(args, index):
             if encoder_id not in encoder_trainable_ids:
                 for param in local_model.layers.parameters():
                     param.requires_grad = False
-        
+
         print('embedding_trainable = ', args.embedding_trainable[0])
         if args.embedding_trainable[0] == False:
             for param in local_model.embed_tokens.parameters():
@@ -956,10 +973,10 @@ def load_basic_models_llm_llama(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalLlamaModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalLlamaModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -991,18 +1008,19 @@ def load_basic_models_llm_llama(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_baichuan(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
-    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True,trust_remote_code=True )
+    args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True, trust_remote_code=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
-   
+
     # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.model_architect == 'CLS':
@@ -1038,15 +1056,15 @@ def load_basic_models_llm_baichuan(args, index):
     args.model_architectures = args.config.architectures
     args.model_embedded_dim = args.config.hidden_size
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalBaichuanModel(full_llm, num_encoders = args.local_encoders_num)
-        
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalBaichuanModel(full_llm, num_encoders=args.local_encoders_num)
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1067,7 +1085,7 @@ def load_basic_models_llm_baichuan(args, index):
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
-        if len(local_trainable_params)<0:
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1075,10 +1093,10 @@ def load_basic_models_llm_baichuan(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalBaichuanModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalBaichuanModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1108,6 +1126,7 @@ def load_basic_models_llm_baichuan(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_xlnet(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -1119,7 +1138,7 @@ def load_basic_models_llm_xlnet(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    
+
     # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.model_architect == 'CLS':
@@ -1131,7 +1150,7 @@ def load_basic_models_llm_xlnet(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_loss
-   
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1157,14 +1176,14 @@ def load_basic_models_llm_xlnet(args, index):
     args.model_embedded_dim = args.config.d_model
 
     all_encoder_num = args.config.n_layer
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalXLNetModel(full_llm, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalXLNetModel(full_llm, num_encoders=args.local_encoders_num)
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1183,14 +1202,14 @@ def load_basic_models_llm_xlnet(args, index):
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.word_embedding.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layer.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layer.parameters()))
 
-        if len(local_trainable_params)<0:
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1198,10 +1217,10 @@ def load_basic_models_llm_xlnet(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalXLNetModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalXLNetModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1231,6 +1250,7 @@ def load_basic_models_llm_xlnet(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_falcon(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -1242,7 +1262,7 @@ def load_basic_models_llm_falcon(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    
+
     # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.model_architect == 'CLS':
@@ -1254,7 +1274,7 @@ def load_basic_models_llm_falcon(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1275,14 +1295,14 @@ def load_basic_models_llm_falcon(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalFalconModel(full_llm, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalFalconModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
             lora_config = LoraConfig(
@@ -1290,8 +1310,8 @@ def load_basic_models_llm_falcon(args, index):
                 #target_modules=["q", "v"],
                 #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                 inference_mode=False,  # 训练模式
-                r=4,  
-                lora_alpha=32, 
+                r=4,
+                lora_alpha=32,
                 lora_dropout=0.1
             )
 
@@ -1303,14 +1323,14 @@ def load_basic_models_llm_falcon(args, index):
             local_model = get_lora_model(local_model)
             print('after lora')
             local_model.print_trainable_parameters()
-        
+
         encoder_trainable_ids = args.encoder_trainable_ids_list[index]
         print('encoder_trainable_ids = ', encoder_trainable_ids)
         for encoder_id in range(len(local_model.h)):
             if encoder_id not in encoder_trainable_ids:
                 for param in local_model.h.parameters():
                     param.requires_grad = False
-        
+
         print('embedding_trainable = ', args.embedding_trainable[0])
         if args.embedding_trainable[0] == False:
             for param in local_model.word_embeddings.parameters():
@@ -1331,10 +1351,10 @@ def load_basic_models_llm_falcon(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalFalconModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalFalconModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1364,6 +1384,7 @@ def load_basic_models_llm_falcon(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 # def load_basic_models_llm_qwen2(args, index):
 #     model_path = args.model_list[str(index)]['path']
 #     args.tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -1383,11 +1404,13 @@ def load_basic_models_llm_falcon(args, index):
 #     local_model_optimizer, global_model_optimizer = None, None
 #     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
+def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side,
+                              model_path, main_lr, pad_token,
                               head_layer_trainable):
     if model_type in ['Bert', 'Albert', 'Roberta']:
         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
+            pad_token, head_layer_trainable
         )
     elif model_type in ['GPT2']:
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
@@ -1411,7 +1434,7 @@ def load_basic_models_llm_mamba(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-  
+
     # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.model_architect == 'CLS':
@@ -1423,7 +1446,7 @@ def load_basic_models_llm_mamba(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-   
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1449,14 +1472,14 @@ def load_basic_models_llm_mamba(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalMambaModel(full_llm, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalMambaModel(full_llm, num_encoders=args.local_encoders_num)
 
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -1479,7 +1502,7 @@ def load_basic_models_llm_mamba(args, index):
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
 
-        if len(local_trainable_params)<0:
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1487,10 +1510,10 @@ def load_basic_models_llm_mamba(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalMambaModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalMambaModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1520,6 +1543,7 @@ def load_basic_models_llm_mamba(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_gemma(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -1543,7 +1567,7 @@ def load_basic_models_llm_gemma(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-   
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1569,14 +1593,14 @@ def load_basic_models_llm_gemma(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalGemmaModel(full_llm, num_encoders = args.local_encoders_num)
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalGemmaModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
             lora_config = LoraConfig(
@@ -1584,8 +1608,8 @@ def load_basic_models_llm_gemma(args, index):
                 #target_modules=["q", "v"],
                 #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
                 inference_mode=False,  # 训练模式
-                r=4,  
-                lora_alpha=32, 
+                r=4,
+                lora_alpha=32,
                 lora_dropout=0.1
             )
 
@@ -1597,14 +1621,14 @@ def load_basic_models_llm_gemma(args, index):
             local_model = get_lora_model(local_model)
             print('after lora')
             local_model.print_trainable_parameters()
-        
+
         encoder_trainable_ids = args.encoder_trainable_ids_list[index]
         print('encoder_trainable_ids = ', encoder_trainable_ids)
         for encoder_id in range(len(local_model.layers)):
             if encoder_id not in encoder_trainable_ids:
                 for param in local_model.layers.parameters():
                     param.requires_grad = False
-        
+
         print('embedding_trainable = ', args.embedding_trainable[0])
         if args.embedding_trainable[0] == False:
             for param in local_model.embed_tokens.parameters():
@@ -1644,7 +1668,7 @@ def load_basic_models_llm_gemma(args, index):
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
 
-        if len(local_trainable_params)<0:
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1652,10 +1676,10 @@ def load_basic_models_llm_gemma(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalGemmaModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalGemmaModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1685,6 +1709,7 @@ def load_basic_models_llm_gemma(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_chatglm(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -1703,7 +1728,6 @@ def load_basic_models_llm_chatglm(args, index):
     else:
         assert 1 > 2, "task type not supported"
 
-
     full_llm = full_model.transformer
     head_layer = full_model.transformer.output_layer
 
@@ -1711,7 +1735,7 @@ def load_basic_models_llm_chatglm(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.transformer.output_layer
-    
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1737,15 +1761,15 @@ def load_basic_models_llm_chatglm(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num)
-        
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalChatGLMModel(full_llm, num_encoders=args.local_encoders_num)
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1767,7 +1791,7 @@ def load_basic_models_llm_chatglm(args, index):
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.encoder.parameters()))
 
-        if len(local_trainable_params)<0:
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1775,10 +1799,10 @@ def load_basic_models_llm_chatglm(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalChatGLMModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalChatGLMModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1808,6 +1832,7 @@ def load_basic_models_llm_chatglm(args, index):
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
+
 def load_basic_models_llm_mistral(args, index):
     current_model_type = args.model_list[str(index)]['type']
     current_output_dim = args.model_list[str(index)]['output_dim']
@@ -1819,7 +1844,7 @@ def load_basic_models_llm_mistral(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    
+
     # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     # elif args.model_architect == 'CLS':
@@ -1831,7 +1856,7 @@ def load_basic_models_llm_mistral(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    
+
     # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
     # elif args.model_architect == 'CLS':
@@ -1857,15 +1882,15 @@ def load_basic_models_llm_mistral(args, index):
     args.model_embedded_dim = args.config.hidden_size
 
     all_encoder_num = args.config.num_hidden_layers
-    print('all_encoder_num:',all_encoder_num)
+    print('all_encoder_num:', all_encoder_num)
 
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:',args.local_encoders_num)
-        local_model = LocalMistralModel(full_llm, num_encoders = args.local_encoders_num)
-        
+        print('args.local_encoders_num:', args.local_encoders_num)
+        local_model = LocalMistralModel(full_llm, num_encoders=args.local_encoders_num)
+
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
@@ -1874,20 +1899,20 @@ def load_basic_models_llm_mistral(args, index):
 
         local_trainable_params = []
         local_model_optimizer = None
-        
+
         print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
         for param in local_model.embed_tokens.parameters():
             param.requires_grad = args.embedding_trainable[0]
         if args.embedding_trainable[0]:
             local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-        
+
         print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
         for param in local_model.layers.parameters():
             param.requires_grad = args.encoder_trainable[0]
         if args.encoder_trainable[0]:
             local_trainable_params.extend(list(local_model.layers.parameters()))
-        
-        if len(local_trainable_params)<0:
+
+        if len(local_trainable_params) < 0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1895,10 +1920,10 @@ def load_basic_models_llm_mistral(args, index):
     global_model_optimizer = None
     if index == args.k - 1:
         global_encoders_num = all_encoder_num - args.local_encoders_num
-        print('global_encoders_num:',global_encoders_num)
+        print('global_encoders_num:', global_encoders_num)
 
         # global part of llama(frozen)
-        global_model = GlobalMistralModel(full_llm, num_encoders = global_encoders_num)
+        global_model = GlobalMistralModel(full_llm, num_encoders=global_encoders_num)
 
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
@@ -1931,28 +1956,39 @@ def load_basic_models_llm_mistral(args, index):
 
 def load_basic_models_llm(args, index):
     if args.model_type in ['Bert', 'Albert', 'Roberta']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_bert(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_bert(
+            args, index)
     elif args.model_type in ['GPT2']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(
+            args, index)
     elif args.model_type in ['Llama']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(
+            args, index)
     elif args.model_type in ['Mamba']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_mamba(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_mamba(
+            args, index)
     elif args.model_type in ['Falcon']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_falcon(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_falcon(
+            args, index)
     elif args.model_type in ['Baichuan']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_baichuan(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_baichuan(
+            args, index)
     elif args.model_type in ['XLNet']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_xlnet(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_xlnet(
+            args, index)
     elif args.model_type in ['Gemma']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gemma(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gemma(
+            args, index)
     elif args.model_type in ['ChatGLM']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_chatglm(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_chatglm(
+            args, index)
     elif args.model_type in ['Mistral']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_mistral(args, index)
-    
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_mistral(
+            args, index)
+
     elif args.model_type in ['T5']:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_t5(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_t5(args,
+                                                                                                                  index)
     else:
         assert 1 > 2, f'{args.model_type} not supported'
 
@@ -1965,7 +2001,6 @@ def load_basic_models_llm(args, index):
 
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
-
 
 
 # def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
@@ -2136,13 +2171,18 @@ def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
     val_model = None
     if current_model_type in LLM_supported:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args, index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,
+                                                                                                               index)
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer
     else:
         args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args, index)
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args, index, local_model, local_model_optimizer,
-                                                                                                             global_model, global_model_optimizer)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args,
+                                                                                                             index,
+                                                                                                             local_model,
+                                                                                                             local_model_optimizer,
+                                                                                                             global_model,
+                                                                                                             global_model_optimizer)
         # important
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 

@@ -62,7 +62,7 @@ class Node:
 
     @abstractmethod
     def make_children_nodes(
-        self, best_party_id: int, best_col_id: int, best_threshold_id: int
+            self, best_party_id: int, best_col_id: int, best_threshold_id: int
     ):
         pass
 
@@ -92,15 +92,15 @@ class NodeAPI:
         return node_info
 
     def recursive_print(
-        self, node: Node, prefix: str, isleft: bool, target_party_id: int = -1
+            self, node: Node, prefix: str, isleft: bool, target_party_id: int = -1
     ) -> Tuple[str, bool]:
         node_info = ""
         skip_flag = False
         if node.is_leaf_flag:
             skip_flag = (
-                node.depth <= 0
-                and target_party_id != -1
-                and node.party_id != target_party_id
+                    node.depth <= 0
+                    and target_party_id != -1
+                    and node.party_id != target_party_id
             )
             if skip_flag:
                 node_info = ""
@@ -176,7 +176,7 @@ class Tree:
         return self.nodeapi.predict(self.dtree, X)
 
     def extract_train_prediction_from_node(
-        self, node: Node
+            self, node: Node
     ) -> List[Tuple[List[int], List[List[float]]]]:
         if node.is_leaf_flag:
             result = [(node.idxs, [node.val] * len(node.idxs))]

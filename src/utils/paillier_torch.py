@@ -24,6 +24,7 @@ def _ignore_overflow_decrypt(sk):
             return sk.decrypt(x)
         except:
             return 0.0
+
     return f
 
 
@@ -66,7 +67,7 @@ class PaillierTensor(object):
         if kwargs is None:
             kwargs = {}
         if func not in HANDLED_FUNCTIONS or not all(
-            issubclass(t, (torch.Tensor, PaillierTensor)) for t in types
+                issubclass(t, (torch.Tensor, PaillierTensor)) for t in types
         ):
             return NotImplemented
         return HANDLED_FUNCTIONS[func](*args, **kwargs)
@@ -148,11 +149,11 @@ class PaillierMSELoss(nn.Module):
         super(PaillierMSELoss, self).__init__()
         self.ctx = None
         self.p_gradients = None
-        
+
     def forward(self, y_pred, y_true):
         self.ctx = y_pred, y_true
         return None
-    
+
     def p_backward(self):
         y_pred, y_true = self.ctx
         return (y_pred - y_true) * (1 / y_true.shape[0])

@@ -1,5 +1,6 @@
 import time
 import sys, os
+
 sys.path.append(os.pardir)
 
 import torch
@@ -21,14 +22,14 @@ def symKL_objective(lam10, lam20, lam11, lam21, u, v, d, g):
         return float('inf')
     objective = (d - 1) * (lam20 + u) / (lam21 + v) \
                 + (d - 1) * (lam21 + v) / (lam20 + u) \
-                    + (lam10 + u + g) / (lam11 + v) \
-                        + (lam11 + v + g) / (lam10 + u)
+                + (lam10 + u + g) / (lam11 + v) \
+                + (lam11 + v + g) / (lam10 + u)
     return objective
 
 
 def symKL_objective_zero_uv(lam10, lam11, g):
     objective = (lam10 + g) / lam11 \
-                    + (lam11 + g) / lam10
+                + (lam11 + g) / lam10
     return objective
 
 
@@ -55,11 +56,11 @@ def solve_isotropic_covariance(u, v, d, g, p, P,
         for i in range(NUM_CANDIDATE):
             if i % 3 == ordering[0]:
                 # print('a')
-                if lam20_init: # if we pass an initialization
+                if lam20_init:  # if we pass an initialization
                     lam20 = lam20_init
                     # print('here')
                 else:
-                    lam20 = random.random() * P / (1-p) / d
+                    lam20 = random.random() * P / (1 - p) / d
                 lam10, lam11 = None, None
                 # print('lam21', lam21)
             elif i % 3 == ordering[1]:
@@ -75,12 +76,12 @@ def solve_isotropic_covariance(u, v, d, g, p, P,
                 if lam10_init:
                     lam10 = lam10_init
                 else:
-                    lam10 = random.random() * P / (1-p)
+                    lam10 = random.random() * P / (1 - p)
                 lam11, lam20 = None, None
                 # print('lam10', lam10)
 
-            solutions.append(solve_small_neg(u=u,v=v,d=d,g=g,p=p,P=P, lam10=lam10, lam11=lam11, lam20=lam20))
-        
+            solutions.append(solve_small_neg(u=u, v=v, d=d, g=g, p=p, P=P, lam10=lam10, lam11=lam11, lam20=lam20))
+
     else:
         for i in range(NUM_CANDIDATE):
             if i % 3 == ordering[0]:
@@ -101,15 +102,15 @@ def solve_isotropic_covariance(u, v, d, g, p, P,
                 if lam10_init:
                     lam10 = lam10_init
                 else:
-                    lam10 = random.random() * P / (1-p)
+                    lam10 = random.random() * P / (1 - p)
                 lam11, lam21 = None, None
                 # print('lam10', lam10)
 
-            solutions.append(solve_small_pos(u=u,v=v,d=d,g=g,p=p,P=P, lam10=lam10, lam11=lam11, lam21=lam21))
+            solutions.append(solve_small_pos(u=u, v=v, d=d, g=g, p=p, P=P, lam10=lam10, lam11=lam11, lam21=lam21))
 
     # print(solutions)
     lam10, lam20, lam11, lam21, objective = min(solutions, key=lambda x: x[-1])
-    
+
     # print('sum', p * lam11 + p*(d-1)*lam21 + (1-p) * lam10 + (1-p)*(d-1)*lam20)
 
     return (lam10, lam20, lam11, lam21, objective)
@@ -119,7 +120,7 @@ def solve_zero_uv(g, p, P):
     C = P
 
     E = math.sqrt((C + (1 - p) * g) / (C + p * g))
-    tau = max((P / p) / (E + (1 - p)/p), 0.0)
+    tau = max((P / p) / (E + (1 - p) / p), 0.0)
     # print('tau', tau)
     if 0 <= tau and tau <= P / (1 - p):
         # print('A')
@@ -127,20 +128,20 @@ def solve_zero_uv(g, p, P):
         lam11 = max(P / p - (1 - p) * tau / p, 0.0)
     else:
         # print('B')
-        lam10_case1, lam11_case1 = 0.0, max(P/p, 0.0)
-        lam10_case2, lam11_case2 = max(P/(1-p), 0), 0.0
-        objective1 = symKL_objective_zero_uv(lam10=lam10_case1,lam11=lam11_case1,
+        lam10_case1, lam11_case1 = 0.0, max(P / p, 0.0)
+        lam10_case2, lam11_case2 = max(P / (1 - p), 0), 0.0
+        objective1 = symKL_objective_zero_uv(lam10=lam10_case1, lam11=lam11_case1,
                                              g=g)
-        objective2 = symKL_objective_zero_uv(lam10=lam10_case2,lam11=lam11_case2,
+        objective2 = symKL_objective_zero_uv(lam10=lam10_case2, lam11=lam11_case2,
                                              g=g)
         if objective1 < objective2:
             lam10, lam11 = lam10_case1, lam11_case1
         else:
             lam10, lam11 = lam10_case2, lam11_case2
-    
+
     objective = symKL_objective_zero_uv(lam10=lam10, lam11=lam11, g=g)
     # here we subtract d = 1 because the distribution is essentially one-dimensional
-    return (lam10, 0.0, lam11, 0.0, 0.5 * objective - 1) 
+    return (lam10, 0.0, lam11, 0.0, 0.5 * objective - 1)
 
 
 def solve_small_neg(u, v, d, g, p, P, lam10=None, lam20=None, lam11=None):
@@ -160,12 +161,12 @@ def solve_small_neg(u, v, d, g, p, P, lam10=None, lam20=None, lam11=None):
     # print(ordering)
 
     while True:
-        if i % 3 == ordering[0]: # fix lam20
+        if i % 3 == ordering[0]:  # fix lam20
             D = P - (1 - p) * (d - 1) * lam20
             C = D + p * v + (1 - p) * u
 
             E = math.sqrt((C + (1 - p) * g) / (C + p * g))
-            tau = max((D / p + v - E * u) / (E + (1 - p)/p), 0.0)
+            tau = max((D / p + v - E * u) / (E + (1 - p) / p), 0.0)
             # print('tau', tau)
             if lam20 <= tau and tau <= P / (1 - p) - (d - 1) * lam20:
                 # print('A')
@@ -173,53 +174,56 @@ def solve_small_neg(u, v, d, g, p, P, lam10=None, lam20=None, lam11=None):
                 lam11 = max(D / p - (1 - p) * tau / p, 0.0)
             else:
                 # print('B')
-                lam10_case1, lam11_case1 = lam20, max(P/p - (1-p)*d*lam20/p, 0.0)
-                lam10_case2, lam11_case2 = max(P/(1-p) - (d-1)*lam20, 0), 0.0
-                objective1 = symKL_objective(lam10=lam10_case1,lam20=lam20,lam11=lam11_case1,lam21=LAM21,
+                lam10_case1, lam11_case1 = lam20, max(P / p - (1 - p) * d * lam20 / p, 0.0)
+                lam10_case2, lam11_case2 = max(P / (1 - p) - (d - 1) * lam20, 0), 0.0
+                objective1 = symKL_objective(lam10=lam10_case1, lam20=lam20, lam11=lam11_case1, lam21=LAM21,
                                              u=u, v=v, d=d, g=g)
-                objective2 = symKL_objective(lam10=lam10_case2,lam20=lam20,lam11=lam11_case2,lam21=LAM21,
+                objective2 = symKL_objective(lam10=lam10_case2, lam20=lam20, lam11=lam11_case2, lam21=LAM21,
                                              u=u, v=v, d=d, g=g)
                 if objective1 < objective2:
                     lam10, lam11 = lam10_case1, lam11_case1
                 else:
                     lam10, lam11 = lam10_case2, lam11_case2
 
-        elif i % 3 == ordering[1]: # fix lam11
+        elif i % 3 == ordering[1]:  # fix lam11
             D = max((P - p * lam11) / (1 - p), 0.0)
-            f = lambda x: symKL_objective(lam10=D - (d-1)*x, lam20=x, lam11=lam11, lam21=LAM21,
+            f = lambda x: symKL_objective(lam10=D - (d - 1) * x, lam20=x, lam11=lam11, lam21=LAM21,
                                           u=u, v=v, d=d, g=g)
 
             def f_prime(x):
                 if x == 0.0 and u == 0.0:
                     return float('-inf')
                 else:
-                    return (d-1)/v - (d-1)/(lam11+v) - (d-1)/(x+u)*(v/(x+u)) + (lam11 + v + g)/(D-(d-1)*x+u) * ((d-1)/(D-(d-1)*x+u))
+                    return (d - 1) / v - (d - 1) / (lam11 + v) - (d - 1) / (x + u) * (v / (x + u)) + (lam11 + v + g) / (
+                                D - (d - 1) * x + u) * ((d - 1) / (D - (d - 1) * x + u))
 
             # print('D/d', D/d)
-            lam20 = convex_min_1d(xl=0.0, xr=D/d, f=f, f_prime=f_prime)
-            lam10 = max(D - (d-1) * lam20, 0.0)
+            lam20 = convex_min_1d(xl=0.0, xr=D / d, f=f, f_prime=f_prime)
+            lam10 = max(D - (d - 1) * lam20, 0.0)
 
-        else: # fix lam10
-            D = max(P - (1 - p) * lam10, 0.0) # avoid negative due to numerical error
-            f = lambda x: symKL_objective(lam10=lam10, lam20=x, lam11=D/p - (1-p)*(d-1)*x/p, lam21=LAM21,
+        else:  # fix lam10
+            D = max(P - (1 - p) * lam10, 0.0)  # avoid negative due to numerical error
+            f = lambda x: symKL_objective(lam10=lam10, lam20=x, lam11=D / p - (1 - p) * (d - 1) * x / p, lam21=LAM21,
                                           u=u, v=v, d=d, g=g)
 
             def f_prime(x):
                 if x == 0.0 and u == 0.0:
                     return float('-inf')
                 else:
-                    return (d-1)/v - (1-p)*(d-1)/(lam10 + u)/p - (d-1)/(x+u)*(v/(x+u)) + (lam10+u+g)/(D/p - (1-p)*(d-1)*x/p + v) * (1-p) * (d-1) / p / (D/p - (1-p)*(d-1)*x/p + v)
-            
-            # print('lam10', 'D/((1-p)*(d-1)', lam10, D/((1-p)*(d-1)))
-            lam20 = convex_min_1d(xl=0.0, xr=min(D/((1-p)*(d-1)), lam10), f=f, f_prime=f_prime)
-            lam11 = max(D/p - (1-p)*(d-1)*lam20/p, 0.0)
+                    return (d - 1) / v - (1 - p) * (d - 1) / (lam10 + u) / p - (d - 1) / (x + u) * (v / (x + u)) + (
+                                lam10 + u + g) / (D / p - (1 - p) * (d - 1) * x / p + v) * (1 - p) * (d - 1) / p / (
+                                D / p - (1 - p) * (d - 1) * x / p + v)
 
-        if lam10 <0 or lam20 < 0 or lam11 <0 or LAM21 <0: # check to make sure no negative values
+            # print('lam10', 'D/((1-p)*(d-1)', lam10, D/((1-p)*(d-1)))
+            lam20 = convex_min_1d(xl=0.0, xr=min(D / ((1 - p) * (d - 1)), lam10), f=f, f_prime=f_prime)
+            lam11 = max(D / p - (1 - p) * (d - 1) * lam20 / p, 0.0)
+
+        if lam10 < 0 or lam20 < 0 or lam11 < 0 or LAM21 < 0:  # check to make sure no negative values
             assert False, i
 
-        objective_value_list.append(symKL_objective(lam10=lam10,lam20=lam20,lam11=lam11,lam21=LAM21,
-                                             u=u, v=v, d=d, g=g))
-        if (i>=3 and objective_value_list[-4] - objective_value_list[-1] < OBJECTIVE_EPSILON) or i >= 100:
+        objective_value_list.append(symKL_objective(lam10=lam10, lam20=lam20, lam11=lam11, lam21=LAM21,
+                                                    u=u, v=v, d=d, g=g))
+        if (i >= 3 and objective_value_list[-4] - objective_value_list[-1] < OBJECTIVE_EPSILON) or i >= 100:
             # print(i)
             return lam10, lam20, lam11, LAM21, 0.5 * objective_value_list[-1] - d
 
@@ -241,66 +245,69 @@ def solve_small_pos(u, v, d, g, p, P, lam10=None, lam11=None, lam21=None):
         ordering = [1, 2, 0]
     # print(ordering)
     while True:
-        if i % 3 == ordering[0]: # fix lam21
+        if i % 3 == ordering[0]:  # fix lam21
             D = P - p * (d - 1) * lam21
             C = D + p * v + (1 - p) * u
 
             E = math.sqrt((C + (1 - p) * g) / (C + p * g))
-            tau = max((D / p + v - E * u) / (E + (1 - p)/p), 0.0)
+            tau = max((D / p + v - E * u) / (E + (1 - p) / p), 0.0)
             # print('tau', tau)
-            if 0.0 <= tau and tau <= (P - p*d*lam21)/(1-p):
+            if 0.0 <= tau and tau <= (P - p * d * lam21) / (1 - p):
                 # print('A')
                 lam10 = tau
                 lam11 = max(D / p - (1 - p) * tau / p, 0.0)
             else:
                 # print('B')
-                lam10_case1, lam11_case1 = 0, max(P/p - (d-1)*lam21, 0.0)
-                lam10_case2, lam11_case2 = max((P - p*d*lam21)/(1-p), 0.0), lam21
-                objective1 = symKL_objective(lam10=lam10_case1,lam20=LAM20,lam11=lam11_case1,lam21=lam21,
+                lam10_case1, lam11_case1 = 0, max(P / p - (d - 1) * lam21, 0.0)
+                lam10_case2, lam11_case2 = max((P - p * d * lam21) / (1 - p), 0.0), lam21
+                objective1 = symKL_objective(lam10=lam10_case1, lam20=LAM20, lam11=lam11_case1, lam21=lam21,
                                              u=u, v=v, d=d, g=g)
-                objective2 = symKL_objective(lam10=lam10_case2,lam20=LAM20,lam11=lam11_case2,lam21=lam21,
+                objective2 = symKL_objective(lam10=lam10_case2, lam20=LAM20, lam11=lam11_case2, lam21=lam21,
                                              u=u, v=v, d=d, g=g)
                 if objective1 < objective2:
                     lam10, lam11 = lam10_case1, lam11_case1
                 else:
                     lam10, lam11 = lam10_case2, lam11_case2
 
-        elif i % 3 == ordering[1]: # fix lam11
+        elif i % 3 == ordering[1]:  # fix lam11
             D = max(P - p * lam11, 0.0)
-            f = lambda x: symKL_objective(lam10=(D - p*(d-1)*x)/(1-p), lam20=LAM20, lam11=lam11, lam21=x,
+            f = lambda x: symKL_objective(lam10=(D - p * (d - 1) * x) / (1 - p), lam20=LAM20, lam11=lam11, lam21=x,
                                           u=u, v=v, d=d, g=g)
 
             def f_prime(x):
                 if x == 0.0 and v == 0.0:
                     return float('-inf')
                 else:
-                    return (d-1)/u - p*(d-1)/(lam11+v)/(1-p) - (d-1)/(x+v)*(u/(x+v)) + (lam11 + v + g) / ((D - p*(d-1)*x)/(1-p) + u) * p * (d-1) / (1-p) /((D - p*(d-1)*x)/(1-p) + u)
+                    return (d - 1) / u - p * (d - 1) / (lam11 + v) / (1 - p) - (d - 1) / (x + v) * (u / (x + v)) + (
+                                lam11 + v + g) / ((D - p * (d - 1) * x) / (1 - p) + u) * p * (d - 1) / (1 - p) / (
+                                (D - p * (d - 1) * x) / (1 - p) + u)
 
             # print('lam11', 'D/p/(d-1)', lam11, D/p/(d-1))
-            lam21 = convex_min_1d(xl=0.0, xr=min(D/p/(d-1), lam11), f=f, f_prime=f_prime)
-            lam10 = max((D - p*(d-1)*lam21)/(1-p), 0.0)
+            lam21 = convex_min_1d(xl=0.0, xr=min(D / p / (d - 1), lam11), f=f, f_prime=f_prime)
+            lam10 = max((D - p * (d - 1) * lam21) / (1 - p), 0.0)
 
-        else: # fix lam10
+        else:  # fix lam10
             D = max((P - (1 - p) * lam10) / p, 0.0)
-            f = lambda x: symKL_objective(lam10=lam10, lam20=LAM20, lam11=D - (d-1)*x, lam21=x,
+            f = lambda x: symKL_objective(lam10=lam10, lam20=LAM20, lam11=D - (d - 1) * x, lam21=x,
                                           u=u, v=v, d=d, g=g)
 
             def f_prime(x):
                 if x == 0.0 and v == 0.0:
                     return float('-inf')
                 else:
-                    return (d-1)/u - (d-1)/(lam10+u) - (d-1)/(x+v)*(u/(x+v)) + (lam10 + u + g)/(D-(d-1)*x+v) * (d-1) / (D-(d-1)*x+v)
+                    return (d - 1) / u - (d - 1) / (lam10 + u) - (d - 1) / (x + v) * (u / (x + v)) + (lam10 + u + g) / (
+                                D - (d - 1) * x + v) * (d - 1) / (D - (d - 1) * x + v)
 
-            lam21 = convex_min_1d(xl=0.0, xr=D/d, f=f, f_prime=f_prime)
-            lam11 = max(D - (d-1) * lam21, 0.0)
+            lam21 = convex_min_1d(xl=0.0, xr=D / d, f=f, f_prime=f_prime)
+            lam11 = max(D - (d - 1) * lam21, 0.0)
 
-        if lam10 <0 or LAM20 <0 or lam11 <0 or lam21 <0:
+        if lam10 < 0 or LAM20 < 0 or lam11 < 0 or lam21 < 0:
             assert False, i
 
-        objective_value_list.append(symKL_objective(lam10=lam10,lam20=LAM20,lam11=lam11,lam21=lam21,
-                                             u=u, v=v, d=d, g=g))
+        objective_value_list.append(symKL_objective(lam10=lam10, lam20=LAM20, lam11=lam11, lam21=lam21,
+                                                    u=u, v=v, d=d, g=g))
 
-        if (i>=3 and objective_value_list[-4] - objective_value_list[-1] < OBJECTIVE_EPSILON) or i >= 100:
+        if (i >= 3 and objective_value_list[-4] - objective_value_list[-1] < OBJECTIVE_EPSILON) or i >= 100:
             # print(i)
             return lam10, LAM20, lam11, lam21, 0.5 * objective_value_list[-1] - d
 
@@ -318,9 +325,9 @@ def convex_min_1d(xl, xr, f, f_prime):
     # print('xr', xr, f(xr), f_prime(xr))
     if abs(xl - xr) <= CONVEX_EPSILON:
         return min((f(x), x) for x in [xl, xm, xr])[1]
-    if f_prime(xl) <=0 and f_prime(xr) <= 0:
+    if f_prime(xl) <= 0 and f_prime(xr) <= 0:
         return xr
-    elif f_prime(xl) >=0 and f_prime(xr) >= 0:
+    elif f_prime(xl) >= 0 and f_prime(xr) >= 0:
         return xl
     if f_prime(xm) > 0:
         return convex_min_1d(xl=xl, xr=xm, f=f, f_prime=f_prime)
@@ -329,13 +336,18 @@ def convex_min_1d(xl, xr, f, f_prime):
 
 
 def small_neg_problem_string(u, v, d, g, p, P):
-    return 'minimize ({2}-1)*(z + {0})/{1} + ({2}-1)*{1}/(z+{0})+(x+{0}+{3})/(y+{1}) + (y+{1}+{3})/(x+{0}) subject to x>=0, y>=0, z>=0, z<=x, {4}*y+(1-{4})*x+(1-{4})*({2}-1)*z={5}'.format(u,v,d,g,p,P)
+    return 'minimize ({2}-1)*(z + {0})/{1} + ({2}-1)*{1}/(z+{0})+(x+{0}+{3})/(y+{1}) + (y+{1}+{3})/(x+{0}) subject to x>=0, y>=0, z>=0, z<=x, {4}*y+(1-{4})*x+(1-{4})*({2}-1)*z={5}'.format(
+        u, v, d, g, p, P)
+
 
 def small_pos_problem_string(u, v, d, g, p, P):
-    return 'minimize ({2}-1)*{0}/(z+{1}) + ({2}-1)*(z + {1})/{0} + (x+{0}+{3})/(y+{1}) + (y+{1}+{3})/(x+{0}) subject to x>=0, y>=0, z>=0, z<=y, {4}*y+(1-{4})*x+{4}*({2}-1)*z={5}'.format(u,v,d,g,p,P)
+    return 'minimize ({2}-1)*{0}/(z+{1}) + ({2}-1)*(z + {1})/{0} + (x+{0}+{3})/(y+{1}) + (y+{1}+{3})/(x+{0}) subject to x>=0, y>=0, z>=0, z<=y, {4}*y+(1-{4})*x+{4}*({2}-1)*z={5}'.format(
+        u, v, d, g, p, P)
+
 
 def zero_uv_problem_string(g, p, P):
-    return 'minimize (x+{0})/y + (y+{0})/x subject to x>=0, y>=0, {1}*y+(1-{1})*x={2}'.format(g,p,P)
+    return 'minimize (x+{0})/y + (y+{0})/x subject to x>=0, y>=0, {1}*y+(1-{1})*x={2}'.format(g, p, P)
+
 
 # if __name__ == '__main__':
 #     import random
@@ -385,10 +397,10 @@ def zero_uv_problem_string(g, p, P):
 
 
 def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1.0, uv_choice='uv', p_frac='pos_frac'):
-    assert len(classes)==2
+    assert len(classes) == 2
 
     # sess = tf.compat.v1.Session()
-    
+
     # the batch label was stored in shared_var.batch_y in train_and_test
     # print('start')
     # start = time.time()
@@ -407,11 +419,11 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
     # y = y.cpu().numpy()
     y = _y
     # y = tf.as_dtype(_y)
-    pos_g = g[y==1]
-    pos_g_mean = tf.math.reduce_mean(pos_g, axis=0, keepdims=True) # shape [1, d]
-    pos_coordinate_var = tf.reduce_mean(tf.math.square(pos_g - pos_g_mean), axis=0) # use broadcast
-    neg_g = g[y==0]
-    neg_g_mean = tf.math.reduce_mean(neg_g, axis=0, keepdims=True) # shape [1, d]
+    pos_g = g[y == 1]
+    pos_g_mean = tf.math.reduce_mean(pos_g, axis=0, keepdims=True)  # shape [1, d]
+    pos_coordinate_var = tf.reduce_mean(tf.math.square(pos_g - pos_g_mean), axis=0)  # use broadcast
+    neg_g = g[y == 0]
+    neg_g_mean = tf.math.reduce_mean(neg_g, axis=0, keepdims=True)  # shape [1, d]
     neg_coordinate_var = tf.reduce_mean(tf.math.square(neg_g - neg_g_mean), axis=0)
     # print("pos_g:",pos_g, pos_g_mean, pos_coordinate_var)
     # print("neg_g:",neg_g, neg_g_mean, neg_coordinate_var)
@@ -448,21 +460,20 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
     d = float(g.shape[1])
 
     if p_frac == 'pos_frac':
-        p = float(tf.reduce_sum(y) / len(y)) # p is set as the fraction of positive in the batch
+        p = float(tf.reduce_sum(y) / len(y))  # p is set as the fraction of positive in the batch
     else:
         p = float(p_frac)
 
     scale = init_scale
-    P = scale * g_diff_norm**2
+    P = scale * g_diff_norm ** 2
     # print('u={0},v={1},d={2},g={3},p={4},P={5}'.format(u,v,d,g_diff_norm**2,p,P))
-
 
     # print('compute problem instance', time.time() - start)
     # start = time.time()
 
     lam10, lam20, lam11, lam21 = None, None, None, None
     while True:
-        P = scale * g_diff_norm**2
+        P = scale * g_diff_norm ** 2
         # print('g_diff_norm ** 2', g_diff_norm ** 2)
         # print('P', P)
         # print('u, v, d, p', u, v, d, p)
@@ -485,60 +496,59 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
         if not dynamic or sumKL <= sumKL_threshold:
             break
 
-        scale *= 1.5 # loosen the power constraint
-    
+        scale *= 1.5  # loosen the power constraint
+
     # print('solving time', time.time() - start)
     # start = time.time()
 
     with shared_var.writer.as_default():
         tf.summary.scalar(name='solver/u',
-                        data=u,
-                        step=shared_var.counter)
+                          data=u,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/v',
-                        data=v,
-                        step=shared_var.counter)
+                          data=v,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/g',
-                        data=g_diff_norm ** 2,
-                        step=shared_var.counter)
+                          data=g_diff_norm ** 2,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/p',
-                        data=p,
-                        step=shared_var.counter)
+                          data=p,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/scale',
-                            data=scale,
-                            step=shared_var.counter)
+                          data=scale,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/P',
-                        data=P,
-                        step=shared_var.counter)
+                          data=P,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/lam10',
-                            data=lam10,
-                            step=shared_var.counter)
+                          data=lam10,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/lam20',
-                            data=lam20,
-                            step=shared_var.counter)
+                          data=lam20,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/lam11',
-                            data=lam11,
-                            step=shared_var.counter)
+                          data=lam11,
+                          step=shared_var.counter)
         tf.summary.scalar(name='solver/lam21',
-                            data=lam21,
-                            step=shared_var.counter)
+                          data=lam21,
+                          step=shared_var.counter)
         # tf.summary.scalar(name='sumKL_before',
         #                 data=symKL_objective(lam10=0.0,lam20=0.0,lam11=0.0,lam21=0.0,
         #                                     u=u, v=v, d=d, g=g_diff_norm**2),
         #                 step=shared_var.counter)
         # even if we didn't use avg_neg_coordinate_var for u and avg_pos_coordinate_var for v, we use it to evaluate the sumKL_before
         tf.summary.scalar(name='sumKL_before',
-                        data=symKL_objective(lam10=0.0,lam20=0.0,lam11=0.0,lam21=0.0,
-                                            u=float(avg_neg_coordinate_var),
-                                            v=float(avg_pos_coordinate_var),
-                                            d=d, g=g_diff_norm**2),
-                        step=shared_var.counter)
+                          data=symKL_objective(lam10=0.0, lam20=0.0, lam11=0.0, lam21=0.0,
+                                               u=float(avg_neg_coordinate_var),
+                                               v=float(avg_pos_coordinate_var),
+                                               d=d, g=g_diff_norm ** 2),
+                          step=shared_var.counter)
         tf.summary.scalar(name='sumKL_after',
-                        data=sumKL,
-                        step=shared_var.counter)
+                          data=sumKL,
+                          step=shared_var.counter)
         tf.summary.scalar(name='error prob lower bound',
-                        data=0.5 - math.sqrt(sumKL) / 4,
-                        step=shared_var.counter)
-    
+                          data=0.5 - math.sqrt(sumKL) / 4,
+                          step=shared_var.counter)
 
     # print('tb logging', time.time() - start)
     # start = time.time()
@@ -548,7 +558,7 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
 
     # positive examples add noise in g1 - g0
     perturbed_g += tf.reshape(tf.multiply(x=tf.random.normal(shape=y.shape),
-                            y=y_float), shape=(-1, 1)) * g_diff * (math.sqrt(lam11-lam21)/g_diff_norm)
+                                          y=y_float), shape=(-1, 1)) * g_diff * (math.sqrt(lam11 - lam21) / g_diff_norm)
 
     # add spherical noise to positive examples
     if lam21 > 0.0:
@@ -556,11 +566,12 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
 
     # negative examples add noise in g1 - g0
     perturbed_g += tf.reshape(tf.multiply(x=tf.random.normal(shape=y.shape),
-                            y=1-y_float), shape=(-1, 1)) * g_diff * (math.sqrt(lam10-lam20)/g_diff_norm)
+                                          y=1 - y_float), shape=(-1, 1)) * g_diff * (
+                               math.sqrt(lam10 - lam20) / g_diff_norm)
 
     # add spherical noise to negative examples
     if lam20 > 0.0:
-        perturbed_g += tf.random.normal(shape=g.shape) * tf.reshape(1-y_float, shape=(-1, 1)) * math.sqrt(lam20)
+        perturbed_g += tf.random.normal(shape=g.shape) * tf.reshape(1 - y_float, shape=(-1, 1)) * math.sqrt(lam20)
 
     # print('noise adding', time.time() - start)
 
@@ -593,4 +604,3 @@ def KL_gradient_perturb(g, classes, sumKL_threshold, dynamic=False, init_scale=1
     # Numpy => Torch
     torch_result = torch.from_numpy(numpy_result)
     return torch_result
-

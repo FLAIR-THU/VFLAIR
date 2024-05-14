@@ -1,31 +1,31 @@
 {
-    "epochs": 5,
-    "lr": 0.0001,
-    "k": 2,
-    "batch_size": 8192,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 5,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 8192,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "num_exp": 10,
+  "dataset": {
+    "dataset_name": "criteo",
+    "num_classes": 2
+  },
+  "model_list": {
+    "0": {
+      "type": "MLP3_256_sparse",
+      "input_dim": 13,
+      "output_dim": 2,
+      "path": ""
     },
-    "num_exp": 10,
-    "dataset":{
-        "dataset_name": "criteo",
-        "num_classes": 2
+    "1": {
+      "type": "MLP3_256_dense",
+      "input_dim": 26,
+      "output_dim": 2,
+      "path": ""
     },
-    "model_list":{
-        "0": {
-            "type": "MLP3_256_sparse",
-            "input_dim": 13,
-            "output_dim": 2,
-            "path": ""
-        },
-        "1": {
-            "type": "MLP3_256_dense",
-            "input_dim": 26,
-            "output_dim": 2,
-            "path": ""
-        },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHead"
-    }
+    "apply_trainable_layer": 1,
+    "global_model": "ClassificationModelHostTrainableHead"
+  }
 }

@@ -19,16 +19,17 @@ import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
+
 class BaiChuanForCausalLM_pretrained(BaiChuanForCausalLM):
     def __init__(self, global_baichuan, lm_head, generation_config=None):
         super().__init__(global_baichuan.config)
-        self.model = global_baichuan #Model(config)
+        self.model = global_baichuan  # Model(config)
 
-        self.head_layer = lm_head #nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.head_layer = lm_head  # nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.generation_config = generation_config
         # Initialize weights and apply final processing
         # self.post_init()
-    
+
     def _clear_past_key_values(self):
         self.model._clear_past_key_values()
 
@@ -118,29 +119,30 @@ class BaiChuanForCausalLM_pretrained(BaiChuanForCausalLM):
             attentions=outputs.attentions,
         )
 
+
 ##### Evaluation with pretrained models ######
 
 ##################### Functional Global Models ######################
-class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedModel):
+class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel, BaichuanPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`DecoderLayer`]
 
     Args:
         config: BaiChuanConfig
     """
-    
+
     def __init__(self, full_baichuan, num_encoders):
-        super(BaichuanPreTrainedModel,self).__init__(full_baichuan.config)
+        super(BaichuanPreTrainedModel, self).__init__(full_baichuan.config)
         self.local_num_encoders = num_encoders
         self.num_encoders_all = full_baichuan.config.num_hidden_layers
-        
+
         self.padding_idx = full_baichuan.config.pad_token_id
         self.vocab_size = full_baichuan.config.vocab_size
 
-        self.embed_tokens = full_baichuan.embed_tokens #nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.embed_tokens = full_baichuan.embed_tokens  # nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         self.layers = nn.ModuleList(full_baichuan.layers[i] for i in range(self.local_num_encoders))
         # nn.ModuleList([DecoderLayer(config) for _ in range(config.num_hidden_layers)])
-        
+
         # self.norm = full_baichuan.norm #RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
@@ -201,7 +203,7 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedMo
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
-        
+
         # embed positions
         if attention_mask is None:
             attention_mask = torch.ones(
@@ -210,7 +212,6 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedMo
         attention_mask = self._prepare_decoder_attention_mask(
             attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
         )
-
 
         hidden_states = inputs_embeds
 
@@ -266,9 +267,9 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedMo
             if output_attentions:
                 all_self_attns += (layer_outputs[1],)
 
-        return {'inputs_embeds':hidden_states, 
-                'attention_mask':attention_mask}
-        
+        return {'inputs_embeds': hidden_states,
+                'attention_mask': attention_mask}
+
         # hidden_states = self.norm(hidden_states)
 
         # # add hidden states from the last decoder layer
@@ -284,6 +285,7 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedMo
         #     hidden_states=all_hidden_states,
         #     attentions=all_self_attns,
         # )
+
 
 class GlobalBaichuanModel(BaichuanModel):
     """
@@ -303,11 +305,12 @@ class GlobalBaichuanModel(BaichuanModel):
         self.vocab_size = full_baichuan.config.vocab_size
 
         # self.embed_tokens = full_baichuan.embed_tokens #nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        
-        self.layers = nn.ModuleList(full_baichuan.layers[i] for i in range(self.local_num_encoders,self.num_encoders_all))
+
+        self.layers = nn.ModuleList(
+            full_baichuan.layers[i] for i in range(self.local_num_encoders, self.num_encoders_all))
         # nn.ModuleList([DecoderLayer(config) for _ in range(config.num_hidden_layers)])
-        
-        self.norm = full_baichuan.norm #RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+
+        self.norm = full_baichuan.norm  # RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
@@ -315,7 +318,7 @@ class GlobalBaichuanModel(BaichuanModel):
 
     def _clear_past_key_values(self):
         self.past_key_values = None
-        
+
     def forward(
             self,
             input_ids: torch.LongTensor = None,
@@ -365,7 +368,7 @@ class GlobalBaichuanModel(BaichuanModel):
         #### no need
         # if inputs_embeds is None:
         #     inputs_embeds = self.embed_tokens(input_ids)
-        
+
         # embed positions
         if attention_mask is None:
             attention_mask = torch.ones(

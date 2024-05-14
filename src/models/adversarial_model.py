@@ -3,20 +3,22 @@ import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Function
 
+
 ################### Adversarial Model: Privacy Preserving Mapping #####################
 class Mapping_MLP2(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
+
     def __init__(self, seq_length, embed_dim, hidden_size=80):
-        super(Mapping_MLP2,self).__init__()
+        super(Mapping_MLP2, self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
 
         self.net1 = nn.Sequential(
-            nn.Linear(embed_dim, hidden_size), 
+            nn.Linear(embed_dim, hidden_size),
             nn.LayerNorm(hidden_size),
             nn.ReLU(),
         )
@@ -39,32 +41,34 @@ class Mapping_MLP2(nn.Module):
         # x2 = x2.reshape(origin_shape)
         return x2
 
+
 class Mapping_MLP3(nn.Module):
     '''
     input --- intermediate : bs, seq_length, 768(embed_dim)
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
+
     def __init__(self, seq_length, embed_dim, hidden_size=80):
-        super(Mapping_MLP3,self).__init__()
+        super(Mapping_MLP3, self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
 
         self.net1 = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(seq_length*embed_dim, hidden_size), 
+            nn.Linear(seq_length * embed_dim, hidden_size),
             nn.LayerNorm(hidden_size),
             nn.ReLU(),
         )
 
         self.net2 = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size), 
+            nn.Linear(hidden_size, hidden_size),
             nn.LayerNorm(hidden_size),
             nn.ReLU()
         )
 
         self.net3 = nn.Sequential(
-            nn.Linear(hidden_size, seq_length*embed_dim),
+            nn.Linear(hidden_size, seq_length * embed_dim),
             nn.Sigmoid()
         )
 
@@ -96,14 +100,16 @@ class GradientReversal_function(Function):
     def forward(ctx, x, alpha):
         ctx.save_for_backward(x, alpha)
         return x
-    
+
     @staticmethod
     def backward(ctx, grad_output):
         grad_input = None
         _, alpha = ctx.saved_tensors
         if ctx.needs_input_grad[0]:
-            grad_input = - alpha*grad_output
+            grad_input = - alpha * grad_output
         return grad_input, None
+
+
 revgrad = GradientReversal_function.apply
 
 
@@ -116,12 +122,13 @@ class GradientReversal(nn.Module):
     def forward(self, x):
         return self.revgrad(x, self.alpha)
 
+
 # a model rapper for local model with adversarial component
 class Local_Adversarial_combined_model_Bert(nn.Module):
     def __init__(self, local_model, adversarial_model):
         super(Local_Adversarial_combined_model_Bert, self).__init__()
         assert local_model != None and adversarial_model != None
-        self.local_model = local_model # for normal training
+        self.local_model = local_model  # for normal training
         self.adversarial_model = adversarial_model
         self.origin_output = None
         self.adversarial_output = None
@@ -133,11 +140,12 @@ class Local_Adversarial_combined_model_Bert(nn.Module):
         self.embedding_output = self.local_model.embedding_output
         return self.adversarial_output, self.origin_attention_mask
 
+
 class Local_Adversarial_combined_model_GPT2(nn.Module):
     def __init__(self, local_model, adversarial_model):
         super(Local_Adversarial_combined_model_GPT2, self).__init__()
         assert local_model != None and adversarial_model != None
-        self.local_model = local_model # for normal training
+        self.local_model = local_model  # for normal training
         self.adversarial_model = adversarial_model
         self.origin_output = None
         self.adversarial_output = None
@@ -156,7 +164,7 @@ class Local_Adversarial_combined_model_Llama(nn.Module):
     def __init__(self, local_model, adversarial_model):
         super(Local_Adversarial_combined_model_Llama, self).__init__()
         assert local_model != None and adversarial_model != None
-        self.local_model = local_model # for normal training
+        self.local_model = local_model  # for normal training
         self.adversarial_model = adversarial_model
         self.origin_output = None
         self.adversarial_output = None
@@ -176,12 +184,12 @@ class Local_Adversarial_combined_model(nn.Module):
     def __init__(self, local_model, adversarial_model):
         super(Local_Adversarial_combined_model, self).__init__()
         assert local_model != None and adversarial_model != None
-        self.local_model = local_model # for normal training
+        self.local_model = local_model  # for normal training
         self.adversarial_model = adversarial_model
         self.adversarial_output = None
         # self.adversarial_loss = None
 
-    def forward(self,x):
+    def forward(self, x):
         out = self.local_model(x)
         self.adversarial_output = self.adversarial_model(out)
         return out
@@ -197,13 +205,13 @@ class Adversarial_MLP3(nn.Module):
             nn.Dropout(self.drop_out_rate),
         )
         self.layer1 = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim*2, bias=False),
+            nn.Linear(input_dim, hidden_dim * 2, bias=False),
             nn.ReLU(inplace=True),
-            nn.BatchNorm1d(hidden_dim*2),
+            nn.BatchNorm1d(hidden_dim * 2),
             nn.Dropout(self.drop_out_rate),
         )
         self.layer2 = nn.Sequential(
-            nn.Linear(hidden_dim*2, hidden_dim, bias=False),
+            nn.Linear(hidden_dim * 2, hidden_dim, bias=False),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(hidden_dim),
             nn.Dropout(self.drop_out_rate),

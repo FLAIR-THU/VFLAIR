@@ -6,13 +6,13 @@ from sqlmodel import Session, select
 
 from framework.database.sql.engine import engine
 
+
 class TaskRepository:
     def create(self, task: Task.Task):
         with Session(engine) as session:
             session.add(task)
             session.commit()
             return task.id
-
 
     def get_tasks_by_job(self, job_id):
         with Session(engine) as session:
@@ -28,7 +28,8 @@ class TaskRepository:
 
     def find_next(self, job_id):
         with Session(engine) as session:
-            statement = select(Task.Task).where(Task.Task.job_id == job_id).where(Task.Task.status == 0).order_by(Task.Task.id)
+            statement = select(Task.Task).where(Task.Task.job_id == job_id).where(Task.Task.status == 0).order_by(
+                Task.Task.id)
             tasks = session.exec(statement).all()
             if len(tasks) > 0:
                 return tasks[0]
@@ -57,5 +58,5 @@ class TaskRepository:
             session.commit()
             return task.job_id
 
-task_repository = TaskRepository()
 
+task_repository = TaskRepository()

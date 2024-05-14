@@ -1,31 +1,31 @@
 {
-    "epochs": 200,
-    "lr": 0.01,
-    "k": 2,
-    "batch_size": 2048,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 200,
+  "lr": 0.01,
+  "k": 2,
+  "batch_size": 2048,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "num_exp": 10,
+  "dataset": {
+    "dataset_name": "cora",
+    "num_classes": 7
+  },
+  "model_list": {
+    "0": {
+      "type": "GCN",
+      "hidden_dim": 32,
+      "output_dim": 7,
+      "path": ""
     },
-    "num_exp": 10,
-    "dataset":{
-        "dataset_name": "cora",
-        "num_classes": 7
+    "1": {
+      "type": "GCN",
+      "hidden_dim": 32,
+      "output_dim": 7,
+      "path": ""
     },
-    "model_list":{
-        "0": {
-            "type": "GCN",
-            "hidden_dim": 32,
-            "output_dim": 7,
-            "path": ""
-        },
-        "1": {
-            "type": "GCN",
-            "hidden_dim": 32,
-            "output_dim": 7,
-            "path": ""
-        },
-        "apply_trainable_layer": 1,
-        "global_model": "ClassificationModelHostTrainableHeadGCN"
-    }
+    "apply_trainable_layer": 1,
+    "global_model": "ClassificationModelHostTrainableHeadGCN"
+  }
 }

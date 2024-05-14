@@ -1,54 +1,54 @@
 {
-    "epochs": 100,
-    "lr": 0.0005,
-    "k": 2,
-    "batch_size": 1,
-    "pipeline": "pretrained",
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 100,
+  "lr": 0.0005,
+  "k": 2,
+  "batch_size": 1,
+  "pipeline": "pretrained",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "CoLA",
+    "num_classes": 2,
+    "use_prompt": 0
+  },
+  "tokenizer": {
+    "padding": "do_not_pad",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 50,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "textattackbert-base-uncased-CoLA",
+      "pretrained": 1,
+      "head_layer_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+      "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+      "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
     },
-    "dataset":{
-        "dataset_name": "CoLA",
-        "num_classes": 2,
-        "use_prompt": 0
+    "1": {
+      "type": "textattackbert-base-uncased-CoLA",
+      "pretrained": 1,
+      "head_layer_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
+      "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
+      "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
     },
-    "tokenizer":{
-        "padding": "do_not_pad",
-        "padding_type": "outside",
-        "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 50,
-        "padding_side": "left",
-        "add_special_tokens": 1
+    "task": {
+      "task_type": "SequenceClassification"
     },
-    "model_list":{
-        "0": {
-            "type": "textattackbert-base-uncased-CoLA",
-            "pretrained": 1,
-            "head_layer_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Bert",
-            "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
-        },
-        "1": {
-            "type": "textattackbert-base-uncased-CoLA",
-            "pretrained": 1,
-            "head_layer_trainable": 0,
-            "output_dim": 2,
-            "model_type": "Bert",
-            "max_sequence": 512,
-            "train_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_train.tsv",
-            "test_set_file": "/home/shannon/dev/tools/nlp/datasets/CoLA/raw/in_domain_dev.tsv",
-            "path": "/home/shannon/dev/tools/nlp/models/textattackbert-base-uncased-CoLA"
-        },
-        "task":{
-            "task_type": "SequenceClassification"
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    }
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  }
 }

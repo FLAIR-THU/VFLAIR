@@ -8,17 +8,20 @@ import logging
 import argparse
 import torch
 
-from load.LoadConfigs import * #load_configs
-from load.LoadParty import * #load_parties, load_parties_llms
+from load.LoadConfigs import *  # load_configs
+from load.LoadParty import *  # load_parties, load_parties_llms
 from evaluates.MainTaskVFL_LLM_dev import *
 from utils.basic_functions import append_exp_res
 
 from load.LoadConfigs import INVERSION
 from models.llm_models.generation_model import *
 import warnings
+
 warnings.filterwarnings("ignore")
 
-from transformers import AutoTokenizer, AutoModelForCausalLM,AutoModelForSeq2SeqLM, AutoModel,AutoModelForSequenceClassification,AutoModelForPreTraining
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoModel, \
+    AutoModelForSequenceClassification, AutoModelForPreTraining
+
 
 def set_seed(seed=0):
     random.seed(seed)
@@ -29,6 +32,7 @@ def set_seed(seed=0):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
+
 
 def evaluate_no_attack_pretrained(args):
     # No Attack
@@ -43,9 +47,8 @@ def evaluate_no_attack_pretrained(args):
 
     # # Save record 
     append_exp_res(args.exp_res_path, exp_result)
-    
-    return vfl, metric_val
 
+    return vfl, metric_val
 
 
 if __name__ == '__main__':
@@ -59,13 +62,13 @@ if __name__ == '__main__':
 
     # for seed in range(97,102): # test 5 times 
     # for seed in [97]:
-    for seed in [60]: # test 5 times 
+    for seed in [60]:  # test 5 times
         args.current_seed = seed
         set_seed(seed)
-        print('================= iter seed ',seed,' =================')
-        
+        print('================= iter seed ', seed, ' =================')
+
         args = load_basic_configs(args.configs, args)
-        args.need_auxiliary = 0 # no auxiliary dataset for attackerB
+        args.need_auxiliary = 0  # no auxiliary dataset for attackerB
 
         if args.device == 'cuda':
             cuda_id = args.gpu
@@ -74,24 +77,23 @@ if __name__ == '__main__':
         else:
             print('running on cpu')
 
-        
         ####### load configs from *.json files #######
         ############ Basic Configs ############
         assert args.dataset_split != None, "dataset_split attribute not found config json file"
         assert 'dataset_name' in args.dataset_split, 'dataset not specified, please add the name of the dataset in config json file'
         args.dataset = args.dataset_split['dataset_name']
         print('======= Defense ========')
-        print('Defense_Name:',args.defense_name)
-        print('Defense_Config:',str(args.defense_configs))
-        print('===== Total Attack Tested:',args.attack_num,' ======')
-        print('inversion:',args.inversion_list,args.inversion_index)
+        print('Defense_Name:', args.defense_name)
+        print('Defense_Config:', str(args.defense_configs))
+        print('===== Total Attack Tested:', args.attack_num, ' ======')
+        print('inversion:', args.inversion_list, args.inversion_index)
 
         # Save record for different defense method
         args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
-        model_name = args.model_list[str(0)]["type"] #.replace('/','-')
-        if args.pipeline=='pretrained':
+        model_name = args.model_list[str(0)]["type"]  # .replace('/','-')
+        if args.pipeline == 'pretrained':
             filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
             filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
@@ -99,7 +101,7 @@ if __name__ == '__main__':
         print(args.exp_res_path)
         print('=================================\n')
 
-        iterinfo='===== iter '+str(seed)+' ===='
+        iterinfo = '===== iter ' + str(seed) + ' ===='
         append_exp_res(args.exp_res_path, iterinfo)
 
         args.basic_vfl_withaux = None
@@ -109,7 +111,7 @@ if __name__ == '__main__':
 
         args = load_attack_configs(args.configs, args, -1)
 
-        args = load_parties_llm(args, need_data = False)
+        args = load_parties_llm(args, need_data=False)
 
         set_seed(args.current_seed)
 
@@ -127,74 +129,71 @@ if __name__ == '__main__':
         #     GenerationModel = T5_VFLGeneration(vfl) #GPT2_VFLGeneration(vfl)
         # else:
         #     assert 1>2, 'model type not supported for generation'
-            
+
         ######### define your input text here #########
         # input_text = ["Please complete the passages with the correct next word.\nin my palm is a clear stone and inside it is a small ivory statuette a guardian angel ` figured if you 're going to be out at night getting hit by cars you might as well have some backup ’* i look at him feeling stunned like this is some sort of sign but as istare at harlin his\
         #  mouth curved in a confident grin i do n't care about"]
         # input_text = ["""Analyze the following sentence and determine if the sentiment is: positive or negative.\nSentence:it's a charming and often affecting journey.\nAnwser:"""]
-        
+
         texts = "Hello, how are you ?"
         label_text = "I'm fine."
         # texts = """Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\nDesign a class for representing a person in Python.\n\n### Response:"""
-        inputs = args.tokenizer( texts, \
-                                        # padding='max_length',  # Pad to max_length
-                                        # truncation='longest_first',  # Truncate to max_length
-                                        # max_length=8,  
-                                        return_tensors='pt').to(args.device)
-        labels = args.tokenizer( label_text, \
-                                        # padding='max_length',  # Pad to max_length
-                                        # truncation='longest_first',  # Truncate to max_length
-                                        # max_length=8,  
-                                        return_tensors='pt').to(args.device)
+        inputs = args.tokenizer(texts, \
+                                # padding='max_length',  # Pad to max_length
+                                # truncation='longest_first',  # Truncate to max_length
+                                # max_length=8,
+                                return_tensors='pt').to(args.device)
+        labels = args.tokenizer(label_text, \
+                                # padding='max_length',  # Pad to max_length
+                                # truncation='longest_first',  # Truncate to max_length
+                                # max_length=8,
+                                return_tensors='pt').to(args.device)
         label_ids = labels['input_ids']
         ######### define your input text here #########
 
         # inputs = args.tokenizer(input_text, padding='max_length',max_length=70,return_tensors="pt").to(args.device)
-        print('input_ids:',inputs['input_ids'].shape)
-        print('label_ids:',label_ids)
+        print('input_ids:', inputs['input_ids'].shape)
+        print('label_ids:', label_ids)
 
-        
         ##### normal full model #####
-        print('full model path:',args.model_path)
-        current_model_type = args.model_type #"gpt2"
-        tokenizer = AutoTokenizer.from_pretrained(args.model_path,trust_remote_code=True)
+        print('full model path:', args.model_path)
+        current_model_type = args.model_type  # "gpt2"
+        tokenizer = AutoTokenizer.from_pretrained(args.model_path, trust_remote_code=True)
         if args.model_type == 'T5':
-            full_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path,trust_remote_code=True) # AutoModelForCausalLM
+            full_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_path,
+                                                               trust_remote_code=True)  # AutoModelForCausalLM
         else:
-            full_model = AutoModelForCausalLM.from_pretrained(args.model_path,trust_remote_code=True) # AutoModelForCausalLM
+            full_model = AutoModelForCausalLM.from_pretrained(args.model_path,
+                                                              trust_remote_code=True)  # AutoModelForCausalLM
 
         full_model = full_model.to(args.device)
 
-
         full_model.train()
-        greedy_output = full_model.generate(**inputs,max_new_tokens=10)
+        greedy_output = full_model.generate(**inputs, max_new_tokens=10)
         print("train full greedy_output:\n")
-        print(type(greedy_output),greedy_output.shape)
+        print(type(greedy_output), greedy_output.shape)
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
         vfl.train()
-        greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        greedy_output = vfl.generate(**inputs, max_new_tokens=10)
         print("train greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
-
-
         full_model.eval()
-        greedy_output = full_model.generate(**inputs,max_new_tokens=10)
+        greedy_output = full_model.generate(**inputs, max_new_tokens=10)
         print("eval full greedy_output:\n")
-        print(type(greedy_output),greedy_output.shape)
+        print(type(greedy_output), greedy_output.shape)
         print(tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
         vfl.eval()
-        greedy_output = vfl.generate(**inputs,max_new_tokens=10)
+        greedy_output = vfl.generate(**inputs, max_new_tokens=10)
         print("eval greedy_output:\n")
         print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
         print()
 
-
         ######### VFL model ########
-        print('Data Input:',inputs)
+        print('Data Input:', inputs)
 
         # GenerationModel = GenerationModel.to(args.device)
         # GenerationModel.train()
@@ -212,15 +211,7 @@ if __name__ == '__main__':
         # print("train greedy_output:\n")
         # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
 
-
         # vfl.eval()
         # greedy_output = vfl.generate(**inputs,max_new_tokens=10)
         # print("eval greedy_output:\n")
         # print(args.tokenizer.decode(greedy_output[0], skip_special_tokens=True))
-
-
-        
-
-
-
-

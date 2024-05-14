@@ -27,7 +27,6 @@ from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
 from evaluates.attacks.attack_api import AttackerLoader
 
-
 tf.compat.v1.enable_eager_execution()
 
 STOPPING_ACC = {
@@ -95,9 +94,10 @@ class MainTaskPaillierVFL(object):
             pred, pred_detach = self.parties[ik].give_pred()
             if ik < (self.k - 1):  # Passive party sends pred for aggregation
                 if self.debug:
-                    pred_clone = pred_detach.clone() #torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
+                    pred_clone = pred_detach.clone()  # torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
                 else:
-                    pred_clone = PaillierTensor([[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
+                    pred_clone = PaillierTensor(
+                        [[self.parties[ik].pk.encrypt(x) for x in xs] for xs in pred_detach.tolist()])
                 self.parties[self.k - 1].receive_pred(pred_clone, ik)
             else:
                 pred_clone = torch.autograd.Variable(pred_detach, requires_grad=True).to(self.args.device)
@@ -157,7 +157,7 @@ class MainTaskPaillierVFL(object):
         torch.autograd.set_detect_anomaly(True)
         # ======== FedBCD ============
         if (
-            self.args.BCD_type == "p" or self.Q == 1
+                self.args.BCD_type == "p" or self.Q == 1
         ):  # parallel FedBCD & noBCD situation
             for q in range(self.Q):
                 if q == 0:
@@ -181,7 +181,7 @@ class MainTaskPaillierVFL(object):
                 for ik in range(self.k - 1):
                     _pred, _pred_clone = self.parties[ik].give_pred()
                     self.parties[ik].local_backward()
-            self.parties[self.k-1].local_backward()
+            self.parties[self.k - 1].local_backward()
         # ============= FedBCD ===================
 
         # ###### Noisy Label Attack #######
@@ -214,7 +214,7 @@ class MainTaskPaillierVFL(object):
         # load attack features
         if self.args.apply_mf == True:
             assert (
-                "missing_rate" in self.args.attack_configs
+                    "missing_rate" in self.args.attack_configs
             ), "need parameter: missing_rate"
             assert "party" in self.args.attack_configs, "need parameter: party"
             attacker_id = self.args.attack_configs["party"]
@@ -310,9 +310,9 @@ class MainTaskPaillierVFL(object):
                         for ik in range(self.k):
                             # ####### missing feature attack ######
                             if (
-                                (self.args.apply_mf == True)
-                                and (ik in attacker_id)
-                                and (np.random.random() < missing_rate)
+                                    (self.args.apply_mf == True)
+                                    and (ik in attacker_id)
+                                    and (np.random.random() < missing_rate)
                             ):
                                 # print('attacker:',ik)
                                 pred_list.append(
@@ -325,7 +325,7 @@ class MainTaskPaillierVFL(object):
                             # ####### missing feature attack ######
                             # ####### Noisy Sample #########
                             elif self.args.apply_ns == True and (
-                                ik in self.args.attack_configs["party"]
+                                    ik in self.args.attack_configs["party"]
                             ):
                                 scale = self.args.attack_configs["noise_lambda"]
                                 pred_list.append(
@@ -393,16 +393,16 @@ class MainTaskPaillierVFL(object):
                 ),
                 # type(model) = <class 'xxxx.ModelName'>
                 "model_names": [
-                    str(type(self.parties[ik].local_model))
-                    .split(".")[-1]
-                    .split("'")[-2]
-                    for ik in range(self.args.k)
-                ]
-                + [
-                    str(type(self.parties[self.args.k - 1].global_model))
-                    .split(".")[-1]
-                    .split("'")[-2]
-                ],
+                                   str(type(self.parties[ik].local_model))
+                                   .split(".")[-1]
+                                   .split("'")[-2]
+                                   for ik in range(self.args.k)
+                               ]
+                               + [
+                                   str(type(self.parties[self.args.k - 1].global_model))
+                                   .split(".")[-1]
+                                   .split("'")[-2]
+                               ],
             }
         else:
             return {
@@ -417,10 +417,10 @@ class MainTaskPaillierVFL(object):
                     copy.deepcopy(self.parties[ik].local_gradient)
                     for ik in range(self.k)
                 ],
-                #"local_model_gradient": [
+                # "local_model_gradient": [
                 #    copy.deepcopy(self.parties[ik].weights_grad_a)
                 #    for ik in range(self.k)
-                #],
+                # ],
                 "train_acc": copy.deepcopy(self.train_acc),
                 "loss": copy.deepcopy(self.loss),
                 "global_pred": self.parties[self.k - 1].global_pred,
@@ -468,14 +468,14 @@ class MainTaskPaillierVFL(object):
 
     def save_trained_models(self):
         dir_path = (
-            self.exp_res_dir
-            + f"trained_models/parties{self.k}_topmodel{self.args.apply_trainable_layer}_epoch{self.epochs}/"
+                self.exp_res_dir
+                + f"trained_models/parties{self.k}_topmodel{self.args.apply_trainable_layer}_epoch{self.epochs}/"
         )
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         if self.args.apply_defense:
             file_path = (
-                dir_path + f"{self.args.defense_name}_{self.args.defense_configs}.pkl"
+                    dir_path + f"{self.args.defense_name}_{self.args.defense_configs}.pkl"
             )
         else:
             file_path = dir_path + "NoDefense.pkl"

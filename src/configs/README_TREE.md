@@ -1,6 +1,8 @@
 # README for Tree-based Vertical Federated Learning
 
-We provide support for Tree-based Vertical Federated Learning (T-VFL), implementing a T-VFL framework similar to XGBoost, as described in [Kewei et al (2019)](https://arxiv.org/pdf/1901.08755.pdf). We have also made a few modifications to it and additionally support RandomForest.
+We provide support for Tree-based Vertical Federated Learning (T-VFL), implementing a T-VFL framework similar to
+XGBoost, as described in [Kewei et al (2019)](https://arxiv.org/pdf/1901.08755.pdf). We have also made a few
+modifications to it and additionally support RandomForest.
 
 ## How to write a configuration file
 

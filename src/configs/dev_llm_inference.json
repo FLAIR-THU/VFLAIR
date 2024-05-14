@@ -33,7 +33,7 @@
       "output_dim": 1,
       "model_type": "Qwen2",
       "max_sequence": 512,
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
+      "path": "/shared/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "1": {
       "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -42,7 +42,7 @@
       "output_dim": 1,
       "model_type": "Qwen2",
       "max_sequence": 512,
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
+      "path": "/shared/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "task": {
       "task_type": "DevLLMInference",

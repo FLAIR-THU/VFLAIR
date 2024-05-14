@@ -6,6 +6,7 @@ import torch
 import scipy.sparse as sp
 from sklearn.model_selection import train_test_split
 
+
 def process_features(features):
     row_sum_diag = np.sum(features, axis=1)
     row_sum_diag_inv = np.power(row_sum_diag, -1)
@@ -27,13 +28,13 @@ def load_data1(dataset):
         suffixs = ['x', 'y', 'allx', 'ally', 'tx', 'ty', 'graph']
         objects = []
         for suffix in suffixs:
-            file = os.path.join(data_path, 'ind.%s.%s'%(dataset, suffix))
+            file = os.path.join(data_path, 'ind.%s.%s' % (dataset, suffix))
             objects.append(pickle.load(open(file, 'rb'), encoding='latin1'))
         x, y, allx, ally, tx, ty, graph = objects
         x, allx, tx = x.toarray(), allx.toarray(), tx.toarray()
 
         # test indices
-        test_index_file = os.path.join(data_path, 'ind.%s.test.index'%dataset)
+        test_index_file = os.path.join(data_path, 'ind.%s.test.index' % dataset)
         with open(test_index_file, 'r') as f:
             lines = f.readlines()
         indices = [int(line.strip()) for line in lines]
@@ -58,22 +59,22 @@ def load_data1(dataset):
         idx_val = np.arange(len(y), len(y) + 500, 1)
         idx_test = np.array(indices)
 
-        
+
     elif dataset == 'polblogs':
         adj = np.zeros((1222, 1222))
-        with open('data/'+str(dataset) + '.txt')as f:
+        with open('data/' + str(dataset) + '.txt') as f:
             for j in f:
                 entry = [float(x) for x in j.split(" ")]
                 adj[int(entry[0]), int(entry[1])] = 1
                 adj[int(entry[1]), int(entry[0])] = 1
-        labels1 = np.loadtxt('data/'+str(dataset) + '_label.txt')
+        labels1 = np.loadtxt('data/' + str(dataset) + '_label.txt')
         labels1 = labels1.astype(int)
-        labels1 = labels1[:,1:].flatten()
-        idx_train = np.loadtxt('data/'+str(dataset) + '_train_node.txt')
+        labels1 = labels1[:, 1:].flatten()
+        idx_train = np.loadtxt('data/' + str(dataset) + '_train_node.txt')
         idx_train = idx_train.astype(int)
-        idx_val = np.loadtxt('data/'+str(dataset) + '_validation_node.txt')
+        idx_val = np.loadtxt('data/' + str(dataset) + '_validation_node.txt')
         idx_val = idx_val.astype(int)
-        idx_test = np.loadtxt('data/'+str(dataset) + '_test_node.txt')
+        idx_test = np.loadtxt('data/' + str(dataset) + '_test_node.txt')
         idx_test = idx_test.astype(int)
 
         features = np.eye(adj.shape[0])
@@ -100,7 +101,7 @@ def load_data1(dataset):
         features = sp.load_npz(filename)
         filename = 'data/' + 'amazon_electronics_photo' + '_label' + '.npy'
         labels1 = np.load(filename)
-        filename = 'data/' + 'amazon_electronics_photo'+ '_train_node' + '.npy'
+        filename = 'data/' + 'amazon_electronics_photo' + '_train_node' + '.npy'
         idx_train = np.load(filename)
         filename = 'data/' + 'amazon_electronics_photo' + '_val_node' + '.npy'
         idx_val = np.load(filename)
@@ -112,7 +113,7 @@ def load_data1(dataset):
     return sp.csr_matrix(adj), sp.csr_matrix(features), idx_train, idx_val, idx_test, labels1
 
 
-def get_adj( filename, require_lcc=True):
+def get_adj(filename, require_lcc=True):
     adj, features, labels = load_npz(filename)
     adj = adj + adj.T
     adj = adj.tolil()
@@ -135,15 +136,16 @@ def get_adj( filename, require_lcc=True):
 
     return adj, features, labels
 
+
 def load_npz(file_name, is_sparse=True):
     with np.load(file_name) as loader:
         # loader = dict(loader)
         if is_sparse:
             adj = sp.csr_matrix((loader['adj_data'], loader['adj_indices'],
-                                        loader['adj_indptr']), shape=loader['adj_shape'])
+                                 loader['adj_indptr']), shape=loader['adj_shape'])
             if 'attr_data' in loader:
                 features = sp.csr_matrix((loader['attr_data'], loader['attr_indices'],
-                                             loader['attr_indptr']), shape=loader['attr_shape'])
+                                          loader['attr_indptr']), shape=loader['attr_shape'])
             else:
                 features = None
             labels = loader.get('labels')
@@ -159,8 +161,8 @@ def load_npz(file_name, is_sparse=True):
     features = sp.csr_matrix(features, dtype=np.float32)
     return adj, features, labels
 
-def get_train_val_test(nnodes, val_size=0.1, test_size=0.8, stratify=None, seed=None):
 
+def get_train_val_test(nnodes, val_size=0.1, test_size=0.8, stratify=None, seed=None):
     assert stratify is not None, 'stratify cannot be None!'
 
     if seed is not None:
@@ -185,6 +187,7 @@ def get_train_val_test(nnodes, val_size=0.1, test_size=0.8, stratify=None, seed=
 
     return idx_train, idx_val, idx_test
 
+
 def largest_connected_components(adj, n_components=1):
     _, component_indices = sp.csgraph.connected_components(adj)
     component_sizes = np.bincount(component_indices)
@@ -194,6 +197,7 @@ def largest_connected_components(adj, n_components=1):
     print("Selecting {0} largest connected components".format(n_components))
     return nodes_to_keep
 
+
 def sparse_to_tuple(sparse_mx):
     if not sp.isspmatrix_coo(sparse_mx):
         sparse_mx = sparse_mx.tocoo()
@@ -201,6 +205,7 @@ def sparse_to_tuple(sparse_mx):
     values = sparse_mx.data
     shape = sparse_mx.shape
     return coords, values, shape
+
 
 def mask_test_edges(adj):
     # Function to build test set with 10% positive links
@@ -222,8 +227,8 @@ def mask_test_edges(adj):
     # print('edges_all', edges_all, edges_all.shape)
 
     # Link index
-    num_val = int(edges.shape[0]*0.1)
-    num_test = int(edges.shape[0]*0.6)
+    num_val = int(edges.shape[0] * 0.1)
+    num_test = int(edges.shape[0] * 0.6)
     all_edge_idx = list(range(edges.shape[0]))
     np.random.shuffle(all_edge_idx)
     val_edge_idx = all_edge_idx[:num_val]
@@ -231,12 +236,13 @@ def mask_test_edges(adj):
     test_edges = edges[test_edge_idx]
     val_edges = edges[val_edge_idx]
     train_edges = np.delete(edges, np.hstack([test_edge_idx, val_edge_idx]), axis=0)
+
     # print('test_edges', test_edges, test_edges.shape)
     # print('val_edges', val_edges, val_edges.shape)
     # print('train_edges', train_edges, train_edges.shape)
 
     def ismember(a, b, tol=5):
-        rows_close = np.all(np.round(a - b[:,None], tol) == 0, axis=-1)
+        rows_close = np.all(np.round(a - b[:, None], tol) == 0, axis=-1)
         return np.any(rows_close)
 
     test_edges_false = []
@@ -269,7 +275,7 @@ def mask_test_edges(adj):
                 continue
         val_edges_false.append([idx_i, idx_j])
 
-    assert ~ismember(test_edges_false, edges_all)  #~is Negate
+    assert ~ismember(test_edges_false, edges_all)  # ~is Negate
     assert ~ismember(val_edges_false, edges_all)
     assert ~ismember(train_edges, val_edges)
     assert ~ismember(val_edges, test_edges)
@@ -284,11 +290,12 @@ def mask_test_edges(adj):
     # Note: these edge lists only contain sigle direction of edge!
     return adj_trian, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
 
+
 def split_features(args, feature):
     # num_feature_per_party = int(feature.shape[1]/args.num_parties)
     feature = np.array(feature.todense())
     if feature.shape[1] % args.num_parties != 0:
-        del_v = np.random.randint(0,feature.shape[1],1*feature.shape[1] % args.num_parties)
+        del_v = np.random.randint(0, feature.shape[1], 1 * feature.shape[1] % args.num_parties)
         del_v = list(del_v)
         feature = np.delete(feature, del_v, axis=1)
         # expend_arr = np.zeros((feature.shape[0], int(feature.shape[1]//args.num_parties-feature.shape[1]%args.num_parties)))
@@ -301,6 +308,7 @@ def split_features(args, feature):
     feature_list = np.split(feat, args.num_parties, axis=1)
     feature_list = [sp.csr_matrix(feat) for feat in feature_list]
     return feature_list
+
 
 def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, with_f=False):
     # Create new graph graph_A, graph_B
@@ -321,7 +329,7 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
     # print('edges_all', edges_all, edges_all.shape)
 
     # Link index
-    if with_s==True:
+    if with_s == True:
         if split_method == 'com':
             num_graph_A = int(edges.shape[0] * split_ratio)
             all_edge_idx = list(range(edges.shape[0]))
@@ -333,7 +341,7 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
 
         elif split_method == 'alone':
             num_graph_A = int(edges.shape[0] * split_ratio)
-            num_graph_B = int(edges.shape[0] * (1-split_ratio))
+            num_graph_B = int(edges.shape[0] * (1 - split_ratio))
             all_edge_idx = list(range(edges.shape[0]))
 
             np.random.shuffle(all_edge_idx)
@@ -351,10 +359,10 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
             all_edge_idx = list(range(edges.shape[0]))
             np.random.shuffle(all_edge_idx)
             for i in all_edge_idx:
-                if(degrees[edges[i][0]]>=2 and degrees[edges[i][1]]>=2):
+                if (degrees[edges[i][0]] >= 2 and degrees[edges[i][1]] >= 2):
                     A_edge_idx.append(i)
-                    degrees[edges[i][0]]-=1
-                    degrees[edges[i][1]]-=1
+                    degrees[edges[i][0]] -= 1
+                    degrees[edges[i][1]] -= 1
                 if len(A_edge_idx) == num_graph_A:
                     break
 
@@ -362,7 +370,6 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
             B_edges = np.delete(edges, A_edge_idx, axis=0)
 
         print(len(degrees.nonzero()[0]))
-
 
         data_A = np.ones(A_edges.shape[0])
         data_B = np.ones(B_edges.shape[0])
@@ -382,11 +389,11 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
     # Feature split evenly
     # feature_A = torch.split(feature, feature.size()[1] // 2, dim=1)[0]
     # feature_B = torch.split(feature, feature.size()[1] // 2, dim=1)[1]
-    if with_f==True:
+    if with_f == True:
         X_NUM = int(feature.shape[1] // 2)
         feature = np.array(feature.todense())
         feature_A = feature[:, :X_NUM]
-        feature_B = feature[:,X_NUM:2*X_NUM]
+        feature_B = feature[:, X_NUM:2 * X_NUM]
     else:
         feature_A = np.eye(adj.shape[0])
         feature_B = np.eye(adj.shape[0])
@@ -399,11 +406,12 @@ def split_graph(args, adj, feature, split_method, split_ratio=0.5, with_s=True, 
 
     # adj_B = preprocess_adj(adj_B)
     # adj_B = sparse_mx_to_torch_sparse_tensor(adj_B)
-    if args.dataset=='polblogs':
+    if args.dataset == 'polblogs':
         feature_A = np.eye(adj.shape[0])
         feature_B = np.eye(adj.shape[0])
 
-    return adj_A, adj_B,  sp.csr_matrix(feature_A), sp.csr_matrix(feature_B)
+    return adj_A, adj_B, sp.csr_matrix(feature_A), sp.csr_matrix(feature_B)
+
 
 def split_graph1(args, adj, feature, split_method, split_ration=0.5):
     # Create new graph graph_A, graph_B
@@ -435,7 +443,7 @@ def split_graph1(args, adj, feature, split_method, split_ration=0.5):
 
     elif split_method == 'alone':
         num_graph_A = int(edges.shape[0] * split_ration)
-        num_graph_B = int(edges.shape[0] * (1-split_ration))
+        num_graph_B = int(edges.shape[0] * (1 - split_ration))
         all_edge_idx = list(range(edges.shape[0]))
 
         np.random.shuffle(all_edge_idx)
@@ -445,7 +453,6 @@ def split_graph1(args, adj, feature, split_method, split_ration=0.5):
 
         A_edges = edges[A_edge_idx]
         B_edges = edges[B_edge_idx]
-
 
     data_A = np.ones(A_edges.shape[0])
     data_B = np.ones(B_edges.shape[0])
@@ -465,7 +472,7 @@ def split_graph1(args, adj, feature, split_method, split_ration=0.5):
     X_NUM = int(feature.shape[1] // 2)
     feature = np.array(feature.todense())
     feature_A = feature[:, :X_NUM]
-    feature_B = feature[:,X_NUM:2*X_NUM]
+    feature_B = feature[:, X_NUM:2 * X_NUM]
     # feature_A = feature
     # feature_B = feature
 
@@ -476,7 +483,8 @@ def split_graph1(args, adj, feature, split_method, split_ration=0.5):
     # adj_B = preprocess_adj(adj_B)
     # adj_B = sparse_mx_to_torch_sparse_tensor(adj_B)
 
-    return adj_A, adj_B,  sp.csr_matrix(feature_A), sp.csr_matrix(feature_B)
+    return adj_A, adj_B, sp.csr_matrix(feature_A), sp.csr_matrix(feature_B)
+
 
 def preprocess_adj(adj):
     """Preprocessing of adjacency matrix for simple GCN model and conversion
@@ -506,9 +514,7 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
     sparse_mx = sparse_mx.tocoo().astype(np.float32)
     indices = torch.from_numpy(
-            np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+        np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
     values = torch.from_numpy(sparse_mx.data)
     shape = torch.Size(sparse_mx.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
-
-

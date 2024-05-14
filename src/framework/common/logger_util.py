@@ -7,6 +7,7 @@ CURRENT_PATH = os.path.dirname(
 LOG_PATH = os.path.join(CURRENT_PATH, "logs")
 os.makedirs(LOG_PATH, exist_ok=True)
 
+
 def get_logger(name="root"):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)

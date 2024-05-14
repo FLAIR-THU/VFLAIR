@@ -1,42 +1,42 @@
 {
-    "epochs": 40,
-    "lr": 0.001,
-    "k": 2,
-    "batch_size": 2048,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 40,
+  "lr": 0.001,
+  "k": 2,
+  "batch_size": 2048,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "cifar10",
+    "num_classes": 10
+  },
+  "model_list": {
+    "0": {
+      "type": "resnet18",
+      "input_dim": 256,
+      "output_dim": 10,
+      "path": "random_20"
     },
-    "dataset":{
-        "dataset_name": "cifar10",
-        "num_classes": 10
+    "1": {
+      "type": "resnet18",
+      "input_dim": 256,
+      "output_dim": 10,
+      "path": "random_20"
     },
-    "model_list":{
-        "0": {
-            "type": "resnet18",
-            "input_dim": 256,
-            "output_dim": 10,
-            "path": "random_20"
-        },
-        "1": {
-            "type": "resnet18",
-            "input_dim": 256,
-            "output_dim": 10,
-            "path": "random_20"
-        },
-        "2": {
-            "type": "resnet18",
-            "input_dim": 256,
-            "output_dim": 10,
-            "path": "random_20"
-        },
-        "3": {
-            "type": "resnet18",
-            "input_dim": 256,
-            "output_dim": 10,
-            "path": "random_20"
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    }
+    "2": {
+      "type": "resnet18",
+      "input_dim": 256,
+      "output_dim": 10,
+      "path": "random_20"
+    },
+    "3": {
+      "type": "resnet18",
+      "input_dim": 256,
+      "output_dim": 10,
+      "path": "random_20"
+    },
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  }
 }
