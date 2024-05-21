@@ -191,6 +191,9 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel): # XLN
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def get_input_embeddings(self):
+        return self.word_embedding
+
     def _clear_past_key_values(self):
         self.past_key_values=None
 

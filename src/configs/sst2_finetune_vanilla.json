@@ -10,6 +10,10 @@
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
     "dataset":{
         "dataset_name": "SST-2",
         "num_classes": 2
@@ -29,7 +33,7 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 1,
-            "encoder_trainable_ids":[0,1,2,3],
+            "encoder_trainable_ids":[0],
             "output_dim": 2,
             "model_type": "Bert",
             "max_sequence": 512,
@@ -49,7 +53,7 @@
         "task":{
             "task_type": "SequenceClassification"
         },
-        "local_encoders_num": 3,
+        "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     },
@@ -60,6 +64,17 @@
                 "party": [1],
                 "lr": 0.01,
                 "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 100
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.005,
+                "epochs": 500,
                 "batch_size": 32,
                 "attack_sample_num": 100
             }

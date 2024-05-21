@@ -147,6 +147,9 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel,BaichuanPreTrainedMo
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def get_input_embeddings(self):
+        return self.embed_tokens
+        
     def _clear_past_key_values(self):
         self.past_key_values = None
 

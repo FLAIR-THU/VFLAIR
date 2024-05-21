@@ -26,33 +26,54 @@
     },
     "model_list":{
         "0": {
-            "type": "baichuan-incBaichuan-7B",
+            "type": "chavinloalpaca-native",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "Baichuan",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/baichuan-incBaichuan-7B"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/chavinloalpaca-native"
         },
         "1": {
-            "type": "baichuan-incBaichuan-7B",
+            "type": "chavinloalpaca-native",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "Baichuan",
+            "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/baichuan-incBaichuan-7B"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/chavinloalpaca-native"
         },
         "task":{
             "task_type": "CausalLM",
-            "max_new_tokens": 128,
+            "max_new_tokens": 256,
             "metric_type": "best_pred"
         },
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    
-    
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 500
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.005,
+                "epochs": 500,
+                "batch_size": 32,
+                "attack_sample_num": 500
+            }
+        }
     }
     
 }

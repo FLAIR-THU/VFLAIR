@@ -25,9 +25,11 @@ from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import torch
 from torchvision import datasets
 import torchvision.transforms as transforms
+import glob
 
 from utils.noisy_sample_functions import noisy_sample
 from utils.squad_utils import *
+from utils.mmlu_utils import *
 
 tp = transforms.ToTensor()
 transform = transforms.Compose(
@@ -1349,42 +1351,42 @@ def load_mnli(file, header=True, multi_snli=False, is_train=True):
     return rows
 
 
-def format_subject(subject):
-    l = subject.split("_")
-    s = ""
-    for entry in l:
-        s += " " + entry
-    return s
+# def format_subject(subject):
+#     l = subject.split("_")
+#     s = ""
+#     for entry in l:
+#         s += " " + entry
+#     return s
 
 
-def format_example(df, idx, choices, include_answer=True):
-    prompt = df.iloc[idx, 0]
-    k = len(choices)
-    for j in range(k):
-        prompt += "\n{}. {}".format(choices[j], df.iloc[idx][str(choices[j])])
-    prompt += "\nAnswer:"
-    if include_answer:
-        prompt += " {}\n\n".format(df.iloc[idx]['answer'])  # df.iloc[idx, k + 1]
-    answer = df.iloc[idx]['answer']
-    return prompt, answer
+# def format_example(df, idx, choices, include_answer=True):
+#     prompt = df.iloc[idx, 0]
+#     k = len(choices)
+#     for j in range(k):
+#         prompt += "\n{}. {}".format(choices[j], df.iloc[idx][str(choices[j])])
+#     prompt += "\nAnswer:"
+#     if include_answer:
+#         prompt += " {}\n\n".format(df.iloc[idx]['answer'])  # df.iloc[idx, k + 1]
+#     answer = df.iloc[idx]['answer']
+#     return prompt, answer
 
 
-def gen_prompt(train_df, choices, subject, k=-1):
-    prompt_list = []
-    if k == -1:
-        k = train_df.shape[0]
+# def gen_prompt(train_df, choices, subject, k=-1):
+#     prompt_list = []
+#     if k == -1:
+#         k = train_df.shape[0]
 
-    _num = 0
+#     _num = 0
 
-    for i in range(len(train_df)):
-        if train_df.iloc[i]['subject'] == subject:
-            prompt, answer = format_example(train_df, i, choices)
-            prompt_list.append(prompt)
-            _num += 1
-            if _num >= k:
-                break
+#     for i in range(len(train_df)):
+#         if train_df.iloc[i]['subject'] == subject:
+#             prompt, answer = format_example(train_df, i, choices)
+#             prompt_list.append(prompt)
+#             _num += 1
+#             if _num >= k:
+#                 break
 
-    return prompt_list
+#     return prompt_list
 
 
 def load_dataset_per_party_llm(args, index):
@@ -1803,75 +1805,86 @@ def load_dataset_per_party_llm(args, index):
         subject_list = []
         choices = ["A", "B", "C", "D"]
         args.label_dict = {0:'A', 1:'B', 2:'C', 3:'D'}
+        
 
         train_set_file, test_set_file = get_dataset_path(args.model_list[str(index)])
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'MMLU/auxiliary_train/'
             test_set_file = DATA_PATH + 'MMLU/test/'
-
+            dev_set_file = DATA_PATH + 'MMLU/dev/'
+        
+        
+            
         ### train ###
         df_train = pd.DataFrame()
-        for name in sorted(os.listdir(train_set_file)):
+        for name in sorted(os.listdir(train_set_file))[:1]:
             # print(name[:-4])
-            _df = pd.read_csv(train_set_file + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
-            # _name_list = name.split('_')[:-1]
-            # subject_name = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
-            subject_name = name
-            _df['subject'] = subject_name
-            subject_list.append(subject_name)
+            _df = pd.read_csv(train_set_file + name, header=None)[:10]
+            #names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
+            answers = choices[:_df.shape[1]-2]
+            # subject_name = name
+            # _df['subject'] = subject_name
+            # subject_list.append(subject_name)
+
             df_train = pd.concat([df_train, _df])
 
         prompt_list = []
         answer_list = []
-        for i in range(1000):#(len(df_train)):
-            if 1:#df_train.iloc[i]['subject'] == args.subject:  # in subject_list:
-                subject = df_train.iloc[i]['subject']
-                prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(
-                    format_subject(subject))
-                prompt_end, answer = format_example(df_train, i, choices, include_answer=False)
-                prompt = prompt_head + prompt_end
-                # if len(prompt) < args.max_sequence:
-                prompt_list.append(prompt)
-                answer_list.append(answer)
-        labels = answer_list 
-
+        for i in range(len(df_train)):
+            prompt_end = format_example(df_train, i, include_answer=False)
+            # train_prompt = gen_prompt(dev_df, subject, k)
+            prompt = prompt_end #train_prompt + prompt_end
+            answer = df_train.iloc[i, df_train.shape[1]-1]
+            # if 1:#df_train.iloc[i]['subject'] == args.subject:  # in subject_list:
+            #     subject = df_train.iloc[i]['subject']
+            #     prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(
+            #         format_subject(subject))
+            #     prompt_end, answer = format_example(df_train, i, include_answer=False)
+            #     prompt = prompt_head + prompt_end
+            prompt_list.append(prompt)
+            answer_list.append(answer)
         X_train = np.array(prompt_list)
-        y_train = np.array(labels)
-
+        y_train = np.array(answer_list)
+        # print('---- Train -----')
+        # print('Prompt:',prompt_list[0])
+        # print('Label:',answer_list[0])
+        
 
         ### test ###
-        df_test = pd.DataFrame()
-        for name in sorted(os.listdir(test_set_file)):
-            # print(name[:-4])
-            _df = pd.read_csv(test_set_file + name, names=['prompt', 'A', 'B', 'C', 'D', 'answer'])  #
-            _name_list = name.split('_')[:-1]
-            _df['subject'] = ('_').join(_name_list) if len(_name_list) > 1 else _name_list[0]
-            df_test = pd.concat([df_test, _df])
-
-        num_train = args.n_shot
-        print('num_train=', num_train)
+        args.subject_list = sorted([f.split("_test.csv")[0] for f in os.listdir(test_set_file) if "_test.csv" in f])
+        # print('all subjects:',args.subject_list)
+        
         prompt_list = []
         answer_list = []
-        for i in range(100):#(len(df_test)):
-            if 1:#df_test.iloc[i]['subject'] == args.subject:  # in subject_list:
-                subject = df_test.iloc[i]['subject']
-                # if df_test.iloc[i]['subject'] == subject:
-                prompt_head = "The following are multiple choice questions (with answers) about {}.\n\n".format(
-                    format_subject(subject))
-                prompt_end, answer = format_example(df_test, i, choices, include_answer=False)
+        ntrain = args.n_shot
+        print('n_shot = ',ntrain)
+        for subject in args.subject_list: # [args.subject]:
+            dev_df = pd.read_csv(os.path.join(dev_set_file, subject + "_dev.csv"), header=None)[:ntrain]
+            test_df = pd.read_csv(os.path.join(test_set_file, subject + "_test.csv"), header=None)
+            answers = choices[:test_df.shape[1]-2]
 
-                if num_train >0:
-                    train_prompt_list = gen_prompt(df_train, choices, subject, num_train)  # shot from train
-                    for _prompt in train_prompt_list:
-                        prompt_head = prompt_head + _prompt
+            for i in range(test_df.shape[0]):
+                # get prompt and make sure it fits
+                k = ntrain
+                prompt_end = format_example(test_df, i, include_answer=False)
+                train_prompt = gen_prompt(dev_df, subject, k)
+                prompt = train_prompt + prompt_end
 
-                prompt = prompt_head + prompt_end
-                # if len(prompt) < args.max_sequence:
+                while crop(prompt) != prompt:
+                    k -= 1
+                    train_prompt = gen_prompt(dev_df, subject, k)
+                    prompt = train_prompt + prompt_end
+
+                label = test_df.iloc[i, test_df.shape[1]-1]
+
                 prompt_list.append(prompt)
-                answer_list.append(answer)
-        labels = answer_list #[option_dict[choice] for choice in answer_list]
+                answer_list.append(label)
+
         X_test = np.array(prompt_list)
-        y_test = np.array(labels)
+        y_test = np.array(answer_list)
+        # print('---- Test -----')
+        # print('Prompt:',prompt_list[0])
+        # print('Label:',answer_list[0])
 
         print('Data:')
         print(type(X_train), X_train.shape, X_test.shape)  #
@@ -1913,7 +1926,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
 
-        for _all_text in train_all_texts[:4]:
+        for _all_text in train_all_texts[:]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -2067,8 +2080,8 @@ def load_dataset_per_party_llm(args, index):
         # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
         targets = [f"{example['output']}" for example in list_data_dict] # local
 
-        X_data = sources[:500] # list of instruction text
-        y_data = targets[:500] # list of answer text
+        X_data = sources#[:500] # list of instruction text
+        y_data = targets#[:500] # list of answer text
 
         X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1, random_state=args.current_seed)
 
@@ -2084,7 +2097,6 @@ def load_dataset_per_party_llm(args, index):
         # )
         # labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
         
-
     elif args.dataset == 'CodeAlpaca':
         data_path = DATA_PATH + '/CodeAlpaca-20k/code_alpaca_20k.json'
         DEFAULT_PAD_TOKEN = "[PAD]"
@@ -2136,51 +2148,155 @@ def load_dataset_per_party_llm(args, index):
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
+    
+    elif args.dataset == 'GMS8K':
+        data_path = DATA_PATH + '/GMS8K/'
+        problem_prompt = ("Below is an instruction that describes a task. "
+        "Write a response that appropriately completes the request.\n\n"
+        "### Instruction:\n{instruction}\n\n### Response: Let's think step by step.")
+        def read_jsonl(path: str):
+            with open(path) as fh:
+                return [json.loads(line) for line in fh.readlines() if line]
+
+        def get_final_ans(ans):
+            temp_ans = ans.split('#### ')[1]
+            temp_ans = int(temp_ans.replace(',', ''))
+            return str(temp_ans)
+
+        def get_examples(data_path, split):
+            path = os.path.join(data_path, f"{split}.jsonl")
+            examples = read_jsonl(path)
+
+            for ex in examples:
+                ex.update(question=ex["question"] + "\n")
+                ex.update(answer=ex["answer"])
+
+            print(f"{len(examples)} {split} examples")
+            return examples
+
+        ##### Train #####
+        train_examples = get_examples(data_path, 'train') # list of [  {'quesion':... , 'answer':...} ...]
+        X_train = np.array([ problem_prompt.format(instruction=_ex['question']+ "<|endoftext|>") for _ex in train_examples])
+        y_train = np.array([ _ex['answer'] for _ex in train_examples])
+
+        ##### Test #####
+        test_examples = get_examples(data_path, 'test') # list of [  {'quesion':... , 'answer':...} ...]
+        X_test = np.array([ problem_prompt.format(instruction=_ex['question']) for _ex in test_examples])[:10]
+        y_test = np.array([ get_final_ans(_ex['answer']) for _ex in test_examples])[:10]
+
+        train_dst = (X_train, y_train)
+        test_dst = (X_test, y_test)
+
+        print('X:',type(X_train), len(X_train), len(X_test))  #
+        print('y',type(y_train), len(y_train), len(y_test))  #
+
+    elif args.dataset == 'MATH':
+        data_path = DATA_PATH + '/MATH/'
+        problem_prompt = (
+            "Below is an instruction that describes a task. "
+            "Write a response that appropriately completes the request.\n\n"
+            "### Instruction:\n{instruction}\n\n### Response: Let's think step by step."
+        )
+        def remove_boxed(s):
+            left = "\\boxed{"
+            try:
+                assert s[:len(left)] == left
+                assert s[-1] == "}"
+                return s[len(left):-1]
+            except:
+                return None
+
+        def last_boxed_only_string(string):
+            idx = string.rfind("\\boxed")
+            if idx < 0:
+                idx = string.rfind("\\fbox")
+                if idx < 0:
+                    return None
+
+            i = idx
+            right_brace_idx = None
+            num_left_braces_open = 0
+            while i < len(string):
+                if string[i] == "{":
+                    num_left_braces_open += 1
+                if string[i] == "}":
+                    num_left_braces_open -= 1
+                    if num_left_braces_open == 0:
+                        right_brace_idx = i
+                        break
+                i += 1
+            
+            if right_brace_idx == None:
+                retval = None
+            else:
+                retval = string[idx:right_brace_idx + 1]
+            
+            return retval
         
-    # elif args.dataset == 'CodeAlpaca':
-    #     dataset_path =  DATA_PATH+"/CodeAlpaca-20k"
-    #     dst = load_dataset(dataset_path,split="train")
-    #     split = dst.train_test_split(test_size=0.1,seed=42)
+        all_filenames = glob.glob(data_path+'/train/*/*.json')
+        hendrycks_math_ins = []
+        hendrycks_math_answers = []
+        for fname in all_filenames[:10]:
+            with open(fname, 'r') as fp:
+                try:
+                    problem_data = json.load(fp)
+                except Exception as e:
+                    print(f"Error loading JSON from {fname}", e)
+                    raise e
+            temp_instr = problem_prompt.format(instruction=problem_data["problem"])
+            hendrycks_math_ins.append("\nQUESTION:\n" + temp_instr + "\FULL SOLUTION:\n")
 
-    #     PROMPT_DICT = {
-    #         "prompt_input": (
-    #             "Below is an instruction that describes a task, paired with an input that provides further context. "
-    #             "Write a response that appropriately completes the request.\n\n"
-    #             "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
-    #         ),
-    #         "prompt_no_input": (
-    #             "Below is an instruction that describes a task. "
-    #             "Write a response that appropriately completes the request.\n\n"
-    #             "### Instruction:\n{instruction}\n\n### Response:"
-    #         ),
-    #     }
+            temp_ans = problem_data['solution']
+            # temp_ans = remove_boxed(last_boxed_only_string(temp_ans))
+            hendrycks_math_answers.append(temp_ans)
         
-    #     list_data_dict = split['train']
-    #     sources = [
-    #         prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
-    #         for example in list_data_dict
-    #     ]
-    #     targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
+        X_train = np.array(hendrycks_math_ins)
+        y_train = np.array(hendrycks_math_answers)
 
-    #     X_train = sources
-    #     y_train = targets
+        # print('TRAIN IN:')
+        # print(hendrycks_math_ins[0])
+        # print('-'*100)
+        # print('TRAIN ANS:')
+        # print(hendrycks_math_answers[0])
 
-    #     list_data_dict = split['test']
-    #     sources = [
-    #         prompt_input.format_map(example) if example.get("input", "") != "" else prompt_no_input.format_map(example)
-    #         for example in list_data_dict
-    #     ]
-    #     targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict]
 
-    #     X_test = sources
-    #     y_test = targets
+        all_filenames = glob.glob(data_path+'/test/*/*.json')
+        hendrycks_math_ins = []
+        hendrycks_math_answers = []
+        for fname in all_filenames[:10]:
+            with open(fname, 'r') as fp:
+                try:
+                    problem_data = json.load(fp)
+                except Exception as e:
+                    print(f"Error loading JSON from {fname}", e)
+                    raise e
+            temp_instr = problem_prompt.format(instruction=problem_data["problem"])
+            hendrycks_math_ins.append(temp_instr)
 
-    #     train_dst = (X_train, y_train)
-    #     test_dst = (X_test, y_test)
+            temp_ans = problem_data['solution']
+            # print('temp_ans:',temp_ans)
+            # print('last_boxed_only_string(temp_ans):',last_boxed_only_string(temp_ans))
+            temp_ans = remove_boxed(last_boxed_only_string(temp_ans))
+            # print('final_ans:',temp_ans)
+            # print('-'*100)
 
-    #     print('X:',type(X_train), len(X_train), len(X_test))  #
-    #     print('y',type(y_train), len(y_train), len(y_test))  #
+            hendrycks_math_answers.append(temp_ans)
+        
+        X_test = np.array(hendrycks_math_ins)
+        y_test = np.array(hendrycks_math_answers)
 
+        # print('TEST IN:')
+        # print(hendrycks_math_ins[0])
+        # print('-'*100)
+        # print('TEST ANS:')
+        # print(hendrycks_math_answers[0])
+
+        train_dst = (X_train, y_train)
+        test_dst = (X_test, y_test)
+
+        print('X:',type(X_train), len(X_train), len(X_test))  #
+        print('y',type(y_train), len(y_train), len(y_test))  #
+    
 
     elif not args.dataset:
         return None

@@ -79,12 +79,15 @@ class WhiteBoxInversion(Attacker):
             local_model.eval()
             batch_size = self.attack_batch_size
 
+            
             if self.args.model_type in ['Bert','Roberta']:
-                embedding_matrix = local_model.embeddings.word_embeddings.weight # 30522, 768               
-            elif self.args.model_type == 'GPT2':
-                embedding_matrix = local_model.wte.weight # 30522, 768  
-            elif self.args.model_type == 'Llama':
-                embedding_matrix = local_model.embed_tokens.weight # 30522, 768  
+                embedding_matrix = local_model.embeddings.word_embeddings.weight # 30522, 768       
+            else:
+                embedding_matrix = local_model.get_input_embeddings().weight        
+            # elif self.args.model_type == 'GPT2':
+            #     embedding_matrix = local_model.wte.weight # 30522, 768  
+            # elif self.args.model_type == 'Llama':
+            #     embedding_matrix = local_model.embed_tokens.weight # 30522, 768  
             
             # print('embedding_matrix:',embedding_matrix.shape)
 

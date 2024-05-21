@@ -232,6 +232,9 @@ class LocalMistralModel(MistralForCausalLM, MistralPreTrainedModel):
     def _clear_past_key_values(self):
         self.past_key_values=None
 
+    def get_input_embeddings(self):
+        return self.embed_tokens
+        
     def forward(
         self,
         input_ids: torch.LongTensor = None,

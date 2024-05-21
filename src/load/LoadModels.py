@@ -81,6 +81,8 @@ MODEL_PATH = {
 
     'llama-2-7b': YOUR_MODEL_PATH + "llama-2-7b",
     'chavinloalpaca-native': YOUR_MODEL_PATH + "chavinloalpaca-native",
+    "lqtrung1998Codellama-7b-hf-ReFT-GSM8k": YOUR_MODEL_PATH+"lqtrung1998Codellama-7b-hf-ReFT-GSM8k",
+    "meta-mathMetaMath-Mistral-7B" : YOUR_MODEL_PATH + "meta-mathMetaMath-Mistral-7B",
 
     "HuggingFaceM4tiny-random-LlamaForCausalLM": YOUR_MODEL_PATH + "HuggingFaceM4tiny-random-LlamaForCausalLM",
     "HuggingFaceH4tiny-random-LlamaForSequenceClassification": YOUR_MODEL_PATH + "HuggingFaceH4tiny-random-LlamaForSequenceClassification",
@@ -398,13 +400,11 @@ def load_basic_models_llm_bert(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == "Generation":
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'QuestionAnswering':
+    elif args.model_architect == 'TQA':
         full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    elif args.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':
         full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
@@ -417,13 +417,11 @@ def load_basic_models_llm_bert(args, index):
         full_llm = full_model.bert
 
     # full_qwen = full_model.model
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.cls
-    elif args.task_type == 'Generation':
-        head_layer = full_model.cls
-    elif args.task_type == 'QuestionAnswering':
+    elif args.model_architect == 'TQA':
         head_layer = full_model.qa_outputs
-    elif args.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':
         head_layer = full_model.classifier
     else:
         head_layer = None
@@ -531,11 +529,11 @@ def load_basic_models_llm_bert(args, index):
         global_model = GlobalBertModel(full_llm, global_encoders_num,model_type=args.model_type)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = BertLMHeadModel_pretrained(global_model, head_layer)
-        elif args.task_type == "QuestionAnswering":
+        elif args.model_architect == 'TQA':
             global_model = BertForQuestionAnswering_pretrained(global_model, head_layer)
-        elif args.task_type == "SequenceClassification":
+        elif args.model_architect == 'CLS':
             global_model = BertForSequenceClassification_pretrained(global_model, head_layer)
         elif args.task_type == "Generation":
             global_model = BertLMHeadModel_pretrained(global_model, head_layer)
@@ -571,25 +569,23 @@ def load_basic_models_llm_t5(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     elif args.task_type == "Generation":
         full_model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_t5 = full_model
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -654,11 +650,11 @@ def load_basic_models_llm_t5(args, index):
         global_t5 = GlobalT5Model(full_t5, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer, generation_config=full_model.generation_config)
-        # elif args.task_type == "QuestionAnswering":
+        # elif args.model_architect == 'TQA':
         #     global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = GPT2ForSequenceClassification_pretrained(global_t5, head_layer)
         elif args.task_type == "Generation":
             global_model = T5ForConditionalGeneration_pretrained(global_t5, head_layer, generation_config=full_model.generation_config)
@@ -710,8 +706,6 @@ def load_basic_models_llm_gpt2(args, index):
     # full_qwen = full_model.model
     if args.model_architect == 'CLM':#.task_type == 'CausalLM':
         head_layer = full_model.lm_head
-    # elif args.task_type == 'Generation':
-    #     head_layer = full_model.lm_head
     elif args.model_architect == 'TQA':#.task_type == 'QuestionAnswering':
         head_layer = full_model.qa_outputs
     elif args.model_architect == 'CLS':#.task_type == 'SequenceClassification':
@@ -743,34 +737,77 @@ def load_basic_models_llm_gpt2(args, index):
     ########### Local Model ###########
     local_model = None
     local_model_optimizer = None
-    if index < args.k - 1:
+    if index < args.k - 1:       
+        #############
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalGPT2Model(full_llm, args.local_encoders_num)
-
-        # Freeze Backbone
-        for param in local_model.parameters():
-            param.requires_grad = False
-        local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        local_model_optimizer = None
-        local_trainable_params = []
-        print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.wte.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.wte.parameters()))
-        for param in local_model.wpe.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.wpe.parameters()))
-        print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.h.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.h.parameters()))
+        if args.finetune_name == "LoRA":
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                #target_modules=["q", "v"],
+                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                inference_mode=False,  # 训练模式
+                r=4,  
+                lora_alpha=32, 
+                lora_dropout=0.1
+            )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+        
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.h)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.h.parameters():
+                    param.requires_grad = False
+        
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.wte.parameters():
+                param.requires_grad = False
+            for param in local_model.wpe.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
+        local_model = local_model.to(args.device)
+
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
         if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+
+
+        # local_model_optimizer = None
+        # local_trainable_params = []
+        # print('Local Model: embedding_trainable = ', args.embedding_trainable[0])
+        # for param in local_model.wte.parameters():
+        #     param.requires_grad = args.embedding_trainable[0]
+        # if args.embedding_trainable[0]:
+        #     local_trainable_params.extend(list(local_model.wte.parameters()))
+        # for param in local_model.wpe.parameters():
+        #     param.requires_grad = args.embedding_trainable[0]
+        # if args.embedding_trainable[0]:
+        #     local_trainable_params.extend(list(local_model.wpe.parameters()))
+        # print('Local Model: args.encoder_trainable = ', args.encoder_trainable[0])
+        # for param in local_model.h.parameters():
+        #     param.requires_grad = args.encoder_trainable[0]
+        # if args.encoder_trainable[0]:
+        #     local_trainable_params.extend(list(local_model.h.parameters()))
+        # if len(local_trainable_params)>0:
+        #     local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
     global_model = None
@@ -822,29 +859,24 @@ def load_basic_models_llm_llama(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
         full_llm = full_model.model
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-        full_llm = full_model.model
-    elif args.task_type == 'QuestionAnswering':
+    elif args.model_architect == 'TQA':
         full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         full_llm = full_model.transformer
-    elif args.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':
         full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
         full_llm = full_model.model
     else:
         assert 1 > 2, "task type not supported"
 
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    elif args.task_type == 'QuestionAnswering':
+    elif args.model_architect == 'TQA':
         head_layer = full_model.qa_outputs
-    elif args.task_type == 'SequenceClassification':
+    elif args.model_architect == 'CLS':
         head_layer = full_model.score
     else:
         head_layer = None
@@ -876,25 +908,47 @@ def load_basic_models_llm_llama(args, index):
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalLlamaModel(full_llm, num_encoders = args.local_encoders_num)
 
+        if args.finetune_name == "LoRA":
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                #target_modules=["q", "v"],
+                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                inference_mode=False,  # 训练模式
+                r=4,  
+                lora_alpha=32, 
+                lora_dropout=0.1
+            )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+        
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layers)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layers.parameters():
+                    param.requires_grad = False
+        
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embed_tokens.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embed_tokens.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layers.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layers.parameters()))
-        if len(local_trainable_params)<0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -908,13 +962,11 @@ def load_basic_models_llm_llama(args, index):
         global_model = GlobalLlamaModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = LlamaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = LlamaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "QuestionAnswering":
+        elif args.model_architect == 'TQA':
             global_model = LlamaForQuestionAnswering_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "SequenceClassification":
+        elif args.model_architect == 'CLS':
             global_model = LlamaForSequenceClassification_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -948,26 +1000,23 @@ def load_basic_models_llm_baichuan(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True,trust_remote_code=True )
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
-    # elif args.task_type == 'QuestionAnswering':
+   
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.model
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1032,11 +1081,9 @@ def load_basic_models_llm_baichuan(args, index):
         global_model = GlobalBaichuanModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = BaiChuanForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = BaiChuanForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = LlamaForSequenceClassification_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1070,26 +1117,24 @@ def load_basic_models_llm_xlnet(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.transformer
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_loss
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_loss
-    # elif args.task_type == 'QuestionAnswering':
+   
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1159,11 +1204,9 @@ def load_basic_models_llm_xlnet(args, index):
         global_model = GlobalXLNetModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = XLNetLMHeadModel_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = XLNetLMHeadModel_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = LlamaForSequenceClassification_pretrained(global_llama, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1197,26 +1240,24 @@ def load_basic_models_llm_falcon(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.transformer
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1243,28 +1284,46 @@ def load_basic_models_llm_falcon(args, index):
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalFalconModel(full_llm, num_encoders = args.local_encoders_num)
 
+        if args.finetune_name == "LoRA":
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                #target_modules=["q", "v"],
+                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                inference_mode=False,  # 训练模式
+                r=4,  
+                lora_alpha=32, 
+                lora_dropout=0.1
+            )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+        
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.h)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.h.parameters():
+                    param.requires_grad = False
+        
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.word_embeddings.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.word_embeddings.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.word_embeddings.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.h.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.h.parameters()))
-
-        if len(local_trainable_params)<0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1278,11 +1337,9 @@ def load_basic_models_llm_falcon(args, index):
         global_model = GlobalFalconModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = FalconForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = FalconForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = FalconForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1352,26 +1409,24 @@ def load_basic_models_llm_mamba(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+  
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.backbone
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+   
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1438,11 +1493,9 @@ def load_basic_models_llm_mamba(args, index):
         global_model = GlobalMambaModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = MambaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = MambaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1476,26 +1529,24 @@ def load_basic_models_llm_gemma(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.model
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+   
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1526,6 +1577,51 @@ def load_basic_models_llm_gemma(args, index):
     if index < args.k - 1:
         print('args.local_encoders_num:',args.local_encoders_num)
         local_model = LocalGemmaModel(full_llm, num_encoders = args.local_encoders_num)
+
+        if args.finetune_name == "LoRA":
+            lora_config = LoraConfig(
+                task_type=TaskType.CAUSAL_LM,
+                #target_modules=["q", "v"],
+                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+                inference_mode=False,  # 训练模式
+                r=4,  
+                lora_alpha=32, 
+                lora_dropout=0.1
+            )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+        
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layers)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layers.parameters():
+                    param.requires_grad = False
+        
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embed_tokens.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
+        local_model = local_model.to(args.device)
+
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
+            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
+
+
 
         local_model = local_model.to(args.device)
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
@@ -1562,11 +1658,9 @@ def load_basic_models_llm_gemma(args, index):
         global_model = GlobalGemmaModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = GemmaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = GemmaForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1600,13 +1694,11 @@ def load_basic_models_llm_chatglm(args, index):
     args.tokenizer = ChatGLMTokenizer.from_pretrained(model_path, do_lower_case=True, trust_remote_code=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path, trust_remote_code=True)
-    elif args.task_type == 'Generation':
-        full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path, trust_remote_code=True)
-    # elif args.task_type == 'QuestionAnswering':
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
@@ -1617,13 +1709,12 @@ def load_basic_models_llm_chatglm(args, index):
 
     all_encoder_num = full_model.config.num_layers
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.transformer.output_layer
-    elif args.task_type == 'Generation':
-        head_layer = full_model.transformer.output_layer
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1690,11 +1781,9 @@ def load_basic_models_llm_chatglm(args, index):
         global_model = GlobalChatGLMModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = ChatGLMForConditionalGeneration_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
@@ -1728,26 +1817,24 @@ def load_basic_models_llm_mistral(args, index):
     args.tokenizer = AutoTokenizer.from_pretrained(model_path, do_lower_case=True)
     args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    elif args.task_type == 'Generation':
-        full_model = AutoModelForCausalLM.from_pretrained(model_path)
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
     full_llm = full_model.model
 
-    if args.task_type == 'CausalLM':
+    if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-    elif args.task_type == 'Generation':
-        head_layer = full_model.lm_head
-    # elif args.task_type == 'QuestionAnswering':
+    
+    # elif args.model_architect == 'TQA':
     #     head_layer = full_model.qa_outputs
-    # elif args.task_type == 'SequenceClassification':
+    # elif args.model_architect == 'CLS':
     #     head_layer = full_model.score
     else:
         head_layer = None
@@ -1814,11 +1901,9 @@ def load_basic_models_llm_mistral(args, index):
         global_model = GlobalMistralModel(full_llm, num_encoders = global_encoders_num)
 
         # add Classification Layer(untrainable)
-        if args.task_type == "CausalLM":
+        if args.model_architect == 'CLM':
             global_model = MistralForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        elif args.task_type == "Generation":
-            global_model = MistralForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.task_type == "SequenceClassification":
+        # elif args.model_architect == 'CLS':
         #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"

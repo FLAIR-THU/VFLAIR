@@ -5,12 +5,6 @@
 
 echo 'Yelp WO'
 
-for seed in {61,62}
-    do
-    python main_pipeline_llm.py --seed $seed --configs yelp_wo_2
-done
-
-
 for seed in {64,65}
     do
     python main_pipeline_llm.py --seed $seed --configs yelp_wo

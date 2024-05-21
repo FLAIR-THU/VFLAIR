@@ -162,6 +162,9 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
             self.prefix_encoder = PrefixEncoder(config)
             self.dropout = torch.nn.Dropout(0.1)
 
+    def get_input_embeddings(self):
+        return self.embedding
+
     def _clear_past_key_values(self):
         self.past_key_values = None
 
@@ -176,7 +179,7 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
             use_cache: Optional[bool] = None,
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
-            **kwarg
+            **kwargs
     ):
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states

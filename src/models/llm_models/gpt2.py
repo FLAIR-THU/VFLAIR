@@ -442,7 +442,7 @@ class GPT2forGeneration_pretrained(GPT2LMHeadModel):
 
 
 ##################### Functional Global Models ######################
-class LocalGPT2Model(GPT2LMHeadModel, GPT2PreTrainedModel):
+class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel):
     def __init__(self, full_gpt, num_encoders, generation_config=None):
         super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
         self.config = full_gpt.config
@@ -474,6 +474,9 @@ class LocalGPT2Model(GPT2LMHeadModel, GPT2PreTrainedModel):
 
     def _clear_past_key_values(self):
         self.past_key_values = None
+
+    def get_input_embeddings(self):
+        return self.wte
 
     def forward(
         self,
@@ -670,9 +673,9 @@ class LocalGPT2Model(GPT2LMHeadModel, GPT2PreTrainedModel):
                 'attention_mask':attention_mask,
                 }
     
-class GlobalGPT2Model(GPT2PreTrainedModel):
+class GlobalGPT2Model(GPT2Model,GPT2PreTrainedModel):
     def __init__(self, full_gpt, num_encoders):
-        super().__init__(full_gpt.config)
+        super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
 
         self.embed_dim = full_gpt.config.hidden_size
 
@@ -692,7 +695,7 @@ class GlobalGPT2Model(GPT2PreTrainedModel):
         self.gradient_checkpointing = False
 
         # Initialize weights and apply final processing
-        self.post_init()
+        # self.post_init()
 
         self.past_key_values = None
 

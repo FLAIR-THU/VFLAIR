@@ -217,9 +217,18 @@ class PassiveParty_LLM(Party_LLM):
         if args.dataset in ['Alpaca','CodeAlpaca']:
             self.train_dst = AlpacaDataset_LLM(args, self.train_data, self.train_label, 'train')
             self.test_dst = AlpacaDataset_LLM(args, self.test_data, self.test_label, 'test')
+        elif args.dataset == 'Lambada':
+            self.train_dst = LambadaDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = LambadaDataset_LLM(args, self.test_data, self.test_label, 'test')
         elif args.dataset == 'MMLU':
             self.train_dst = MMLUDataset_LLM(args, self.train_data, self.train_label, 'train')
             self.test_dst = MMLUDataset_LLM(args, self.test_data, self.test_label, 'test')
+        elif args.dataset == 'GMS8K':
+            self.train_dst = GSMDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = GSMDataset_LLM(args, self.test_data, self.test_label, 'test')
+        elif args.dataset == 'MATH':
+            self.train_dst = MATHDataset_LLM(args, self.train_data, self.train_label, 'train')
+            self.test_dst = MATHDataset_LLM(args, self.test_data, self.test_label, 'test')
         else:
             self.train_dst = PassiveDataset_LLM(args, self.train_data, self.train_label, 'train')
             self.test_dst = PassiveDataset_LLM(args, self.test_data, self.test_label, 'test')

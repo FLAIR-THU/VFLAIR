@@ -98,7 +98,7 @@ def do_load_basic_configs(config_dict, args):
     ############## for LLM ###############
     args.pipeline = config_dict['pipeline'] if('pipeline' in config_dict) else None# pretrained finetune
     args.finetune_configs = config_dict['finetune_configs'] if('finetune_configs' in config_dict) else None
-    args.finetune_name = args.finetune_configs['name'] if args.finetune_configs!=None else None
+    args.finetune_name = args.finetune_configs['name'] if args.finetune_configs!=None else 'Vanilla'
 
     args.model_architect = config_dict['model_architect'] if('model_architect' in config_dict) else 'CLM'
     print('load model_architect:',args.model_architect)
@@ -155,6 +155,10 @@ def do_load_basic_configs(config_dict, args):
         # Task Description
         args.task_dict = config_model_dict['task']
         args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
+        
+        args.generation_config_dict = args.task_dict['generation_config_dict'] if('generation_config_dict' in args.task_dict) else {}
+        
+
         args.metric_type = args.task_dict['metric_type'] if('metric_type' in args.task_dict) else "n_best"
         args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
         args.max_query_length = args.task_dict['max_query_length'] if('max_query_length' in args.task_dict) else -1

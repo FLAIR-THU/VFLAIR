@@ -32,7 +32,7 @@ np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 
 class Party(object):
-    def __init__(self, args, index, need_data=True):
+    def __init__(self, args, index, need_data=True,need_model=True):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
@@ -79,7 +79,8 @@ class Party(object):
         # global_model
         self.global_model = None
         self.global_model_optimizer = None
-        self.prepare_model(args, index)
+        if need_model:
+            self.prepare_model(args, index)
 
         # attack and defense
         # self.attacker = None

@@ -263,17 +263,18 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         if self.args.model_type  in ['Bert','Roberta']:
                             cos_similarities = nn.functional.cosine_similarity\
                                             (local_model.embeddings.word_embeddings.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
-                        elif self.args.model_type == 'Llama':
+                        # elif self.args.model_type == 'Llama':
+                        #     cos_similarities = nn.functional.cosine_similarity\
+                        #                     (local_model.embed_tokens.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                        #     # print('local_model.embed_tokens.weight:',local_model.embed_tokens.weight.shape)
+                        #     # [32000, 4096] [vocab_size, embed_dim]
+                        # elif self.args.model_type == 'GPT2':
+                        #     cos_similarities = nn.functional.cosine_similarity\
+                        #                     (local_model.wte.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                        else:
                             cos_similarities = nn.functional.cosine_similarity\
-                                            (local_model.embed_tokens.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
-                            # print('local_model.embed_tokens.weight:',local_model.embed_tokens.weight.shape)
-                            # [32000, 4096] [vocab_size, embed_dim]
-                        elif self.args.model_type == 'GPT2':
-                            cos_similarities = nn.functional.cosine_similarity\
-                                            (local_model.wte.weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
-                            # print('_dum.unsqueeze(0):',_dum.unsqueeze(0).shape)
-                            # print('local_model.wte.weight:',local_model.wte.weight.shape)
-                            # [32000, 4096] [vocab_size, embed_dim]
+                                                (local_model.get_input_embeddings().weight, _dum.unsqueeze(0), dim=1) # .unsqueeze(0)
+                            
                         # print('cos_similarities:',cos_similarities.shape)
                         _, predicted_index = cos_similarities.max(0)
                         predicted_index = predicted_index.item()

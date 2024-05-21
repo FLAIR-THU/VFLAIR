@@ -464,6 +464,9 @@ class LocalLlamaModel(LlamaForCausalLM, LlamaPreTrainedModel):
     def _clear_past_key_values(self):
         self.past_key_values = None
 
+    def get_input_embeddings(self):
+        return self.embed_tokens
+        
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -589,6 +592,7 @@ class LocalLlamaModel(LlamaForCausalLM, LlamaPreTrainedModel):
         #     attentions=all_self_attns,
         # )
     
+
     def _update_causal_mask(self, attention_mask, input_tensor, cache_position):
         if self.config._attn_implementation == "flash_attention_2":
             if attention_mask is not None and 0.0 in attention_mask:

@@ -321,7 +321,7 @@ class LocalBertEncoder(nn.Module):
         self.config = config
         self.layer = layer #nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
-
+    
     def forward(
         self,
         hidden_states: torch.Tensor, # input_ids
@@ -510,6 +510,9 @@ class LocalBertModel(BertLMHeadModel, BertPreTrainedModel):
 
     def _clear_past_key_values(self):
         self.past_key_values = None
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
 
     def forward(
         self,

@@ -107,6 +107,9 @@ class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
         # Initialize weights and apply final processing
         # self.post_init()
 
+    def get_input_embeddings(self):
+        return self.embeddings
+
     def _clear_past_key_values(self):
         self.past_key_values = None
 

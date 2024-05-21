@@ -100,7 +100,7 @@ class FalconForCausalLM_pretrained(FalconForCausalLM):
         )
 
 ##################### Functional Global Models ######################
-class LocalFalconModel(FalconForCausalLM,FalconPreTrainedModel):
+class LocalFalconModel(FalconForCausalLM,FalconModel,FalconPreTrainedModel):
     def __init__(self, full_falcon , num_encoders):
         super(FalconPreTrainedModel,self).__init__(full_falcon.config)
         self.local_num_encoders = num_encoders
@@ -131,6 +131,9 @@ class LocalFalconModel(FalconForCausalLM,FalconPreTrainedModel):
         self.past_key_values = None 
         self.embedding_output = None
 
+    def get_input_embeddings(self):
+        return self.word_embeddings
+
     def _clear_past_key_values(self):
         self.past_key_values = None
 
@@ -146,6 +149,7 @@ class LocalFalconModel(FalconForCausalLM,FalconPreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
+        **kwargs
     ) -> Union[Tuple[torch.Tensor, ...], BaseModelOutputWithPastAndCrossAttentions]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -319,7 +323,7 @@ class LocalFalconModel(FalconForCausalLM,FalconPreTrainedModel):
         #     attentions=all_self_attentions,
         # )
 
-class GlobalFalconModel(FalconPreTrainedModel):
+class GlobalFalconModel(FalconModel,FalconPreTrainedModel):
     def __init__(self, full_falcon , num_encoders):
         super().__init__(full_falcon.config)
         self.global_num_encoders = num_encoders
