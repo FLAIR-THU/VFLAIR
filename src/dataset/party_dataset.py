@@ -130,8 +130,13 @@ class PassiveDataset_LLM(Dataset):
                     }
                 }
                 self.input_dicts.append(inputs)
-                self.labels.append( labels[i] ) # [ [start_position, end_position] ]
-            self.labels = torch.tensor(self.labels)
+                self.labels.append( labels[i] ) 
+                # test: [ [start_position, end_position] ]
+                # train: [ [ [start_position1,start_position2,start_position3],[end_position1,end_position2,end_position3] ] ]
+
+            print(f'---- {split_name} -----')
+            print('self.labels:',self.labels[:3])
+            # self.labels = torch.tensor(self.labels)
 
     def __len__(self):
         return len(self.labels)

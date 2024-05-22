@@ -160,10 +160,16 @@ class ActiveParty_LLM(Party_LLM):
         self.global_output = self.global_model(**self.passive_pred_list[0])  # use_cache = use_cache,return_dict=True
         if not isinstance(self.global_output,dict):
             self.global_output=self.global_output.prepare_for_forward()
+        
+        
         if vfl_basic_config.num_of_slice==2:
-            self.output_tensors[1]=self.global_output['logits']
+            if self.args.model_architect == 'TQA':
+                self.output_tensors[1]=None
+            else:
+                self.output_tensors[1]=self.global_output['logits']
         else:
             self.output_tensors[1]=self.global_output['inputs_embeds']
+
         return self.global_output
 
     def receive_loss_and_gradients_remote(self, data):
@@ -203,47 +209,46 @@ class ActiveParty_LLM(Party_LLM):
         # print('=== Active Global Backward ===')
 
         if self.global_model_optimizer != None:
-            if self.args.task_type == 'QuestionAnswering':
-
+            if self.args.model_architect == 'TQA': #self.args.task_type == 'QuestionAnswering':
                 # update global model
                 self.global_model_optimizer.zero_grad()
+                
+                # trainable layer parameters
                 parameters = []
 
-                # trainable layer parameters
                 # load grads into parameters
                 weights_grad_a_start = torch.autograd.grad(self.global_output.start_logits, self.global_model.head_layer.parameters(), \
                     grad_outputs=self.global_gradients, retain_graph=True)
                 weights_grad_a_end = torch.autograd.grad(self.global_output.end_logits, self.global_model.head_layer.parameters(),\
                      grad_outputs=self.global_gradients, retain_graph=True)
-
                 self.weights_grad_a = []
                 for _i in range( len(weights_grad_a_start) ):
                     self.weights_grad_a.append(weights_grad_a_start[_i]+weights_grad_a_end[_i])
                 self.weights_grad_a = tuple( self.weights_grad_a )
-                # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
+                
 
-                # self.weights_grad_a = weights_grad_a_start+weights_grad_a_end
-                # print('weights_grad_a:',len(self.weights_grad_a),type(self.weights_grad_a))
-
-                # self.weights_grad_a = self.weights_grad_a/2
                 for w, g in zip(self.global_model.head_layer.parameters(), self.weights_grad_a):
                     if w.requires_grad:
                         w.grad = g.detach()
-                # print('weights_grad_a:',weights_grad_a)
 
                 self.global_model_optimizer.step()
+
             else:
                 # update global model
                 try:
                     # todo: here should update all trainable params
                     self.global_model_optimizer.zero_grad()
+
                     weights_grad_a = torch.autograd.grad(self.global_output.logits, self.global_model.head_layer.parameters(), \
-                    grad_outputs=self.global_gradients, retain_graph=True)
+                        grad_outputs=self.global_gradients, retain_graph=True)
                     self.weights_grad_a = weights_grad_a
+
                     for w, g in zip(self.global_model.head_layer.parameters(), weights_grad_a):
                         if w.requires_grad:
                             w.grad = g.detach()
+
                     self.global_model_optimizer.step()
+                
                 except Exception as e:
                     logger.debug(f"active party step optimizer 1")
                     self.global_model_optimizer.zero_grad()

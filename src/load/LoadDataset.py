@@ -2010,7 +2010,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in train_features:
+        for feature in train_features[:10]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 
@@ -2026,7 +2026,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in test_features:
+        for feature in test_features[:10]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 

@@ -357,7 +357,7 @@ def create_main_task(global_model_type):
             return global_loss
 
 
-        def generate_result(self, model_output, gt_one_hot_label):
+        def generate_result(self, model_output, gt_one_hot_label, feature_list=None):
             # raw_model_output --> standard prediction result
             test_preds = []
             test_targets = []
@@ -459,6 +459,7 @@ def create_main_task(global_model_type):
 
 
             elif self.args.model_architect=='TQA': #.task_type == "QuestionAnswering":
+                print('feature_list:',type(feature_list),len(feature_list),type(feature_list[0]))
                 start_logits = model_output.start_logits # bs, 512
                 end_logits = model_output.end_logits # bs, 512
                 sample_cnt = start_logits.shape[0] # bs
@@ -472,10 +473,12 @@ def create_main_task(global_model_type):
                 f1_list = []
                 batch_nbest_list = []
                 batch_gold_ans_list = []
+                # print('feature_list:',type(feature_list),len(feature_list))
                 for i in range(start_logits.shape[0]):  # for each sample in this batch
                     ############ Gold ################
-                    feature = parties_data[0][0][i]['feature']  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
+                    # feature = parties_data[0][0][i]['feature']  # print('parties_data[0][4]:',type(parties_data[0][4]),'feature:',type(feature))
                     # feature_tokens = [_token for _token in feature["tokens"]]  # [_token[0] for _token in feature["tokens"]]
+                    feature = feature_list[i]
 
                     gold_start_indexs, gold_end_indexs = gt_one_hot_label[i]  # the i'th sample in a batch
                     if len(gold_start_indexs.shape) == 0:
@@ -606,9 +609,10 @@ def create_main_task(global_model_type):
 
                     data_inputs = {}
                     for key_name in parties_data[0][0][0].keys():
-                        if key_name in ['feature']:
-                            continue
-                        data_inputs[key_name] = torch.stack( [parties_data[0][0][i][key_name] for i in range(len(parties_data[0][0]))] )
+                        if isinstance(parties_data[0][0][0][key_name], torch.Tensor):
+                            data_inputs[key_name] = torch.stack( [parties_data[0][0][i][key_name] for i in range(len(parties_data[0][0]))] )
+                        else:
+                            data_inputs[key_name] =  [parties_data[0][0][i][key_name] for i in range(len(parties_data[0][0]))]
                     self.seq_length = data_inputs['input_ids'].shape[-1]
 
                     # test_logit -> standard output for each task
@@ -621,7 +625,8 @@ def create_main_task(global_model_type):
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='TQA': #task_type == "QuestionAnswering":
                         global_output = self.forward(**data_inputs)
-                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label)
+                        feature_list = data_inputs['feature']
+                        batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(global_output, gt_one_hot_label, feature_list)
                         nbest_list.extend(batch_nbest)
                         gold_ans_list.extend(batch_gold_ans)
                         if sample_cnt is not None:
@@ -1000,11 +1005,13 @@ def create_main_task(global_model_type):
 
         def forward(self, count_time=False, **kwargs):
             self.parties[0].obtain_local_data(kwargs)
+
             # passive party do local pred
             pred_list = self.pred_transmit(use_cache=False,count_time=count_time)
 
             # passive party inform active party to do global pred
             resp = self.global_pred_transmit(pred_list, use_cache=False,count_time=count_time)
+
             if not isinstance(resp,(dict,torch.Tensor)):
                 resp=resp.prepare_for_forward()
                 t=resp['inputs_embeds']
@@ -1012,12 +1019,14 @@ def create_main_task(global_model_type):
                 resp['inputs_embeds']=t.detach().clone()
                 if req_grad:
                     resp['inputs_embeds'].requires_grad=True
+
             if vfl_basic_config.num_of_slice > 2:
                 # todo: deal with 3-slice inference
                 final_output=self.parties[0].forward(2,**resp)
             else:
                 # todo: use global_pred_transmit return instead
                 final_output = self.parties[1].global_output
+
             return final_output
 
         def backward(self,final_pred):
@@ -1122,8 +1131,8 @@ def create_main_task(global_model_type):
             if self.args.model_architect=='TQA': #self.args.task_type == 'QuestionAnswering':
                 pred = self.parties[self.k - 1].global_output  # QuestionAnsweringModelOutput
                 loss = self.parties[0].global_loss
-
-                batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(pred, gt_one_hot_label)
+                feature_list = data_inputs['feature']
+                batch_nbest, batch_gold_ans, sample_cnt = self.generate_result(pred, gt_one_hot_label, feature_list)
 
                 result_dict = self.generate_assessment(batch_nbest, batch_gold_ans)
 
@@ -1476,11 +1485,24 @@ def create_main_task(global_model_type):
             dir_path = self.exp_res_dir + f'/defense_models/'
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
-            file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
 
-            with open(file_path, 'wb') as f:
-                if self.args.apply_mid:
+            if self.args.apply_mid:
+                file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
+                with open(file_path, 'wb') as f:
                     pickle.dump(self.parties[0].mid_model, f)
+            
+                file_path = dir_path + f'head_{self.args.defense_name}_{self.args.defense_configs}.pkl'
+                with open(file_path, 'wb') as f:
+                        pickle.dump(self.parties[1].global_model.head_layer, f)
+            
+            if self.args.apply_adversarial:
+                file_path = dir_path + f'{self.args.defense_name}_{self.args.defense_configs}.pkl'
+                with open(file_path, 'wb') as f:
+                    pickle.dump(self.parties[0].adversarial_model, f)
+            
+                file_path = dir_path + f'head_{self.args.defense_name}_{self.args.defense_configs}.pkl'
+                with open(file_path, 'wb') as f:
+                        pickle.dump(self.parties[1].global_model.head_layer, f)
             
             # with open('my_model.pkl', 'rb') as f:
             #     model = pickle.load(f)

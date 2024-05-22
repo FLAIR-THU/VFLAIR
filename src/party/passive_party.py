@@ -320,14 +320,16 @@ class PassiveParty_LLM(Party_LLM):
             start_logits = pred.start_logits
             end_logits = pred.end_logits
 
-            # golden_start_positions, golden_end_positions = gt_one_hot_label[0] # bs *[start_id, end_id]  bs=1
+            # print('---- gt_one_hot_label -----') 
+            # print(gt_one_hot_label) # [ [gold_s, gold_e]*bs ]
 
             golden_start_positions = torch.tensor([gt_one_hot_label[i][0] for i in range(gt_one_hot_label.shape[0])])
             golden_end_positions = torch.tensor([gt_one_hot_label[i][1] for i in range(gt_one_hot_label.shape[0])])
 
-            golden_start_positions = golden_start_positions.squeeze().long().to(start_logits.device)  # .unsqueeze(0)
-            golden_end_positions = golden_end_positions.squeeze().long().to(end_logits.device)
-            # print('golden_start_positions golden_end_positions:',golden_start_positions.shape, golden_end_positions.shape)
+
+            golden_start_positions = golden_start_positions.long().to(start_logits.device)  # .unsqueeze(0)
+            golden_end_positions = golden_end_positions.long().to(end_logits.device)
+
 
             loss = None
 
@@ -336,16 +338,18 @@ class PassiveParty_LLM(Party_LLM):
             if len(golden_end_positions.size()) > 1:
                 golden_end_positions = golden_end_positions.squeeze(-1).to(end_logits.device)
             # sometimes the start/end positions are outside our model inputs, we ignore these terms
-            ignored_index = start_logits.size(1)
-            # print('ignored_index:',ignored_index)
+            
+            ignored_index = start_logits.size(1)  #print('ignored_index:',ignored_index)
             golden_start_positions = golden_start_positions.clamp(0, ignored_index)
             golden_end_positions = golden_end_positions.clamp(0, ignored_index)
 
             # print('start_logits end_logits:',start_logits.shape, end_logits.shape)
-            # print('after clamp golden_start_positions golden_end_positions:',golden_start_positions.shape, golden_end_positions.shape)
+            # print('after clamp golden_start_positions golden_end_positions:')
+            # print(golden_start_positions.shape, golden_start_positions)
+            # print(golden_end_positions.shape, golden_end_positions)
+            # print('-'*100)
 
             loss_fct = CrossEntropyLoss(ignore_index=ignored_index)
-
             start_loss = loss_fct(start_logits, golden_start_positions)
             end_loss = loss_fct(end_logits, golden_end_positions)
             loss = (start_loss + end_loss) / 2
