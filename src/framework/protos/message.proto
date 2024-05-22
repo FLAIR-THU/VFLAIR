@@ -32,6 +32,7 @@ message Message{
 message tensor_double{
     repeated double value = 1;
     repeated int32 shape = 2;
+    string dtype = 3;
 }
 
 message tensor_int{

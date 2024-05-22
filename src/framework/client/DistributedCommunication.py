@@ -1,11 +1,13 @@
-import torch
-
-from party.ICommunication import ICommunication
 import json
+
+import torch
+from loguru import logger
+
 from framework.database.model.Task import Task
 from framework.protos.message_pb2 import Value
-from utils import timer,get_total_size
-from loguru import logger
+from party.ICommunication import ICommunication
+from utils import timer, get_total_size
+
 
 @timer()
 def convert_pred_to_msg(pred_list):
@@ -13,12 +15,15 @@ def convert_pred_to_msg(pred_list):
     data_value = Value()
     data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
     data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
+    data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
 
     data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
     data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
+    data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
 
-    data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
-    data_value.hidden_states.position_ids.value.extend(pred_list['position_ids'].flatten().tolist())
+    if 'position_ids' in pred_list:
+        data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
+        data_value.hidden_states.position_ids.value.extend(pred_list['position_ids'].flatten().tolist())
 
     data_value.hidden_states.output_hidden_states = False
     data_value.hidden_states.use_cache = False
@@ -29,20 +34,25 @@ def convert_pred_to_msg(pred_list):
 
     return data_value
 
+
 @timer()
-def convert_msg_to_pred(pred, device, dtype=torch.bfloat16):
-    inputs_embeds = torch.tensor(pred.inputs_embeds.value,dtype=dtype)
+def convert_msg_to_pred(pred):
+    dtype = getattr(torch, pred.inputs_embeds.dtype.split(".")[1])
+    inputs_embeds = torch.tensor(pred.inputs_embeds.value, dtype=dtype)
     inputs_embeds = inputs_embeds.view(torch.Size(pred.inputs_embeds.shape))
     if 'inputs_embeds' in pred.requires_grads:
         inputs_embeds.requires_grad = True
 
-    attention_mask = torch.tensor(pred.attention_mask.value,dtype=dtype)
+    dtype = getattr(torch, pred.attention_mask.dtype.split(".")[1])
+    attention_mask = torch.tensor(pred.attention_mask.value, dtype=dtype)
     attention_mask = attention_mask.view(torch.Size(pred.attention_mask.shape))
     if 'attention_mask' in pred.requires_grads:
         attention_mask.requires_grad = True
 
-    position_ids = torch.tensor(pred.position_ids.value)
-    position_ids = position_ids.view(torch.Size(pred.position_ids.shape))
+    position_ids = None
+    if len(pred.position_ids.value) > 0:
+        position_ids = torch.tensor(pred.position_ids.value)
+        position_ids = position_ids.view(torch.Size(pred.position_ids.shape))
 
     new_dict = {
         "past_key_values": None,
@@ -75,7 +85,7 @@ class DistributedCommunication(ICommunication):
 
         response = self._client.open_and_send(task, new_pred)
         result = response.named_values['test_logit']
-        if result.hidden_states:
+        if len(result.hidden_states.inputs_embeds.value) > 0:
             test_logit = result.hidden_states
         else:
             test_logit = json.loads(result.string)

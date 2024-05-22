@@ -63,7 +63,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 from config import vfl_basic_config, is_test
 
-from load.LoadModels import QuestionAnsweringModelOutput
+from load.LoadModels import QuestionAnsweringModelOutput, SequenceClassifierOutput
 from party.LocalCommunication import LocalCommunication
 from framework.client.DistributedCommunication import convert_msg_to_pred
 import warnings
@@ -255,9 +255,12 @@ def create_main_task(global_model_type: GenerationMixin):
                 logits = torch.Tensor(result['logits'])
                 if result['requires_grad']:
                     logits.requires_grad_()
-                return logits.to(self.args.device)
+                # return convert_msg_to_pred(result)
+                return SequenceClassifierOutput(
+                    logits=logits,
+                )
             elif self.args.task_type == 'CausalLM':
-                return convert_msg_to_pred(result, self.args.device, dtype=torch.bfloat16)
+                return convert_msg_to_pred(result)
             elif self.args.task_type == 'QuestionAnswering':
                 start_logits = torch.Tensor(result['start_logits'])
                 end_logits = torch.Tensor(result['end_logits'])
@@ -272,7 +275,7 @@ def create_main_task(global_model_type: GenerationMixin):
                     attentions=None,
                 )
             elif self.args.task_type == 'DevLLMInference':
-                return convert_msg_to_pred(result, self.args.device, dtype=torch.bfloat16)
+                return convert_msg_to_pred(result)
             else:
                 assert 1 > 2, 'Task type no supported'
 
@@ -1212,7 +1215,7 @@ def create_main_task(global_model_type: GenerationMixin):
             elif self.args.model_architect == 'CLS':  # self.args.task_type == 'SequenceClassification':
 
                 if self.args.num_classes == 1:
-                    pred = self.parties[self.k - 1].global_output
+                    pred = final_pred
                     loss = self.parties[0].global_loss
 
                     batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label)
@@ -1224,7 +1227,7 @@ def create_main_task(global_model_type: GenerationMixin):
 
                     return loss.item(), [batch_mse, batch_pearson_corr, batch_spearmanr_corr]
                 else:
-                    pred = self.parties[self.k - 1].global_output
+                    pred = final_pred
                     loss = self.parties[0].global_loss
 
                     batch_predict_label, batch_actual_label, sample_cnt = self.generate_result(pred, gt_one_hot_label)

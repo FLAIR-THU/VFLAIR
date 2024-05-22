@@ -78,12 +78,14 @@ class Value(_message.Message):
     def __init__(self, double: _Optional[float] = ..., sint64: _Optional[int] = ..., bool: bool = ..., string: _Optional[str] = ..., bytes: _Optional[bytes] = ..., hidden_states: _Optional[_Union[HiddenStates, _Mapping]] = ...) -> None: ...
 
 class tensor_double(_message.Message):
-    __slots__ = ["shape", "value"]
+    __slots__ = ["dtype", "shape", "value"]
+    DTYPE_FIELD_NUMBER: _ClassVar[int]
     SHAPE_FIELD_NUMBER: _ClassVar[int]
     VALUE_FIELD_NUMBER: _ClassVar[int]
+    dtype: str
     shape: _containers.RepeatedScalarFieldContainer[int]
     value: _containers.RepeatedScalarFieldContainer[float]
-    def __init__(self, value: _Optional[_Iterable[float]] = ..., shape: _Optional[_Iterable[int]] = ...) -> None: ...
+    def __init__(self, value: _Optional[_Iterable[float]] = ..., shape: _Optional[_Iterable[int]] = ..., dtype: _Optional[str] = ...) -> None: ...
 
 class tensor_int(_message.Message):
     __slots__ = ["shape", "value"]

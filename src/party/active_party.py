@@ -65,16 +65,15 @@ class ActiveParty_LLM(Party_LLM):
 
 
     def _do_aggregate_remote(self, pred_list):
-        new_dict = convert_msg_to_pred(pred_list, self.device, dtype=torch.bfloat16)
+        new_dict = convert_msg_to_pred(pred_list)
         result = self.aggregate([new_dict])
 
         if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
             return convert_pred_to_msg(result)
         elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
             return {
-                "requires_grad": result.requires_grad,
-                "grad_fn": result.grad_fn.name(),
-                "logits": result.tolist()
+                "requires_grad": result.logits.requires_grad,
+                "logits": result.logits.tolist()
             }
         elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
             return {
