@@ -126,6 +126,16 @@ def get_cls_ancestor(model_type: str = 'qwen2', architecture: str = 'CLM'):
     target_cls = getattr(target_module, aa)
     return target_cls
 
+def create_exp_dir_and_file(dataset, Q, model_name, pipeline, defense_name='', defense_param=''):
+    exp_res_dir = f'exp_result/{dataset}/Q{str(Q)}/'
+    if not os.path.exists(exp_res_dir):
+        os.makedirs(exp_res_dir)
+    if pipeline == 'pretrained':
+        filename = f'{defense_name}_{defense_param},pretrained_model={model_name}.txt'
+    else:
+        filename = f'{defense_name}_{defense_param},finetuned_model={model_name}.txt'
+    exp_res_path = exp_res_dir + str(filename).replace('/', '')
+    return exp_res_dir, exp_res_path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("backdoor")
@@ -169,15 +179,10 @@ if __name__ == '__main__':
         print('inversion:', args.inversion_list, args.inversion_index)
 
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
-        if not os.path.exists(args.exp_res_dir):
-            os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"]  # .replace('/','-')
-        if args.pipeline == 'pretrained':
-            filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
-        else:
-            filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
-        args.exp_res_path = args.exp_res_dir + str(filename).replace('/', '')
+        exp_res_dir, exp_res_path = create_exp_dir_and_file(args.dataset, args.Q, model_name, args.pipeline, args.defense_name,args.defense_param)
+        args.exp_res_dir = exp_res_dir
+        args.exp_res_path = exp_res_path
         print(args.exp_res_path)
         print('=================================\n')
 

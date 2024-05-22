@@ -12,7 +12,7 @@ from evaluates.MainTaskVFL_LLM import *
 from framework.database.repository.JobRepository import job_repository
 from framework.database.repository.PretrainedModelRepository import pretrained_model_repository
 from framework.database.model.PretrainedModel import PretrainedModel
-from main_pipeline_llm import get_cls_ancestor
+from main_pipeline_llm import get_cls_ancestor, create_exp_dir_and_file
 from load.QwenModelLoader import QwenModelLoader
 
 from utils import timer, recorder
@@ -68,8 +68,10 @@ class PassiveTaskService:
         args.parties = self._init_parties(args, job_id, need_model)
         if 'generation_config' not in args:
             args.generation_config = self._model_data['generation_config']
-        args.exp_res_dir = None  # todo: change exp res dir and path
-        args.exp_res_path = None
+        model_name = args.model_list[str(0)]["type"]  # .replace('/','-')
+        exp_res_dir, exp_res_path = create_exp_dir_and_file(args.dataset, args.Q, model_name, args.pipeline, args.defense_name, args.defense_param)
+        args.exp_res_dir = exp_res_dir
+        args.exp_res_path = exp_res_path
         if 'config' not in args:
             args.config = self._model_data['config']
 
