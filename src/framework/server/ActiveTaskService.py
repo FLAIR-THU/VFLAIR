@@ -28,7 +28,7 @@ class ActiveTaskService(threading.Thread):
             return self._active_parties[key]
         elif config is not None:
             args = load_llm_configs(config)
-            need_model = args.pipeline != 'pretrained'
+            need_model = args.model_type.lower() != 'qwen2' or args.pipeline != 'pretrained'
             active_party = get_class_constructor(args.active_party_class)(args, args.k - 1, need_model=need_model)
             self._active_parties[key] = active_party
             return active_party

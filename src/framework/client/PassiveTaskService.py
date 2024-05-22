@@ -64,7 +64,8 @@ class PassiveTaskService:
     def _run_job(self, job_id, data, params=None):
         params = params if params else {}
         args = load_llm_configs(data)
-        args.parties = self._init_parties(args, job_id, args.pipeline != 'pretrained')
+        need_model = args.model_type.lower() != 'qwen2' or args.pipeline != 'pretrained'
+        args.parties = self._init_parties(args, job_id, need_model)
         if 'generation_config' not in args:
             args.generation_config = self._model_data['generation_config']
         args.exp_res_dir = None  # todo: change exp res dir and path
@@ -80,10 +81,9 @@ class PassiveTaskService:
         main_task = main_task_creator(args, job_id)
         main_task.init_communication(DistributedCommunication(self._client, job_id))
         if args.pipeline == 'pretrained':
-            if self._model_data is None:
-                raise ValueError('Model is not loaded')
-            for party in args.parties:
-                party.update_model_data(self._model_data)
+            if not need_model:
+                for party in args.parties:
+                    party.update_model_data(self._model_data)
             result = main_task.inference(messages=params)
         elif args.pipeline == 'finetune':
             model_id = main_task.create_model_id()
