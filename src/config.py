@@ -28,7 +28,7 @@ if not is_test:
 class VFLBasicConfig(object):
 
     def __init__(self, **kwargs):
-        self.split_index = kwargs.get('split_index', (2,))
+        self.split_index = kwargs.get('split_index', (2,-2))
         self.seed = kwargs.get('seed', 7)
         self.vfl_training_config = VFLTrainingConfig(self)
         # self.vfl_training_config = None

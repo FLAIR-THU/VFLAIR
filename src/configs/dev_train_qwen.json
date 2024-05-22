@@ -36,9 +36,9 @@
       "output_dim": 1,
       "model_type": "qwen2",
       "max_sequence": 512,
-      "train_set_file": "/mnt/data/data/huanhuan.json",
-      "test_set_file": "/mnt/data/data/huanhuan.json",
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
+      "train_set_file": "/shared/data/huanhuan.json",
+      "test_set_file": "/shared/data/huanhuan.json",
+      "path": "/shared/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "1": {
       "type": "Qwen/Qwen1.5-0.5B-Chat",
@@ -48,9 +48,9 @@
       "output_dim": 1,
       "model_type": "qwen2",
       "max_sequence": 512,
-      "train_set_file": "/mnt/data/data/huanhuan.json",
-      "test_set_file": "/mnt/data/data/huanhuan.json",
-      "path": "/mnt/data/model/Qwen/Qwen1.5-0.5B-Chat"
+      "train_set_file": "/shared/data/huanhuan.json",
+      "test_set_file": "/shared/data/huanhuan.json",
+      "path": "/shared/model/Qwen/Qwen1.5-0.5B-Chat"
     },
     "task": {
       "task_type": "CausalLM",

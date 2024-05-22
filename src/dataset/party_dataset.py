@@ -86,24 +86,24 @@ class PassiveDataset_LLM(Dataset):
                 self.labels = torch.tensor(labels)
 
         elif args.task_type == 'CausalLM':
+            if isinstance(texts[0], Dict):
+                self.input_dicts = texts
+                self.labels = labels
+                return
             if split_name == 'test':
-                if isinstance(texts[0],Dict):
-                    self.input_dicts=texts
-                    self.labels=labels
-                else:
-                    for i in range(len(texts)):
-                        ids = args.tokenizer(texts[i], \
-                        padding=args.padding,truncation=args.truncation ,\
-                        max_length=args.max_length,return_tensors='pt')
+                for i in range(len(texts)):
+                    ids = args.tokenizer(texts[i], \
+                    padding=args.padding,truncation=args.truncation ,\
+                    max_length=args.max_length,return_tensors='pt')
 
-                        if i == 0:
-                            print('TEXT:',texts[i])
-                            print('text_id:',ids['input_ids'].shape, ids['input_ids'])
-                            print('label:',labels[i],args.tokenizer.convert_tokens_to_ids( labels[i] ) )
-                            print('-'*25)
+                    if i == 0:
+                        print('TEXT:',texts[i])
+                        print('text_id:',ids['input_ids'].shape, ids['input_ids'])
+                        print('label:',labels[i],args.tokenizer.convert_tokens_to_ids( labels[i] ) )
+                        print('-'*25)
 
-                        self.labels.append( args.tokenizer.convert_tokens_to_ids( labels[i] ) )
-                        self.input_dicts.append(ids)
+                    self.labels.append( args.tokenizer.convert_tokens_to_ids( labels[i] ) )
+                    self.input_dicts.append(ids)
             else:
                 for i in range(len(texts)):
                     ids = args.tokenizer(texts[i], \

@@ -602,10 +602,10 @@ def create_main_task(global_model_type: GenerationMixin):
                                         generation_config = self.generation_config,\
                                         # temperature=0.7, top_p=1.0,
                                         # max_new_tokens=self.args.max_new_tokens,\
-                                        eos_token_id=2, pad_token_id=2,\
-                                        **self.args.generation_config_dict
-                                        )
-                            else: # next token prediction
+                                        eos_token_id=2, pad_token_id=2, \
+                                                                  **self.args.generation_config_dict
+                                                                  )
+                            else:  # next token prediction
                                 generation_output = self.forward(**data_inputs)
                                 self._loss += self.shift_logits_loss(generation_output.logits,
                                                                      torch.stack(gt_one_hot_label),

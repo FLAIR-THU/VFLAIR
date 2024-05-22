@@ -596,7 +596,7 @@ class Party(object):
         if model_index == vfl_basic_config.num_of_slice - 1:
             self.output_tensors[model_index] = resp.get('logits')
         else:
-            self.output_tensors[model_index] = resp['inputs_embeds']
+            self.output_tensors[model_index] = resp.get('inputs_embeds')
         return self._detach_tensor(resp)
 
     def _detach_tensor(self, dict_like: dict):
