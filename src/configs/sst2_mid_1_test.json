@@ -1,67 +1,55 @@
 {
-    "epochs": 30,
+    "epochs": 20,
     "lr": 0.0001,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 128,
+    "pipeline": "pretrained",
     "early_stop_threshold": 1,
-    "pipeline": "finetune",
-    "model_architect":"CLM",
+    "model_architect":"CLS",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
-    "finetune_configs":{
-        "name":"Vanilla",
-        "configs":{}
-    },
     "dataset":{
-        "dataset_name": "Lambada",
-        "num_classes": 1,
-        "use_prompt": 1
+        "dataset_name": "SST-2",
+        "num_classes": 2
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "True",
-        "max_length": 512,
+        "truncation": "longest_first",
+        "max_length": 70,
         "padding_side": "left",
         "add_special_tokens": 1
     },
     "model_list":{
         "0": {
-            "type": "gpt2",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
             "encoder_trainable": 0,
             "embedding_trainable": 0,
-            "encoder_trainable_ids":[],
-            "output_dim": 1,
-            "model_type": "GPT2",
+            "output_dim": 2,
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "1": {
-            "type": "gpt2",
+            "type": "textattackbert-base-uncased-SST-2",
             "pretrained": 1,
-            "head_layer_trainable": 1,
+            "head_layer_trainable": 0,
             "encoder_trainable": 0,
-            "encoder_trainable_ids":[],
-            "output_dim": 1,
-            "model_type": "GPT2",
+            "output_dim": 2,
+            "model_type": "Bert",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-SST-2"
         },
         "task":{
-            "task_type": "CausalLM",
-            "doc_stride" : 512,
-            "max_seq_length": 512,
-            "metric_type": "best_pred",
-            "n_best_size": 3
+            "task_type": "SequenceClassification"
         },
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
-    
     },
     "defense": {
         "name": "MID",
@@ -72,8 +60,9 @@
             "lambda": 0.5,
             "mid_position": "out",
             "current_bottleneck_scale": 1,
-            "seq_length": 512,
-            "embed_dim": 768
+            "seq_length": 70,
+            "embed_dim": 768,
+            "mid_model_path": "/home/DAIR/guzx/Git_FedProject/dev_VFL/src/exp_result/Lambada/Q1/defense_models/MID_Passive_{'party': [0], 'mid_model_name': 'MIDModel_Linear', 'lr': 0.001, 'lambda': 0.01, 'mid_position': 'out', 'current_bottleneck_scale': 1, 'seq_length': 512, 'embed_dim': 768}.pkl"
         }
     },
     "attack_list": {
@@ -84,7 +73,7 @@
                 "lr": 0.01,
                 "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 100
             }
         },
         "1":{
@@ -92,12 +81,11 @@
             "parameters": {
                 "party": [1],
                 "T": 0.05,
-                "lr": 0.001,
-                "epochs": 100,
+                "lr": 0.005,
+                "epochs": 500,
                 "batch_size": 32,
-                "attack_sample_num": 500
+                "attack_sample_num": 100
             }
         }
     }
-    
 }

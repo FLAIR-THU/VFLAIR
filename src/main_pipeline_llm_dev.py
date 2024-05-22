@@ -13,11 +13,12 @@ import torch
 # import torch.utils
 # import torch.backends.cudnn as cudnn
 # from tensorboardX import SummaryWriter
+from peft.peft_model import PeftModel
 
 from load.LoadConfigs import * #load_configs
 from load.LoadParty import load_parties, load_parties_llm
 
-from evaluates.MainTaskVFL_LLM_dev import *
+from evaluates.MainTaskVFL_LLM import *
 from utils.basic_functions import append_exp_res
 
 from load.LoadConfigs import INVERSION
@@ -64,7 +65,7 @@ def evaluate_no_attack_finetune(args):
     # attack_metric_name = 'acc_loss'
 
     # # Save record 
-    exp_result = f"NoAttack|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|" \
+    exp_result = f"NoAttack|{args.pad_info}|finetune={args.finetune_name}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|" \
         + exp_result
     print(exp_result)
 
@@ -103,9 +104,16 @@ def evaluate_inversion_attack(args):
         inference_party_time = vfl.inference_party_time
         precision, recall , attack_total_time= vfl.evaluate_attack()
     
-        exp_result = f"{args.attack_name}|{args.pad_info}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|final_epoch={vfl.final_epoch}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|training_time={training_time}|attack_time={attack_total_time}|train_party_time={train_party_time}|inference_party_time={inference_party_time}|\n"
+        exp_result = f"{args.attack_name}|{args.pad_info}|finetune={args.finetune_name}|seed={args.current_seed}|K={args.k}|bs={args.batch_size}|LR={args.main_lr}|num_class={args.num_classes}|Q={args.Q}|epoch={args.main_epochs}|final_epoch={vfl.final_epoch}|headlayer={args.head_layer_trainable}|encoder={args.encoder_trainable}|embedding={args.embedding_trainable}|local_encoders_num={args.local_encoders_num}|main_task_acc={main_tack_acc}|precision={precision}|recall={recall}|training_time={training_time}|attack_time={attack_total_time}|train_party_time={train_party_time}|inference_party_time={inference_party_time}|\n"
         print(exp_result)
         append_exp_res(args.exp_res_path, exp_result)
+
+def get_cls_ancestor(model_type: str='qwen2'):
+    from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+    target_module = __import__('transformers')
+    aa = MODEL_FOR_CAUSAL_LM_MAPPING_NAMES[model_type]
+    target_cls = getattr(target_module, aa)
+    return target_cls
 
 
 if __name__ == '__main__':
@@ -151,7 +159,7 @@ if __name__ == '__main__':
         print('inversion:',args.inversion_list,args.inversion_index)
 
         # Save record for different defense method
-        args.exp_res_dir = f'exp_result/{args.dataset}/Q{str(args.Q)}/'
+        args.exp_res_dir = f'exp_result/{args.dataset}_dev/Q{str(args.Q)}/'
         if not os.path.exists(args.exp_res_dir):
             os.makedirs(args.exp_res_dir)
         model_name = args.model_list[str(0)]["type"] #.replace('/','-')
@@ -159,7 +167,7 @@ if __name__ == '__main__':
             filename = f'{args.defense_name}_{args.defense_param},pretrained_model={args.model_list[str(0)]["type"]}.txt'
         else:
             filename = f'{args.defense_name}_{args.defense_param},finetuned_model={args.model_list[str(0)]["type"]}.txt'
-        args.exp_res_path = args.exp_res_dir + filename
+        args.exp_res_path = args.exp_res_dir + str(filename).replace('/','')
         print(args.exp_res_path)
         print('=================================\n')
 
@@ -227,7 +235,11 @@ if __name__ == '__main__':
 
         # inherit generation functions from global model
         args.global_model_type = type(args.parties[-1].global_model)
-        MainTaskVFL_LLM = create_main_task(args.global_model_type)
+        ancestor_cls = args.global_model_type
+        # todo: infer from model_type might be enough, would also work under 3-slice
+        if issubclass(ancestor_cls,PeftModel):
+            ancestor_cls=get_cls_ancestor(args.config.model_type)
+        MainTaskVFL_LLM = create_main_task(ancestor_cls)
         
         commuinfo='== metrics:'+args.metric_type
         # append_exp_res(args.exp_res_path, commuinfo)

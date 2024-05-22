@@ -633,7 +633,8 @@ def create_main_task(global_model_type):
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='CLM': #task_type == "CausalLM":
                         if self.args.task_type == "CausalLM":
-                            if not self.args.max_new_tokens==1:
+                            print('self.args.max_new_tokens:',self.args.max_new_tokens)
+                            if not (self.args.max_new_tokens==1):
                                 print('enter generation')
                                 generation_output = self.generate(**data_inputs, \
                                         generation_config = self.generation_config,\
