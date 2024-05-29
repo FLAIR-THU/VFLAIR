@@ -10,20 +10,14 @@ echo 'Yelp DP'
 # 50
 python main_pipeline_llm.py --seed 65 --configs yelp_dp_2
 
-# 60
-sed -i 's/"epsilon": 50/"epsilon": 60/g' ./configs/yelp_dp_2.json
-# python main_pipeline_llm.py --seed 65 --configs yelp_dp_2
 
 # 70
-sed -i 's/"epsilon": 60/"epsilon": 70/g' ./configs/yelp_dp_2.json
+sed -i 's/"epsilon": 50/"epsilon": 70/g' ./configs/yelp_dp_2.json
 python main_pipeline_llm.py --seed 65 --configs yelp_dp_2
 
-# 80
-sed -i 's/"epsilon": 70/"epsilon": 80/g' ./configs/yelp_dp_2.json
-# python main_pipeline_llm.py --seed 65 --configs yelp_dp_2
 
 # 90
-sed -i 's/"epsilon": 80/"epsilon": 90/g' ./configs/yelp_dp_2.json
+sed -i 's/"epsilon": 70/"epsilon": 90/g' ./configs/yelp_dp_2.json
 python main_pipeline_llm.py --seed 65 --configs yelp_dp_2
 
 # 100

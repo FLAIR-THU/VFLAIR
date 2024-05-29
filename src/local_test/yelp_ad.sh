@@ -8,7 +8,7 @@
 echo 'yelp 1 encoder Ad'
 
 
-for seed in {62,63,64,65}
+for seed in {64,65}
     do
     # 0.001
     python main_pipeline_llm_1.py --seed $seed --configs yelp_ad
@@ -29,11 +29,7 @@ for seed in {62,63,64,65}
     sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/yelp_ad.json
     python main_pipeline_llm_1.py --seed $seed --configs yelp_ad
 
-    # 10
-    sed -i 's/"lambda": 5.0/"lambda": 10.0/g' ./configs/yelp_ad.json
-    # python main_pipeline_llm_1.py --seed $seed --configs yelp_ad
 
-
-    sed -i 's/"lambda": 10.0/"lambda": 0.001/g' ./configs/yelp_ad.json
+    sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/yelp_ad.json
 
 done

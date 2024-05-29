@@ -2178,11 +2178,22 @@ def load_dataset_per_party_llm(args, index):
         train_examples = get_examples(data_path, 'train') # list of [  {'quesion':... , 'answer':...} ...]
         X_train = np.array([ problem_prompt.format(instruction=_ex['question']+ "<|endoftext|>") for _ex in train_examples])
         y_train = np.array([ _ex['answer'] for _ex in train_examples])
+        print('TRAIN IN:')
+        print(X_train[0])
+        print('-'*100)
+        print('TRAIN ANS:')
+        print(y_train[0])
 
         ##### Test #####
         test_examples = get_examples(data_path, 'test') # list of [  {'quesion':... , 'answer':...} ...]
-        X_test = np.array([ problem_prompt.format(instruction=_ex['question']) for _ex in test_examples])[:10]
-        y_test = np.array([ get_final_ans(_ex['answer']) for _ex in test_examples])[:10]
+        X_test = np.array([ problem_prompt.format(instruction=_ex['question']) for _ex in test_examples])
+        y_test = np.array([ get_final_ans(_ex['answer']) for _ex in test_examples])
+        print('TEST IN:')
+        print(X_test[0])
+        print('-'*100)
+        print('TEST ANS:')
+        print(y_test[0])
+        print('-'*100)
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
@@ -2236,7 +2247,7 @@ def load_dataset_per_party_llm(args, index):
         all_filenames = glob.glob(data_path+'/train/*/*.json')
         hendrycks_math_ins = []
         hendrycks_math_answers = []
-        for fname in all_filenames[:10]:
+        for fname in all_filenames[:]:
             with open(fname, 'r') as fp:
                 try:
                     problem_data = json.load(fp)
@@ -2263,7 +2274,7 @@ def load_dataset_per_party_llm(args, index):
         all_filenames = glob.glob(data_path+'/test/*/*.json')
         hendrycks_math_ins = []
         hendrycks_math_answers = []
-        for fname in all_filenames[:10]:
+        for fname in all_filenames[:]:
             with open(fname, 'r') as fp:
                 try:
                     problem_data = json.load(fp)
@@ -2286,10 +2297,11 @@ def load_dataset_per_party_llm(args, index):
         y_test = np.array(hendrycks_math_answers)
 
         # print('TEST IN:')
-        # print(hendrycks_math_ins[0])
+        # print('sources:',hendrycks_math_ins[0])
         # print('-'*100)
         # print('TEST ANS:')
-        # print(hendrycks_math_answers[0])
+        # print('targets:',hendrycks_math_answers[0])
+        # print('-'*100)
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)

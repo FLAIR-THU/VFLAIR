@@ -391,8 +391,8 @@ def create_main_task(global_model_type):
                 if self.args.task_type == "CausalLM":#dataset == "Lambada": 
                     if isinstance(model_output,torch.Tensor): # generation -- generated token ids
                         # model_output: torch.tensor : bs, seq_len+generated_len
-                        print('model_output:',model_output.shape, predict_label_list.shape)
                         predict_label_list = model_output[:,self.seq_length:] # [bs, max_new_tokens]
+                        # print('model_output:',model_output.shape, predict_label_list.shape)
                         
                         target_label_list = list(gt_one_hot_label)
 
@@ -633,9 +633,8 @@ def create_main_task(global_model_type):
                             total_sample_cnt += sample_cnt
                     elif self.args.model_architect=='CLM': #task_type == "CausalLM":
                         if self.args.task_type == "CausalLM":
-                            print('self.args.max_new_tokens:',self.args.max_new_tokens)
+                            # print('self.args.max_new_tokens:',self.args.max_new_tokens)
                             if not (self.args.max_new_tokens==1):
-                                print('enter generation')
                                 generation_output = self.generate(**data_inputs, \
                                         generation_config = self.generation_config,\
                                         # temperature=0.7, top_p=1.0,
@@ -759,7 +758,115 @@ def create_main_task(global_model_type):
                         score = score/len(target_word_list)
                         acc = score
 
-                        if self.args.dataset=='GMS8K':
+                        # if self.args.dataset=='GMS8K':
+                        #     predict_word_list = [
+                        #         self.args.tokenizer.decode(_ids)
+                        #         for _ids in list(predict_word_list)]
+
+                        #     target_word_list = [
+                        #         self.args.tokenizer.decode(_ids)
+                        #         for _ids in list(target_word_list)]
+
+                        #     ANS_RE = re.compile(r"#### (\-?[0-9\.\,]+)")
+                        #     INVALID_ANS = "[invalid]"
+
+                        #     def extract_answer(completion):
+                        #         match = ANS_RE.search(completion)
+                        #         # print('match:',match)
+                        #         if match:
+                        #             match_str = match.group(1).strip()
+                        #             match_str = match_str.replace(",", "")
+                        #             return match_str
+                        #         else:
+                        #             return INVALID_ANS
+
+                        #     def is_correct(model_completion, gt_answer):
+                        #         gt_answer = extract_answer(gt_answer)
+                        #         print('gt_answer:',gt_answer)
+                        #         print(self.args.tokenizer.encode(gt_answer))
+
+                        #         # assert gt_answer != INVALID_ANS
+                        #         if gt_answer == INVALID_ANS:
+                        #             return 0
+                        #         pred_ans = extract_answer(model_completion)
+                        #         print('pred_ans:',pred_ans)
+                        #         print(self.args.tokenizer.encode(pred_ans))
+                        #         return  pred_ans == gt_answer
+
+                        #     score = 0
+                        #     for i in range(len(target_word_list)):
+                        #         print('-'*100)
+                                
+                        #         print('GOLD:',target_word_list[i])
+                        #         print('PRED:',predict_word_list[i])
+                        #         _score = is_correct(predict_word_list[i],target_word_list[i])
+                        #         score += _score
+                        #         print('SCORE:',_score)
+
+                        #     score = score/len(target_word_list)
+                        #     acc = score
+                        
+                        if self.args.dataset == 'GMS8K':
+                            def extract_answer_number(completion):
+                                text = completion.split('The answer is: ')
+                                if len(text) > 1:
+                                    extract_ans = text[-1].strip()
+                                    match = re.search(r'[\-+]?\d*[\.,/]?\d+', extract_ans)
+                                    if match:
+                                        if '/' in match.group():
+                                            denominator = match.group().split('/')[1]
+                                            numerator = match.group().split('/')[0]
+                                            if is_number(denominator) == True and is_number(numerator) == True:
+                                                if denominator == '0':
+                                                    return round(float(numerator.replace(',', '')))
+                                                else:
+                                                    frac = Fraction(match.group().replace(',', ''))
+                                                    num_numerator = frac.numerator
+                                                    num_denominator = frac.denominator
+                                                    return round(float(num_numerator / num_denominator))
+                                            else:
+                                                return None
+                                        else:
+                                            if float(match.group().replace(',', '')) == float('inf'):
+                                                return None
+                                            return round(float(match.group().replace(',', '')))
+                                    else:
+                                        return None
+                                else:
+                                    return None
+                            
+                            def wash(token_id_list, washed_ids):
+                                washed_token_id_list = []
+                                for token_ids in token_id_list:
+                                    token_ids = list(token_ids)
+                                    for washed_id in washed_ids:
+                                        while washed_id in token_ids:
+                                            token_ids.remove(washed_id)
+                                    
+                                    washed_token_id_list.append(torch.tensor(token_ids) )
+                                return washed_token_id_list
+
+                            def is_equiv(str1, str2, verbose=False):
+                                if str1 is None and str2 is None:
+                                    print("WARNING: Both None")
+                                    return True
+                                if str1 is None or str2 is None:
+                                    return False
+
+                                try:
+                                    ss1 = strip_string(str1)
+                                    ss2 = strip_string(str2)
+                                    #pdb.set_trace()
+                                    if verbose:
+                                        print(ss1, ss2)
+                                    return ss1 == ss2
+                                except Exception:
+                                    return str1 == str2
+                            
+                            washed_ids = [self.args.tokenizer.pad_token_id, self.args.tokenizer.eos_token_id, self.args.tokenizer.bos_token_id]
+                            predict_word_list = wash(predict_word_list,washed_ids )
+                            target_word_list = wash(target_word_list,washed_ids )
+
                             predict_word_list = [
                                 self.args.tokenizer.decode(_ids)
                                 for _ids in list(predict_word_list)]
@@ -767,41 +874,38 @@ def create_main_task(global_model_type):
                             target_word_list = [
                                 self.args.tokenizer.decode(_ids)
                                 for _ids in list(target_word_list)]
-
-                            ANS_RE = re.compile(r"#### (\-?[0-9\.\,]+)")
-                            INVALID_ANS = "[invalid]"
-
-                            def extract_answer(completion):
-                                match = ANS_RE.search(completion)
-                                print('match:',match)
-                                if match:
-                                    match_str = match.group(1).strip()
-                                    match_str = match_str.replace(",", "")
-                                    return match_str
-                                else:
-                                    return INVALID_ANS
-
-                            def is_correct(model_completion, gt_answer):
-                                gt_answer = extract_answer(gt_answer)
-                                # assert gt_answer != INVALID_ANS
-                                if gt_answer == INVALID_ANS:
-                                    return 0
-                                return extract_answer(model_completion) == gt_answer
-
-                            score = 0
+                            
+                            results = []
                             for i in range(len(target_word_list)):
-                                print('-'*100)
+                                pred_ans = str(extract_answer_number(predict_word_list[i]))
                                 
-                                print('GOLD:',target_word_list[i])
-                                print('PRED:',predict_word_list[i])
-                                _score = is_correct(predict_word_list[i],target_word_list[i])
-                                score += _score
-                                print('SCORE:',_score)
+                                # print('-'*100)
+                                # print('PRED:',predict_word_list[i])
+                                # print('Extract PRED:',type(pred_ans), pred_ans)
+                                # print('GOLD:',type(target_word_list[i]),target_word_list[i])
+                                # print('SCORE:',res)
+                                res = is_equiv(pred_ans,target_word_list[i])
+                                results.append(res)
+                            acc = sum(results) / len(results)
 
-                            score = score/len(target_word_list)
-                            acc = score
                         elif self.args.dataset=='MATH':
-                            print('predict_word_list:',len(predict_word_list),predict_word_list[0].shape)
+                            # print('predict_word_list:',type(predict_word_list),len(predict_word_list),predict_word_list[0].shape)
+                            
+                            def wash(token_id_list, washed_ids):
+                                washed_token_id_list = []
+                                for token_ids in token_id_list:
+                                    token_ids = list(token_ids)
+                                    for washed_id in washed_ids:
+                                        while washed_id in token_ids:
+                                            token_ids.remove(washed_id)
+                                    
+                                    washed_token_id_list.append(torch.tensor(token_ids) )
+                                return washed_token_id_list
+
+                            washed_ids = [self.args.tokenizer.pad_token_id, self.args.tokenizer.eos_token_id, self.args.tokenizer.bos_token_id]
+                            predict_word_list = wash(predict_word_list,washed_ids )
+                            target_word_list = wash(target_word_list,washed_ids )
+
                             predict_word_list = [
                                 self.args.tokenizer.decode(_ids)
                                 for _ids in list(predict_word_list)]
@@ -826,12 +930,11 @@ def create_main_task(global_model_type):
                                     return ss1 == ss2
                                 except Exception:
                                     return str1 == str2
-
+                            
                             def process_results(completion, answer): # doc
                                 split_ans = completion.split('The answer is: ')
                                 if len(split_ans) > 1:
                                     ans = split_ans[-1]
-                                    print('ans:',ans)
                                     extract_ans_temp = ans.split('.\n')[0]
                                     extract_ans_temp = extract_ans_temp.strip()
                                     if len(extract_ans_temp)>0 and extract_ans_temp[-1] == '.':
@@ -839,7 +942,10 @@ def create_main_task(global_model_type):
                                     else:
                                         extract_ans = extract_ans_temp
                                     extract_ans = extract_ans.strip()
+                                    
                                     print('extract_ans:',extract_ans)
+                                    print('answer:',answer)
+
                                     if is_equiv(extract_ans, answer):
                                         return True
                                     else:
@@ -851,12 +957,11 @@ def create_main_task(global_model_type):
 
                             results = []
                             for i in range(len(target_word_list)):
-                                print('-'*100)
-                                print('GOLD:',target_word_list[i])
-                                print('PRED:',predict_word_list[i])
-
                                 res = process_results(predict_word_list[i],target_word_list[i])
-                                print('SCORE:',res)
+                                # print('-'*100)
+                                # print('PRED:',predict_word_list[i])
+                                # print('GOLD:',target_word_list[i])
+                                # print('SCORE:',res)
                                 results.append(res)
                             acc = sum(results) / len(results)
 

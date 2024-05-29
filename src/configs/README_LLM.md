@@ -12,21 +12,29 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
   - Local Model: Embedding Layer + the first encoder
   - Global Model: the rest encoders + Head Layers for down-stream tasks
   - For detailed implementation of LLM model split, please refer to [Detailed Tutorial] section for further guidance.
-- **Three Task Pipeline**: Currently VFLAIR supported the following model&task types
+- **Three Model Architect and corresponding task type**: Currently VFLAIR supported the following model architect. Each model architect can be used in its corresponding downstream tasks and datasets.
+  - **CLS models** output probability vectors for the classification, which is used in normal Classification tasks. When the number of classes is reduced to 1, the model only output a single value which can be used in Regression tasks.
+  - **TQA model**s output the starting and ending positions of the answer texts, which can be used in Text-span based Question Answering datasets like SQuAD. (Note that different from Generation-based QA tasks, TQA provides a piece of text for the model to find the answer in while GQA is a proper generation task)
+  - **CLM models** output a word vector representing the probability of each token in the next position, which can be used in Next Token Prediction tasks like Lambada. When the model is called recursively to continuously generate the next word, the model can be used for a wider range of generative tasks like Text Generation/Code Generation/Math Problem Solving etc.
 
-| Pipeline                   | Corresponding Transformer Class | Task Type                          | Dataset |
-| -------------------------- | ------------------------------- | ---------------------------------- | ------- |
-| **SequenceClassification** | XXXforSequenceClassification    | Sequence Classification/Regression | GLUE    |
-| **QuestionAnswering**      | XXXforQuestionAnswering         | Question Answering                 | SQuAD   |
-| **CausalLM**               | XXXforCausalLM                  | Next Token Prediction              | MMLU    |
-| **Text Generation**        | XXXforCausalLM                  | Text Generation                    | -       |
+| Model Architect                             | Corresponding Transformer Class                              | Task Type                                                    | Dataset                                          |
+| ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------ |
+| CLS<br>(Classification)                     | XXXforSequenceClassification<br>e.g. transformer.BertforSequenceClassification | Sequence Classification<br>Regression                        | GLUE Benchmark                                   |
+| TQA<br>(Text-span based Question Answering) | XXXforQuestionAnswering<br/>e.g. transformer.BertforQuestionAnswering | Text-span based Question Answering                           | SQuAD                                            |
+| CLM<br>(Causal LM - generation)             | XXXforCausalLM<br/>e.g. transformer.GPTLMhead                | Next Token Prediction<br>Text Generation<br>Code Generation<br>Math Problem Answering | MMLU/Lambada<br>Alpaca/CodeAlpaca/<br>MATH/GMS8K |
 
-- **Three Model Base**: Bert, GPT2 and Llama based LLMs are supported in VFLAIR.
+- **Multiple Model Base**: The following LLMs are supported in VFLAIR.
 
-- **Finetune/Pretrained**: Currently we support the following pipelines for LLM usage
-  - Inference with pretrained LLM: In this pipeline, user can load their own/third-party pretrained LLMs into the framework and do direct inference.
-  - LLM finetune: In this pipeline, user can finetune their own LLM on a Bert/GPT2/Llama backbone
-    - Note: Currently Fintune procedure is only supported for SequenceClassification tasks.【To be completed】
+| **Structure type** |                      **Supported LLMs**                      |
+| :----------------: | :----------------------------------------------------------: |
+|  **Encoder-only**  |                        Bert   Roberta                        |
+|  **Decoder-only**  | GPT2  Llama   Baichuan   Gemma  Falcon  Mamba   ChatGLM   XLnet   Mistral |
+
+- **Two Pipelines: Finetune&Pretrained** : Currently we support the following pipelines for LLM usage
+  - Inference with pretrained LLM: In this pipeline, user can load their own/third-party pretrained LLMs into the framework and do direct inference on the test dataset.
+  - LLM finetune: In this pipeline, user can finetune their own LLM on a pretrained or raw LLM on a downstream dataset
+
+
 
 ## Structure
 
@@ -51,6 +59,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
   - **Training Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
     - Provide Class MainTaskVFL_LLM() to finetune your own LLM or evaluate a pretrained LLM.
+      - LoRA algorithm is also provided for fine-tuning
   - **Attack&Defense**: 
     - Attacks：
       - VanillaModelInversion - WhiteBox([paper]([Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures | Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security](https://dl.acm.org/doi/10.1145/2810103.2813677))) 
@@ -62,9 +71,10 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
 - **Metrics Module**: we provide the following metris for each task type
 
-  - Classification: acc / mcc / aux
+  - Classification: accuracy 
   - Regression: mse / pearson corr 
-  - #TODO 
+  - Text Generation: bleu score
+  - Math Problem Answering: accuracy score
 
 
 
@@ -134,6 +144,19 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
     "iteration_per_aggregation": 1
 }
 ```
+
+### Fine-tune Strategy
+
+```json
+"finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+  },
+```
+
+- "name": 'Vanilla'&'LoRA'
+  - name of your finetuning strategy. Currently we provide 2 strategy of 'Vanilla' and 'LoRA'. The LoRA algorithm is implemented with the PEFT([code base]([Mangrulkar, S., Gugger, S., Debut, L., Belkada, Y., Paul, S., & Bossan, B. (2022). *PEFT: State-of-the-art Parameter-Efficient Fine-Tuning methods*. https://github.com/huggingface/peft. https://github.com/huggingface/peft)) framework for easy usasge.
+- "configs": detailed configuration for LoRA algorithms, name of the parameters is the same as in PEFT framwork.
 
 #### Dataset
 

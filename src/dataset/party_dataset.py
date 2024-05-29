@@ -357,7 +357,6 @@ class GSMDataset_LLM(Dataset):
             # print('--- train ---')
             # print(self.input_dicts[0])
             # print(self.labels[0])
-
         else:
             self.input_dicts = [ self.args.tokenizer(
                                     self.qns[i],return_tensors="pt",
@@ -380,13 +379,14 @@ class GSMDataset_LLM(Dataset):
             # print(self.input_dicts[0])
             # print(self.labels[0])
 
-        # self.max_len = max(
-        #     [
-        #         len(self.qns["input_ids"][i]) + len(self.ans["input_ids"][i])
-        #         for i in range(len(self.examples))
-        #     ]
-        # )
-        # print(f"Max tokens: {self.max_len}")
+        print(f'=== Dataset Split = {split_name} ===')
+        print('text:',self.input_dicts[0]['input_ids'].shape)
+        print(self.args.tokenizer.decode( self.input_dicts[0]['input_ids'].squeeze()))
+        print('-'*25)
+        print('label:',self.labels[0].shape)
+        print(self.args.tokenizer.decode(self.labels[0].squeeze()))
+        print('='*50)
+
 
     def __len__(self):
         return len(self.ans)
@@ -422,7 +422,7 @@ class MATHDataset_LLM(Dataset):
         texts: np.array
         '''
         self.args = args
-
+        
         IGNORE_INDEX = args.tokenizer.pad_token_id #-100
         def _tokenize_fn(strings: Sequence[str], tokenizer) -> Dict:
             """Tokenize a list of strings."""
@@ -471,6 +471,22 @@ class MATHDataset_LLM(Dataset):
                     label[:-target_len] = IGNORE_INDEX
             else:
                 inputs_tokenized, targets_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (sources, targets)]
+                # inputs_tokenized = _tokenize_fn(sources, tokenizer) 
+                
+                # targets_tokenized = 
+
+                # targets_tokenized_list = [
+                #     args.tokenizer(
+                #         text,
+                #         return_tensors="pt",
+                #         padding=args.padding,#"longest",
+                #         max_length=args.max_length, #tokenizer.model_max_length,
+                #         truncation=args.truncation, #True,
+                #     )
+                #     for text in strings
+                # ]
+                # targets_tokenized = [tokenized.input_ids[0] for tokenized in targets_tokenized_list]
+            
                 input_ids = inputs_tokenized["input_ids"]
                 attention_mask = inputs_tokenized["attention_mask"]
                 labels = targets_tokenized["input_ids"]

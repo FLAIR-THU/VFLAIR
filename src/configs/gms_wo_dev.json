@@ -11,7 +11,7 @@
         "iteration_per_aggregation": 1
     },
     "dataset":{
-        "dataset_name": "MATH",
+        "dataset_name": "GMS8K",
         "num_classes": 1,
         "use_prompt": 1
     },
@@ -20,7 +20,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "True",
-        "max_length": 256,
+        "max_length": 128,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -45,17 +45,19 @@
         },
         "task":{
             "task_type": "CausalLM",
-            "max_new_tokens": 2048,
             "generation_config_dict":{
                 "temperature":1.0,
                 "top_k": -1,
                 "top_p": 1.0,
                 "max_new_tokens": 256
             },
+            "max_new_tokens": 128,
             "metric_type": "best_pred"
         },
         "local_encoders_num": 1,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    
     }
+    
 }

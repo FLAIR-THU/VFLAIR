@@ -8,7 +8,7 @@ echo 'Yelp DP'
 # python main_pipeline_llm_1.py --seed 65 --configs yelp_wo
 
 # 50
-python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
+# python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
 
 # 60
 sed -i 's/"epsilon": 50/"epsilon": 60/g' ./configs/yelp_dp.json
@@ -16,7 +16,7 @@ sed -i 's/"epsilon": 50/"epsilon": 60/g' ./configs/yelp_dp.json
 
 # 70
 sed -i 's/"epsilon": 60/"epsilon": 70/g' ./configs/yelp_dp.json
-python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
+# python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
 
 # 80
 sed -i 's/"epsilon": 70/"epsilon": 80/g' ./configs/yelp_dp.json
@@ -24,7 +24,7 @@ sed -i 's/"epsilon": 70/"epsilon": 80/g' ./configs/yelp_dp.json
 
 # 90
 sed -i 's/"epsilon": 80/"epsilon": 90/g' ./configs/yelp_dp.json
-python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
+# python main_pipeline_llm_1.py --seed 65 --configs yelp_dp
 
 # 100
 sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp.json

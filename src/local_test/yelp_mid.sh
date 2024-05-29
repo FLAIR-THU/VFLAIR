@@ -15,7 +15,7 @@ sed -i 's/"lambda": 0.5/"lambda": 0.1/g' ./configs/yelp_mid.json
 
 # 0.01
 sed -i 's/"lambda": 0.1/"lambda": 0.01/g' ./configs/yelp_mid.json
-python main_pipeline_llm_1.py --seed 62 --configs yelp_mid
+# python main_pipeline_llm_1.py --seed 62 --configs yelp_mid
 
 # 0.001
 sed -i 's/"lambda": 0.01/"lambda": 0.001/g' ./configs/yelp_mid.json

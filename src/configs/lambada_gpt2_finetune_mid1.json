@@ -5,14 +5,14 @@
     "batch_size": 32,
     "early_stop_threshold": 1,
     "pipeline": "finetune",
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
     "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
-    },
-    "finetune_configs":{
-        "name":"Vanilla",
-        "configs":{}
     },
     "dataset":{
         "dataset_name": "Lambada",

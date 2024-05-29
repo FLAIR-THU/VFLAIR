@@ -30,7 +30,7 @@ import copy
 
 logger = logging.get_logger(__name__)
 
-##### Evaluation with pretrained models ######
+##### Global Model Wrapper ######
 class GPT2ForSequenceClassification_pretrained(GPT2PreTrainedModel):
     def __init__(self, global_gpt, score,generation_config=None):
         super().__init__(global_gpt.config)

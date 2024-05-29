@@ -1,18 +1,18 @@
 {
     "epochs": 30,
-    "lr": 0.0001,
+    "lr": 0.0005,
     "k": 2,
     "batch_size": 32,
     "early_stop_threshold": 1,
     "pipeline": "finetune",
     "model_architect":"CLM",
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
-    },
     "finetune_configs":{
         "name":"Vanilla",
         "configs":{}
+    },
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
     },
     "dataset":{
         "dataset_name": "Lambada",
@@ -34,7 +34,7 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "encoder_trainable_ids":[0,1],
+            "encoder_trainable_ids":[0,1,2],
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -58,10 +58,33 @@
             "metric_type": "best_pred",
             "n_best_size": 3
         },
-        "local_encoders_num": 2,
+        "local_encoders_num": 3,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 500
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.001,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 500
+            }
+        }
     }
     
 }
