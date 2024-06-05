@@ -17,9 +17,12 @@ def convert_pred_to_msg(pred_list):
     data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
     data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
 
-    data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
-    data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
-    data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
+    if 'attention_mask' in pred_list:
+        data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
+        data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
+        data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
+        if pred_list['attention_mask'].requires_grad:
+            data_value.hidden_states.requires_grads.append('attention_mask')
 
     if 'position_ids' in pred_list:
         data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
@@ -29,8 +32,6 @@ def convert_pred_to_msg(pred_list):
     data_value.hidden_states.use_cache = False
     if pred_list['inputs_embeds'].requires_grad:
         data_value.hidden_states.requires_grads.append('inputs_embeds')
-    if pred_list['attention_mask'].requires_grad:
-        data_value.hidden_states.requires_grads.append('attention_mask')
 
     return data_value
 
@@ -43,11 +44,13 @@ def convert_msg_to_pred(pred):
     if 'inputs_embeds' in pred.requires_grads:
         inputs_embeds.requires_grad = True
 
-    dtype = getattr(torch, pred.attention_mask.dtype.split(".")[1])
-    attention_mask = torch.tensor(pred.attention_mask.value, dtype=dtype)
-    attention_mask = attention_mask.view(torch.Size(pred.attention_mask.shape))
-    if 'attention_mask' in pred.requires_grads:
-        attention_mask.requires_grad = True
+    attention_mask = None
+    if len(pred.attention_mask.value) > 0:
+        dtype = getattr(torch, pred.attention_mask.dtype.split(".")[1])
+        attention_mask = torch.tensor(pred.attention_mask.value, dtype=dtype)
+        attention_mask = attention_mask.view(torch.Size(pred.attention_mask.shape))
+        if 'attention_mask' in pred.requires_grads:
+            attention_mask.requires_grad = True
 
     position_ids = None
     if len(pred.position_ids.value) > 0:

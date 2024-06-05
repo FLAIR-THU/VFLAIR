@@ -123,7 +123,14 @@ def get_cls_ancestor(model_type: str = 'qwen2', architecture: str = 'CLM'):
     aa = {"CLM": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
           "TQA": MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
           "CLS": MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES}[architecture][model_type]
-    target_cls = getattr(target_module, aa)
+    if model_type == 'chatglm':
+        from models.llm_models import chatglm
+        target_cls = getattr(chatglm, "ChatGLMForConditionalGeneration")
+    elif model_type == 'baichuan':
+        from models.llm_models import baichuan
+        target_cls = getattr(baichuan, "BaiChuanForCausalLM")
+    else:
+        target_cls = getattr(target_module, aa)
     return target_cls
 
 def create_exp_dir_and_file(dataset, Q, model_name, pipeline, defense_name='', defense_param=''):

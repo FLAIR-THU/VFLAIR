@@ -66,10 +66,15 @@ class ActiveParty_LLM(Party_LLM):
 
     def _do_aggregate_remote(self, pred_list):
         new_dict = convert_msg_to_pred(pred_list)
+        if self.args.model_type == 'XLNet':
+            new_dict['output_g'] = None
         result = self.aggregate([new_dict])
 
         if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
-            return convert_pred_to_msg(result)
+            return {
+                "requires_grad": result.logits.requires_grad,
+                "logits": result.logits.tolist()
+            }
         elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
             return {
                 "requires_grad": result.logits.requires_grad,
@@ -78,11 +83,8 @@ class ActiveParty_LLM(Party_LLM):
         elif self.args.task_type == 'QuestionAnswering':  # self.passive_pred_list[0] = [intermediate, attention_mask]
             return {
                 "requires_grad": True,
-                # "loss": result.total_loss.float(),
                 "start_logits": result.start_logits.tolist(),
                 "end_logits": result.end_logits.tolist(),
-                # "hidden_states": result.outputs.hidden_states,
-                # "attentions": result.outputs.attentions,
             }
         elif self.args.task_type == 'DevLLMInference':
             return convert_pred_to_msg(result)

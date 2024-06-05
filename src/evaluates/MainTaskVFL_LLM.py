@@ -63,7 +63,7 @@ from evaluates.attacks.attack_api import AttackerLoader
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
 from config import vfl_basic_config, is_test
 
-from load.LoadModels import QuestionAnsweringModelOutput, SequenceClassifierOutput
+from load.LoadModels import QuestionAnsweringModelOutput, SequenceClassifierOutput, CausalLMOutputWithPast
 from party.LocalCommunication import LocalCommunication
 from framework.client.DistributedCommunication import convert_msg_to_pred
 import warnings
@@ -255,12 +255,16 @@ def create_main_task(global_model_type: GenerationMixin):
                 logits = torch.Tensor(result['logits'])
                 if result['requires_grad']:
                     logits.requires_grad_()
-                # return convert_msg_to_pred(result)
                 return SequenceClassifierOutput(
                     logits=logits,
                 )
             elif self.args.task_type == 'CausalLM':
-                return convert_msg_to_pred(result)
+                logits = torch.Tensor(result['logits'])
+                if result['requires_grad']:
+                    logits.requires_grad_()
+                return CausalLMOutputWithPast(
+                    logits=logits,
+                )
             elif self.args.task_type == 'QuestionAnswering':
                 start_logits = torch.Tensor(result['start_logits'])
                 end_logits = torch.Tensor(result['end_logits'])
@@ -610,7 +614,8 @@ def create_main_task(global_model_type: GenerationMixin):
                                                                   )
                             else:  # next token prediction
                                 generation_output = self.forward(**data_inputs)
-                                self._loss += self.shift_logits_loss(generation_output.logits,
+                                if self.args.model_type.lower() == 'qwen2':
+                                    self._loss += self.shift_logits_loss(generation_output.logits,
                                                                      torch.stack(gt_one_hot_label),
                                                                      self.args.config).item()
                             self._clear_past_key_values()

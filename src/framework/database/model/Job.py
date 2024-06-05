@@ -7,9 +7,9 @@ class Job(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     fl_type: str
-    params: str
-    status: int
-    result: Optional[str]
+    params: str = Field(max_length=4000)
+    status: int = Field(default=0)
+    result: Optional[str] = Field(max_length=500)
     create_time: datetime
     end_time: Optional[datetime]
 

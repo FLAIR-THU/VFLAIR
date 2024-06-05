@@ -600,11 +600,12 @@ class Party(object):
         return self._detach_tensor(resp)
 
     def _detach_tensor(self, dict_like: dict):
-        for key, value in dict_like.items():
-            if isinstance(value, torch.Tensor) and value.requires_grad:
-                dict_like[key] = value.detach().clone()
-                dict_like[key].requires_grad = True
-        return dict_like
+        return dict_like  # todo: need to check whether used in local mode
+        # for key, value in dict_like.items():
+        #     if isinstance(value, torch.Tensor) and value.requires_grad:
+        #         dict_like[key] = value.detach().clone()
+        #         dict_like[key].requires_grad = True
+        # return dict_like
 
     def backward(self, model_index, **kwargs):
         logger.debug(f"model_{model_index} backward")

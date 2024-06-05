@@ -1569,7 +1569,7 @@ def load_dataset_per_party_llm(args, index):
         if train_set_file is None or test_set_file is None:
             train_set_file = DATA_PATH + 'SST-2/train.tsv'
             test_set_file = DATA_PATH + 'SST-2/dev.tsv'
-        df = pd.read_csv(train_set_file, delimiter='\t', names=['sentence', 'label'])  # names=[  'sentence','label']
+        df = pd.read_csv(train_set_file, delimiter='\t', names=['label', 'sentence'])  # names=[  'sentence','label']
         sentences = df.sentence.values[1:]
         labels = df.label.values[1:]
 
@@ -1581,7 +1581,7 @@ def load_dataset_per_party_llm(args, index):
         X_train = np.array(sentences)
         y_train = np.array([int(_label) for _label in labels])
 
-        df = pd.read_csv(test_set_file, delimiter='\t', names=['sentence', 'label'])  # names=[  'sentence','label']
+        df = pd.read_csv(test_set_file, delimiter='\t', names=['label', 'sentence'])  # names=[  'sentence','label']
         sentences = df.sentence.values[1:]
         labels = df.label.values[1:]
 
@@ -1959,7 +1959,7 @@ def load_dataset_per_party_llm(args, index):
                 target_word.append(last_word)
 
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
-                        start_offset + length + 1 >= len(all_doc_tokens):
+                start_offset + length + 1 >= len(all_doc_tokens):
                     break
 
                 start_offset += min(length, doc_stride)
