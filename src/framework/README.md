@@ -31,21 +31,29 @@ VFLAIR
 
 ## 开始
 
+### 构建docker映像
+1. 下载源代码
+2. 安装docker环境，参见[Docker安装](https://docs.docker.com/engine/install/)
+3. 进行目录，使用如下命令构建docker映像
+- docker build -f Dockerfile-server -t vflair-server .
+- docker build -f Dockerfile-web -t vflair-web .
+
 ### 安装部署
 
 本系统目前使用docker方式运行服务，典型的部署架构是两台机器，其中一台运行Active Party端，另一台台运行Passive Party及Web端
+假设server端ip是192.168.10.3，passive party及web的ip地址是192.168.10.5，数据库地址是192.168.10.5
 
-- 运行server端：docker run --name server -d --gpus all -e MYSQL_HOST=192.168.10.3 -p3333:3333 -v
-  /home/shannon/dev/tools/nlp:/home/shannon/dev/tools/nlp vflair-server
-- 运行client端：docker run --name client -d --gpus all -e GRPC_SERVER=192.168.10.3 -v /home/shannon/dev/tools/nlp:
-  /home/shannon/dev/tools/nlp vflair-client
-- 运行Web端：docker run --name web --add-host=vflair-server.com:192.168.10.3 -d -p5000:5000 -e
+- 运行server端：docker run --name server -d --gpus all -p3333:3333 -v
+  /home/shan/dev/tools/nlp:/home/shan/dev/tools/nlp vflair-server
+- 运行Web端：docker run --name web --add-host=vflair-server.com:192.168.10.3 -e MYSQL_HOST=192.168.10.5 -d -p5000:5000 -e
   GRPC_SERVER=vflair-server.com vflair-web
 
-### 使用证书
-
-由于VFLAIR使用了SSL证书，默认证书域名是修改/etc/hosts，加入本地解析
-192.168.10.3 vflair-server.com
+#### 参数说明
+1. 其中server端参数 -p3333:3333 表明GRPC端口是3333 -v 映射本地模型及数据集目录至容器
+2. --add-host 增加host映射。由于VFLAIR使用了SSL证书，默认证书域名是修改/etc/hosts，加入本地解析 192.168.10.3 vflair-server.com
+MYSQL_HOST:数据库环境变量，
+-p5000:5000开启5000端口，
+GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址 
 
 ### 开始使用
 
@@ -55,18 +63,19 @@ VFLAIR
 
    其中curl是发http请求的工具
 
-   localhost:5000/job/upload
+   接口地址：localhost:5000/job/upload
 
    -F参数传递配置文件路径
 
 2. 命令运行成功后会返回任务的id, 我们可以根据id，查看任务的结果
 3. 查看任务结果：使用 curl localhost:5000/job?id=1
 
+更多配置文件参考[配置文件目录](../configs/test_configs)
+
 ### 自定义算法步骤
 
 修改源码后，使用docker build命令分别构建映像，然后安装重新创建容器使用即可
 
-- docker build -f Dockerfile-client -t vflair-client .
 - docker build -f Dockerfile-server -t vflair-server .
 - docker build -f Dockerfile-web -t vflair-web .
 
