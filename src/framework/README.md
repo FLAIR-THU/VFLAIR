@@ -55,6 +55,8 @@ MYSQL_HOST:数据库环境变量，
 -p5000:5000开启5000端口，
 GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址 
 
+更多参数说明[参考](https://docs.vflair)
+
 ### 开始使用
 
 修改配置文件，假设保存在basic_config_cola.json文件中，
@@ -73,8 +75,7 @@ GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址
 更多配置文件参考[配置文件目录](../configs/test_configs)
 
 ### 自定义算法步骤
-
-修改源码后，使用docker build命令分别构建映像，然后安装重新创建容器使用即可
+参考[Add New Algorithms](../../usage_guidance/Add_New_Algorithm.md)实现新算法后，使用docker build命令分别构建映像，然后安装重新创建容器使用即可
 
 - docker build -f Dockerfile-server -t vflair-server .
 - docker build -f Dockerfile-web -t vflair-web .
@@ -82,6 +83,6 @@ GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址
 ## 更多文档
 
 - [分布式架构](docs/README_architecture.md)
-- [参数配置]()
+- [参数配置](../configs/README.md)
 - [VFLAIR联邦学习介绍](../../README.md)
 - [VFLAIR LLM介绍](../configs/README_LLM.md)
