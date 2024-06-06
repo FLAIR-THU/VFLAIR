@@ -117,12 +117,6 @@ def evaluate_inversion_attack(args):
 
 
 def get_cls_ancestor(model_type: str = 'qwen2', architecture: str = 'CLM'):
-    from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES, \
-        MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES, MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES
-    target_module = __import__('transformers')
-    aa = {"CLM": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
-          "TQA": MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
-          "CLS": MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES}[architecture][model_type]
     if model_type == 'chatglm':
         from models.llm_models import chatglm
         target_cls = getattr(chatglm, "ChatGLMForConditionalGeneration")
@@ -130,6 +124,12 @@ def get_cls_ancestor(model_type: str = 'qwen2', architecture: str = 'CLM'):
         from models.llm_models import baichuan
         target_cls = getattr(baichuan, "BaiChuanForCausalLM")
     else:
+        from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES, \
+            MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES, MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES
+        target_module = __import__('transformers')
+        aa = {"CLM": MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
+              "TQA": MODEL_FOR_QUESTION_ANSWERING_MAPPING_NAMES,
+              "CLS": MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES}[architecture][model_type]
         target_cls = getattr(target_module, aa)
     return target_cls
 
