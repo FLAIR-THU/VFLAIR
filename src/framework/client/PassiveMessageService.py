@@ -5,6 +5,7 @@ import framework.protos.message_pb2 as fpm
 import threading
 import framework.database.model.Job as Job
 from framework.database.repository.JobRepository import job_repository
+from framework.database.repository.TaskRepository import task_repository
 from datetime import datetime
 
 logger = logger_util.get_logger()
@@ -54,6 +55,9 @@ class PassiveMessageService:
         elif message.type == fpm.LOAD_MODEL:
             # start task
             self._load_model(message.data)
+        elif message.type == fpm.QUERY_JOB:
+            # start task
+            return self._show_job(message.data)
 
     def _load_model(self, model_id):
         self._task_service.load_model(model_id)
@@ -68,3 +72,12 @@ class PassiveMessageService:
         job.id = job_id
 
         return job_id
+
+    def _show_job(self, job_id):
+        job = job_repository.get_by_id(job_id)
+        tasks = task_repository.get_tasks_by_job(job_id)
+
+        job_dict = job.to_dict()
+        job_dict['tasks'] = [task.to_dict() for task in tasks]
+        return job_dict
+

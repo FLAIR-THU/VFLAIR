@@ -66,12 +66,10 @@ def create_job(config: Annotated[str, Form()]):
 
 @app.get("/job")
 def show_job(id: int):
-    value = fpm.Value()
-    value.sint64 = id
-    msg = mu.MessageUtil.create(node, {"id": value}, 2)
-    result = service['grpc_client'].open_and_send(msg)
-    job_str = result.named_values['job'].string
-    job = json.loads(job_str)
+    msg = Namespace()
+    msg.data = id
+    msg.type = fpm.QUERY_JOB
+    job = service['grpc_client'].parse_message(msg)
     return job
 
 
