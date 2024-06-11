@@ -55,7 +55,7 @@ MYSQL_HOST:数据库环境变量，
 -p5000:5000开启5000端口，
 GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址 
 
-更多参数说明[参考](https://docs.vflair)
+更多参数说明[参考](./docs/README_parameters.md)
 
 ### 开始使用
 
