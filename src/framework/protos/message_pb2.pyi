@@ -47,6 +47,14 @@ class HiddenStates(_message.Message):
     use_cache: bool
     def __init__(self, inputs_embeds: _Optional[_Union[tensor_double, _Mapping]] = ..., attention_mask: _Optional[_Union[tensor_double, _Mapping]] = ..., position_ids: _Optional[_Union[tensor_int, _Mapping]] = ..., requires_grads: _Optional[_Iterable[str]] = ..., use_cache: bool = ..., output_hidden_states: bool = ...) -> None: ...
 
+class Logits(_message.Message):
+    __slots__ = ["logits", "requires_grad"]
+    LOGITS_FIELD_NUMBER: _ClassVar[int]
+    REQUIRES_GRAD_FIELD_NUMBER: _ClassVar[int]
+    logits: tensor_double
+    requires_grad: bool
+    def __init__(self, logits: _Optional[_Union[tensor_double, _Mapping]] = ..., requires_grad: bool = ...) -> None: ...
+
 class Message(_message.Message):
     __slots__ = ["code", "data", "message", "node", "type"]
     CODE_FIELD_NUMBER: _ClassVar[int]
@@ -62,20 +70,22 @@ class Message(_message.Message):
     def __init__(self, node: _Optional[_Union[_node_pb2.Node, _Mapping]] = ..., code: _Optional[_Union[Code, str]] = ..., message: _Optional[str] = ..., data: _Optional[_Union[AggregationValue, _Mapping]] = ..., type: _Optional[_Union[MessageType, str]] = ...) -> None: ...
 
 class Value(_message.Message):
-    __slots__ = ["bool", "bytes", "double", "hidden_states", "sint64", "string"]
+    __slots__ = ["bool", "bytes", "double", "hidden_states", "logits", "sint64", "string"]
     BOOL_FIELD_NUMBER: _ClassVar[int]
     BYTES_FIELD_NUMBER: _ClassVar[int]
     DOUBLE_FIELD_NUMBER: _ClassVar[int]
     HIDDEN_STATES_FIELD_NUMBER: _ClassVar[int]
+    LOGITS_FIELD_NUMBER: _ClassVar[int]
     SINT64_FIELD_NUMBER: _ClassVar[int]
     STRING_FIELD_NUMBER: _ClassVar[int]
     bool: bool
     bytes: bytes
     double: float
     hidden_states: HiddenStates
+    logits: Logits
     sint64: int
     string: str
-    def __init__(self, double: _Optional[float] = ..., sint64: _Optional[int] = ..., bool: bool = ..., string: _Optional[str] = ..., bytes: _Optional[bytes] = ..., hidden_states: _Optional[_Union[HiddenStates, _Mapping]] = ...) -> None: ...
+    def __init__(self, double: _Optional[float] = ..., sint64: _Optional[int] = ..., bool: bool = ..., string: _Optional[str] = ..., bytes: _Optional[bytes] = ..., hidden_states: _Optional[_Union[HiddenStates, _Mapping]] = ..., logits: _Optional[_Union[Logits, _Mapping]] = ...) -> None: ...
 
 class tensor_double(_message.Message):
     __slots__ = ["dtype", "shape", "value"]

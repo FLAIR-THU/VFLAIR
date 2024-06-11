@@ -20,7 +20,7 @@ from loguru import logger
 
 
 def get_size_of(target_tensor):
-    logger.debug(f"n: {target_tensor.nelement()}, size: {target_tensor.element_size()}")
+    logger.info(f"n: {target_tensor.nelement()}, size: {target_tensor.element_size()}")
     return target_tensor.nelement() * target_tensor.element_size() / (1024 * 1024)  # mb
     # _size = 1
     # for _dim in target_tensor.shape:
@@ -32,7 +32,7 @@ def get_total_size(tensor_dict:dict):
     for t in tensor_dict.values():
         if isinstance(t, torch.Tensor):
             total_size += get_size_of(t)
-    logger.debug(f"total size: {total_size}MB")
+    logger.info(f"total size: {total_size}MB")
     return total_size
 
 # CELU

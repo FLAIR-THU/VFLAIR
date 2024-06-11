@@ -10,8 +10,28 @@ from utils import timer, get_total_size
 
 
 @timer()
+def convert_logits_to_msg(logits):
+    logger.info(f"{get_total_size({'logits': logits})} MB")
+    data_value = Value()
+    data_value.logits.logits.shape.extend(logits.shape)
+    data_value.logits.logits.value.extend(logits.flatten().tolist())
+    data_value.logits.logits.dtype = str(logits.dtype)
+    data_value.logits.requires_grad = logits.requires_grad
+
+    return data_value
+
+@timer()
+def convert_msg_to_logits(msg):
+    dtype = getattr(torch, msg.logits.dtype.split(".")[1])
+    logits = torch.tensor(msg.logits.value, dtype=dtype)
+    logits = logits.view(torch.Size(msg.logits.shape))
+    logits.requires_grad = msg.requires_grad
+    return logits
+
+
+@timer()
 def convert_pred_to_msg(pred_list):
-    logger.debug(f"{get_total_size(pred_list)} MB")
+    logger.info(f"{get_total_size(pred_list)} MB")
     data_value = Value()
     data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
     data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
@@ -90,6 +110,8 @@ class DistributedCommunication(ICommunication):
         result = response.named_values['test_logit']
         if len(result.hidden_states.inputs_embeds.value) > 0:
             test_logit = result.hidden_states
+        elif len(result.logits.logits.value) > 0:
+            test_logit = result.logits
         else:
             test_logit = json.loads(result.string)
 

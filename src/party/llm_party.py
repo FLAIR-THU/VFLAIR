@@ -29,7 +29,7 @@ from peft import get_peft_model,PeftModel
 from config import vfl_basic_config
 from models.llm_models.qwen2 import VFLPipelineQwen
 from models.llm_models.base import VFLPipeline
-
+from load.QwenModelLoader import QwenModelLoader
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 
@@ -171,10 +171,15 @@ class Party(object):
     def prepare_model(self, args, index):
         if args.model_type.lower() == 'qwen2':
             model_path = args.model_list[str(index)]['path']
-            args.tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side='left')
-            p = VFLPipelineQwen(vfl_basic_config.split_index, self.is_active_party)
-            self.models.update(p.from_pretrained(model_path, **vfl_basic_config.kwargs_model_loading))
-            self._prepare_model_update_args(args)
+            loader = QwenModelLoader()
+            result = loader.load(model_path, self.is_active_party)
+
+            args.tokenizer = result['tokenizer']
+            self.models.update(result['models'])
+            args.config = result['config']
+            args.model_architectures = args.config.architectures
+            args.model_embedded_dim = args.config.hidden_size
+            args.generation_config = result['generation_config']
             self._set_peft()
 
 
@@ -186,17 +191,6 @@ class Party(object):
                 self.global_model,
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
-
-
-    def _prepare_model_update_args(self, args):
-        for m in self.models.values():
-            if m:
-                model = m
-        args.config = model.config
-        args.model_architectures = args.config.architectures
-        args.model_embedded_dim = args.config.hidden_size
-        if m and m.generation_config:
-            args.generation_config = model.generation_config
 
     def _set_peft(self):
         """

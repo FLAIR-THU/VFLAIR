@@ -49,6 +49,11 @@ message HiddenStates{
     bool output_hidden_states = 6;
 }
 
+message Logits{
+    tensor_double logits = 1;
+    bool requires_grad = 2;
+}
+
 message Value {
   oneof value {
     // Single element
@@ -58,6 +63,7 @@ message Value {
     string string = 4;
     bytes bytes = 5;
     HiddenStates hidden_states = 6;
+    Logits logits = 7;
   }
 }
 

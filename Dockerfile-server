@@ -7,11 +7,8 @@ WORKDIR /vflair
 RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ENV PYTHONPATH "${PYTHONPATH}:/vflair"
-ENV MYSQL_HOST "localhost"
-ENV MYSQL_PORT "3316"
-ENV MYSQL_DB "vflair"
-ENV MYSQL_USER "root"
-ENV MYSQL_PASSWORD "abcd1234"
+ENV GRPC_PORT "3333"
+ENV COMPRESSION "None"
 ENV CUDA_VISIBLE_DEVICES "${CUDA_VISIBLE_DEVICES}:0"
 
 EXPOSE 3333

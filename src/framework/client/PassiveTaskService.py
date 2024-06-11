@@ -66,14 +66,13 @@ class PassiveTaskService:
         args = load_llm_configs(data)
         need_model = args.model_type.lower() != 'qwen2' or args.pipeline != 'pretrained'
         args.parties = self._init_parties(args, job_id, need_model)
-        if 'generation_config' not in args:
+        if not need_model:
             args.generation_config = self._model_data['generation_config']
+            args.config = self._model_data['config']
         model_name = args.model_list[str(0)]["type"]  # .replace('/','-')
         exp_res_dir, exp_res_path = create_exp_dir_and_file(args.dataset, args.Q, model_name, args.pipeline, args.defense_name, args.defense_param)
         args.exp_res_dir = exp_res_dir
         args.exp_res_path = exp_res_path
-        if 'config' not in args:
-            args.config = self._model_data['config']
 
         # self._main_tasks.append(MainTaskVFL_LLM(args, job_id))
         # self.run_next(job_id)
