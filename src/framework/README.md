@@ -43,17 +43,21 @@ VFLAIR
 本系统目前使用docker方式运行服务，典型的部署架构是两台机器，其中一台运行Active Party端，另一台台运行Passive Party及Web端
 假设server端ip是192.168.10.3，passive party及web的ip地址是192.168.10.5，数据库地址是192.168.10.5
 
-- 运行server端：docker run --name server -d --gpus all -p3333:3333 -v
+- 运行Active Party端(Server)：docker run --name server -d --gpus all -p3333:3333 -v
   /home/shan/dev/tools/nlp:/home/shan/dev/tools/nlp vflair-server
-- 运行Web端：docker run --name web --add-host=vflair-server.com:192.168.10.3 -e MYSQL_HOST=192.168.10.5 -d -p5000:5000 -e
+- 运行Passive Party端(Web)：docker run --name web --add-host=vflair-server.com:192.168.10.3 -e MYSQL_HOST=192.168.10.5 -d -p5000:5000 -e
   GRPC_SERVER=vflair-server.com vflair-web
 
 #### 参数说明
-1. 其中server端参数 -p3333:3333 表明GRPC端口是3333 -v 映射本地模型及数据集目录至容器
-2. --add-host 增加host映射。由于VFLAIR使用了SSL证书，默认证书域名是修改/etc/hosts，加入本地解析 192.168.10.3 vflair-server.com
-MYSQL_HOST:数据库环境变量，
--p5000:5000开启5000端口，
-GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址 
+1. Active Party端参数：
+- -p3333:3333 表明GRPC端口是3333 
+- -v 映射本地模型及数据集目录至容器
+
+2.Passive Party端参数说明：
+- --add-host 增加host映射。 由于VFLAIR使用了SSL证书，默认证书域名是修改/etc/hosts，加入本地解析 192.168.10.3 vflair-server.com 
+- MYSQL_HOST:数据库环境变量， 
+- -p5000:5000开启5000端口， 
+- GRPC_SERVER=vflair-server.com是需要连接的GRPC服务器地址 
 
 更多参数说明[参考](./docs/README_parameters.md)
 
