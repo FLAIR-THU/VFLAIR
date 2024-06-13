@@ -65,7 +65,7 @@ from config import vfl_basic_config, is_test
 
 from load.LoadModels import QuestionAnsweringModelOutput, SequenceClassifierOutput, CausalLMOutputWithPast
 from party.LocalCommunication import LocalCommunication
-from framework.client.DistributedCommunication import convert_msg_to_pred, convert_msg_to_logits
+from framework.client.DistributedCommunication import convert_msg_to_pred, convert_msg_to_tensor
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -259,7 +259,7 @@ def create_main_task(global_model_type: GenerationMixin):
                     logits=logits,
                 )
             elif self.args.task_type == 'CausalLM':
-                logits = convert_msg_to_logits(result)
+                logits = convert_msg_to_tensor(result)
                 return CausalLMOutputWithPast(
                     logits=logits,
                 )

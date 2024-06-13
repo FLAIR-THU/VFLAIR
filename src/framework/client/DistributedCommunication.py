@@ -10,28 +10,28 @@ from utils import timer, get_total_size
 
 
 @timer()
-def convert_logits_to_msg(logits):
-    logger.info(f"{get_total_size({'logits': logits})} MB")
+def convert_tensor_to_msg(logits):
+    get_total_size({'tensor': logits})
     data_value = Value()
-    data_value.logits.logits.shape.extend(logits.shape)
-    data_value.logits.logits.value.extend(logits.flatten().tolist())
-    data_value.logits.logits.dtype = str(logits.dtype)
-    data_value.logits.requires_grad = logits.requires_grad
+    data_value.tensor.data.shape.extend(logits.shape)
+    data_value.tensor.data.value.extend(logits.flatten().tolist())
+    data_value.tensor.data.dtype = str(logits.dtype)
+    data_value.tensor.requires_grad = logits.requires_grad
 
     return data_value
 
 @timer()
-def convert_msg_to_logits(msg):
-    dtype = getattr(torch, msg.logits.dtype.split(".")[1])
-    logits = torch.tensor(msg.logits.value, dtype=dtype)
-    logits = logits.view(torch.Size(msg.logits.shape))
+def convert_msg_to_tensor(msg):
+    dtype = getattr(torch, msg.data.dtype.split(".")[1])
+    logits = torch.tensor(msg.data.value, dtype=dtype)
+    logits = logits.view(torch.Size(msg.data.shape))
     logits.requires_grad = msg.requires_grad
     return logits
 
 
 @timer()
 def convert_pred_to_msg(pred_list):
-    logger.info(f"{get_total_size(pred_list)} MB")
+    get_total_size(pred_list)
     data_value = Value()
     data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
     data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
@@ -110,8 +110,8 @@ class DistributedCommunication(ICommunication):
         result = response.named_values['test_logit']
         if len(result.hidden_states.inputs_embeds.value) > 0:
             test_logit = result.hidden_states
-        elif len(result.logits.logits.value) > 0:
-            test_logit = result.logits
+        elif len(result.tensor.data.value) > 0:
+            test_logit = result.tensor
         else:
             test_logit = json.loads(result.string)
 
@@ -132,9 +132,10 @@ class DistributedCommunication(ICommunication):
         task.run = "receive_loss_and_gradients_remote"
         task.party = "active"
         task.job_id = self._job_id
-        task.params = {"gradients": gradients.tolist()}
 
-        response = self._client.open_and_send(task)
+        gradients = convert_tensor_to_msg(gradients)
+
+        response = self._client.open_and_send(task, gradients)
 
     def send_cal_passive_local_gradient_message(self, index):
         task = Task()

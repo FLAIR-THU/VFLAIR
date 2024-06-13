@@ -31,14 +31,14 @@ VFLAIR
 
 ## 开始
 
-### 构建docker映像
+### 一、构建docker映像
 1. 下载源代码
 2. 安装docker环境，参见[Docker安装](https://docs.docker.com/engine/install/)
 3. 进行目录，使用如下命令构建docker映像
 - docker build -f Dockerfile-server -t vflair-server .
 - docker build -f Dockerfile-web -t vflair-web .
 
-### 安装部署
+### 二、安装部署
 
 本系统目前使用docker方式运行服务，典型的部署架构是两台机器，其中一台运行Active Party端，另一台台运行Passive Party及Web端
 假设server端ip是192.168.10.3，passive party及web的ip地址是192.168.10.5，数据库地址是192.168.10.5
@@ -61,7 +61,26 @@ VFLAIR
 
 更多参数说明[参考](./docs/README_parameters.md)
 
-### 开始使用
+#### 显卡要求
+1.推理
+
+| 模型         | Activate Party | Passive Party |
+|------------|----------------|---------------|
+| Qwen2-72B  | 2*A100         | 1*3090        |
+| QWen2-1.5B | 1*3090         | 1*3090        |
+| GPT2       | 1*A100         | 1*3090        |
+| Llama2     | 1*A100         | 1*3090        |
+
+2.训练
+
+| 模型         | Activate Party | Passive Party |
+|------------|----------------|---------------|
+| Qwen2-72B  | 3*A100         | 1*3090        |
+| QWen2-1.5B | 1*3090         | 1*3090        |
+| GPT2       | 1*A100         | 1*3090        |
+| Llama2     | 1*A100         | 1*3090        |
+
+### 三、开始使用
 
 修改配置文件，假设保存在basic_config_cola.json文件中，
 
@@ -78,7 +97,7 @@ VFLAIR
 
 更多配置文件参考[配置文件目录](../configs/test_configs)
 
-### 自定义算法步骤
+#### 自定义算法步骤
 参考[Add New Algorithms](../../usage_guidance/Add_New_Algorithm.md)实现新算法后，使用docker build命令分别构建映像，然后安装重新创建容器使用即可
 
 - docker build -f Dockerfile-server -t vflair-server .
@@ -90,3 +109,5 @@ VFLAIR
 - [参数配置](../configs/README.md)
 - [VFLAIR联邦学习介绍](../../README.md)
 - [VFLAIR LLM介绍](../configs/README_LLM.md)
+- [手机端使用方案](./docs/README_mobile.md)
+- [已知问题](./docs/README_issues.md)

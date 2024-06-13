@@ -40,9 +40,12 @@ class MessageService:
 
             data_value = message.data.named_values['data']
             hidden_states = data_value.hidden_states
+            tensor = data_value.tensor
 
             if len(hidden_states.inputs_embeds.value) > 0:
                 data = hidden_states
+            elif len(tensor.data.value) > 0:
+                data = tensor
             else:
                 data = task['params']
 
