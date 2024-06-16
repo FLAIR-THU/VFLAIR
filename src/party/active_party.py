@@ -71,6 +71,8 @@ class ActiveParty_LLM(Party_LLM):
         result = self.aggregate([new_dict])
 
         if self.args.task_type == 'CausalLM':  # self.passive_pred_list[0] = [intermediate, attention_mask]
+            if self.args.model_type == 'qwen2':
+                return convert_pred_to_msg(result)
             return convert_tensor_to_msg(result.logits)
         elif self.args.task_type == 'SequenceClassification':  # self.passive_pred_list[0] = [intermediate, ,sequence_lengths, attention_mask]
             return {

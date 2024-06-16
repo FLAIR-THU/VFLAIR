@@ -64,20 +64,20 @@ VFLAIR
 #### 显卡要求
 以下显存占用量基于1/10的Lambada数据集
 
-| 模型                       | 数据集     | Activate Party      | Passive Party         |
-|--------------------------|---------|---------------------|-----------------------|
-| Qwen2-72B                | Lambada | 2*A100              | 1*4080 显存占用           |
-| QWen2-0.5B               | 甄嬛传     | 1*A100 显存占用约5130MB  | 1*4080    显存占用约3500MB |
-| GPT2                     | Lambada | 1*A100 显存占用约4150MB  | 1*4080 显存占用约2440MB    |
-| llama-2-7b               | Lambada | 1*A100              | 1*A100                |
-| bert                     | Lambada | 1*A100 显存占用约2550MB  | 1*4080 显存占用约700MB     |
-| chatglm3-6b              | Lambada | 1*A100 显存占用约13290MB | 1*4080 显存占用约2200MB    |
-| falcon-rw-1b             | Lambada | 1*A100 显存占用约7540MB  | 1*4080 显存占用约1300MB    |
-| gemma-2b                 | Lambada | 1*A100 显存占用约15300MB | 1*4080 显存占用约3300MB    |
-| mamba-130m-hf            | Lambada | 1*A100 显存占用约2640MB  | 1*4080 显存占用约800MB     |
-| xlnet-base-cased         | Lambada | 1*A100 显存占用约3700MB  | 1*4080 显存占用约2100MB    |
-| Baichuan-7B              | Lambada | 1*A100 显存占用约xxxxMB  | 1*4080 显存占用约xxxxMB    |
-| Mistral-7B-Instruct-v0.2 | Lambada | 1*A100 显存占用约xxxxMB  | 1*4080 显存占用约xxxxMB    |
+| 模型                       | 数据集     | Activate Party       | Passive Party         |
+|--------------------------|---------|----------------------|-----------------------|
+| Qwen2-72B                | 甄嬛传     | 2*A100 显存占用约135050MB | 1*A100 显存占用20510MB    |
+| QWen2-0.5B               | 甄嬛传     | 1*A100 显存占用约5130MB   | 1*4080    显存占用约3500MB |
+| GPT2                     | Lambada | 1*A100 显存占用约4150MB   | 1*4080 显存占用约2440MB    |
+| llama-2-7b               | Lambada | 1*A100 显存占用约26930MB  | 1*A100  显存占用约3140MB   |
+| bert                     | Lambada | 1*A100 显存占用约2550MB   | 1*4080 显存占用约700MB     |
+| chatglm3-6b              | Lambada | 1*A100 显存占用约13290MB  | 1*4080 显存占用约2200MB    |
+| falcon-rw-1b             | Lambada | 1*A100 显存占用约7540MB   | 1*4080 显存占用约1300MB    |
+| gemma-2b                 | Lambada | 1*A100 显存占用约15300MB  | 1*4080 显存占用约3300MB    |
+| mamba-130m-hf            | Lambada | 1*A100 显存占用约2640MB   | 1*4080 显存占用约800MB     |
+| xlnet-base-cased         | Lambada | 1*A100 显存占用约3700MB   | 1*4080 显存占用约2100MB    |
+| Baichuan-7B              | Lambada | 1*A100 显存占用约29030MB  | 1*A100 显存占用约3750MB    |
+| Mistral-7B-Instruct-v0.2 | Lambada | 1*A100 显存占用约29510MB  | 1*A100 显存占用约3090MB    |
 
 
 ### 三、开始使用

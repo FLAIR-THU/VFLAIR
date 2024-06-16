@@ -259,6 +259,8 @@ def create_main_task(global_model_type: GenerationMixin):
                     logits=logits,
                 )
             elif self.args.task_type == 'CausalLM':
+                if self.args.model_type == 'qwen2':
+                    return convert_msg_to_pred(result)
                 logits = convert_msg_to_tensor(result)
                 return CausalLMOutputWithPast(
                     logits=logits,
@@ -1511,13 +1513,12 @@ def create_main_task(global_model_type: GenerationMixin):
             # self.final_state.update(self.save_party_data())
 
             result_path = f'exp_result/{self.args.dataset}/Q{str(self.args.Q)}/'
-            model_name = self.args.model_list[str(0)]["type"]  # .replace('/','-')
+            model_name = self.args.model_list[str(0)]["type"].replace('/', '-')
             if self.args.pipeline == 'pretrained':
-                filename = f'{self.args.defense_name}_{self.args.defense_param},pretrained_model={self.args.model_list[str(0)]["type"]}'
+                filename = f'{self.args.defense_name}_{self.args.defense_param},pretrained_model={model_name}'
             else:
-                filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={self.args.model_list[str(0)]["type"]}'
+                filename = f'{self.args.defense_name}_{self.args.defense_param},finetuned_model={model_name}'
             result_file_name = result_path + filename + f'.csv'
-            # result_file_name=result_file_name.replace('/','')
             print('Save csv to:', result_file_name)
             data_record.to_csv(result_file_name)
 
