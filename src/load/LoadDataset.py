@@ -2014,7 +2014,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in train_features[:10]:
+        for feature in train_features[:]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 
@@ -2030,7 +2030,7 @@ def load_dataset_per_party_llm(args, index):
 
         inputs = []
         labels = []
-        for feature in test_features[:10]:
+        for feature in test_features[:]:
             inputs.append(feature)
             labels.append([feature["start_position"], feature["end_position"]])
 
@@ -2094,7 +2094,7 @@ def load_dataset_per_party_llm(args, index):
         print('train data:', len(X_train), len(y_train))
         print('test data:', len(X_test), len(y_test))
 
-        train_dst = (X_train, y_train)
+        train_dst = (X_train[:10], y_train[:10])
         test_dst = (X_test, y_test)
 
         # input_ids, labels = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels"))
@@ -2145,8 +2145,8 @@ def load_dataset_per_party_llm(args, index):
         # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
         targets = [f"{example['output']}" for example in list_data_dict]  # local
 
-        X_data = sources[:500]  # list of instruction text
-        y_data = targets[:500]  # list of answer text
+        X_data = sources # list of instruction text
+        y_data = targets # list of answer text
 
         X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1,
                                                             random_state=args.current_seed)

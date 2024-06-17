@@ -469,15 +469,20 @@ def load_basic_models_llm_bert(args, index):
         local_model = local_model.to(args.device)
 
         if args.finetune_name == "LoRA":
-            lora_config = LoraConfig(
-                task_type=TaskType.CAUSAL_LM,
-                # target_modules=["q", "v"],
-                # ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                inference_mode=False,  # 训练模式
-                r=4,
-                lora_alpha=32,
-                lora_dropout=0.1
-            )
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
 
             def get_lora_model(model):
                 model.enable_input_require_grads()
@@ -759,15 +764,19 @@ def load_basic_models_llm_gpt2(args, index):
         print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
         if args.finetune_name == "LoRA":
-            lora_config = LoraConfig(
-                task_type=TaskType.CAUSAL_LM,
-                #target_modules=["q", "v"],
-                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                inference_mode=False,  # 训练模式
-                r=4,
-                lora_alpha=32,
-                lora_dropout=0.1
-            )
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
 
             def get_lora_model(model):
                 model.enable_input_require_grads()
@@ -926,15 +935,19 @@ def load_basic_models_llm_llama(args, index):
         local_model = LocalLlamaModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
-            lora_config = LoraConfig(
-                task_type=TaskType.CAUSAL_LM,
-                #target_modules=["q", "v"],
-                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                inference_mode=False,  # 训练模式
-                r=4,
-                lora_alpha=32,
-                lora_dropout=0.1
-            )
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
 
             def get_lora_model(model):
                 model.enable_input_require_grads()
@@ -1020,11 +1033,6 @@ def load_basic_models_llm_baichuan(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path,trust_remote_code=True)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1062,31 +1070,55 @@ def load_basic_models_llm_baichuan(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:', args.local_encoders_num)
-        local_model = LocalBaichuanModel(full_llm, num_encoders=args.local_encoders_num)
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalBaichuanModel(full_llm, num_encoders = args.local_encoders_num)
+        
+        if args.finetune_name == "LoRA":
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                if args.
+                lora_config = LoraConfig(
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layers)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layers.parameters():
+                    param.requires_grad = False
+
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embed_tokens.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
 
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embed_tokens.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layers.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layers.parameters()))
-        if len(local_trainable_params) < 0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
 
     ########### Global Model ###########
     global_model = None
@@ -1101,8 +1133,6 @@ def load_basic_models_llm_baichuan(args, index):
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
             global_model = BaiChuanForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.model_architect == 'CLS':
-        #     global_model = LlamaForSequenceClassification_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
 
@@ -1138,11 +1168,6 @@ def load_basic_models_llm_xlnet(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1150,11 +1175,6 @@ def load_basic_models_llm_xlnet(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_loss
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1182,35 +1202,55 @@ def load_basic_models_llm_xlnet(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:', args.local_encoders_num)
-        local_model = LocalXLNetModel(full_llm, num_encoders=args.local_encoders_num)
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalXLNetModel(full_llm, num_encoders = args.local_encoders_num)
+
+        if args.finetune_name == "LoRA":
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                if args.
+                lora_config = LoraConfig(
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layer)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layer.parameters():
+                    param.requires_grad = False
+
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.word_embedding.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.word_embedding.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.word_embedding.parameters()))
-        for param in local_model.word_embedding.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.word_embedding.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layer.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layer.parameters()))
-
-        if len(local_trainable_params) < 0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
 
     ########### Global Model ###########
     global_model = None
@@ -1262,11 +1302,6 @@ def load_basic_models_llm_falcon(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1274,11 +1309,6 @@ def load_basic_models_llm_falcon(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1305,15 +1335,19 @@ def load_basic_models_llm_falcon(args, index):
         local_model = LocalFalconModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
-            lora_config = LoraConfig(
-                task_type=TaskType.CAUSAL_LM,
-                #target_modules=["q", "v"],
-                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                inference_mode=False,  # 训练模式
-                r=4,
-                lora_alpha=32,
-                lora_dropout=0.1
-            )
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
 
             def get_lora_model(model):
                 model.enable_input_require_grads()
@@ -1404,24 +1438,6 @@ def load_basic_models_llm_falcon(args, index):
 #     local_model_optimizer, global_model_optimizer = None, None
 #     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side,
-                              model_path, main_lr, pad_token,
-                              head_layer_trainable):
-    if model_type in ['Bert', 'Albert', 'Roberta']:
-        local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr,
-            pad_token, head_layer_trainable
-        )
-    elif model_type in ['GPT2']:
-        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
-        pass
-    elif model_type in ['Llama']:
-        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args,index)
-        pass
-    else:
-        assert 1 > 2, 'llm not supported'
-    return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
-
 
 def load_basic_models_llm_mamba(args, index):
     current_model_type = args.model_list[str(index)]['type']
@@ -1434,11 +1450,6 @@ def load_basic_models_llm_mamba(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1446,11 +1457,6 @@ def load_basic_models_llm_mamba(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1481,28 +1487,50 @@ def load_basic_models_llm_mamba(args, index):
         print('args.local_encoders_num:', args.local_encoders_num)
         local_model = LocalMambaModel(full_llm, num_encoders=args.local_encoders_num)
 
+        if args.finetune_name == "LoRA":
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                if args.
+                lora_config = LoraConfig(
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layers)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layers.parameters():
+                    param.requires_grad = False
+
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embeddings.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
+
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embeddings.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embeddings.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layers.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layers.parameters()))
-
-        if len(local_trainable_params) < 0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1555,11 +1583,6 @@ def load_basic_models_llm_gemma(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1567,11 +1590,6 @@ def load_basic_models_llm_gemma(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1603,15 +1621,19 @@ def load_basic_models_llm_gemma(args, index):
         local_model = LocalGemmaModel(full_llm, num_encoders=args.local_encoders_num)
 
         if args.finetune_name == "LoRA":
-            lora_config = LoraConfig(
-                task_type=TaskType.CAUSAL_LM,
-                #target_modules=["q", "v"],
-                #["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-                inference_mode=False,  # 训练模式
-                r=4,
-                lora_alpha=32,
-                lora_dropout=0.1
-            )
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
 
             def get_lora_model(model):
                 model.enable_input_require_grads()
@@ -1644,32 +1666,6 @@ def load_basic_models_llm_gemma(args, index):
         if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
-
-
-
-        local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
-
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embed_tokens.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layers.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layers.parameters()))
-
-        if len(local_trainable_params) < 0:
-            local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
     global_model = None
@@ -1721,10 +1717,6 @@ def load_basic_models_llm_chatglm(args, index):
 
     if args.model_architect == 'CLM':
         full_model = ChatGLMForConditionalGeneration.from_pretrained(model_path, trust_remote_code=True)
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1735,11 +1727,6 @@ def load_basic_models_llm_chatglm(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.transformer.output_layer
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1767,31 +1754,56 @@ def load_basic_models_llm_chatglm(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:', args.local_encoders_num)
-        local_model = LocalChatGLMModel(full_llm, num_encoders=args.local_encoders_num)
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalChatGLMModel(full_llm, num_encoders = args.local_encoders_num)
+        
+        del (full_llm)
+        del (full_model)
+
+        if args.finetune_name == "LoRA":
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                if args.
+                lora_config = LoraConfig(
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.encoder)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.encoder.parameters():
+                    param.requires_grad = False
+
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embedding.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
 
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embedding.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embedding.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.encoder.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.encoder.parameters()))
-
-        if len(local_trainable_params) < 0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
     ########### Global Model ###########
@@ -1826,9 +1838,11 @@ def load_basic_models_llm_chatglm(args, index):
             if args.head_layer_trainable[1]:
                 global_model_optimizer = torch.optim.Adam(list(global_model.head_layer.parameters()), lr=args.main_lr)
 
+        del (full_llm)
+        del (full_model)
         global_model = global_model.to(args.device)
 
-    del (full_model)
+
 
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
@@ -1844,11 +1858,6 @@ def load_basic_models_llm_mistral(args, index):
 
     if args.model_architect == 'CLM':
         full_model = AutoModelForCausalLM.from_pretrained(model_path)
-
-    # elif args.model_architect == 'TQA':
-    #     full_model = AutoModelForQuestionAnswering.from_pretrained(model_path)
-    # elif args.model_architect == 'CLS':
-    #     full_model = AutoModelForSequenceClassification.from_pretrained(model_path)
     else:
         assert 1 > 2, "task type not supported"
 
@@ -1856,11 +1865,6 @@ def load_basic_models_llm_mistral(args, index):
 
     if args.model_architect == 'CLM':
         head_layer = full_model.lm_head
-
-    # elif args.model_architect == 'TQA':
-    #     head_layer = full_model.qa_outputs
-    # elif args.model_architect == 'CLS':
-    #     head_layer = full_model.score
     else:
         head_layer = None
         assert 1 > 2, "task type not supported"
@@ -1888,32 +1892,55 @@ def load_basic_models_llm_mistral(args, index):
     local_model = None
     local_model_optimizer = None
     if index < args.k - 1:
-        print('args.local_encoders_num:', args.local_encoders_num)
-        local_model = LocalMistralModel(full_llm, num_encoders=args.local_encoders_num)
+        print('args.local_encoders_num:',args.local_encoders_num)
+        local_model = LocalMistralModel(full_llm, num_encoders = args.local_encoders_num)
+        
+        if args.finetune_name == "LoRA":
+            # print('args.finetune_detail_configs:',args.finetune_detail_configs)
+            if args.finetune_detail_configs != None:
+                lora_config = LoraConfig(
+                    **args.finetune_detail_configs
+                )
+            else:
+                if args.
+                lora_config = LoraConfig(
+                    inference_mode=False,
+                    r=4,
+                    lora_alpha=32,
+                    lora_dropout=0.1
+                )
+
+            def get_lora_model(model):
+                model.enable_input_require_grads()
+                peft_model = get_peft_model(model, lora_config)
+                return peft_model
+
+            local_model = get_lora_model(local_model)
+            print('after lora')
+            local_model.print_trainable_parameters()
+
+        encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+        print('encoder_trainable_ids = ', encoder_trainable_ids)
+        for encoder_id in range(len(local_model.layers)):
+            if encoder_id not in encoder_trainable_ids:
+                for param in local_model.layers.parameters():
+                    param.requires_grad = False
+
+        print('embedding_trainable = ', args.embedding_trainable[0])
+        if args.embedding_trainable[0] == False:
+            for param in local_model.embed_tokens.parameters():
+                param.requires_grad = False
+
+        if args.finetune_name == "LoRA":
+            print('local final trainable param:')
+            local_model.print_trainable_parameters()
 
         local_model = local_model.to(args.device)
-        print(f"local_model parameters: {sum(p.numel() for p in local_model.parameters())}")
 
-        for param in local_model.parameters():
-            param.requires_grad = False
-
-        local_trainable_params = []
-        local_model_optimizer = None
-
-        print('Local Model: args.embedding_trainable = ', args.embedding_trainable[0])
-        for param in local_model.embed_tokens.parameters():
-            param.requires_grad = args.embedding_trainable[0]
-        if args.embedding_trainable[0]:
-            local_trainable_params.extend(list(local_model.embed_tokens.parameters()))
-
-        print('Local Model: encoder_trainable = ', args.encoder_trainable[0])
-        for param in local_model.layers.parameters():
-            param.requires_grad = args.encoder_trainable[0]
-        if args.encoder_trainable[0]:
-            local_trainable_params.extend(list(local_model.layers.parameters()))
-
-        if len(local_trainable_params) < 0:
+        local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+        if len(local_trainable_params)>0:
             local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
+
 
     ########### Global Model ###########
     global_model = None
@@ -1928,8 +1955,6 @@ def load_basic_models_llm_mistral(args, index):
         # add Classification Layer(untrainable)
         if args.model_architect == 'CLM':
             global_model = MistralForCausalLM_pretrained(global_model, head_layer,generation_config=full_model.generation_config)
-        # elif args.model_architect == 'CLS':
-        #     global_model = MambaForCausalLM_pretrained(global_model, head_layer)
         else:
             assert 1 > 2, "task type not supported"
 
@@ -2001,6 +2026,22 @@ def load_basic_models_llm(args, index):
 
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+
+def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
+                              head_layer_trainable):
+    if model_type in ['Bert', 'Albert', 'Roberta']:
+        local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
+            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+        )
+    elif model_type in ['GPT2']:
+        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
+        pass
+    elif model_type in ['Llama']:
+        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args,index)
+        pass
+    else:
+        assert 1 > 2, 'llm not supported'
+    return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
 
 
 # def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,

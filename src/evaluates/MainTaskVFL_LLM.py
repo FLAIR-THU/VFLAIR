@@ -427,7 +427,7 @@ def create_main_task(global_model_type: GenerationMixin):
 
 
             elif self.args.model_architect=='TQA': #.task_type == "QuestionAnswering":
-                print('feature_list:',type(feature_list),len(feature_list),type(feature_list[0]))
+                # print('feature_list:',type(feature_list),len(feature_list),type(feature_list[0]))
                 start_logits = model_output.start_logits # bs, 512
                 end_logits = model_output.end_logits # bs, 512
                 sample_cnt = start_logits.shape[0] # bs
@@ -918,8 +918,8 @@ def create_main_task(global_model_type: GenerationMixin):
                                         extract_ans = extract_ans_temp
                                     extract_ans = extract_ans.strip()
                                     
-                                    print('extract_ans:',extract_ans)
-                                    print('answer:',answer)
+                                    # print('extract_ans:',extract_ans)
+                                    # print('answer:',answer)
 
                                     if is_equiv(extract_ans, answer):
                                         return True
