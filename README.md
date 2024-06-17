@@ -40,7 +40,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
 ## Structure
 
- ![Pipeline](../../usage_guidance/figures/pipeline.png)
+ ![Pipeline](./usage_guidance/figures/pipeline.png)
 
 - **Config Module**
 
