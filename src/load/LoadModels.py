@@ -1080,7 +1080,10 @@ def load_basic_models_llm_baichuan(args, index):
                     **args.finetune_detail_configs
                 )
             else:
+<<<<<<< HEAD
                 if args.
+=======
+>>>>>>> e5ef7f1 (revise)
                 lora_config = LoraConfig(
                     inference_mode=False,
                     r=4,
@@ -1212,7 +1215,10 @@ def load_basic_models_llm_xlnet(args, index):
                     **args.finetune_detail_configs
                 )
             else:
+<<<<<<< HEAD
                 if args.
+=======
+>>>>>>> e5ef7f1 (revise)
                 lora_config = LoraConfig(
                     inference_mode=False,
                     r=4,

@@ -6,27 +6,24 @@
 echo 'yelp 4 encoder Ad'
 
 
-for seed in {60,61,62,63,64,65}
-    do
-    # 0.001
-    python main_pipeline_llm_4.py --seed $seed --configs yelp_ad_4
+# 0.001
+# python main_pipeline_llm_4.py --seed 65 --configs yelp_ad_4
 
-    # 0.01
-    sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/yelp_ad_4.json
-    python main_pipeline_llm_4.py --seed $seed --configs yelp_ad_4
+# 0.01
+sed -i 's/"lambda": 0.001/"lambda": 0.01/g' ./configs/yelp_ad_4.json
+# python main_pipeline_llm_4.py --seed 65 --configs yelp_ad_4
 
-    # 0.1
-    sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/yelp_ad_4.json
-    python main_pipeline_llm_4.py --seed $seed --configs yelp_ad_4
+# 0.1
+sed -i 's/"lambda": 0.01/"lambda": 0.1/g' ./configs/yelp_ad_4.json
+python main_pipeline_llm_4.py --seed 65 --configs yelp_ad_4
 
-    # 1
-    sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/yelp_ad_4.json
-    python main_pipeline_llm_4.py --seed $seed --configs yelp_ad_4
+# 1
+sed -i 's/"lambda": 0.1/"lambda": 1.0/g' ./configs/yelp_ad_4.json
+python main_pipeline_llm_4.py --seed 65 --configs yelp_ad_4
 
-    # 5
-    sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/yelp_ad_4.json
-    python main_pipeline_llm_4.py --seed $seed --configs yelp_ad_4
+# 5
+sed -i 's/"lambda": 1.0/"lambda": 5.0/g' ./configs/yelp_ad_4.json
+python main_pipeline_llm_4.py --seed 65 --configs yelp_ad_4
 
-    sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/yelp_ad_4.json
+sed -i 's/"lambda": 5.0/"lambda": 0.001/g' ./configs/yelp_ad_4.json
 
-done

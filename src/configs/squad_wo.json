@@ -87,7 +87,13 @@
                 "batch_size": 32,
                 "attack_sample_num": 100
         }
+<<<<<<< HEAD
     }
     }
   
+=======
+    }
+    }
+>>>>>>> e5ef7f1 (revise)
 }
+

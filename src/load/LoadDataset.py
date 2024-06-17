@@ -1933,7 +1933,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
 
-        for _all_text in train_all_texts[:]:
+        for _all_text in train_all_texts[:1]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1972,7 +1972,7 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts:
+        for _all_text in test_all_texts[:10]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)  # .strip().split()
 
             text_tokens = all_doc_tokens[:-1]
@@ -2146,12 +2146,17 @@ def load_dataset_per_party_llm(args, index):
         targets = [f"{example['output']}" for example in list_data_dict]  # local
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         X_data = sources # list of instruction text
         y_data = targets # list of answer text
 =======
         X_data = sources[:500]  # list of instruction text
         y_data = targets[:500]  # list of answer text
 >>>>>>> ea48356 (semi prod)
+=======
+        X_data = sources # list of instruction text
+        y_data = targets # list of answer text
+>>>>>>> e5ef7f1 (revise)
 
         X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1,
                                                             random_state=args.current_seed)

@@ -5,30 +5,50 @@
 
 echo 'Yelp DP 5encoder'
 
+# python main_pipeline_llm_5.py --seed 64 --configs yelp_wo_5
 
-for seed in {60,61,62,63,64,65}
-    do
-        
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_wo_5
+# 50
+# python main_pipeline_llm_5.py --seed 64 --configs yelp_dp_5
 
-    # 50
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_dp_5
+# 70
+sed -i 's/"epsilon": 50/"epsilon": 70/g' ./configs/yelp_dp_5.json
+# python main_pipeline_llm_5.py --seed 64 --configs yelp_dp_5
 
-    # 70
-    sed -i 's/"epsilon": 50/"epsilon": 70/g' ./configs/yelp_dp_5.json
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_dp_5
+# 90
+sed -i 's/"epsilon": 70/"epsilon": 90/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 64 --configs yelp_dp_5
 
-    # 90
-    sed -i 's/"epsilon": 70/"epsilon": 90/g' ./configs/yelp_dp_5.json
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_dp_5
+# 100
+sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 64 --configs yelp_dp_5
 
-    # 100
-    sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp_5.json
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_dp_5
+# 500
+sed -i 's/"epsilon": 100/"epsilon": 500/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 64 --configs yelp_dp_5
 
-    # 500
-    sed -i 's/"epsilon": 100/"epsilon": 500/g' ./configs/yelp_dp_5.json
-    python main_pipeline_llm_5.py --seed $seed --configs yelp_dp_5
+sed -i 's/"epsilon": 500/"epsilon": 50/g' ./configs/yelp_dp_5.json
 
-    sed -i 's/"epsilon": 500/"epsilon": 50/g' ./configs/yelp_dp_5.json
-done
+
+
+python main_pipeline_llm_5.py --seed 65 --configs yelp_wo_5
+
+# 50
+python main_pipeline_llm_5.py --seed 65 --configs yelp_dp_5
+
+# 70
+sed -i 's/"epsilon": 50/"epsilon": 70/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 65 --configs yelp_dp_5
+
+# 90
+sed -i 's/"epsilon": 70/"epsilon": 90/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 65 --configs yelp_dp_5
+
+# 100
+sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 65 --configs yelp_dp_5
+
+# 500
+sed -i 's/"epsilon": 100/"epsilon": 500/g' ./configs/yelp_dp_5.json
+python main_pipeline_llm_5.py --seed 65 --configs yelp_dp_5
+
+sed -i 's/"epsilon": 500/"epsilon": 50/g' ./configs/yelp_dp_5.json
