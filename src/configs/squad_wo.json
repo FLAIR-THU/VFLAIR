@@ -20,14 +20,14 @@
         "use_prompt": 1,
         "n_shot": 1
     },
-    "tokenizer":{
-        "padding": "max_length",
-        "padding_type": "outside",
-        "pad_token": "[PAD]",
-        "truncation": "longest_first",
-        "max_length": 256,
-        "padding_side": "left",
-        "add_special_tokens": 1
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "best_pred",
+      "doc_stride": 128,
+      "max_seq_length": 512,
+      "max_query_length": 64,
+      "max_answer_length": 30,
+      "n_best_size": 1
     },
     "model_list":{
         "0": {
@@ -89,4 +89,5 @@
         }
     }
     }
+  
 }

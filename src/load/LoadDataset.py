@@ -1959,7 +1959,7 @@ def load_dataset_per_party_llm(args, index):
                 target_word.append(last_word)
 
                 if start_offset + doc_stride + 1 >= len(all_doc_tokens) or \
-                start_offset + length + 1 >= len(all_doc_tokens):
+                        start_offset + length + 1 >= len(all_doc_tokens):
                     break
 
                 start_offset += min(length, doc_stride)
@@ -2145,8 +2145,13 @@ def load_dataset_per_party_llm(args, index):
         # targets = [f"{example['output']}{args.tokenizer.eos_token}" for example in list_data_dict] # local
         targets = [f"{example['output']}" for example in list_data_dict]  # local
 
+<<<<<<< HEAD
         X_data = sources # list of instruction text
         y_data = targets # list of answer text
+=======
+        X_data = sources[:500]  # list of instruction text
+        y_data = targets[:500]  # list of answer text
+>>>>>>> ea48356 (semi prod)
 
         X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.1,
                                                             random_state=args.current_seed)

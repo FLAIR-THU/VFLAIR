@@ -1494,7 +1494,6 @@ def load_basic_models_llm_mamba(args, index):
                     **args.finetune_detail_configs
                 )
             else:
-                if args.
                 lora_config = LoraConfig(
                     inference_mode=False,
                     r=4,
@@ -1767,7 +1766,6 @@ def load_basic_models_llm_chatglm(args, index):
                     **args.finetune_detail_configs
                 )
             else:
-                if args.
                 lora_config = LoraConfig(
                     inference_mode=False,
                     r=4,
@@ -1902,7 +1900,6 @@ def load_basic_models_llm_mistral(args, index):
                     **args.finetune_detail_configs
                 )
             else:
-                if args.
                 lora_config = LoraConfig(
                     inference_mode=False,
                     r=4,
