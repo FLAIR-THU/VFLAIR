@@ -50,22 +50,22 @@
     },
     "model_list":{
         "0": {
-            "type": "llama-2-7b",
+            "type": "lqtrung1998Codellama-7b-hf-ReFT-GSM8k",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/lqtrung1998Codellama-7b-hf-ReFT-GSM8k"
         },
         "1": {
-            "type": "llama-2-7b",
+            "type": "lqtrung1998Codellama-7b-hf-ReFT-GSM8k",
             "pretrained": 1,
             "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "Llama",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/lqtrung1998Codellama-7b-hf-ReFT-GSM8k"
         },
         "task":{
             "task_type": "CausalLM",
@@ -105,9 +105,6 @@
             }
         }
     }
-<<<<<<< HEAD
-=======
     
->>>>>>> e5ef7f1 (revise)
   }
 }

@@ -86,51 +86,44 @@ def create_main_task(global_model_type: GenerationMixin):
 
     class MainTaskVFL_LLM(global_model_type, nn.Module):  # GenerationMixin object,
         def __init__(self, args, job_id=None):
+            super(global_model_type, self).__init__(args.config)
             self.job_id = job_id
-
             self.args = args
-            ## generation related
-            self.config = args.config  # model config
-            with init_empty_weights():
-                super().__init__(self.config)  # init CauselLM
-            self.generation_config = args.generation_config
-            self.k = args.k
+            self.config = args.config  # origin model config
+            
+            # with init_empty_weights():
+            #     super().__init__(self.config)  # init CauselLM
 
+            ## VFL configs ##
+            self.k = args.k # party number
+
+            ## Device Configs ##
             self.current_device = args.device
             self._device = torch.device(self.current_device)
 
+            ## Task Configs ##
             self.dataset_name = args.dataset
-
-            self.epochs = args.main_epochs
-            self.lr = args.main_lr
-            self.batch_size = args.batch_size
-            self.models_dict = args.model_list
-
             self.num_classes = args.num_classes
             self.exp_res_dir = args.exp_res_dir
 
-            self.exp_res_path = args.exp_res_path
-            self.parties = args.parties
-
+            ## Training Configs ##
+            self.epochs = args.main_epochs
+            self.lr = args.main_lr
+            self.batch_size = args.batch_size
+            self.early_stop_threshold = args.early_stop_threshold # Early Stop
             self.Q = args.Q  # FedBCD
 
-            self.train_party_time = [0 for i in range(self.k)]
-            self.inference_party_time = [0 for i in range(self.k)]
+            ## Model Configs ##
+            self.models_dict = args.model_list
+            self.generation_config = args.generation_config # generation related
+            
+            self.exp_res_path = args.exp_res_path
 
-            self.parties_data = None
-            self.gt_one_hot_label = None
-            self.clean_one_hot_label = None
-            self.pred_list = []
-            self.pred_list_clone = []
-            self.pred_gradients_list = []
-            self.pred_gradients_list_clone = []
+            ###### init Parties ######
+            self.parties = args.parties
 
-            # FedBCD related
-            self.local_pred_list = []
-            self.local_pred_list_clone = []
-            self.local_pred_gradients_list = []
-            self.local_pred_gradients_list_clone = []
 
+            ### Results 
             self.loss = None
             self.train_acc = None
             self.flag = 1
@@ -139,24 +132,39 @@ def create_main_task(global_model_type: GenerationMixin):
             self.stopping_commu_cost = 0
             self.communication_cost = 0
             self.training_time = 0
+            self.train_party_time = [0 for i in range(self.k)]
+            self.inference_party_time = [0 for i in range(self.k)]
 
-            # Early Stop
-            self.early_stop_threshold = args.early_stop_threshold
             self.final_epoch = 0
             self.current_epoch = 0
             self.current_step = 0
 
+            self.parties_data = None
+            self.gt_one_hot_label = None
+            self.clean_one_hot_label = None
+
+            self.pred_list = []
+            self.pred_list_clone = []
+            self.pred_gradients_list = []
+            self.pred_gradients_list_clone = []
+
+            self.local_pred_list = []
+            self.local_pred_list_clone = []
+            self.local_pred_gradients_list = []
+            self.local_pred_gradients_list_clone = []
+
+            
             # some state of VFL throughout training process
             self.first_epoch_state = None
             self.middle_epoch_state = None
             self.final_state = None
-            # self.final_epoch_state = None # <-- this is save in the above parameters
 
             self.num_update_per_batch = args.num_update_per_batch
             self.num_batch_per_workset = args.Q  # args.num_batch_per_workset
             self.max_staleness = self.num_update_per_batch * self.num_batch_per_workset
-            self.e2e_model = None  # type:E2EModel
-            self._init_e2e_model()
+            
+            # self.e2e_model = None  # type:E2EModel
+            # self._init_e2e_model()
 
         @property
         def device(self):
@@ -1096,12 +1104,14 @@ def create_main_task(global_model_type: GenerationMixin):
 
             # passive party inform active party to do global pred
             resp = self.global_pred_transmit(pred_list, use_cache=False, count_time=count_time)
+            
             if vfl_basic_config.num_of_slice > 2:
                 p = self.parties[0]
                 p._tensor_to_device(resp, p.models[2].device)
                 final_output = p.forward(2, **resp)
             else:
                 final_output = resp
+
             p=self.parties[0]
             p._tensor_to_device(final_output,self.device)
 
@@ -1767,31 +1777,31 @@ def create_main_task(global_model_type: GenerationMixin):
             # todo: clear global model's past_key_values
             # self.parties[-1].global_model._clear_past_key_values()
 
-        def _init_e2e_model(self):
-            return
-            model_config = None
-            if not self.args.task_type == 'DevLLMInference':
-                return
-            for party in self.parties:
-                try:
-                    for model in party.models.values():
-                        model_config = model.config
-                        break
-                    break
-                except Exception as e:
-                    continue
-                # if party.models:
-                #     model_config = party.local_model.config
-                #     break
-                # elif party.models:
-                #     model_config = party.global_model.config
-                #     break
-            if not model_config:
-                logger.error(f"No model config for E2E_model")
-            with init_empty_weights():
-                self.e2e_model = E2EModel(model_config,
-                                          {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
-            # self.e2e_model.to(self.e2e_model.local_model.device)
+        # def _init_e2e_model(self):
+        #     return
+        #     model_config = None
+        #     if not self.args.task_type == 'DevLLMInference':
+        #         return
+        #     for party in self.parties:
+        #         try:
+        #             for model in party.models.values():
+        #                 model_config = model.config
+        #                 break
+        #             break
+        #         except Exception as e:
+        #             continue
+        #         # if party.models:
+        #         #     model_config = party.local_model.config
+        #         #     break
+        #         # elif party.models:
+        #         #     model_config = party.global_model.config
+        #         #     break
+        #     if not model_config:
+        #         logger.error(f"No model config for E2E_model")
+        #     with init_empty_weights():
+        #         self.e2e_model = E2EModel(model_config,
+        #                                   {**self.parties[0].proxy_models, **self.parties[1].proxy_models})
+        #     # self.e2e_model.to(self.e2e_model.local_model.device)
 
         @property
         def passive_party(self):

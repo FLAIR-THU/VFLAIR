@@ -5,11 +5,28 @@
 
 echo 'Yelp DP 2 encoder'
 
-python main_pipeline_llm.py --seed 60 --configs yelp_wo_2
-python main_pipeline_llm.py --seed 63 --configs yelp_wo_2
-python main_pipeline_llm.py --seed 64 --configs yelp_wo_2
+# 50
+# python main_pipeline_llm.py --seed 62 --configs yelp_dp_2
 
-for seed in {60,61,62,63,64}
+# 70
+sed -i 's/"epsilon": 50/"epsilon": 70/g' ./configs/yelp_dp_2.json
+python main_pipeline_llm.py --seed 62 --configs yelp_dp_2
+
+# 90
+sed -i 's/"epsilon": 70/"epsilon": 90/g' ./configs/yelp_dp_2.json
+python main_pipeline_llm.py --seed 62 --configs yelp_dp_2
+
+# 100
+sed -i 's/"epsilon": 90/"epsilon": 100/g' ./configs/yelp_dp_2.json
+python main_pipeline_llm.py --seed 62 --configs yelp_dp_2
+
+# 500
+sed -i 's/"epsilon": 100/"epsilon": 500/g' ./configs/yelp_dp_2.json
+python main_pipeline_llm.py --seed 62 --configs yelp_dp_2
+
+sed -i 's/"epsilon": 500/"epsilon": 50/g' ./configs/yelp_dp_2.json
+
+for seed in {63,64}
     do  
     # 50
     python main_pipeline_llm.py --seed $seed --configs yelp_dp_2

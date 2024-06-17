@@ -182,7 +182,6 @@ class Party(object):
             args.generation_config = result['generation_config']
             self._set_peft()
 
-
         else:
             (
                 args,

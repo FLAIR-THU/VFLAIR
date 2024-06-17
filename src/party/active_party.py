@@ -122,12 +122,12 @@ class ActiveParty_LLM(Party_LLM):
         # print(self.global_gradients)
 
     def global_LR_decay(self, i_epoch):
-        if self.global_model_optimizer != None and (not self.lr_schedulers.get(1)):
+        if self.global_model_optimizer != None:
             eta_0 = self.args.main_lr
             eta_t = eta_0 / (np.sqrt(int(i_epoch) + 1))
             for param_group in self.global_model_optimizer.param_groups:
                 param_group['lr'] = eta_t
-        elif self.lr_schedulers[1]:
+        elif self.lr_schedulers.get(1):
             self.lr_schedulers[1].step()
 
     def cal_passive_local_gradient(self, ik, remote=True):

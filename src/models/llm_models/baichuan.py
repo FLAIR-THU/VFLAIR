@@ -149,6 +149,8 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel, BaichuanPreTrainedM
         # Initialize weights and apply final processing
         # self.post_init()
 
+        self.embedding_output = None
+
     def get_input_embeddings(self):
         return self.embed_tokens
         
@@ -204,6 +206,8 @@ class LocalBaichuanModel(BaiChuanForCausalLM, BaichuanModel, BaichuanPreTrainedM
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
 
+        self.embedding_output = inputs_embeds # add
+        
         # embed positions
         if attention_mask is None:
             attention_mask = torch.ones(

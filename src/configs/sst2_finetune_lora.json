@@ -13,7 +13,6 @@
     "finetune_configs":{
         "name":"LoRA",
         "configs":{
-            "task_type":"CAUSAL_LM",
             "r":4,  
             "lora_alpha":32, 
             "lora_dropout":0.1

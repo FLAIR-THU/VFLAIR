@@ -232,6 +232,8 @@ class LocalMistralModel(MistralForCausalLM, MistralPreTrainedModel):
         # Initialize weights and apply final processing
         # self.post_init()
 
+        self.embedding_output = None
+
     def _clear_past_key_values(self):
         self.past_key_values = None
 
@@ -295,6 +297,7 @@ class LocalMistralModel(MistralForCausalLM, MistralPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+        self.embedding_output = inputs_embeds # add
 
         if attention_mask is not None and self._attn_implementation == "flash_attention_2" and use_cache:
             is_padding_right = attention_mask[:, -1].sum().item() != batch_size

@@ -6,17 +6,9 @@
 echo 'yelp 2 encoder Ad'
 
 
-# 0.001
-# WMI
-sed -i 's/"lambda": 0.001/"lambda": 0.001/g' ./configs/yelp_ad_2_wmi.json
-python main_pipeline_llm.py --seed 65 --configs yelp_ad_2_wmi
-sed -i 's/"lambda": 0.001/"lambda": 0.001/g' ./configs/yelp_ad_2_wmi.json
-
-
 # 1.0
 # WMI
 sed -i 's/"lambda": 0.001/"lambda": 1.0/g' ./configs/yelp_ad_2_wmi.json
-python main_pipeline_llm.py --seed 62 --configs yelp_ad_2_wmi
 python main_pipeline_llm.py --seed 64 --configs yelp_ad_2_wmi
 sed -i 's/"lambda": 1.0/"lambda": 0.001/g' ./configs/yelp_ad_2_wmi.json
 # ALL

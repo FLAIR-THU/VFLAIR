@@ -159,6 +159,8 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
             self.prefix_tokens = torch.arange(self.pre_seq_len).long()
             self.prefix_encoder = PrefixEncoder(config)
             self.dropout = torch.nn.Dropout(0.1)
+    
+        self.embedding_output = None
 
     def get_input_embeddings(self):
         return self.embedding
@@ -189,6 +191,8 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
 
         if inputs_embeds is None:
             inputs_embeds = self.embedding(input_ids)
+        
+        self.embedding_output = inputs_embeds # add
 
         if self.pre_seq_len is not None:
             if past_key_values is None:

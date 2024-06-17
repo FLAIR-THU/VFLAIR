@@ -108,6 +108,8 @@ class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
         # Initialize weights and apply final processing
         # self.post_init()
 
+        self.embedding_output = None
+
     def get_input_embeddings(self):
         return self.embeddings
 
@@ -137,6 +139,7 @@ class LocalMambaModel(MambaForCausalLM, MambaPreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embeddings(input_ids)
+        self.embedding_output = inputs_embeds # add
 
         if self.gradient_checkpointing and self.training and use_cache:
             use_cache = False

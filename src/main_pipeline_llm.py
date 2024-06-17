@@ -261,14 +261,14 @@ if __name__ == '__main__':
 
             args = load_parties_llm(args)
 
-            # inherit generation functions from global model
+            ###### inherit generation functions from global model
             # args.global_model_type = type(args.parties[-1].global_model)
             # ancestor_cls = args.global_model_type
             # todo: infer from model_type might be enough, would also work under 3-slice
             ancestor_cls = get_cls_ancestor(args.config.model_type, args.model_architect)
             MainTaskVFL_LLM = create_main_task(ancestor_cls)
 
-            commuinfo='== metrics:'+args.metric_type
+            # commuinfo='== metrics:'+args.metric_type
             # append_exp_res(args.exp_res_path, commuinfo)
 
             # vanilla

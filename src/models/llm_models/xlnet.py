@@ -192,6 +192,8 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel):  # XL
         # Initialize weights and apply final processing
         # self.post_init()
 
+        self.embedding_output = None
+        
     def get_input_embeddings(self):
         return self.word_embedding
 
