@@ -61,6 +61,24 @@ GRPC_SERVER=vflair-server.com vflair-web
 
 More parameter descriptions see [reference] (./docs/README_parameters.md)
 
+#### GPU Requirements
+The following GPU memory usage is based on 1/10 of the Lambada dataset when using it.
+
+| model                    | dataset  | Activate Party                   | Passive Party                   |
+|--------------------------|----------|----------------------------------|---------------------------------|
+| Qwen2-72B                | huanhuan | 2*A100 GPU memory used: 135050MB | 1*A100 GPU memory used: 20510MB |
+| QWen2-0.5B               | huanhuan | 1*A100 GPU memory used: 5130MB   | 1*4080 GPU memory used:3500MB   |
+| GPT2                     | Lambada  | 1*A100 GPU memory used: 4150MB   | 1*4080 GPU memory used: 2440MB  |
+| llama-2-7b               | Lambada  | 1*A100 GPU memory used: 26930MB  | 1*A100  GPU memory used: 3140MB |
+| bert                     | Lambada  | 1*A100 GPU memory used: 2550MB   | 1*4080 GPU memory used: 700MB   |
+| chatglm3-6b              | Lambada  | 1*A100 GPU memory used: 13290MB  | 1*4080 GPU memory used: 2200MB  |
+| falcon-rw-1b             | Lambada  | 1*A100 GPU memory used: 7540MB   | 1*4080 GPU memory used: 1300MB  |
+| gemma-2b                 | Lambada  | 1*A100 GPU memory used: 15300MB  | 1*4080 GPU memory used: 3300MB  |
+| mamba-130m-hf            | Lambada  | 1*A100 GPU memory used: 2640MB   | 1*4080 GPU memory used: 800MB   |
+| xlnet-base-cased         | Lambada  | 1*A100 GPU memory used: 3700MB   | 1*4080 GPU memory used: 2100MB  |
+| Baichuan-7B              | Lambada  | 1*A100 GPU memory used: 29030MB  | 1*A100 GPU memory used: 3750MB  |
+| Mistral-7B-Instruct-v0.2 | Lambada  | 1*A100 GPU memory used: 29510MB  | 1*A100 GPU memory used: 3090MB  |
+
 ### How to use
 
 Modify the configuration file, assuming it is saved in the basic_config_cola.json file,
@@ -90,4 +108,6 @@ Refer to [Add New Algorithms](../../usage_guidance/Add_New_Algorithm.md) After i
 - [Parameter Configuration](../configs/README.md)
 - [Introduction to VFLAIR Federated Learning](../../README.md)
 - [VFLAIR LLM Introduction](../configs/README_LLM.md)
-- [中文文档](./README_zh.md)
+- [Docs in Chinese](./README_zh.md)
+- [Known issues](./docs/README_issues.md)
+- [How to use on Mobile](./docs/README_mobile.md)

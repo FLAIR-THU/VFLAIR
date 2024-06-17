@@ -1,5 +1,5 @@
-# 已知问题
+# Known issues
 
-1.数据传输瓶颈
+1. Data transmission bottleneck
 
-目前支持最大传输量1GB左右，更大的数据传输优化正在进行中
+Currently VFLAIR supports a maximum transmission of about 1GB, and greater data transmission optimization is in progress

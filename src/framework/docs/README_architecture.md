@@ -1,19 +1,19 @@
-# 架构
+# Architecture
 
-## 介绍
+## Introduction
 
-分布式下系统分三层及两大模块。
+The distributed system is divided into three layers and two modules.
 
-* 上层是应用层，负责发起训练或推理任务、查看任务结果以及数据可视化等功能；
-* 中间层是协调层，负责根据不同调度策略，启动任务，协调Active Party及Passive Party完成任务处理；
-* 底层是计算层（执行层），负责具体算法执行和分布式通信；
+* The upper layer is the application layer, which is responsible for initiating training or inference tasks, viewing task results, and data visualization;
+* The middle layer is the coordination layer, which is responsible for starting tasks according to different scheduling strategies and coordinating Active Party and Passive Party to complete task processing;
+* The bottom layer is the computing layer (execution layer), which is responsible for specific algorithm execution and distributed communication;
 
-两模块是指联邦学习算法模块及python 客户端lib库，方便用户直接使用python执行任务。
+The two modules refer to the federated learning algorithm module and the python client lib library, which makes it convenient for users to directly use python to execute tasks.
 
-## 架构图
+## Architecture Graph
 
 ![架构图](./架构图.png)
 
-## 流程图
+## Sequence Graph
 
 ![流程图](./流程图New.png)
