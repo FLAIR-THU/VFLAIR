@@ -8,7 +8,7 @@
 
 In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluation as **a variant** of our traditional Federated Learning procedure. Here we provide the following functions: 
 
- ![LLM_overview](../../usage_guidance/figures/VFLAIR_LLM.png)
+ ![LLM_overview](./usage_guidance/figures/VFLAIR_LLM.png)
 
 - **Model Split for LLM**: Defaultly we split the LLM between the first and second layer(encoder or decoder), which can be user-defined through config files.
   - Local Model: Embedding Layer + $n_local$ encoder/decoders
