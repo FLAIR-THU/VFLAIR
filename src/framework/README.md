@@ -66,7 +66,7 @@ The following GPU memory usage is based on 1/10 of the Lambada dataset when usin
 
 | model                    | dataset  | Activate Party                   | Passive Party                   |
 |--------------------------|----------|----------------------------------|---------------------------------|
-| Qwen2-72B                | huanhuan | 2*A100 GPU memory used: 135050MB | 1*A100 GPU memory used: 20510MB |
+| Qwen2-72B                | huanhuan | 4*A100 GPU memory used: 272050MB | 1*A100 GPU memory used: 31610MB |
 | QWen2-0.5B               | huanhuan | 1*A100 GPU memory used: 5130MB   | 1*4080 GPU memory used:3500MB   |
 | GPT2                     | Lambada  | 1*A100 GPU memory used: 4150MB   | 1*4080 GPU memory used: 2440MB  |
 | llama-2-7b               | Lambada  | 1*A100 GPU memory used: 26930MB  | 1*A100  GPU memory used: 3140MB |
