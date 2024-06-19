@@ -12,18 +12,18 @@ Figure Below demonstrates all the main functions supported by VFLAIR-LLM, includ
  ![LLM_overview](./usage_guidance/figures/VFLAIR_LLM.png)
 
 - **Vertical Federated LLM Scenario**: In VFLAIR-LLM, we propose a vertical federated LLM scenario describing 2 parties jointly train a LLM. The Active Party holds the global part of the model, representing model provider with abundant computational resources. The Passive Party holds the local part of LLM, representing companys or institutes with limited resources. Detailed scenario description, including model forward and backward calculation, is demonstrated in the following figure.
-
- ![LLM_scenario](./usage_guidance/figures/LLM_scenario.png)
-
+<div align=center>
+<img src="./usage_guidance/figures/LLM_scenario.png" width="50%">
+</div>
 
 - **Model Split for LLM**: Defaultly we split the LLM between the first and second layer(encoder or decoder), which can be user-defined through config files.
   - Local Model: Embedding Layer + $n_local$ encoder/decoders
   - Global Model: the rest $n_{global}$ encoder/decoders + Head Layers for down-stream tasks
   - For detailed implementation of LLM model split, please refer to [Detailed Tutorial] section for further guidance.
   - Figure below describes the LLM model partition method.
-
- ![Model_Partition](<img src="./usage_guidance/figures/model_partition.png" width="210px">)
-
+<div align=center>
+<img src="./usage_guidance/figures/model_partition.png" width="30%">
+</div>
 
 - **Three Model Architects and corresponding task types**: Currently VFLAIR supported the following model architect. Each model architect can be used in its corresponding downstream tasks and datasets.
   - **CLS models** output probability vectors for the classification, which is used in normal Classification tasks. When the number of classes is reduced to 1, the model only output a single value which can be used in Regression tasks.
