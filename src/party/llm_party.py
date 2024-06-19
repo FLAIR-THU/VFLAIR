@@ -30,6 +30,7 @@ from config import vfl_basic_config
 from models.llm_models.qwen2 import VFLPipelineQwen
 from models.llm_models.base import VFLPipeline
 from load.QwenModelLoader import QwenModelLoader
+from load.GPT2ModelLoader import GPT2ModelLoader
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 
@@ -181,6 +182,64 @@ class Party(object):
             args.model_embedded_dim = args.config.hidden_size
             args.generation_config = result['generation_config']
             self._set_peft()
+        elif args.model_type.lower() == 'gpt2_new':
+            model_path = args.model_list[str(index)]['path']
+
+            # Load Tokenizer
+            args.tokenizer = AutoTokenizer.from_pretrained(model_path)
+            args.tokenizer.padding_side = args.padding_side if (args.padding_side in ["left", "right"]) else "left"
+            if args.pad_token == "default":
+                if args.tokenizer.pad_token is None:
+                    args.tokenizer.pad_token = args.tokenizer.eos_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                    args.pad_id = args.tokenizer.convert_tokens_to_ids(args.tokenizer.eos_token)  #
+                args.pad_token = "default_" + args.tokenizer.pad_token
+            else:
+                args.tokenizer.pad_token = args.pad_token  # ({'pad_token': '[PAD]'}) # args.tokenizer.eos_token #
+                args.pad_id = args.tokenizer.convert_tokens_to_ids(args.pad_token)  #
+            
+            # Load Model
+            loader = GPT2ModelLoader()
+            result = loader.load(args, model_path, self.is_active_party)
+
+            self.models.update(result['models'])
+            args.config = result['config'] # model config
+            args.config.pad_token_id = args.pad_id
+            
+            args.generation_config = result['generation_config'] 
+            args.model_architectures = result['model_architectures'] 
+            args.model_embedded_dim = result['model_embedded_dim'] 
+
+            # if args.finetune_name == "LoRA":
+            #     for i, m in self.models.items():
+            #         peft_model = self._set_peft(m).to(args.device)
+            #         self.models.update({i: peft_model})
+            # else:
+            #     for i, m in self.models.items():
+            #         self.models.update({i: m.to(args.device)})
+            
+            # encoder_trainable_ids = args.encoder_trainable_ids_list[index]
+            # print('encoder_trainable_ids = ', encoder_trainable_ids)
+            # for encoder_id in range(len(local_model.h)):
+            #     if encoder_id not in encoder_trainable_ids:
+            #         for param in local_model.h.parameters():
+            #             param.requires_grad = False
+
+            # print('embedding_trainable = ', args.embedding_trainable[0])
+            # if args.embedding_trainable[0] == False:
+            #     for param in local_model.wte.parameters():
+            #         param.requires_grad = False
+            #     for param in local_model.wpe.parameters():
+            #         param.requires_grad = False
+            
+            # if args.finetune_name == "LoRA":
+            # print('local final trainable param:')
+            # local_model.print_trainable_parameters()
+
+            # local_model = local_model.to(args.device)
+
+            # local_trainable_params = list(filter(lambda x: x.requires_grad, local_model.parameters()))
+            # if len(local_trainable_params)>0:
+            #     local_model_optimizer = torch.optim.Adam(local_trainable_params, lr=args.main_lr)
 
         else:
             (
@@ -191,20 +250,23 @@ class Party(object):
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
 
-    def _set_peft(self):
-        """
-        peft training or load trained peft weights
-        :return:
-        """
-        if peft_model_path:=self.args.model_list[str(self.index)].get('peft_model_path'):
-            for i,m in self.models.items():
-                _model_path=os.path.join(peft_model_path,f"model_{i}")
-                if m and os.path.exists(_model_path):
-                    self.models[i]=PeftModel.from_pretrained(m, _model_path).train()
+    
 
-        if _train_conf := vfl_basic_config.vfl_training_config:
-            if _train_conf.peft_config:
-                self._peft_model_setting()
+    # def _set_peft(self):
+    #     """
+    #     peft training or load trained peft weights
+    #     :return:
+    #     """
+        
+    #     if peft_model_path:=self.args.model_list[str(self.index)].get('peft_model_path'):
+    #         for i,m in self.models.items():
+    #             _model_path=os.path.join(peft_model_path,f"model_{i}")
+    #             if m and os.path.exists(_model_path):
+    #                 self.models[i]=PeftModel.from_pretrained(m, _model_path).train()
+
+    #     if _train_conf := vfl_basic_config.vfl_training_config:
+    #         if _train_conf.peft_config:
+    #             self._peft_model_setting()
 
 
 

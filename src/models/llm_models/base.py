@@ -89,6 +89,7 @@ class VFLPipeline(ABC):
             else:
                 _model = self._load_model_body(model_path, **kwargs)
             _models.update({i: _model})
+
         return _models
 
     def _from_raw(self, model_name_or_path, **kwargs) -> Dict[int, Union[PreTrainedModel, VFLModel]]:

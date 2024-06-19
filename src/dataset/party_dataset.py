@@ -182,11 +182,11 @@ class LambadaDataset_LLM(Dataset):
                 self.labels.append( args.tokenizer.convert_tokens_to_ids( labels[i] ) )
                 self.input_dicts.append(ids)
 
-                if i == 0:
-                    print('TEST TEXT:',texts[i])
-                    print('text_id:',ids['input_ids'].shape, ids['input_ids'])
-                    print('label:',self.labels[i] )
-                    print('-'*25)
+                # if i == 0:
+                #     print('TEST TEXT:',texts[i])
+                #     print('text_id:',ids['input_ids'].shape, ids['input_ids'])
+                #     print('label:',self.labels[i] )
+                #     print('-'*25)
         else:
             for i in range(len(texts)):
                 ids = args.tokenizer(texts[i], \
@@ -196,11 +196,11 @@ class LambadaDataset_LLM(Dataset):
                 self.labels.append(ids['input_ids'])#args.tokenizer.convert_tokens_to_ids( labels[i] ) )
                 self.input_dicts.append(ids)
 
-                if i == 0:
-                    print('TRAIN TEXT:',texts[i])
-                    print('text_id:',ids['input_ids'].shape, ids['input_ids'])
-                    print('label:',self.labels[i], args.tokenizer.convert_tokens_to_ids( labels[i] ) )
-                    print('-'*25)
+                # if i == 0:
+                #     print('TRAIN TEXT:',texts[i])
+                #     print('text_id:',ids['input_ids'].shape, ids['input_ids'])
+                #     print('label:',self.labels[i], args.tokenizer.convert_tokens_to_ids( labels[i] ) )
+                #     print('-'*25)
 
     def __len__(self):
         return len(self.labels)
