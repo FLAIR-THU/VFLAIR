@@ -22,7 +22,7 @@ Figure Below demonstrates all the main functions supported by VFLAIR-LLM, includ
   - For detailed implementation of LLM model split, please refer to [Detailed Tutorial] section for further guidance.
   - Figure below describes the LLM model partition method.
 
- ![Model_Partition](./usage_guidance/figures/model_partition.png)
+ ![Model_Partition](<img src="./usage_guidance/figures/model_partition.png" width="210px">)
 
 
 - **Three Model Architects and corresponding task types**: Currently VFLAIR supported the following model architect. Each model architect can be used in its corresponding downstream tasks and datasets.
