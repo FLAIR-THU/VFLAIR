@@ -15,25 +15,35 @@ class MessageServiceStub(object):
             channel: A grpc.Channel.
         """
         self.send = channel.unary_unary(
-            '/framework.protos.MessageService/send',
-            request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-            response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-        )
+                '/framework.protos.MessageService/send',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
         self.register = channel.unary_stream(
-            '/framework.protos.MessageService/register',
-            request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-            response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-        )
+                '/framework.protos.MessageService/register',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
         self.unregister = channel.unary_unary(
-            '/framework.protos.MessageService/unregister',
-            request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-            response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-        )
+                '/framework.protos.MessageService/unregister',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
+        self.send_server_stream = channel.unary_stream(
+                '/framework.protos.MessageService/send_server_stream',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
+        self.send_batch = channel.stream_stream(
+                '/framework.protos.MessageService/send_batch',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
         self.send_stream = channel.stream_stream(
-            '/framework.protos.MessageService/send_stream',
-            request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-            response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-        )
+                '/framework.protos.MessageService/send_stream',
+                request_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+                response_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                )
 
 
 class MessageServiceServicer(object):
@@ -57,6 +67,18 @@ class MessageServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def send_server_stream(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def send_batch(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def send_stream(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -66,102 +88,144 @@ class MessageServiceServicer(object):
 
 def add_MessageServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        'send': grpc.unary_unary_rpc_method_handler(
-            servicer.send,
-            request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-            response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-        ),
-        'register': grpc.unary_stream_rpc_method_handler(
-            servicer.register,
-            request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-            response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-        ),
-        'unregister': grpc.unary_unary_rpc_method_handler(
-            servicer.unregister,
-            request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-            response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-        ),
-        'send_stream': grpc.stream_stream_rpc_method_handler(
-            servicer.send_stream,
-            request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
-            response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-        ),
+            'send': grpc.unary_unary_rpc_method_handler(
+                    servicer.send,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'register': grpc.unary_stream_rpc_method_handler(
+                    servicer.register,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'unregister': grpc.unary_unary_rpc_method_handler(
+                    servicer.unregister,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'send_server_stream': grpc.unary_stream_rpc_method_handler(
+                    servicer.send_server_stream,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'send_batch': grpc.stream_stream_rpc_method_handler(
+                    servicer.send_batch,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
+            'send_stream': grpc.stream_stream_rpc_method_handler(
+                    servicer.send_stream,
+                    request_deserializer=framework_dot_protos_dot_message__pb2.Message.FromString,
+                    response_serializer=framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        'framework.protos.MessageService', rpc_method_handlers)
+            'framework.protos.MessageService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class MessageService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def send(request,
-             target,
-             options=(),
-             channel_credentials=None,
-             call_credentials=None,
-             insecure=False,
-             compression=None,
-             wait_for_ready=None,
-             timeout=None,
-             metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(request, target, '/framework.protos.MessageService/send',
-                                             framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-                                             framework_dot_protos_dot_message__pb2.Message.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def register(request,
-                 target,
-                 options=(),
-                 channel_credentials=None,
-                 call_credentials=None,
-                 insecure=False,
-                 compression=None,
-                 wait_for_ready=None,
-                 timeout=None,
-                 metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_stream(request, target, '/framework.protos.MessageService/register',
-                                              framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-                                              framework_dot_protos_dot_message__pb2.Message.FromString,
-                                              options, channel_credentials,
-                                              insecure, call_credentials, compression, wait_for_ready, timeout,
-                                              metadata)
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def unregister(request,
-                   target,
-                   options=(),
-                   channel_credentials=None,
-                   call_credentials=None,
-                   insecure=False,
-                   compression=None,
-                   wait_for_ready=None,
-                   timeout=None,
-                   metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(request, target, '/framework.protos.MessageService/unregister',
-                                             framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-                                             framework_dot_protos_dot_message__pb2.Message.FromString,
-                                             options, channel_credentials,
-                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def send_server_stream(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/framework.protos.MessageService/send_server_stream',
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def send_batch(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(request_iterator, target, '/framework.protos.MessageService/send_batch',
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def send_stream(request_iterator,
-                    target,
-                    options=(),
-                    channel_credentials=None,
-                    call_credentials=None,
-                    insecure=False,
-                    compression=None,
-                    wait_for_ready=None,
-                    timeout=None,
-                    metadata=None):
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/framework.protos.MessageService/send_stream',
-                                               framework_dot_protos_dot_message__pb2.Message.SerializeToString,
-                                               framework_dot_protos_dot_message__pb2.Message.FromString,
-                                               options, channel_credentials,
-                                               insecure, call_credentials, compression, wait_for_ready, timeout,
-                                               metadata)
+            framework_dot_protos_dot_message__pb2.Message.SerializeToString,
+            framework_dot_protos_dot_message__pb2.Message.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

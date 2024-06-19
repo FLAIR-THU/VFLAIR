@@ -6,7 +6,6 @@ import grpc
 from framework.common import MessageUtil as mu
 import framework.common.logger_util as logger_util
 import argparse
-import os
 import json
 from framework.common.yaml_loader import load_yaml
 from framework.database.repository.JobRepository import job_repository
@@ -32,6 +31,7 @@ class GrpcClient():
         self.host = host
         self.port = port
         self._node = fpn.Node(node_id=f"{self.id}")
+        self._message_service = fcp.PassiveMessageService(self)
 
         compression_algorithm = grpc.Compression.NoCompression
         if compression == 'GZIP':
@@ -45,20 +45,39 @@ class GrpcClient():
         self.channel = grpc.secure_channel(f"{self.host}:{self.port}", channel_credential, options, compression=self.compression_algorithm)
         self.stub = fps.MessageServiceStub(self.channel)
 
-
-    def send_stream(self, stub):
-        def request_messages():
-            msg = mu.MessageUtil.create(self._node, {})
-            yield msg
-
-        response_iterator = stub.send_stream(request_messages())
+    def send_server_stream(self, task, hidden_states=None):
+        msg = self._create_msg(task, hidden_states)
+        response_iterator = self.stub.send_server_stream(msg)
         for response in response_iterator:
             print(
                 "code(%s), message: %s"
                 % (response.code, response.data)
             )
+            self._message_service.parse_message(response)
+        return response_iterator
 
-    def send(self, stub, task, hidden_states=None):
+    def send_batch(self, task, messages):
+        def request_messages():
+            for msg in messages:
+                yield self._create_msg(task, msg)
+
+        response_iterator = self.stub.send_batch(request_messages())
+        return next(response_iterator).data
+
+    def send_stream(self, messages):
+        def request_messages():
+            for msg in messages:
+                yield msg
+
+        response_iterator = self.stub.send_stream(request_messages())
+        for response in response_iterator:
+            print(
+                "code(%s), message: %s"
+                % (response.code, response.data)
+            )
+        return response_iterator
+
+    def _create_msg(self, task, hidden_states=None):
         job = job_repository.get_by_id(task.job_id)
         config_value = fpm.Value()
         config_value.string = job.params
@@ -69,21 +88,22 @@ class GrpcClient():
         data_value = fpm.Value()
         if hidden_states:
             data_value = hidden_states
-        msg = mu.MessageUtil.create(self._node, {"config": config_value, "task": task_value, "data": data_value}, fpm.START_TASK)
+        msg = mu.MessageUtil.create(self._node, {"config": config_value, "task": task_value, "data": data_value},
+                                    fpm.START_TASK)
+        return msg
+
+    def send(self, stub, task, hidden_states=None):
+        msg = self._create_msg(task, hidden_states)
 
         response = stub.send(msg)
         return response.data
 
     def parse_message(self, response):
-        if self._message_service is None:
-            self._message_service = fcp.PassiveMessageService(self)
         return self._message_service.parse_message(response)
 
     def register(self, stub):
         msg = mu.MessageUtil.create(self._node, {})
         response_iterator = stub.register(msg)
-        if self._message_service is None:
-            self._message_service = fcp.PassiveMessageService(self)
         for response in response_iterator:
             try:
                 if response.code is fpm.ERROR:

@@ -15,7 +15,7 @@ import queue
 from framework.common import MessageUtil as mu
 import framework.server.ActiveMessageService as fsm
 import framework.credentials.credentials as credentials
-
+from framework.client.DistributedCommunication import merge_data
 
 logger = logger_util.get_logger("grpc_server")
 
@@ -100,6 +100,33 @@ class GrpcServer(fps.MessageServiceServicer):
             msg = mq.message_queue.get()
             logger.info(msg)
             yield msg
+
+    def send_server_stream(self, request, context):
+        node_id = request.node.node_id
+        self._message_service.parse_message(request)
+        while True:
+            msg = mq.message_queue.get()
+            logger.info(msg)
+            if msg.type == fpm.STREAM_END:
+                return
+            yield msg
+
+    def send_batch(self, request_iterator, context):
+        data_segments = []
+        data = {}
+        for i, request in enumerate(request_iterator):
+            if i == 0:
+                data = {**request.data.named_values}
+            data_segments.append(request.data.named_values['data'])
+        data['data'] = merge_data(data_segments)
+        msg = mu.MessageUtil.create(self._node, data, fpm.START_TASK)
+
+        result = self._message_service.parse_message(msg)
+        if result is None:
+            response = mu.MessageUtil.create(self._node, {})
+        else:
+            response = mu.MessageUtil.create(self._node, result)
+        yield response
 
 
 def main(main_args):

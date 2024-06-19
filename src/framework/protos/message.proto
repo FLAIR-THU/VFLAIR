@@ -19,6 +19,7 @@ enum MessageType {
   CLOSE_JOB = 6;
   LOAD_MODEL = 7;
   UPDATE_MODEL_DATA = 8;
+  STREAM_END = 9;
 }
 
 message Message{

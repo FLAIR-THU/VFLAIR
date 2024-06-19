@@ -20,6 +20,7 @@ def convert_tensor_to_msg(logits):
 
     return data_value
 
+
 @timer()
 def convert_msg_to_tensor(msg):
     dtype = getattr(torch, msg.data.dtype.split(".")[1])
@@ -31,29 +32,74 @@ def convert_msg_to_tensor(msg):
 
 @timer()
 def convert_pred_to_msg(pred_list):
-    get_total_size(pred_list)
+    SPLIT_SIZE = 10
+    total_size = get_total_size(pred_list)
+    batch_size = int(total_size / SPLIT_SIZE) + 1
+    logger.info(f"split data into {batch_size} parts")
+
+    result = []
+    for i in range(batch_size):
+        data_value = Value()
+        data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
+        inputs_embeds = pred_list['inputs_embeds'].flatten().tolist()
+        start, end = _compute_range(i, len(inputs_embeds), batch_size)
+        data_value.hidden_states.inputs_embeds.value.extend(inputs_embeds[start:end])
+        data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
+
+        if 'attention_mask' in pred_list:
+            data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
+            attention_mask = pred_list['attention_mask'].flatten().tolist()
+            start, end = _compute_range(i, len(attention_mask), batch_size)
+            data_value.hidden_states.attention_mask.value.extend(attention_mask[start:end])
+            data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
+            if pred_list['attention_mask'].requires_grad:
+                data_value.hidden_states.requires_grads.append('attention_mask')
+
+        if 'position_ids' in pred_list:
+            data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
+            position_ids = pred_list['position_ids'].flatten().tolist()
+            start, end = _compute_range(i, len(position_ids), batch_size)
+            data_value.hidden_states.position_ids.value.extend(position_ids[start:end])
+
+        data_value.hidden_states.output_hidden_states = False
+        data_value.hidden_states.use_cache = False
+        if pred_list['inputs_embeds'].requires_grad:
+            data_value.hidden_states.requires_grads.append('inputs_embeds')
+        result.append(data_value)
+
+    return result
+
+
+def merge_data(data_list):
     data_value = Value()
-    data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
-    data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
-    data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
+    for i, data in enumerate(data_list):
+        if i == 0:
+            data_value.hidden_states.inputs_embeds.shape.extend(data.hidden_states.inputs_embeds.shape)
+            data_value.hidden_states.inputs_embeds.dtype = data.hidden_states.inputs_embeds.dtype
 
-    if 'attention_mask' in pred_list:
-        data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
-        data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
-        data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
-        if pred_list['attention_mask'].requires_grad:
-            data_value.hidden_states.requires_grads.append('attention_mask')
+            data_value.hidden_states.attention_mask.shape.extend(data.hidden_states.attention_mask.shape)
+            data_value.hidden_states.attention_mask.dtype = data.hidden_states.attention_mask.dtype
 
-    if 'position_ids' in pred_list:
-        data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
-        data_value.hidden_states.position_ids.value.extend(pred_list['position_ids'].flatten().tolist())
+            data_value.hidden_states.position_ids.shape.extend(data.hidden_states.position_ids.shape)
 
-    data_value.hidden_states.output_hidden_states = False
-    data_value.hidden_states.use_cache = False
-    if pred_list['inputs_embeds'].requires_grad:
-        data_value.hidden_states.requires_grads.append('inputs_embeds')
+            data_value.hidden_states.output_hidden_states = data.hidden_states.output_hidden_states
+            data_value.hidden_states.use_cache = data.hidden_states.use_cache
+            data_value.hidden_states.requires_grads.extend(data.hidden_states.requires_grads)
 
+        data_value.hidden_states.inputs_embeds.value.extend(data.hidden_states.inputs_embeds.value)
+        data_value.hidden_states.attention_mask.value.extend(data.hidden_states.attention_mask.value)
+        data_value.hidden_states.position_ids.value.extend(data.hidden_states.position_ids.value)
     return data_value
+
+
+def _compute_range(i, total, batch):
+    split_size = int(total / batch)
+    end = (i + 1) * split_size
+    if end > total:
+        end = total
+    start = i*split_size
+    logger.info(f"total: {total}, batch:{batch}, start:{start}, end:{end}")
+    return start, end
 
 
 @timer()
@@ -106,7 +152,7 @@ class DistributedCommunication(ICommunication):
 
         task.params = {"grad_enabled": torch.is_grad_enabled()}
 
-        response = self._client.open_and_send(task, new_pred)
+        response = self._client.send_batch(task, new_pred)
         result = response.named_values['test_logit']
         if len(result.hidden_states.inputs_embeds.value) > 0:
             test_logit = result.hidden_states

@@ -15,6 +15,7 @@ OK: Code
 PLAIN: MessageType
 QUERY_JOB: MessageType
 START_TASK: MessageType
+STREAM_END: MessageType
 UNREGISTER: MessageType
 UPDATE_MODEL_DATA: MessageType
 
