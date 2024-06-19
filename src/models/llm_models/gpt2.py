@@ -442,7 +442,7 @@ class GPT2forGeneration_pretrained(GPT2LMHeadModel):
 
 
 ##################### Functional Global Models ######################
-class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel):
+class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel,VFLPipeline):
     def __init__(self, full_gpt, num_encoders, generation_config=None):
         super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
         self.config = full_gpt.config
