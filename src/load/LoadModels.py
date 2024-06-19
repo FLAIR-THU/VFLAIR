@@ -1782,9 +1782,9 @@ def load_basic_models_llm_chatglm(args, index):
 
         encoder_trainable_ids = args.encoder_trainable_ids_list[index]
         print('encoder_trainable_ids = ', encoder_trainable_ids)
-        for encoder_id in range(len(local_model.encoder)):
+        for encoder_id in range(len(local_model.encoder.layers)):
             if encoder_id not in encoder_trainable_ids:
-                for param in local_model.encoder.parameters():
+                for param in local_model.encoder.layers.parameters():
                     param.requires_grad = False
 
         print('embedding_trainable = ', args.embedding_trainable[0])

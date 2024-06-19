@@ -61,6 +61,7 @@ class VFLPipeline(ABC):
 
     @staticmethod
     def save_pretrained(model_name_or_path: str, models: Dict[int, PreTrainedModel], **kwargs):
+        print(f'VFLPipeline save_pretrained')
         for i, m in models.items():
             m.save_pretrained(os.path.join(model_name_or_path, f"model_{i}"), **kwargs)
 
@@ -115,14 +116,14 @@ class VFLPipeline(ABC):
         tokenizer.save_pretrained(self._vfl_model_folder(model_name_or_path))
         return self.from_vfl(self._vfl_model_folder(model_name_or_path), **kwargs)
 
-    @abstractmethod
-    def _load_model_head(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
-        pass
+    # @abstractmethod
+    # def _load_model_head(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
+    #     pass
 
-    @abstractmethod
-    def _load_model_tail(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
-        pass
+    # @abstractmethod
+    # def _load_model_tail(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
+    #     pass
 
-    @abstractmethod
-    def _load_model_body(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
-        pass
+    # @abstractmethod
+    # def _load_model_body(self, model_name_or_path, do_split=False, **kwargs) -> Union[PreTrainedModel, VFLModel]:
+    #     pass

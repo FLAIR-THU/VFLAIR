@@ -443,24 +443,32 @@ class GPT2forGeneration_pretrained(GPT2LMHeadModel):
 
 
 ##################### Functional Global Models ######################
-class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel,VFLPipeline):
-    def __init__(self, full_gpt, num_encoders, generation_config=None):
-        super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
-        self.config = full_gpt.config
+class LocalGPT2Model(GPT2Model, GPT2PreTrainedModel,VFLPipeline):
+
+    def __init__(self, config, full_gpt=None, num_encoders=1, generation_config=None):
+        super(GPT2PreTrainedModel,self).__init__(config)
+        self.config = config
+
         self.generation_config = generation_config
 
-        self.embed_dim = full_gpt.config.hidden_size
+        self.embed_dim = self.config.hidden_size
 
-        self.wte = full_gpt.wte #nn.Embedding(config.vocab_size, self.embed_dim)
-        self.wpe = full_gpt.wpe #nn.Embedding(config.max_position_embeddings, self.embed_dim)
+        self.local_num_encoders = num_encoders 
+        self.num_encoders_all = config.num_hidden_layers # all hidden layers num
+        self.config.n_layer = self.local_num_encoders
 
-        self.drop = full_gpt.drop #nn.Dropout(config.embd_pdrop)
-
-        self.local_num_encoders = num_encoders # local model hidden layers
-        self.num_encoders_all = full_gpt.config.num_hidden_layers # all hidden layers num
-        
-        self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) for i in range(self.local_num_encoders)])
-        #nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders)])
+        if full_gpt== None:
+            self.wte = nn.Embedding(config.vocab_size, self.embed_dim)
+            self.wpe = nn.Embedding(config.max_position_embeddings, self.embed_dim)
+            self.drop = nn.Dropout(config.embd_pdrop)
+            self.h = nn.ModuleList([GPT2Block(config, layer_idx=i) for i in range(self.local_num_encoders)])
+            #nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders)])
+        else:
+            self.wte = full_gpt.wte #nn.Embedding(config.vocab_size, self.embed_dim)
+            self.wpe = full_gpt.wpe #nn.Embedding(config.max_position_embeddings, self.embed_dim)
+            self.drop = full_gpt.drop #nn.Dropout(config.embd_pdrop)
+            self.h =  nn.ModuleList([copy.deepcopy(full_gpt.h[i]) for i in range(self.local_num_encoders)])
+            #nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders)])
 
         # Model parallel
         self.model_parallel = False
@@ -472,6 +480,7 @@ class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel,VFLPipeline
 
         self.embedding_output = None
         self.past_key_values = None
+
 
     def _clear_past_key_values(self):
         self.past_key_values = None
@@ -675,20 +684,26 @@ class LocalGPT2Model(GPT2LMHeadModel, GPT2Model, GPT2PreTrainedModel,VFLPipeline
                 }
     
 class GlobalGPT2Model(GPT2Model,GPT2PreTrainedModel,VFLPipeline):
-    def __init__(self, full_gpt, num_encoders):
-        super(GPT2PreTrainedModel,self).__init__(full_gpt.config)
+    def __init__(self, config, full_gpt=None, num_encoders=1, generation_config=None):
+        super(GPT2PreTrainedModel,self).__init__(config)
+        self.config = config
 
-        self.embed_dim = full_gpt.config.hidden_size
+        self.generation_config = generation_config
+
+        self.embed_dim = self.config.hidden_size
 
         self.global_num_encoders = num_encoders # global model hidden layers
-        self.num_encoders_all = full_gpt.config.num_hidden_layers # all hidden layers num
+        self.num_encoders_all = self.config.num_hidden_layers # all hidden layers num
         self.local_num_encoders = self.num_encoders_all - self.global_num_encoders # local model hidden layers
-        self.h =  nn.ModuleList([full_gpt.h[i] for i in range(self.local_num_encoders,self.num_encoders_all)])
-        # self.h = nn.ModuleList([GPT2Block(full_gpt.config, layer_idx=i) for i in range(self.num_encoders,self.num_encoders_all)])
-        for layer_idx in range(len(self.h)):
-            self.h[layer_idx].attn.layer_idx = self.h[layer_idx].attn.layer_idx  -self.local_num_encoders
+        self.config.n_layer = self.global_num_encoders
 
-        self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
+        if full_gpt== None:
+            self.h = nn.ModuleList([GPT2Block(config, layer_idx=i) for i in range(self.local_num_encoders,self.num_encoders_all)])
+            self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
+
+        else:
+            self.h =  nn.ModuleList([full_gpt.h[i] for i in range(self.local_num_encoders,self.num_encoders_all)])
+            self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
 
         # Model parallel
         self.model_parallel = False
