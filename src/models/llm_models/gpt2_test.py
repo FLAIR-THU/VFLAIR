@@ -250,10 +250,23 @@ class GPT2ForQuestionAnswering_pretrained(GPT2PreTrainedModel):
         )
 
 class GPT2LMHeadModel_pretrained(GPT2LMHeadModel):
-    def __init__(self, global_gpt, lm_head, generation_config=None):
-        super().__init__(global_gpt.config)
-        self.transformer = global_gpt #GPT2Model(config)
-        self.head_layer = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
+
+    # def __init__(self, config: Qwen2Config, **kwargs):
+    #     super().__init__(config)
+    #     self.model = Qwen2ModelTail(config)
+    #     # Initialize weights and apply final processing
+    #     self.post_init()
+
+    def __init__(self, config, global_gpt = None, lm_head = None, num_encoders=11, generation_config=None):
+        super().__init__(config)
+        self.config = config
+        if global_gpt == None:
+            self.transformer = GlobalGPT2Model(config, num_encoders=num_encoders) 
+            self.head_layer = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        else:
+            self.transformer = global_gpt #GPT2Model(config)
+            self.head_layer = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        
         self.generation_config=generation_config
         
         # Model parallel
@@ -338,104 +351,6 @@ class GPT2LMHeadModel_pretrained(GPT2LMHeadModel):
             loss=loss,
             logits=lm_logits,
             past_key_values=transformer_outputs.past_key_values,
-            hidden_states=transformer_outputs.hidden_states,
-            attentions=transformer_outputs.attentions,
-            cross_attentions=transformer_outputs.cross_attentions,
-        )
-
-class GPT2forGeneration_pretrained(GPT2LMHeadModel):
-    def __init__(self, global_gpt, lm_head, generation_config=None):
-        super().__init__(global_gpt.config, lm_head)
-        self.transformer = global_gpt #GPT2Model(config)
-        self.head_layer = lm_head #nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
-        # Model parallel
-        self.model_parallel = False
-        self.device_map = None
-
-        # Initialize weights and apply final processing
-        # self.post_init()
-
-    def _clear_past_key_values(self):
-        self.transformer.past_key_values = None
-
-    def forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        attention_mask: Optional[torch.FloatTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-        token_type_ids: Optional[torch.LongTensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        head_mask: Optional[torch.FloatTensor] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        encoder_hidden_states: Optional[torch.Tensor] = None,
-        encoder_attention_mask: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-
-        local_past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
-        **kwargs
-    ) -> Union[Tuple, CausalLMOutputWithCrossAttentions]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
-            `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
-            are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        # past_key_values: local model past_key_values, no need to give to global gpt
-        transformer_outputs = self.transformer(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            past_key_values=past_key_values,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            encoder_hidden_states=encoder_hidden_states,
-            encoder_attention_mask=encoder_attention_mask,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-        hidden_states = transformer_outputs[0]
-
-        # Set device for model parallelism
-        if self.model_parallel:
-            torch.cuda.set_device(self.transformer.first_device)
-            hidden_states = hidden_states.to(self.head_layer.weight.device)
-
-        lm_logits = self.head_layer(hidden_states)
-        # return lm_logits
-
-        loss = None
-        if labels is not None:
-            # move labels to correct device to enable model parallelism
-            labels = labels.to(lm_logits.device)
-            # Shift so that tokens < n predict n
-            shift_logits = lm_logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
-            loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-
-        if not return_dict:
-            output = (lm_logits,) + transformer_outputs[1:]
-            return ((loss,) + output) if loss is not None else output
-
-        ### add
-        if use_cache:
-            past_key_values = local_past_key_values + transformer_outputs.past_key_values
-
-        return CausalLMOutputWithCrossAttentions(
-            loss=loss,
-            logits=lm_logits,
-            past_key_values= past_key_values, #transformer_outputs.past_key_values, # 
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
             cross_attentions=transformer_outputs.cross_attentions,
@@ -697,9 +612,12 @@ class GlobalGPT2Model(GPT2Model,GPT2PreTrainedModel,VFLPipeline):
         self.local_num_encoders = self.num_encoders_all - self.global_num_encoders # local model hidden layers
         self.config.n_layer = self.global_num_encoders
 
+        self.wte = nn.Embedding(config.vocab_size, self.embed_dim)
+        self.wpe = nn.Embedding(config.max_position_embeddings, self.embed_dim)
+        self.drop = nn.Dropout(config.embd_pdrop)
         if full_gpt== None:
             self.h = nn.ModuleList([GPT2Block(config, layer_idx=i) for i in range(self.local_num_encoders,self.num_encoders_all)])
-            self.ln_f = full_gpt.ln_f #nn.LayerNorm(self.embed_dim, eps=full_gpt.config.layer_norm_epsilon)
+            self.ln_f = nn.LayerNorm(self.embed_dim, eps=self.config.layer_norm_epsilon)
 
         else:
             self.h =  nn.ModuleList([full_gpt.h[i] for i in range(self.local_num_encoders,self.num_encoders_all)])
