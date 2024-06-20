@@ -10,11 +10,12 @@ class ImaginedAdversary_MLP3(nn.Module):
     output --- embedding : bs, seq_length, 768(embed_dim)
     '''
 
-    def __init__(self, seq_length, embed_dim, hidden_size=80):
+    def __init__(self, seq_length, embed_dim ,hidden_size=80):
         super(ImaginedAdversary_MLP3, self).__init__()
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
+        # self.batch_first = batch_first
 
         self.net1 = nn.Sequential(
             nn.Flatten(),
@@ -35,16 +36,16 @@ class ImaginedAdversary_MLP3(nn.Module):
         )
 
     def forward(self, x):
-
-        print('=== ia model ===')
         origin_shape = x.shape 
         origin_dtype = x.dtype
-        print('x raw:',x.shape,x.dtype)
-        print('origin_shape:',origin_shape)
+
+        # print('=== ia model ===')
+        # print('x raw:',x.shape,x.dtype)
+        # print('origin_shape:',origin_shape)
+
         if origin_shape[1] != self.seq_length:
             x = x.transpose(0,1) # should be [bs, seq_len, embed_dim]
-        print('x after:',x.shape,x.dtype)
-        # print('x:',x.shape,origin_shape)
+            # print('x after:',x.shape,x.dtype)
 
         x = torch.tensor(x, dtype=torch.float32)
         x1 = self.net1(x)
@@ -57,10 +58,9 @@ class ImaginedAdversary_MLP3(nn.Module):
         x3 = x3.reshape(origin_shape)
         # x3 = torch.tensor(x,dtype=origin_dtype)
 
-        if origin_shape[1] != self.seq_length:
-            x3 = x3.transpose(0,1)
+        # if not self.batch_first:
+        #     x3 = x3.transpose(0,1) # should be [bs, seq_len, embed_dim]
 
-        print('x3:',x3.shape,x3.dtype)
-
-        print('=== ia model ===')
+        # print('final x3:',x3.shape,x3.dtype)
+        # print('=== ia model ===')
         return x3

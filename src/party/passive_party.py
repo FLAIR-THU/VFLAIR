@@ -93,6 +93,9 @@ class PassiveParty_LLM(Party_LLM):
                 if not 'party' in defense_configs:
                     defense_configs['party'] = [0]
                     print('[warning] default passive party selected for applying adversarial training')
+                
+                # self.batch_first = defense_configs['batch_first'] if ('batch_first' in defense_configs) else True
+                
 
                 self.adversarial_model_lr = defense_configs['adversarial_model_lr']
                 self.adversarial_model_hidden_size = defense_configs['adversarial_model_hidden_size'] if (
@@ -107,8 +110,7 @@ class PassiveParty_LLM(Party_LLM):
 
                 # prepare adversarial model --  for adversarial training
                 self.adversarial_model = globals()[adversarial_model_name](seq_length, embed_dim,
-                                                                           self.adversarial_model_hidden_size).to(
-                    self.args.device)
+                                                    self.adversarial_model_hidden_size).to(self.args.device)
                 if self.local_model_optimizer == None:
                     self.local_model_optimizer = torch.optim.Adam(self.adversarial_model.parameters(),
                                                                   lr=self.adversarial_model_lr)
@@ -119,14 +121,16 @@ class PassiveParty_LLM(Party_LLM):
                 # self.adversarial_model_optimizer = torch.optim.Adam(
                 #             [{'params': self.adversarial_model.parameters(), 'lr': adversarial_model_lr}])
 
+
                 # prepare imagined adversary --  for adversarial training
                 imagined_adversary_model_name = defense_configs['imagined_adversary']
                 self.imagined_adversary_hidden_size = defense_configs['imagined_adversary_hidden_size'] if (
                         'imagined_adversary_hidden_size' in defense_configs) else 80
+                
                 self.imagined_adversary = globals()[imagined_adversary_model_name](seq_length, embed_dim,
-                                                                                   self.imagined_adversary_hidden_size).to(
-                    device)
+                                                            self.imagined_adversary_hidden_size).to(device)
                 self.imagined_adversary_lr = defense_configs['imagined_adversary_lr']
+
                 self.imagined_adversary_optimizer = torch.optim.Adam(list(self.imagined_adversary.parameters()),
                                                                      lr=self.imagined_adversary_lr)
 
@@ -369,22 +373,21 @@ class PassiveParty_LLM(Party_LLM):
 
         # ########### Defense on Loss ###############
         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
-            intermediate = self.local_pred  # pred after adversarial model: bs, seq, embed_dim768
 
-            if self.args.model_type == 'ChatGLM':
-                intermediate = intermediate.transpose(0,1)
-
+            # [bs, seq, embed_dim] or [seq, bs, embed_dim](ChatGLM/XLNet)
+            intermediate = self.local_pred  
             adversary_recovered_embedding = self.imagined_adversary(intermediate)
-            real_embedding = self.local_model.embedding_output
+            # bs, seq_len, embed_dim
+            real_embedding = self.local_model.embedding_output 
 
-            if self.args.model_type == 'ChatGLM':
-                # adversary_recovered_embedding = adversary_recovered_embedding.transpose(0,1)
-                real_embedding = real_embedding.transpose(0,1)
-                print('intermediate:',intermediate.shape)
-                print('adversary_recovered_embedding:',adversary_recovered_embedding.shape)
-                print('real_embedding:',real_embedding.shape)
-                
-
+            if intermediate.shape != real_embedding.shape:
+                real_embedding.transpose(0,1)
+            if intermediate.shape != adversary_recovered_embedding.shape:
+                adversary_recovered_embedding.transpose(0,1)
+            # print('real_embedding:',real_embedding.shape) # 
+            # print('intermediate:',intermediate.shape) # 
+            # print('adversary_recovered_embedding:',adversary_recovered_embedding.shape) # 
+        
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / \
                                          intermediate.shape[0]
 
@@ -437,10 +440,9 @@ class PassiveParty_LLM(Party_LLM):
         if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
             # update imagined_adversary_model
             self.imagined_adversary_optimizer.zero_grad()
-            print(self.adversary_attack_loss.requires_grad)
-            self.adversary_attack_loss.requires_grad_(True)
-            print(self.adversary_attack_loss.requires_grad)
-
+            # print(self.adversary_attack_loss.requires_grad)
+            # self.adversary_attack_loss.requires_grad_(True)
+            # print(self.adversary_attack_loss.requires_grad)
             self.adversary_attack_loss.backward(retain_graph=True)
             self.imagined_adversary_optimizer.step()
 
@@ -450,19 +452,16 @@ class PassiveParty_LLM(Party_LLM):
             for param in self.local_model.parameters():
                 if param.requires_grad:
                     local_model_params.append(param)
-            
-            print('local_model_params:',len(local_model_params))
-            for param in local_model_params:
-                if not param.requires_grad:
-                    print(param)
+
 
             self.local_gradient=self.local_gradient.to(self.local_pred.device)
-            print('self.local_pred:',self.local_pred.requires_grad)
-            print('self.local_gradient:',self.local_gradient.requires_grad)
-            self.local_pred.requires_grad_(True)
-            self.local_gradient.requires_grad_(True)
-            print('self.local_pred:',self.local_pred.requires_grad)
-            print('self.local_gradient:',self.local_gradient.requires_grad)
+            
+            # print('self.local_pred:',self.local_pred.requires_grad)
+            # print('self.local_gradient:',self.local_gradient.requires_grad)
+            # self.local_pred.requires_grad_(True)
+            # self.local_gradient.requires_grad_(True)
+            # print('self.local_pred:',self.local_pred.requires_grad)
+            # print('self.local_gradient:',self.local_gradient.requires_grad)
 
 
             weights_grad_a = torch.autograd.grad(

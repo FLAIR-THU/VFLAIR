@@ -28,23 +28,23 @@
   },
   "model_list": {
     "0": {
-      "type": "katuni4katiny-random-chatglm2",
+      "type": "THUDMchatglm3-6b",
       "pretrained": 1,
       "encoder_trainable": 1,
       "embedding_trainable": 0,
       "output_dim": 1,
       "model_type": "ChatGLM",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/THUDMchatglm3-6b"
     },
     "1": {
-      "type": "katuni4katiny-random-chatglm2",
+      "type": "THUDMchatglm3-6b",
       "pretrained": 1,
       "head_layer_trainable": 1,
       "output_dim": 1,
       "model_type": "ChatGLM",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/THUDMchatglm3-6b"
     },
     "task": {
       "task_type": "CausalLM",
@@ -68,8 +68,7 @@
       "imagined_adversary": "ImaginedAdversary_MLP3",
       "imagined_adversary_lr": 0.001,
       "lambda": 0.05,
-      "seq_length": 512,
-      "embed_dim": 768
+      "seq_length": 512
     }
   }
 }

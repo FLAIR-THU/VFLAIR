@@ -314,6 +314,7 @@ class LocalXLNetModel(XLNetLMHeadModel, XLNetModel, XLNetPreTrainedModel):  # XL
             word_emb_k = inputs_embeds
         else:
             word_emb_k = self.word_embedding(input_ids)
+        self.embedding_output = word_emb_k
         output_h = self.dropout(word_emb_k)
 
         # target_mapping --> output_g

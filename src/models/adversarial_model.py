@@ -53,6 +53,7 @@ class Mapping_MLP3(nn.Module):
         # print('Adversarial_MLP init:',seq_length, embed_dim)
         self.seq_length = seq_length
         self.embed_dim = embed_dim
+        # self.batch_first = batch_first
 
         self.net1 = nn.Sequential(
             nn.Flatten(),
@@ -73,15 +74,17 @@ class Mapping_MLP3(nn.Module):
         )
 
     def forward(self, x):
-        print('=== ad model ===')
+        # print('=== ad model ===')
         origin_shape = x.shape 
         origin_dtype = x.dtype
-        print('x raw:',x.shape,x.dtype)
-        print('origin_shape:',origin_shape)
+        # print('x raw:',x.shape,x.dtype)
+        # print('origin_shape:',origin_shape)
 
+        # if not self.batch_first:
         if origin_shape[1] != self.seq_length:
+            # print('batch_first:',self.batch_first)
             x = x.transpose(0,1) # should be [bs, seq_len, embed_dim]
-        print('x after:',x.shape,x.dtype)
+            # print('x after:',x.shape,x.dtype)
         # print(self.seq_length,'  ',self.embed_dim)
         # print(self.seq_length*self.embed_dim)
 
@@ -96,15 +99,8 @@ class Mapping_MLP3(nn.Module):
         # print('x3:',x3.shape)
 
         x3 = x3.reshape(origin_shape)
-
-        # x3 = torch.tensor(x,dtype=origin_dtype)
-        print('origin_shape:',origin_shape)
-        if origin_shape[1] != self.seq_length:
-            x3 = x3.transpose(0,1)
-
-        print('x3:',x3.shape,x3.dtype)
-
-        print('=== ad model ===')
+        # print('x3:',x3.shape,x3.dtype)
+        # print('=== ad model ===')
 
         return x3
 

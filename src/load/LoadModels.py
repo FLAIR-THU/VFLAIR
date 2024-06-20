@@ -358,48 +358,6 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer, None, None
 
 
-def load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer):
-    print('Load Defense models')
-    # no defense at all, set some variables as None
-    args.encoder = None
-    adversarial_model = None
-    adversarial_model_optimizer = None
-
-    # some defense need model, add here
-    if args.apply_defense == True:
-        # for adversarial training
-        if 'adversarial' in args.defense_name.lower():
-            # add adversarial model for local model
-            if not 'party' in args.defense_configs:
-                args.defense_configs['party'] = [0]
-                print('[warning] default passive party selected for applying adversarial training')
-
-            if not ('adversarial_model_lr' in args.defense_configs):
-                adversarial_model_lr = args.main_lr
-                print('[warning] default hyper-parameter mid_lr selected for applying MID')
-            else:
-                adversarial_model_lr = args.defense_configs['adversarial_model_lr']
-
-            if not ('adversarial_model' in args.defense_configs):
-                model_name = 'Adversarial_Mapping'
-            else:
-                model_name = args.defense_configs['adversarial_model']
-            print(model_name)
-
-            if index in args.defense_configs['party']:
-                seq_length = args.defense_configs['seq_length']
-                embed_dim = self.args.model_embedded_dim  # defense_configs['embed_dim']
-            
-                # embed_dim = args.defense_configs['embed_dim']
-                adversarial_model = globals()[model_name](seq_length, embed_dim).to(args.device)
-
-                local_model = local_model.to(args.device)
-                # update optimizer
-                adversarial_model_optimizer = torch.optim.Adam(
-                    [{'params': adversarial_model.parameters(), 'lr': adversarial_model_lr}])
-
-    return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
-
 
 def load_basic_models_llm_bert(args, index):
     current_model_type = args.model_list[str(index)]['type']
@@ -2199,12 +2157,57 @@ def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_
 #     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
 
 
+# def load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer):
+#     print('Load Defense models')
+#     # no defense at all, set some variables as None
+#     args.encoder = None
+#     adversarial_model = None
+#     adversarial_model_optimizer = None
+
+#     # some defense need model, add here
+#     if args.apply_defense == True:
+#         # for adversarial training
+#         if 'adversarial' in args.defense_name.lower():
+#             # add adversarial model for local model
+#             if not 'party' in args.defense_configs:
+#                 args.defense_configs['party'] = [0]
+#                 print('[warning] default passive party selected for applying adversarial training')
+
+#             if not ('adversarial_model_lr' in args.defense_configs):
+#                 adversarial_model_lr = args.main_lr
+#                 print('[warning] default hyper-parameter mid_lr selected for applying MID')
+#             else:
+#                 adversarial_model_lr = args.defense_configs['adversarial_model_lr']
+
+#             batch_first = args.defense_configs['batch_first'] if ('batch_first' in args.defense_configs) else True
+                
+#             if not ('adversarial_model' in args.defense_configs):
+#                 model_name = 'Adversarial_Mapping'
+#             else:
+#                 model_name = args.defense_configs['adversarial_model']
+
+#             if index in args.defense_configs['party']:
+#                 print(f'adversarial_model:{model_name} batch_first:{batch_first}')
+#                 seq_length = args.defense_configs['seq_length']
+#                 embed_dim = self.args.model_embedded_dim  # defense_configs['embed_dim']
+            
+#                 # embed_dim = args.defense_configs['embed_dim']
+#                 adversarial_model = globals()[model_name](seq_length, embed_dim, batch_first).to(args.device)
+
+#                 local_model = local_model.to(args.device)
+#                 # update optimizer
+#                 adversarial_model_optimizer = torch.optim.Adam(
+#                     [{'params': adversarial_model.parameters(), 'lr': adversarial_model_lr}])
+
+#     return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
+
+
+
 def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
     val_model = None
     if current_model_type in LLM_supported:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,
-                                                                                                               index)
+        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
         # args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
         return args, local_model, local_model_optimizer, global_model, global_model_optimizer
     else:

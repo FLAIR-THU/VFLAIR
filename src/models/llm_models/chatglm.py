@@ -62,6 +62,10 @@ class ChatGLMForConditionalGeneration_pretrained(ChatGLMForConditionalGeneration
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
+        # added code: ensure dtype alignment
+        model_dtype = self.transformer.encoder.layers[0].self_attention.query_key_value.weight.dtype
+        inputs_embeds =inputs_embeds.to(model_dtype)
+
         transformer_outputs = self.transformer(
             input_ids=input_ids,
             position_ids=position_ids,
@@ -222,7 +226,6 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         # hidden_states, presents, all_hidden_states, all_self_attentions
         # print('local end hidden_states:',local_encoder_output_dict['hidden_states'])
 
-        print('Local inputs_embeds:',local_encoder_output_dict['hidden_states'].shape)
 
         return {'inputs_embeds': local_encoder_output_dict['hidden_states'],#.transpose(0,1),
                 'attention_mask': local_encoder_output_dict['attention_mask'],
@@ -306,11 +309,6 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel):  # ChatGLMPreTrainedModel
             return_dict: Optional[bool] = None,
             **kwargs
     ):
-        # print('Global inputs_embeds:',inputs_embeds.shape)
-        # inputs_embeds = inputs_embeds.transpose(0,1)
-        print('Global after inputs_embeds:',inputs_embeds.shape)
-
-
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
