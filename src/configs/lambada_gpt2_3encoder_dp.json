@@ -1,17 +1,18 @@
 {
-    "epochs": 20,
-    "lr": 0.001,
+    "epochs": 30,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 64,
-    "early_stop_threshold": 2,
-    "pipeline": "pretrained",
+    "batch_size": 32,
+    "early_stop_threshold": 1,
+    "pipeline": "finetune",
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
+    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
-    },
-    "finetune_configs":{
-        "name":"LoRA",
-        "configs":{}
     },
     "dataset":{
         "dataset_name": "Lambada",
@@ -23,7 +24,7 @@
         "padding_type": "outside",
         "pad_token": "[PAD]",
         "truncation": "True",
-        "max_length": 64,
+        "max_length": 512,
         "padding_side": "left",
         "add_special_tokens": 1
     },
@@ -31,9 +32,9 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "embedding_trainable": 1,
             "encoder_trainable": 1,
-            "encoder_trainable_ids":[0],
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[0,1,2],
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -52,26 +53,21 @@
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 128,
+            "doc_stride" : 512,
+            "max_seq_length": 512,
             "metric_type": "best_pred",
-            "n_best_size": 8
+            "n_best_size": 3
         },
-        "local_encoders_num": 1,
+        "local_encoders_num": 3,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
+    
     },
     "defense": {
-        "name": "MID",
+        "name": "LaplaceDP",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 64,
-            "embed_dim": 768
+            "epsilon": 50
         }
     },
     "attack_list": {
@@ -97,4 +93,5 @@
             }
         }
     }
+    
 }

@@ -370,9 +370,21 @@ class PassiveParty_LLM(Party_LLM):
         # ########### Defense on Loss ###############
         if self.args.apply_adversarial and (self.index in self.args.defense_configs["party"]):
             intermediate = self.local_pred  # pred after adversarial model: bs, seq, embed_dim768
-            adversary_recovered_embedding = self.imagined_adversary(intermediate)
 
+            if self.args.model_type == 'ChatGLM':
+                intermediate = intermediate.transpose(0,1)
+
+            adversary_recovered_embedding = self.imagined_adversary(intermediate)
             real_embedding = self.local_model.embedding_output
+
+            if self.args.model_type == 'ChatGLM':
+                # adversary_recovered_embedding = adversary_recovered_embedding.transpose(0,1)
+                real_embedding = real_embedding.transpose(0,1)
+                print('intermediate:',intermediate.shape)
+                print('adversary_recovered_embedding:',adversary_recovered_embedding.shape)
+                print('real_embedding:',real_embedding.shape)
+                
+
             self.adversary_attack_loss = self.adversary_crit(adversary_recovered_embedding, real_embedding) / \
                                          intermediate.shape[0]
 
@@ -423,8 +435,12 @@ class PassiveParty_LLM(Party_LLM):
 
         # adversarial training : update adversarial model
         if (self.args.apply_adversarial == True and (self.index in self.args.defense_configs["party"])):
-            # imagined_adversary update
+            # update imagined_adversary_model
             self.imagined_adversary_optimizer.zero_grad()
+            print(self.adversary_attack_loss.requires_grad)
+            self.adversary_attack_loss.requires_grad_(True)
+            print(self.adversary_attack_loss.requires_grad)
+
             self.adversary_attack_loss.backward(retain_graph=True)
             self.imagined_adversary_optimizer.step()
 
@@ -434,7 +450,21 @@ class PassiveParty_LLM(Party_LLM):
             for param in self.local_model.parameters():
                 if param.requires_grad:
                     local_model_params.append(param)
+            
+            print('local_model_params:',len(local_model_params))
+            for param in local_model_params:
+                if not param.requires_grad:
+                    print(param)
+
             self.local_gradient=self.local_gradient.to(self.local_pred.device)
+            print('self.local_pred:',self.local_pred.requires_grad)
+            print('self.local_gradient:',self.local_gradient.requires_grad)
+            self.local_pred.requires_grad_(True)
+            self.local_gradient.requires_grad_(True)
+            print('self.local_pred:',self.local_pred.requires_grad)
+            print('self.local_gradient:',self.local_gradient.requires_grad)
+
+
             weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 local_model_params,

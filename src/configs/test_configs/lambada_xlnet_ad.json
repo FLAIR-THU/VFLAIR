@@ -2,7 +2,7 @@
   "epochs": 1,
   "lr": 0.0001,
   "k": 2,
-  "batch_size": 16,
+  "batch_size": 2,
   "pipeline": "finetune",
   "model_architect": "CLM",
   "early_stop_threshold": 1,
@@ -28,22 +28,22 @@
   },
   "model_list": {
     "0": {
-      "type": "katuni4katiny-random-chatglm2",
+      "type": "xlnetxlnet-base-cased",
       "pretrained": 1,
       "head_layer_trainable": 0,
       "output_dim": 1,
-      "model_type": "ChatGLM",
+      "model_type": "XLNet",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/xlnetxlnet-base-cased"
     },
     "1": {
-      "type": "katuni4katiny-random-chatglm2",
+      "type": "xlnetxlnet-base-cased",
       "pretrained": 1,
-      "head_layer_trainable": 1,
+      "head_layer_trainable": 0,
       "output_dim": 1,
-      "model_type": "ChatGLM",
+      "model_type": "XLNet",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/xlnetxlnet-base-cased"
     },
     "task": {
       "task_type": "CausalLM",
@@ -55,5 +55,20 @@
     "local_encoders_num": 1,
     "apply_trainable_layer": 0,
     "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "AdversarialTraining",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "adversarial_model": "Mapping_MLP3",
+      "adversarial_model_lr": 0.001,
+      "imagined_adversary": "ImaginedAdversary_MLP3",
+      "imagined_adversary_lr": 0.001,
+      "lambda": 0.05,
+      "seq_length": 512,
+      "embed_dim": 768
+    }
   }
 }

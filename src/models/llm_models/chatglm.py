@@ -222,7 +222,9 @@ class LocalChatGLMModel(ChatGLMForConditionalGeneration, ChatGLMPreTrainedModel)
         # hidden_states, presents, all_hidden_states, all_self_attentions
         # print('local end hidden_states:',local_encoder_output_dict['hidden_states'])
 
-        return {'inputs_embeds': local_encoder_output_dict['hidden_states'],
+        print('Local inputs_embeds:',local_encoder_output_dict['hidden_states'].shape)
+
+        return {'inputs_embeds': local_encoder_output_dict['hidden_states'],#.transpose(0,1),
                 'attention_mask': local_encoder_output_dict['attention_mask'],
                 'position_ids': position_ids
                 # 'all_hidden_states':all_hidden_states,
@@ -304,6 +306,11 @@ class GlobalChatGLMModel(ChatGLMPreTrainedModel):  # ChatGLMPreTrainedModel
             return_dict: Optional[bool] = None,
             **kwargs
     ):
+        # print('Global inputs_embeds:',inputs_embeds.shape)
+        # inputs_embeds = inputs_embeds.transpose(0,1)
+        print('Global after inputs_embeds:',inputs_embeds.shape)
+
+
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )

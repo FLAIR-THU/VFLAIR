@@ -35,7 +35,15 @@ class ImaginedAdversary_MLP3(nn.Module):
         )
 
     def forward(self, x):
-        origin_shape = x.shape
+
+        print('=== ia model ===')
+        origin_shape = x.shape 
+        origin_dtype = x.dtype
+        print('x raw:',x.shape,x.dtype)
+        print('origin_shape:',origin_shape)
+        if origin_shape[1] != self.seq_length:
+            x = x.transpose(0,1) # should be [bs, seq_len, embed_dim]
+        print('x after:',x.shape,x.dtype)
         # print('x:',x.shape,origin_shape)
 
         x = torch.tensor(x, dtype=torch.float32)
@@ -46,7 +54,13 @@ class ImaginedAdversary_MLP3(nn.Module):
         # print('x2:',x2.shape)
 
         x3 = self.net3(x2)
-        # print('x3:',x3.shape)
-
         x3 = x3.reshape(origin_shape)
+        # x3 = torch.tensor(x,dtype=origin_dtype)
+
+        if origin_shape[1] != self.seq_length:
+            x3 = x3.transpose(0,1)
+
+        print('x3:',x3.shape,x3.dtype)
+
+        print('=== ia model ===')
         return x3

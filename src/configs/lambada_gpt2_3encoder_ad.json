@@ -1,18 +1,18 @@
 {
     "epochs": 30,
-    "lr": 0.0001,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 16,
+    "batch_size": 32,
     "early_stop_threshold": 1,
     "pipeline": "finetune",
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
     "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
-    },
-    "finetune_configs":{
-        "name":"Vanilla",
-        "configs":{}
     },
     "dataset":{
         "dataset_name": "Lambada",
@@ -32,9 +32,9 @@
         "0": {
             "type": "gpt2",
             "pretrained": 1,
-            "encoder_trainable": 0,
+            "encoder_trainable": 1,
             "embedding_trainable": 0,
-            "encoder_trainable_ids":[],
+            "encoder_trainable_ids":[0,1,2], 
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -58,22 +58,21 @@
             "metric_type": "best_pred",
             "n_best_size": 3
         },
-        "local_encoders_num": 1,
+        "local_encoders_num": 3,
         "apply_trainable_layer": 0,
         "global_model": "ClassificationModelHostHead"
     
     },
     "defense": {
-        "name": "MID",
+        "name": "AdversarialTraining",
         "parameters": {
             "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.0001,
-            "lambda": 0.5,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 512,
-            "embed_dim": 768
+            "adversarial_model": "Mapping_MLP3",
+            "adversarial_model_lr": 0.0001,
+            "imagined_adversary": "ImaginedAdversary_MLP3",
+            "imagined_adversary_lr": 0.0001,
+            "lambda": 0.001,
+            "seq_length": 512
         }
     },
     "attack_list": {

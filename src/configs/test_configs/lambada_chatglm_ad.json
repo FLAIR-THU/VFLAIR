@@ -1,48 +1,59 @@
 {
   "epochs": 1,
-  "lr": 0.001,
+  "lr": 0.0001,
   "k": 2,
-  "batch_size": 64,
+  "batch_size": 2,
   "pipeline": "finetune",
+  "model_architect": "CLM",
+  "early_stop_threshold": 1,
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
   "communication": {
     "communication_protocol": "FedSGD",
     "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "Lambada",
+    "num_classes": 2
   },
   "tokenizer": {
     "padding": "max_length",
     "padding_type": "outside",
     "pad_token": "[PAD]",
     "truncation": "longest_first",
-    "max_length": 30,
+    "max_length": 512,
     "padding_side": "left",
     "add_special_tokens": 1
   },
-  "dataset": {
-    "dataset_name": "CoLA",
-    "num_classes": 2
-  },
   "model_list": {
     "0": {
-      "type": "textattackbert-base-uncased-CoLA",
+      "type": "katuni4katiny-random-chatglm2",
       "pretrained": 1,
-      "head_layer_trainable": 1,
-      "output_dim": 2,
-      "model_type": "Bert",
+      "encoder_trainable": 1,
+      "embedding_trainable": 0,
+      "output_dim": 1,
+      "model_type": "ChatGLM",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
     },
     "1": {
-      "type": "textattackbert-base-uncased-CoLA",
+      "type": "katuni4katiny-random-chatglm2",
       "pretrained": 1,
       "head_layer_trainable": 1,
-      "output_dim": 2,
-      "model_type": "Bert",
+      "output_dim": 1,
+      "model_type": "ChatGLM",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/katuni4katiny-random-chatglm2"
     },
     "task": {
-      "task_type": "SequenceClassification"
+      "task_type": "CausalLM",
+      "doc_stride": 512,
+      "max_seq_length": 512,
+      "metric_type": "best_pred",
+      "n_best_size": 8
     },
+    "local_encoders_num": 1,
     "apply_trainable_layer": 0,
     "global_model": "ClassificationModelHostHead"
   },
@@ -57,7 +68,7 @@
       "imagined_adversary": "ImaginedAdversary_MLP3",
       "imagined_adversary_lr": 0.001,
       "lambda": 0.05,
-      "seq_length": 30,
+      "seq_length": 512,
       "embed_dim": 768
     }
   }

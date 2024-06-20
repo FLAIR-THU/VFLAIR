@@ -93,6 +93,7 @@ MODEL_PATH = {
     "fxmartytiny-random-GemmaForCausalLM": YOUR_MODEL_PATH + 'fxmartytiny-random-GemmaForCausalLM',
     "state-spacesmamba-130m-hf": YOUR_MODEL_PATH + "state-spacesmamba-130m-hf",
     "THUDMchatglm3-6b": YOUR_MODEL_PATH + "THUDMchatglm3-6b",
+    "katuni4katiny-random-chatglm2": YOUR_MODEL_PATH + "katuni4katiny-random-chatglm2",
     "xlnetxlnet-base-cased": YOUR_MODEL_PATH + "xlnetxlnet-base-cased",
     "tiiuaefalcon-rw-1b": YOUR_MODEL_PATH + "tiiuaefalcon-rw-1b",
     "fxmartytiny-random-GemmaForCausalLM": YOUR_MODEL_PATH + "fxmartytiny-random-GemmaForCausalLM",
@@ -387,16 +388,11 @@ def load_defense_models_llm(args, index, local_model, local_model_optimizer, glo
 
             if index in args.defense_configs['party']:
                 seq_length = args.defense_configs['seq_length']
-                embed_dim = args.defense_configs['embed_dim']
+                embed_dim = self.args.model_embedded_dim  # defense_configs['embed_dim']
+            
+                # embed_dim = args.defense_configs['embed_dim']
                 adversarial_model = globals()[model_name](seq_length, embed_dim).to(args.device)
-                # if args.model_type == 'Bert':
-                #     local_model = Local_Adversarial_combined_model_Bert(local_model,adversarial_model)
-                # elif args.model_type == 'GPT2':
-                #     local_model = Local_Adversarial_combined_model_GPT2(local_model,adversarial_model)
-                # elif args.model_type == 'Llama':
-                #     local_model = Local_Adversarial_combined_model_Llama(local_model,adversarial_model)
-                # else:
-                #     assert 1>2, 'model type not supported'
+
                 local_model = local_model.to(args.device)
                 # update optimizer
                 adversarial_model_optimizer = torch.optim.Adam(
