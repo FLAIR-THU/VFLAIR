@@ -53,7 +53,7 @@ Figure below demonstrates all the main functions supported by VFLAIR-LLM, includ
 
 ## Structure
 
- ![Pipeline](./usage_guidance/figures/pipeline.png)
+VFLAIR-LLM is developed under the VFLAIR framework, sharing the same framework structure as described in [VFLAIR Framework Strcuture][https://github.com/LindaLydia/PlatForm/blob/main/README.md]. The overall strcutrue can be arranged into the following modules:
 
 - **Config Module**
 
@@ -72,22 +72,22 @@ Figure below demonstrates all the main functions supported by VFLAIR-LLM, includ
 
 - **Train & Evaluate Module**
 
-  - **Training Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
+  - **Finetune&Inference Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
     - Provide Class MainTaskVFL_LLM() to finetune your own LLM or evaluate a pretrained LLM.
       - LoRA algorithm is also provided for fine-tuning
   - **Attack&Defense**: 
     - Attacks：
       - VanillaModelInversion - WhiteBox([paper]([Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures | Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security](https://dl.acm.org/doi/10.1145/2810103.2813677))) 
-      - WhiteBoxInversion([paper]([2004.00053\] Information Leakage in Embedding Models (arxiv.org)](https://arxiv.org/abs/2004.00053)))
+      - Relaxation-based White Box Inversion([paper]([2004.00053\] Information Leakage in Embedding Models (arxiv.org)](https://arxiv.org/abs/2004.00053)))
     - Defense：
       - Laplace Differential Privacy([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
       - Adversarial Training - Privacy Preserving Mapping([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
   - **Communication**: currently we only provide FedSGD for VFL_LLM communication.
 
 - **Metrics Module**: we provide the following metris for each task type
-
   - Classification: accuracy 
-  - Regression: mse / pearson corr 
+  - Regression: mse / pearson corr
+  - Next Token Prediction: accuracy
   - Text Generation: bleu score
   - Math Problem Answering: accuracy score
 
@@ -235,10 +235,12 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
   - "pretrained": represents model loading method
     - define whether the model is loaded from a pretrained third-party model with full trained head layer(pretrained = 1) or a base model with randomly-initialized head layer.
   - "head_layer_trainable": define whether we shall freeze the head layer paramaters or leave it open for finetuning
+  - "encoder_trainable": define whether we shall freeze the encoder/decoder paramaters or leave it open for finetuning. Detailed number of encoder that's trainable is defined in "encoder_trainable_ids".
+  - "embedding_trainable": define whether we shall freeze the embedding layer paramaters or leave it open for finetuning
   - "max_sequence": max length of input acceptable for the model.
-    - normally we set 512 for Bert / 1024 for GPT2
 - "task": Definition of task type
   - "task_type": name of the task type(SequenceClassification...)
+ - "output_dim": dimension of the model output, relevant with downstream tasks.
 
 #### Attack
 
