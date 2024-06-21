@@ -64,20 +64,31 @@ More parameter descriptions see [reference] (./docs/README_parameters.md)
 #### GPU Requirements
 The following GPU memory usage is based on 1/10 of the Lambada dataset when using it.
 
-| model                    | dataset  | Activate Party                   | Passive Party                   |
-|--------------------------|----------|----------------------------------|---------------------------------|
-| Qwen2-72B                | huanhuan | 4*A100 GPU memory used: 272050MB | 1*A100 GPU memory used: 31610MB |
-| QWen2-0.5B               | huanhuan | 1*A100 GPU memory used: 5130MB   | 1*4080 GPU memory used:3500MB   |
-| GPT2                     | Lambada  | 1*A100 GPU memory used: 4150MB   | 1*4080 GPU memory used: 2440MB  |
-| llama-2-7b               | Lambada  | 1*A100 GPU memory used: 26930MB  | 1*A100  GPU memory used: 3140MB |
-| bert                     | Lambada  | 1*A100 GPU memory used: 2550MB   | 1*4080 GPU memory used: 700MB   |
-| chatglm3-6b              | Lambada  | 1*A100 GPU memory used: 13290MB  | 1*4080 GPU memory used: 2200MB  |
-| falcon-rw-1b             | Lambada  | 1*A100 GPU memory used: 7540MB   | 1*4080 GPU memory used: 1300MB  |
-| gemma-2b                 | Lambada  | 1*A100 GPU memory used: 15300MB  | 1*4080 GPU memory used: 3300MB  |
-| mamba-130m-hf            | Lambada  | 1*A100 GPU memory used: 2640MB   | 1*4080 GPU memory used: 800MB   |
-| xlnet-base-cased         | Lambada  | 1*A100 GPU memory used: 3700MB   | 1*4080 GPU memory used: 2100MB  |
-| Baichuan-7B              | Lambada  | 1*A100 GPU memory used: 29030MB  | 1*A100 GPU memory used: 3750MB  |
-| Mistral-7B-Instruct-v0.2 | Lambada  | 1*A100 GPU memory used: 29510MB  | 1*A100 GPU memory used: 3090MB  |
+| model                    | dataset  | Active Party                     | Passive Party                    |
+|--------------------------|----------|----------------------------------|----------------------------------|
+| Qwen2-72B                | huanhuan | 4*A100 GPU memory used: 272050MB | 1*A100 GPU memory used: 31610MB  |
+| llama-2-7b               | Lambada  | 1*A100 GPU memory used: 26930MB  | 1*A100 GPU memory used: 3140MB   |
+| chatglm3-6b              | Lambada  | 1*A100 GPU memory used: 13290MB  | 1*4080 GPU memory used: 2200MB   |
+| gemma-2b                 | Lambada  | 1*A100 GPU memory used: 15300MB  | 1*4080 GPU memory used: 3300MB   |
+| Baichuan-7B              | Lambada  | 1*A100 GPU memory used: 29030MB  | 1*A100 GPU memory used: 3750MB   |
+| Mistral-7B-Instruct-v0.2 | Lambada  | 1*A100 GPU memory used: 29510MB  | 1*A100 GPU memory used: 3090MB   |
+
+The other information about Active Party and Passive Party we used to test is as follows:
+
+| Item                     | Active Party   | Passive Party |
+|--------------------------|----------------|---------------|
+| CPU                      | 56             | 28            |
+| Memory                   | 980GB          | 32GB          | 
+| GPU                      | A100-80G *4    | 4080 *1       | 
+
+or
+
+| Item                     | Active Party   | Passive Party |
+|--------------------------|----------------|---------------|
+| CPU                      | 56             | 14            |
+| Memory                   | 980GB          | 245GB         | 
+| GPU                      | A100-80G *4    | A100-80G *1   | 
+
 
 ### How to use
 
