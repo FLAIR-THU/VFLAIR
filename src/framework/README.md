@@ -75,19 +75,19 @@ The following GPU memory usage is based on 1/10 of the Lambada dataset when usin
 
 The other information about Active Party and Passive Party we used to test is as follows:
 
-| Item                     | Active Party   | Passive Party |
-|--------------------------|----------------|---------------|
-| CPU                      | 56             | 28            |
-| Memory                   | 980GB          | 32GB          | 
-| GPU                      | A100-80G *4    | 4080 *1       | 
+| Item                     | Active Party      | Passive Party |
+|--------------------------|-------------------|---------------|
+| CPU                      | Xeon(R) 8336C *56 | i7-14700K *28 |
+| Memory                   | 980GB             | 32GB          | 
+| GPU                      | A100-80G *4       | 4080 *1       | 
 
 or
 
-| Item                     | Active Party   | Passive Party |
-|--------------------------|----------------|---------------|
-| CPU                      | 56             | 14            |
-| Memory                   | 980GB          | 245GB         | 
-| GPU                      | A100-80G *4    | A100-80G *1   | 
+| Item                     | Active Party      | Passive Party     |
+|--------------------------|-------------------|-------------------|
+| CPU                      | Xeon(R) 8336C *56 | Xeon(R) 8336C *14 |
+| Memory                   | 980GB             | 245GB             | 
+| GPU                      | A100-80G *4       | A100-80G *1       | 
 
 
 ### How to use
