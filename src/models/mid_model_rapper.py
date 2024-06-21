@@ -323,6 +323,7 @@ class MIDModel_Linear(nn.Module):
     def forward(self, x):
         # print('== MID Model Forward ==')
         # print('x:',x.shape) # bs, 30 ,768
+        x = torch.tensor(x, dtype=torch.float32)
         input_shape = x.shape
 
         # epsilon = torch.empty((x.size()[0],x.size()[1]*self.bottleneck_scale))
