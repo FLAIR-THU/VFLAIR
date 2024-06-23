@@ -109,7 +109,7 @@ def convert_pred_to_msg(pred_list):
     data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
     data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
 
-    if 'attention_mask' in pred_list:
+    if 'attention_mask' in pred_list and pred_list['attention_mask'] is not None:
         data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
         data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
         data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)

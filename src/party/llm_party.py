@@ -250,23 +250,20 @@ class Party(object):
                 self.global_model_optimizer
             ) = load_models_per_party(args, index)
 
-    
+    def _set_peft(self):
+        """
+        peft training or load trained peft weights
+        :return:
+        """
+        if peft_model_path:=self.args.model_list[str(self.index)].get('peft_model_path'):
+            for i,m in self.models.items():
+                _model_path=os.path.join(peft_model_path,f"model_{i}")
+                if m and os.path.exists(_model_path):
+                    self.models[i]=PeftModel.from_pretrained(m, _model_path).train()
 
-    # def _set_peft(self):
-    #     """
-    #     peft training or load trained peft weights
-    #     :return:
-    #     """
-        
-    #     if peft_model_path:=self.args.model_list[str(self.index)].get('peft_model_path'):
-    #         for i,m in self.models.items():
-    #             _model_path=os.path.join(peft_model_path,f"model_{i}")
-    #             if m and os.path.exists(_model_path):
-    #                 self.models[i]=PeftModel.from_pretrained(m, _model_path).train()
-
-    #     if _train_conf := vfl_basic_config.vfl_training_config:
-    #         if _train_conf.peft_config:
-    #             self._peft_model_setting()
+        if _train_conf := vfl_basic_config.vfl_training_config:
+            if _train_conf.peft_config:
+                self._peft_model_setting()
 
 
 

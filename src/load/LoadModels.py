@@ -1035,6 +1035,7 @@ def load_basic_models_llm_baichuan(args, index):
                 )
             else:
                 lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
                     inference_mode=False,
                     r=4,
                     lora_alpha=32,
@@ -1166,6 +1167,7 @@ def load_basic_models_llm_xlnet(args, index):
                 )
             else:
                 lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
                     inference_mode=False,
                     r=4,
                     lora_alpha=32,
@@ -1447,6 +1449,7 @@ def load_basic_models_llm_mamba(args, index):
                 )
             else:
                 lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
                     inference_mode=False,
                     r=4,
                     lora_alpha=32,
@@ -1719,6 +1722,7 @@ def load_basic_models_llm_chatglm(args, index):
                 )
             else:
                 lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
                     inference_mode=False,
                     r=4,
                     lora_alpha=32,
@@ -1853,6 +1857,7 @@ def load_basic_models_llm_mistral(args, index):
                 )
             else:
                 lora_config = LoraConfig(
+                    task_type=TaskType.CAUSAL_LM,
                     inference_mode=False,
                     r=4,
                     lora_alpha=32,
