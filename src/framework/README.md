@@ -59,7 +59,7 @@ GRPC_SERVER=vflair-server.com vflair-web
 - -p5000:5000 opens port 5000,
 - GRPC_SERVER=vflair-server.com means the GRPC server address to be connected
 
-More parameter descriptions see [reference] (./docs/README_parameters.md)
+More parameter descriptions see [reference](./docs/README_parameters.md)
 
 #### GPU Requirements
 The GPU and other information about Active Party and Passive Party we used to test is as follows:
