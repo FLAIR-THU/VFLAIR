@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package framework.protos;
+
+import "framework/protos/node.proto";
+
+enum Code {
+  OK = 0;
+  ERROR = 1;
+}
+
+enum MessageType {
+  PLAIN = 0;
+  CREATE_JOB = 1;
+  QUERY_JOB = 2;
+  FINISH_TASK = 3;
+  START_TASK = 4;
+  UNREGISTER = 5;
+  CLOSE_JOB = 6;
+  LOAD_MODEL = 7;
+  UPDATE_MODEL_DATA = 8;
+  STREAM_END = 9;
+}
+
+message Message{
+  Node node = 1;
+  Code code = 2;
+  string message = 3;
+  AggregationValue data = 4;
+  MessageType type = 5;
+}
+
+message tensor_double{
+    repeated double value = 1;
+    repeated int32 shape = 2;
+    string dtype = 3;
+}
+
+message tensor_int{
+    repeated int64 value = 1;
+    repeated int32 shape = 2;
+}
+
+message HiddenStates{
+    tensor_double inputs_embeds = 1;
+    tensor_double attention_mask = 2;
+    tensor_int position_ids = 3;
+    repeated string requires_grads = 4;
+    bool use_cache = 5;
+    bool output_hidden_states = 6;
+}
+
+message TensorData{
+    tensor_double data = 1;
+    bool requires_grad = 2;
+}
+
+message Value {
+  oneof value {
+    // Single element
+    double double = 1;
+    sint64 sint64 = 2;
+    bool bool = 3;
+    string string = 4;
+    bytes bytes = 5;
+    HiddenStates hidden_states = 6;
+    TensorData tensor = 7;
+  }
+}
+
+message AggregationValue { map<string, Value> named_values = 1; }

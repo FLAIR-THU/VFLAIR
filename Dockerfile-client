@@ -1,0 +1,14 @@
+FROM python:3.8.18
+
+ADD ./src /vflair
+ADD ./requirements.txt /vflair/requirements.txt
+
+WORKDIR /vflair
+RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+ENV PYTHONPATH "${PYTHONPATH}:/vflair"
+ENV GRPC_SERVER "localhost"
+ENV GRPC_PORT "3333"
+ENV CLIENT_ID "c1"
+
+CMD ["python", "./framework/client/grpc_client.py", "--config=./framework/client/client_config.yml"]

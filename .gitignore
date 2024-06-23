@@ -157,3 +157,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+src/framework/server/vflair.db

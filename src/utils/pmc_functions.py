@@ -4,7 +4,6 @@ from torch import nn
 import torch.nn.init as init
 import numpy as np
 
-
 LAMBDA_U = 50
 
 
@@ -16,9 +15,10 @@ def weights_init_ones(m):
 
 
 class BottomModelPlus(nn.Module):
-    def __init__(self, bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True):
+    def __init__(self, bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU',
+                 use_bn=True):
         super(BottomModelPlus, self).__init__()
-        self.bottom_model = bottom_model #BottomModel(dataset_name=None)
+        self.bottom_model = bottom_model  # BottomModel(dataset_name=None)
 
         dict_activation_func_type = {'ReLU': F.relu, 'Sigmoid': F.sigmoid, 'None': None}
         self.activation_func = dict_activation_func_type[activation_func_type]
@@ -44,7 +44,6 @@ class BottomModelPlus(nn.Module):
         self.fc_final = nn.Linear(size_bottom_out, num_classes, bias=True)
         self.bn_final = nn.BatchNorm1d(size_bottom_out)
         self.fc_final.apply(weights_init_ones)
-
 
     def forward(self, x):
         # print(x.shape)
@@ -88,10 +87,9 @@ class BottomModelPlus(nn.Module):
         return x
 
 
-
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
-    if target.size(1)!= 1:
+    if target.size(1) != 1:
         target = target.argmax(-1)
     maxk = max(topk)
     batch_size = target.size(0)
@@ -158,8 +156,7 @@ def precision_recall(output, target):
 #         return Lx, Lu, 50 * linear_rampup(epoch,all_epochs)  # LAMBDA_U =50
 
 
-
-def linear_rampup(current, rampup_length): # rampup_length=args.epochs
+def linear_rampup(current, rampup_length):  # rampup_length=args.epochs
     if rampup_length == 0:
         return 1.0
     else:
@@ -173,13 +170,13 @@ class SemiLoss(object):
 
         Lx = -torch.mean(torch.sum(F.log_softmax(outputs_x, dim=1) * targets_x, dim=1))
         Lu = torch.mean((probs_u - targets_u) ** 2)
-        
+
         LAMBDA_U = 50
         return Lx, Lu, LAMBDA_U * linear_rampup(epoch, all_epoch)
 
 
 class WeightEMA(object):
-    def __init__(self, model, ema_model,lr, alpha=0.999):
+    def __init__(self, model, ema_model, lr, alpha=0.999):
         self.model = model
         self.ema_model = ema_model
         self.alpha = alpha
@@ -225,6 +222,7 @@ class AverageMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
     """
+
     def __init__(self):
         self.reset()
 
@@ -240,15 +238,18 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 def weights_init_ones(m):
     # classname = m.__class__.__name__
     # print(classname)
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         init.ones_(m.weight)
 
+
 class InferenceHead(nn.Module):
-    def __init__(self, bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU', use_bn=True):
-        super(InferenceHead,self).__init__()
+    def __init__(self, bottom_model, size_bottom_out, num_classes, num_layer=1, activation_func_type='ReLU',
+                 use_bn=True):
+        super(InferenceHead, self).__init__()
         self.bottom_model = bottom_model
 
         dict_activation_func_type = {'ReLU': F.relu, 'Sigmoid': F.sigmoid, 'None': None}

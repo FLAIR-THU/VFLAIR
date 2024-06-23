@@ -19,6 +19,7 @@ import logging
 import copy
 from sklearn.metrics import roc_auc_score
 from utils.noisy_sample_functions import noisy_sample
+
 tp = transforms.ToTensor()
 
 
@@ -55,16 +56,17 @@ def pairwise_dist(A, B):
     # return pairwise euclidead difference matrix
     D = torch.sqrt(torch.maximum(na - 2 * torch.mm(A, B.T) + nb + 1e-20, torch.tensor(0.0)))
     return D
-    
+
+
 def tf_distance_cov_cor(input1, input2, debug=False):
     # n = tf.cast(tf.shape(input1)[0], tf.float32)
     n = torch.tensor(float(input1.size()[0]))
     a = pairwise_dist(input1, input1)
     b = pairwise_dist(input2, input2)
-    
+
     # A = a - tf.reduce_mean(a,axis=1) - tf.expand_dims(tf.reduce_mean(a,axis=0),axis=1) + tf.reduce_mean(a)
-    A = a - torch.mean(a,axis=1) - torch.unsqueeze(torch.mean(a,axis=0),axis=1) + torch.mean(a)
-    B = b - torch.mean(b,axis=1) - torch.unsqueeze(torch.mean(b,axis=0),axis=1) + torch.mean(b)
+    A = a - torch.mean(a, axis=1) - torch.unsqueeze(torch.mean(a, axis=0), axis=1) + torch.mean(a)
+    B = b - torch.mean(b, axis=1) - torch.unsqueeze(torch.mean(b, axis=0), axis=1) + torch.mean(b)
 
     dCovXY = torch.sqrt(torch.sum(A * B) / (n ** 2) + 1e-16)
     dVarXX = torch.sqrt(torch.sum(A * A) / (n ** 2))
@@ -73,9 +75,10 @@ def tf_distance_cov_cor(input1, input2, debug=False):
     dCorXY = dCovXY / torch.sqrt(dVarXX * dVarYY)
     if debug:
         print(("tf distance cov: {} and cor: {}, dVarXX: {}, dVarYY:{}").format(
-            dCovXY, dCorXY,dVarXX, dVarYY))
+            dCovXY, dCorXY, dVarXX, dVarYY))
     # return dCovXY, dCorXY
     return dCorXY
+
 
 def MSE_PSNR(batch_real_image, batch_dummy_image):
     '''
@@ -86,13 +89,15 @@ def MSE_PSNR(batch_real_image, batch_dummy_image):
     '''
     # print(batch_real_image.size(),batch_dummy_image.size())
     batch_real_image = batch_real_image.reshape(batch_dummy_image.size())
-    mse = torch.mean((batch_real_image-batch_dummy_image)**2)
-    psnr = 20 * torch.log10(1/torch.sqrt(mse))
+    mse = torch.mean((batch_real_image - batch_dummy_image) ** 2)
+    psnr = 20 * torch.log10(1 / torch.sqrt(mse))
     return mse.item(), psnr.item()
+
 
 def remove_exponent(num):
     num = Decimal(num)
     return num.to_integral() if num == num.to_integral() else num.normalize()
+
 
 def sharpen(probabilities, T):
     if probabilities.ndim == 1:
@@ -136,10 +141,12 @@ def get_rand_batch(seed, class_num, batch_size, transform=None):
         img.append(x)
     return img, labels
 
+
 def entropy(predictions):
     epsilon = 1e-6
     H = -predictions * torch.log(predictions + epsilon)
     return torch.mean(H)
+
 
 def calculate_entropy(matrix, N=2):
     class_counts = np.zeros(matrix.shape[0])
@@ -161,6 +168,7 @@ def calculate_entropy(matrix, N=2):
         weight_entropy += weight * ent
     return weight_entropy
 
+
 def numpy_entropy(predictions, N=2):
     epsilon = 0
     H = -predictions * (np.log(predictions + epsilon) / np.log(N))
@@ -171,7 +179,8 @@ def img_show(img):
     plt.imshow(img.permute(1, 2, 0).detach().numpy())
     plt.show()
 
-def draw_line_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, path = None):
+
+def draw_line_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, path=None):
     plt.rcParams['font.sans-serif'] = ['SimHei']
     for i in range(len(x)):
         plt.plot(x[i], y[i], marker='', mec='r', mfc='w', label=note_list[i], linewidth=2)
@@ -180,7 +189,7 @@ def draw_line_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, 
     plt.margins(0)
     plt.xlabel(label_x, fontsize=15)
     plt.ylabel(label_y, fontsize=16)
-    #plt.title(title, fontsize=14) 
+    # plt.title(title, fontsize=14)
     plt.tick_params(labelsize=14)
 
     x_major_locator = MultipleLocator(x_scale)
@@ -195,7 +204,8 @@ def draw_line_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, 
         plt.savefig(path[:-4] + '.png')
     plt.show()
 
-def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, path = None):
+
+def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_y, path=None):
     plt.rcParams['font.sans-serif'] = ['SimHei']
     for i in range(len(x)):
         plt.plot(x[i], y[i], marker='', mec='r', mfc='w', label=note_list[i], linewidth=5)
@@ -204,7 +214,7 @@ def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_
     plt.margins(0)
     plt.xlabel(label_x, fontsize=14)
     plt.ylabel(label_y, fontsize=14)
-    #plt.title(title, fontsize=14)
+    # plt.title(title, fontsize=14)
     plt.tick_params(labelsize=14)
 
     x_major_locator = MultipleLocator(x_scale)
@@ -219,8 +229,10 @@ def draw_scatter_chart(title, note_list, x, y, x_scale, y_scale, label_x, label_
         plt.savefig(path[:-4] + '.png')
     plt.show()
 
+
 def get_timestamp():
     return int(datetime.utcnow().timestamp())
+
 
 def label_to_one_hot(target, num_classes=10):
     # print('label_to_one_hot:', target, type(target))
@@ -235,11 +247,14 @@ def label_to_one_hot(target, num_classes=10):
         onehot_target.scatter_(1, target, 1)
     return onehot_target
 
+
 def cross_entropy_for_onehot(pred, target):
     return torch.mean(torch.sum(- target * F.log_softmax(pred, dim=-1), 1))
 
+
 def cross_entropy_for_one_hot(pred, target):
     return torch.mean(torch.sum(- target * F.log_softmax(pred, dim=-1), 1))
+
 
 def cross_entropy_for_onehot_samplewise(pred, target):
     return - target * F.log_softmax(pred, dim=-1)
@@ -248,7 +263,7 @@ def cross_entropy_for_onehot_samplewise(pred, target):
 def get_class_i(dataset, label_set):
     gt_data = []
     # gt_data = torch.tensor([])
-    gt_labels =[]
+    gt_labels = []
     num_cls = len(label_set)
     for j in range(len(dataset)):
         img, label = dataset[j]
@@ -259,15 +274,17 @@ def get_class_i(dataset, label_set):
             gt_data.append(np.array(img))
             # gt_data = torch.cat((gt_data, (img if torch.is_tensor(img) else tp(img))))
             gt_labels.append(label_new)
-            #gt_labels.append(label_to_one_hot(torch.Tensor([label_new]).long(),num_classes=num_cls))
+            # gt_labels.append(label_to_one_hot(torch.Tensor([label_new]).long(),num_classes=num_cls))
     # gt_data = torch.tensor([item.numpy() for item in gt_data])
     gt_data = torch.tensor(np.array(gt_data))
-    gt_labels =label_to_one_hot(torch.Tensor(gt_labels).long(),num_classes=num_cls)
+    gt_labels = label_to_one_hot(torch.Tensor(gt_labels).long(), num_classes=num_cls)
     # print(gt_data.size(),type(gt_data))
-    return gt_data,gt_labels
+    return gt_data, gt_labels
+
 
 def fetch_classes(num_classes):
     return np.arange(num_classes).tolist()
+
 
 def fetch_data_and_label(dataset, num_classes):
     classes = fetch_classes(num_classes)
@@ -277,6 +294,7 @@ def fetch_data_and_label(dataset, num_classes):
 def append_exp_res(path, res):
     with open(path, 'a', encoding='utf-8') as f:
         f.write(res + '\n')
+
 
 def aggregate(classifier, logits_a, logits_b):
     if classifier:
@@ -313,6 +331,7 @@ def transform_convert(img_tensor, transform):
         raise Exception("Invalid img shape, expected 1 or 3 in axis 2, but got {}!".format(img_tensor.shape[2]))
 
     return img
+
 
 ########################## nuswide utils
 
@@ -376,9 +395,9 @@ def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
     for label in selected_label:
         file = os.path.join(data_dir, data_path, "_".join(["Labels", label, dtype]) + ".txt")
         df = pd.read_csv(file, header=None)
-        #print("df shape", df.shape)
+        # print("df shape", df.shape)
         df.columns = [label]
-        #print(df)
+        # print(df)
         dfs.append(df)
     data_labels = pd.concat(dfs, axis=1)
     # print(data_labels)
@@ -390,15 +409,15 @@ def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
     # get XA, which are image low level features
     # features_path = "NUS_WID_Low_Level_Features/Low_Level_Features"
     features_path = "Low_Level_Features"
-    #print("data_dir: {0}".format(data_dir))
-    #print("features_path: {0}".format(features_path))
+    # print("data_dir: {0}".format(data_dir))
+    # print("features_path: {0}".format(features_path))
     dfs = []
     for file in os.listdir(os.path.join(data_dir, features_path)):
         if file.startswith("_".join([dtype, "Normalized"])):
             df = pd.read_csv(os.path.join(data_dir, features_path, file), header=None, sep=" ")
             df.dropna(axis=1, inplace=True)
-            #print(df)
-            #print("b datasets features", len(df.columns))
+            # print(df)
+            # print("b datasets features", len(df.columns))
             dfs.append(df)
     data_XA = pd.concat(dfs, axis=1)
     data_X_image_selected = data_XA.loc[selected.index]
@@ -413,7 +432,9 @@ def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
     # print(data_X_image_selected.values[0].shape, data_X_text_selected.values[0].shape, selected.values[0].shape)
     if n_samples is None:
         return data_X_image_selected.values[:], data_X_text_selected.values[:], selected.values[:]
-    return data_X_image_selected.values[:n_samples], data_X_text_selected.values[:n_samples], selected.values[:n_samples]
+    return data_X_image_selected.values[:n_samples], data_X_text_selected.values[:n_samples], selected.values[
+                                                                                              :n_samples]
+
 
 def image_and_text_data(data_dir, selected, n_samples=2000):
     return get_labeled_data(data_dir, selected, n_samples)
@@ -473,8 +494,8 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset, part
 
         poison_data_image = torch.tensor(data[1][poison_list])
         poison_data_text = torch.tensor(poison_data_text)
-        poison_data =[poison_data_text, poison_data_image]
-        #torch.tensor([data[0][poison_list],poison_data_text].cpu().numpy())
+        poison_data = [poison_data_text, poison_data_image]
+        # torch.tensor([data[0][poison_list],poison_data_text].cpu().numpy())
         poison_label = copy.deepcopy(label[poison_list])
         # print(f"poison data and label have size {poison_data.size()} and {poison_label.size()}")
         if _type == 'train':
@@ -482,8 +503,8 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset, part
             data[1] = torch.tensor(np.delete(data[1].cpu().numpy(), poison_list, axis=0))
             label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
         return data, label, poison_data, poison_label
-    
-    elif dataset in ['breast_cancer_diagnose','diabetes','adult_income','criteo']:
+
+    elif dataset in ['breast_cancer_diagnose', 'diabetes', 'adult_income', 'criteo']:
         mixed_data_text, poison_list = data_poison_text(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data_text[poison_list])
         poison_data = torch.tensor(poison_data)
@@ -493,7 +514,7 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset, part
             label = torch.tensor(np.delete(label.cpu().numpy(), poison_list, axis=0))
 
         return data, label, poison_data, poison_label
-    
+
     else:
         mixed_data, poison_list = data_poison(args, data, poison_list, k, dataset, party_index)
         poison_data = copy.deepcopy(mixed_data[poison_list])
@@ -511,7 +532,6 @@ def generate_poison_data(args, data, label, poison_list, _type, k, dataset, part
         return data, label, poison_data, poison_label
 
 
-
 def data_poison(args, images, poison_list, k, dataset, party_index):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
     if args.apply_ns:
@@ -522,36 +542,36 @@ def data_poison(args, images, poison_list, k, dataset, party_index):
         scale = args.attack_configs['noise_lambda'] if ('noise_lambda' in args.attack_configs) else 2.0
         # print(f"[debug] in basic_function.py, args.attack_configs['party']={args.attack_configs['party']}")
         # print(f"[debug] in basic_function.py, party_index={party_index}, {type(party_index)}, k in  args.attack_configs['party']={party_index in args.attack_configs['party']}")
-        if party_index in args.attack_configs['party']: # if not attacker party, return unchanged image
+        if party_index in args.attack_configs['party']:  # if not attacker party, return unchanged image
             # print(f'[debug] in basic_function.py, party {party_index} poison')
             # print(f'[debug] in basic_function.py, images[0]={images[0]}')
-            images[poison_list] = noisy_sample(images[poison_list],scale)
+            images[poison_list] = noisy_sample(images[poison_list], scale)
     else:
         if 'cifar' in dataset.casefold():
-            if k == 2: # 1 party poison, passive party-0 poison
-                images[poison_list,0,15,31] = target_pixel_value[0][0]
-                images[poison_list,0,14,30] = target_pixel_value[0][1]
-                images[poison_list,0,13,31] = target_pixel_value[0][2]
-                images[poison_list,0,15,29] = target_pixel_value[0][3]
-                images[poison_list,1,15,31] = target_pixel_value[1][0]
-                images[poison_list,1,14,30] = target_pixel_value[1][1]
-                images[poison_list,1,13,31] = target_pixel_value[1][2]
-                images[poison_list,1,15,29] = target_pixel_value[1][3]
-                images[poison_list,2,15,31] = target_pixel_value[2][0]
-                images[poison_list,2,14,30] = target_pixel_value[2][1]
-                images[poison_list,2,13,31] = target_pixel_value[2][2]
-                images[poison_list,2,15,29] = target_pixel_value[2][3]
+            if k == 2:  # 1 party poison, passive party-0 poison
+                images[poison_list, 0, 15, 31] = target_pixel_value[0][0]
+                images[poison_list, 0, 14, 30] = target_pixel_value[0][1]
+                images[poison_list, 0, 13, 31] = target_pixel_value[0][2]
+                images[poison_list, 0, 15, 29] = target_pixel_value[0][3]
+                images[poison_list, 1, 15, 31] = target_pixel_value[1][0]
+                images[poison_list, 1, 14, 30] = target_pixel_value[1][1]
+                images[poison_list, 1, 13, 31] = target_pixel_value[1][2]
+                images[poison_list, 1, 15, 29] = target_pixel_value[1][3]
+                images[poison_list, 2, 15, 31] = target_pixel_value[2][0]
+                images[poison_list, 2, 14, 30] = target_pixel_value[2][1]
+                images[poison_list, 2, 13, 31] = target_pixel_value[2][2]
+                images[poison_list, 2, 15, 29] = target_pixel_value[2][3]
             elif k == 4:
                 # 3 party poison, passive party-[0,1,2] poison
-                images[poison_list,0,15,15] = target_pixel_value[0][0]
-                images[poison_list,1,15,15] = target_pixel_value[1][0]
-                images[poison_list,2,15,15] = target_pixel_value[2][0]
-                images[poison_list,0,15,31] = target_pixel_value[0][1]
-                images[poison_list,1,15,31] = target_pixel_value[1][1]
-                images[poison_list,2,15,31] = target_pixel_value[2][1]
-                images[poison_list,0,31,15] = target_pixel_value[0][2]
-                images[poison_list,1,31,15] = target_pixel_value[1][2]
-                images[poison_list,2,31,15] = target_pixel_value[2][2]
+                images[poison_list, 0, 15, 15] = target_pixel_value[0][0]
+                images[poison_list, 1, 15, 15] = target_pixel_value[1][0]
+                images[poison_list, 2, 15, 15] = target_pixel_value[2][0]
+                images[poison_list, 0, 15, 31] = target_pixel_value[0][1]
+                images[poison_list, 1, 15, 31] = target_pixel_value[1][1]
+                images[poison_list, 2, 15, 31] = target_pixel_value[2][1]
+                images[poison_list, 0, 31, 15] = target_pixel_value[0][2]
+                images[poison_list, 1, 31, 15] = target_pixel_value[1][2]
+                images[poison_list, 2, 31, 15] = target_pixel_value[2][2]
             else:
                 assert k == 4, "poison type not supported yet"
         elif 'mnist' in dataset.casefold():
@@ -561,16 +581,17 @@ def data_poison(args, images, poison_list, k, dataset, party_index):
                 images[poison_list, 0, 11, 27] = 1.0
                 images[poison_list, 0, 13, 25] = 1.0
             elif k == 4:
-                images[poison_list, 0, 13, 13] = 1.0 # 3 party poison
-                images[poison_list, 0, 13, 27] = 1.0 # 3 party poison
-                images[poison_list, 0, 27, 13] = 1.0 # 3 party poison
+                images[poison_list, 0, 13, 13] = 1.0  # 3 party poison
+                images[poison_list, 0, 13, 27] = 1.0  # 3 party poison
+                images[poison_list, 0, 27, 13] = 1.0  # 3 party poison
             else:
                 assert k == 4, "poison type not supported yet"
         else:
             assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return images, poison_list
 
-def data_poison_text(args,texts, poison_list, k, dataset, party_index):
+
+def data_poison_text(args, texts, poison_list, k, dataset, party_index):
     '''
     text or tabular data
     trigger: set the last element as target_text_value(1)
@@ -581,15 +602,16 @@ def data_poison_text(args,texts, poison_list, k, dataset, party_index):
         assert 'party' in args.attack_configs, 'need parameter: party'
         noise_rate = args.attack_configs['noise_rate'] if ('noise_rate' in args.attack_configs) else 0.1
         scale = args.attack_configs['noise_lambda']
-        if party_index in args.attack_configs['party']: # only if party is in the attacker party pool, poison the test data
+        if party_index in args.attack_configs[
+            'party']:  # only if party is in the attacker party pool, poison the test data
             if 'nuswide' in dataset.casefold():
-                if k == 2: # 1 party poison, passive party-0 poison
-                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                if k == 2:  # 1 party poison, passive party-0 poison
+                    texts[poison_list] = noisy_sample(texts[poison_list], scale)
                 else:
                     assert k == 2, "poison type not supported yet"
             elif 'breast_cancer_diagnose' in dataset.casefold():
-                if k == 2: # first feature of attacker(pasive party 0) set to 0.1
-                    texts[poison_list] = noisy_sample(texts[poison_list],scale)
+                if k == 2:  # first feature of attacker(pasive party 0) set to 0.1
+                    texts[poison_list] = noisy_sample(texts[poison_list], scale)
                 else:
                     assert k == 2, "poison type not supported yet"
             else:
@@ -603,14 +625,15 @@ def data_poison_text(args,texts, poison_list, k, dataset, party_index):
             #     assert k == 2, "poison type not supported yet"
             assert poison_list != None, "nuswide dataset poison list should not be none, and no operation needs to be done"
         elif 'breast_cancer_diagnose' in dataset.casefold():
-            if k == 2: # first feature of attacker(pasive party 0) set to 0.1
-                texts[poison_list,0] = 0.1
+            if k == 2:  # first feature of attacker(pasive party 0) set to 0.1
+                texts[poison_list, 0] = 0.1
             else:
                 assert k == 2, "poison type not supported yet"
-    
+
         else:
             assert 'mnist' in dataset.casefold(), "dataset not supported yet"
     return texts, poison_list
+
 
 # def generate_poison_data_text(args,data, label, poison_list, _type, k, dataset, party_index):
 #     '''
@@ -627,12 +650,12 @@ def data_poison_text(args,texts, poison_list, k, dataset, party_index):
 #     return data, label, poison_data, poison_label
 
 
-
 def entropy(predictions):
     epsilon = 1e-6
     H = -predictions * torch.log(predictions + epsilon)
     # print("H:", H.shape)
     return torch.mean(H)
+
 
 def calculate_entropy(matrix, N=2):
     class_counts = np.zeros(matrix.shape[0])
@@ -704,6 +727,7 @@ def param_size(model):
 
 class AverageMeter():
     """ Computes and stores the average and current value """
+
     def __init__(self):
         reset()
 
@@ -729,7 +753,7 @@ def accuracy(output, target, topk=(1,)):
     _, pred = output.topk(maxk, 1, True, True)
     pred = pred.t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))
-    #print('correct', correct)
+    # print('correct', correct)
 
     res = []
     for k in topk:
@@ -738,7 +762,7 @@ def accuracy(output, target, topk=(1,)):
     return res
 
 
-def accuracy2(output, target, M, device, topk=(1,2,)):
+def accuracy2(output, target, M, device, topk=(1, 2,)):
     alpha = 0.001
     # print(output.shape)
     maxk = max(topk)
@@ -751,7 +775,7 @@ def accuracy2(output, target, M, device, topk=(1,2,)):
     for i in range(pred.shape[0]):
         pa = pred_count[i][0] / M
         pb = pred_count[i][1] / M
-        shift = np.sqrt(np.log(1/alpha)/(2*batch_size))
+        shift = np.sqrt(np.log(1 / alpha) / (2 * batch_size))
         # print("pa=",pa,", pb=",pb," ,shift=",shift)
         pa = pa - shift
         pb = pb + shift
@@ -809,10 +833,10 @@ def save_checkpoint(state, ckpt_dir, is_best=False):
         shutil.copyfile(filename, best_filename)
 
 
-def ClipAndPerturb(vector,device,ro,sigma):
-    _norm = np.linalg.norm(vector.cpu().detach().numpy(),ord=1)
+def ClipAndPerturb(vector, device, ro, sigma):
+    _norm = np.linalg.norm(vector.cpu().detach().numpy(), ord=1)
     # print("L2 norm of parameter =",_norm)
-    vector = vector/max(1,(_norm/ro))
+    vector = vector / max(1, (_norm / ro))
     vector.to(device)
-    vector += torch.normal(0.0, sigma*sigma, vector.shape).to(device)
+    vector += torch.normal(0.0, sigma * sigma, vector.shape).to(device)
     return vector

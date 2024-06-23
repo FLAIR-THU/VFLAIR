@@ -39,7 +39,7 @@ class SimpleTwoPartyDataset(Dataset):
         # print("data_b_i", type(data_b_i))
         # print("target_i", type(target_i))
         return (torch.tensor(data_a_i).float(), torch.tensor(data_b_i).float()), \
-               torch.tensor(target_i.numpy(), dtype=torch.long)
+            torch.tensor(target_i.numpy(), dtype=torch.long)
 
 
 def get_dataloaders(train_dataset: SimpleTwoPartyDataset, valid_dataset: SimpleTwoPartyDataset, batch_size=32,
@@ -49,7 +49,6 @@ def get_dataloaders(train_dataset: SimpleTwoPartyDataset, valid_dataset: SimpleT
     if valid_dataset is not None:
         mnist_valid_loader = DataLoader(valid_dataset, batch_size=batch_size * 2, shuffle=True, num_workers=num_workers)
     return mnist_train_loader, mnist_valid_loader
-
 
 # def get_nuswide_dataloaders(ds_file_name, split_ratio=0.9, batch_size=64, num_workers=2):
 #     train_dataset, valid_dataset = get_datasets(ds_file_name=ds_file_name, shuffle=True, split_ratio=split_ratio)

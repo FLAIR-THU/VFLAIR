@@ -16,18 +16,18 @@ class MNISTDatasetVFLPERROUND():
             transforms.ToTensor()
         ])
         if data_type == 'train':
-            images = np.load(os.path.join(self.data_dir, 'mnist_images_train.npy')).astype('float')/255.0
+            images = np.load(os.path.join(self.data_dir, 'mnist_images_train.npy')).astype('float') / 255.0
             labels = np.load(os.path.join(self.data_dir, 'mnist_labels_train.npy'))
         else:
-            images = np.load(os.path.join(self.data_dir, 'mnist_images_test.npy')).astype('float')/255.0
+            images = np.load(os.path.join(self.data_dir, 'mnist_images_test.npy')).astype('float') / 255.0
             labels = np.load(os.path.join(self.data_dir, 'mnist_labels_test.npy'))
 
-        print('[in model]', data_type, "data input:",images.shape, labels.shape)
+        print('[in model]', data_type, "data input:", images.shape, labels.shape)
         images = images[:, :, :, np.newaxis]
 
         # images_up = images[:,:14]
         # images_down = images[:,14:]
-        image_list = [images[:,:14],images[:,14:]]
+        image_list = [images[:, :14], images[:, 14:]]
         # image_list = [images[:,:14,:14],images[:,14:,:14],images[:,:14,14:],images[:,14:,14:]]
 
         # images_down, poison_list = data_poison(images_down, poison_number)
@@ -45,13 +45,14 @@ class MNISTDatasetVFLPERROUND():
             self.y = labels
         self.poison_list = poison_list
 
-        self.target_list = random.sample(list(np.where(self.y==target_label)[0]), target_number)
+        self.target_list = random.sample(list(np.where(self.y == target_label)[0]), target_number)
         print('[in model]', data_type, "target list is:", self.target_list)
 
         # check dataset
         print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.y.shape)
         # print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape, self.x[3].shape, self.y.shape)
-        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]), target_label)
+        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]),
+              target_label)
 
     def __len__(self):
         return len(self.y)
@@ -84,7 +85,7 @@ def data_poison(images, poison_number):
     images[1][poison_list, 12, 26] = 1.0
     images[1][poison_list, 11, 27] = 1.0
     images[1][poison_list, 13, 25] = 1.0
-    
+
     # images[1][poison_list, 13, 13] = 1.0 # 3 party poison
     # # images[1][poison_list, 12, 13] = 1.0 # 3 party poison
     # images[2][poison_list, 13, 13] = 1.0 # 3 party poison
@@ -94,7 +95,6 @@ def data_poison(images, poison_number):
     # # images[3][poison_list, 11, 13] = 1.0 # 3 party poison
     # # images[3][poison_list, 13, 11] = 1.0 # 3 party poison
     return images, poison_list
-
 
 
 def visualize(images, labels, poison_list):
@@ -117,10 +117,10 @@ def visualize(images, labels, poison_list):
 
 
 def need_poison_down_check_mnist_vfl_per_round(images):
-    need_poison_list = [True if images[1][indx,13, 27] > 0.9 and \
-                        images[1][indx,12,26] > 0.9 and \
-                        images[1][indx,11,27] > 0.9 and \
-                        images[1][indx,13,25] > 0.9 else False\
+    need_poison_list = [True if images[1][indx, 13, 27] > 0.9 and \
+                                images[1][indx, 12, 26] > 0.9 and \
+                                images[1][indx, 11, 27] > 0.9 and \
+                                images[1][indx, 13, 25] > 0.9 else False \
                         for indx in range(len(images))]
     # need_poison_list = [True if images[1][indx,13, 13] > 0.99 and \
     #                     images[2][indx,13,13] > 0.99 and \
@@ -132,10 +132,8 @@ def need_poison_down_check_mnist_vfl_per_round(images):
 if __name__ == '__main__':
     ds = MNISTDatasetVFLPERROUND('E:/dataset/MNIST', 'train', 28, 28, 60)
 
-    #visualize(ds.x[1], ds.y, ds.poison_list)
-    #visualize(ds.x[0], ds.y, ds.poison_list)
+    # visualize(ds.x[1], ds.y, ds.poison_list)
+    # visualize(ds.x[0], ds.y, ds.poison_list)
 
     res = need_poison_down_check_mnist_vfl_per_round(ds.x)
     print(res.sum())
-
-

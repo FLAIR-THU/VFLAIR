@@ -64,16 +64,16 @@ def evaluate_no_attack(args, pk, sk, debug=False):
     attack_metric_name = "acc_loss"
     # Save record
     exp_result = (
-        f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}"
-        % (
-            args.k,
-            args.batch_size,
-            args.main_lr,
-            args.num_classes,
-            args.Q,
-            args.apply_trainable_layer,
-            args.main_epochs,
-        )
+            f"K|bs|LR|num_class|Q|top_trainable|epoch|attack_name|{args.attack_param_name}|main_task_acc|{attack_metric_name},%d|%d|%lf|%d|%d|%d|%d|{args.attack_name}|{args.attack_param}|{main_acc}|{attack_metric}"
+            % (
+                args.k,
+                args.batch_size,
+                args.main_lr,
+                args.num_classes,
+                args.Q,
+                args.apply_trainable_layer,
+                args.main_epochs,
+            )
     )
     print(exp_result)
     append_exp_res(args.exp_res_path, exp_result)
@@ -137,10 +137,10 @@ if __name__ == "__main__":
         # print('================================')
 
         assert (
-            args.dataset_split != None
+                args.dataset_split != None
         ), "dataset_split attribute not found config json file"
         assert (
-            "dataset_name" in args.dataset_split
+                "dataset_name" in args.dataset_split
         ), "dataset not specified, please add the name of the dataset in config json file"
         args.dataset = args.dataset_split["dataset_name"]
         # print(args.dataset)

@@ -1,4 +1,5 @@
 import os, sys
+
 sys.path.append(os.pardir)
 
 import math
@@ -48,13 +49,14 @@ class GraphConvolution(Module):
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
-               + str(self.in_features) + ' -> ' \
-               + str(self.out_features) + ')'
+            + str(self.in_features) + ' -> ' \
+            + str(self.out_features) + ')'
 
 
 class GCN(nn.Module):
 
-    def __init__(self, nfeat, nhid, nclass, dropout=0.5, lr=0.01, weight_decay=5e-4, with_relu=True, with_bias=True, device=None):
+    def __init__(self, nfeat, nhid, nclass, dropout=0.5, lr=0.01, weight_decay=5e-4, with_relu=True, with_bias=True,
+                 device=None):
 
         super(GCN, self).__init__()
 

@@ -1,65 +1,45 @@
 # Datasets
 
- ![Datasets](figures/datasets.png)
+ ![Datasets](figures/llm_datasets.png)
 
-In VFLAIR, we defaultly provide several dataset that are oftenly used under VFL setting. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
+In VFLAIR_LLM, we defaultly provide several dataset that are oftenly used for LLM benchmark. As the origianl dataset is not provided along with the codebase, all the dataset provided and guidance on how to achieve these datasets are listed below.
 
 ## Default Dataset Usage
 
   Defaultly, datasets used are stored under directory `../../share_dataset/`.
 
-  1. Image Dataset
+    1. Sequence Classification/Regression Datasets
+       1. GLUE benchmark
+          - By default, the data are stored under directory `../../share_dataset/DatasetName/`
+          - All 9 datasets in the GLUE benchmark is downloaded from [GLUEDatasets](https://gluebenchmark.com/tasks/) 
+       2. Yelp
+          - By default, the data are stored under directory `../../share_dataset/Yelp/`
+          - Data is downloaded from [YelpDataset](https://huggingface.co/datasets/Yelp/yelp_review_full)
+          - Note that you should unzip the data files into 'train.csv' and 'test.csv' before using it.
+  2. Text-span based Question Answering Datasets
+       1. SQuAD(1.1version)
+          - By default, the data are stored under directory `../../share_dataset/SQuAD/`
+          - Data is downloaded from [SQuADDataset](https://huggingface.co/datasets/rajpurkar/squad) and arranged into `../../share_dataset/SQuAD/data/dev-v1.1.json` and `../../share_dataset/SQuAD/data/train-v1.1.json`
+  3. Generation Datasets
+       1. Lambada
+          - By default, the data are stored under directory `../../share_dataset/Lambada/`. 
+          - Loaded with huggingface.dataset module, using function load_dataset().
+          - Data can be downloaded from [LambadaDataset](https://huggingface.co/datasets/cimec/lambada). You can also use other Lambada data sources that support the huggingface.dataset module.
+       2. Alpaca
+          - Data is downloaded from [stanford_alpaca](https://github.com/tatsu-lab/stanford_alpaca) and arranged into  `../../share_dataset/Alpaca/alpaca_data.json`. 
+       3. CodeAlpaca
+          - Data is downloaded from [codealpaca](https://huggingface.co/datasets/HuggingFaceH4/CodeAlpaca_20K) and arranged into  `../../share_dataset/CodeAlpaca-20k/code_alpaca_20k.json`. 
+       4. MATH
+          - Data is downloaded from [hendrycks/math: The MATH Dataset](https://github.com/hendrycks/math/)and arranged into  `../../share_dataset/MATH/`. 
+       5. GMS8K
+          - Data is downloaded from [GMS8KDataset](https://github.com/openai/grade-school-math) and arranged into  `../../share_dataset/GMS8K/`. 
 
-     1. MNIST
-        * Loaded from torchvision, `torchvision.datasets.MNIST('~/.torch', download=True)`
-     2. CIFAR10
-        * By default, the data are stored under directory `../../share_dataset/cifar-10-batches-py/`.
-        * Loaded from torchvision, `torchvision.datasets.CIFAR10('<you_directory>', download=True)`
-     3. CIFAR100
-        * By default, the data are stored under directory `../../share_dataset/cifar-100-python/`.
-        * Loaded from torchvision, `torchvision.datasets.CIFAR100('<you_directory>', download=True)`
-
-  2. Graph Dataset
-
-     1. Cora
-        * By default, the data are stored under directory `../../share_dataset/Cora/`.
-        * We use the dataset provided by [Cora (Github)](https://github.com/hgh0545/Graph-Fraudster) for Cora.
-
-  3. Tabular Dataset
-
-     1. Breast Cancer
-
-       * By default, the data are stored under directory `../../share_dataset/BreastCancer/`
-       * Download wdbc.data from [Wisconsin Diagnostic Breast Cancer (WDBC) | Kaggle](https://www.kaggle.com/datasets/mohaiminul101/wisconsin-diagnostic-breast-cancer-wdbc)
-
-     2. Diabetes
-        * By default, the data are stored under directory `../../share_dataset/Diabetes/`
-        * Download diabetes.csv from [Pima Indians Diabetes | Kaggle](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database)
-     3. Adult Income
-        * By default, the data are stored under directory `../../share_dataset/Income/`
-        * Download adult.csv from [Adult income dataset | Kaggle](https://www.kaggle.com/datasets/wenruliu/adult-income-dataset)
-      4. Cretio
-         * By default, the data are stored under directory `../../share_dataset/Criteo/`.
-         * Download `tain.txt` from [Criteo | Kaggle](https://www.kaggle.com/datasets/mrkmakr/criteo-dataset) and run `python /src/dataset/criteo_preprocess.py` to create `criteo.csv` in `../../share_dataset/Criteo/`.
-
-  4. Text Dataset
-
-     1. News20
-        * By default, the data are stored under directory `../../share_dataset/news20/`
-        * Download from [20 Newsgroups]([Home Page for 20 Newsgroups Data Set (qwone.com)](http://qwone.com/~jason/20Newsgroups/)), and align texts from the same category into the same directory as `../../share_dataset/news20/"category_name"/text_files`
-        * 3 versions of the news20 dataset are available(20news-19997.tar.gz/20news-bydate/tar.gz/20news-18828.tar.gz). In VFLow, we use 20news-19997.tar.gz by default.
-        * TF-IDF is used for data processing, turning each text into a sparse matrix. Dimension of the matrix may vary using different versions of the news20 dataset, therefor affecting the 'input_dim' in bottom models. Please refer to [] for details. 
-
-  5. Multi-modality Dataset
-
-     1. NUS-WIDE
-        * By default, the data are stored under directory `../../share_dataset/NUS_WIDE/`.
-        * Download from [NUS-WIDE Dataset](https://lms.comp.nus.edu.sg/wp-content/uploads/2019/research/nuswide/NUS-WIDE.html), only `Groundtruth, Low_level_Features, NUS_WIDE_Tags, NUS_WIDE-urls` are needed in this project.
+Detailed data loading and processing can be found in `src/load/LoadDataset.py`. You can alter the code in function [load_dataset_per_party_llm] to suit your need.
 
 
 
 ## Use Your Own Dataset
 
-In VFLAIR , we're also open for users to implement their own dataset or change default dataset configurations. Main dataset processing is located in `src/load/LoadDataset.py`, where data partition and poisoned data generation(for Backdoor Attacks) are also implemented.
+In VFLAIR-LLM , we're also open for users to implement their own dataset or change default dataset configurations. Main dataset processing is located in `src/load/LoadDataset.py`, where input prompt and configuration is implemented. Tokenization and padding is impelmented in `src/dataset/party_dataset.py`.
 
-You can add your own dataset processing procedure in function [load_dataset_per_party] and [dataset partition].
+You can add your own dataset processing procedure in function [load_dataset_per_party_llm] and class [PassiveDataset_LLM] [LambadaDataset_LLM]....

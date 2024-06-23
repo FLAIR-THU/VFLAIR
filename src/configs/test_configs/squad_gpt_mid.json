@@ -1,0 +1,89 @@
+{
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 16,
+  "pipeline": "finetune",
+  "model_architect": "TQA",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "SQuAD",
+    "num_classes": 1,
+    "use_prompt": 1,
+    "n_shot": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 256,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+    },
+    "1": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "head_layer_trainable": 1,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+    },
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "best_pred",
+      "doc_stride": 128,
+      "max_seq_length": 256,
+      "max_query_length": 64,
+      "max_answer_length": 30,
+      "n_best_size": 20
+    },
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "MID",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "mid_model_name": "MIDModel_Linear",
+      "lr": 0.001,
+      "lambda": 1,
+      "mid_position": "out",
+      "current_bottleneck_scale": 1,
+      "seq_length": 256,
+      "embed_dim": 768
+    }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 2,
+        "batch_size": 16,
+        "attack_sample_num": 10
+      }
+    }
+  }
+}

@@ -7,7 +7,9 @@ from PIL import Image
 import torch
 from torchvision import transforms, datasets
 import random
-#import matplotlib.pyplot as plt
+
+
+# import matplotlib.pyplot as plt
 
 def unpickle(file):
     import pickle
@@ -27,8 +29,10 @@ class Cifar10DatasetVFL():
             data_3 = unpickle(os.path.join(self.data_dir, 'data_batch_3'))
             data_4 = unpickle(os.path.join(self.data_dir, 'data_batch_4'))
             data_5 = unpickle(os.path.join(self.data_dir, 'data_batch_5'))
-            images = np.concatenate((data_1[b'data'], data_2[b'data'], data_3[b'data'], data_4[b'data'], data_5[b'data']), axis=0)
-            labels = np.concatenate((data_1[b'labels'], data_2[b'labels'], data_3[b'labels'], data_4[b'labels'], data_5[b'labels']), axis=0)
+            images = np.concatenate(
+                (data_1[b'data'], data_2[b'data'], data_3[b'data'], data_4[b'data'], data_5[b'data']), axis=0)
+            labels = np.concatenate(
+                (data_1[b'labels'], data_2[b'labels'], data_3[b'labels'], data_4[b'labels'], data_5[b'labels']), axis=0)
         else:
             data = unpickle(os.path.join(self.data_dir, 'test_batch'))
             images = data[b'data']
@@ -40,9 +44,10 @@ class Cifar10DatasetVFL():
 
         # images_up = images[:,:,:16]
         # images_down = images[:,:,16:]
-        image_list = [images[:,:,:16,:16],images[:,:,:16,16:],images[:,:,16:,:16],images[:,:,16:,16:]]
+        image_list = [images[:, :, :16, :16], images[:, :, :16, 16:], images[:, :, 16:, :16], images[:, :, 16:, 16:]]
 
-        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape, image_list[2].shape, image_list[3].shape, labels.shape)
+        print('[in model]', data_type, 'image_list[0,1,2,3].shape:', image_list[0].shape, image_list[1].shape,
+              image_list[2].shape, image_list[3].shape, labels.shape)
         image_list, poison_list = data_poison(image_list, poison_number)
 
         self.y_backdoor = copy.deepcopy(labels)
@@ -50,7 +55,8 @@ class Cifar10DatasetVFL():
         self.poison_images = [image_list[il][poison_list] for il in range(len(image_list))]
         self.poison_labels = labels[poison_list]
 
-        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape, self.poison_labels.shape)
+        print('[in model]', data_type, 'poison data(item in list)', self.poison_images[0][0].shape,
+              self.poison_labels.shape)
 
         if data_type == 'train':
             self.x = [np.delete(image_list[il], poison_list, axis=0) for il in range(len(image_list))]
@@ -60,12 +66,14 @@ class Cifar10DatasetVFL():
             self.y = labels
         self.poison_list = poison_list
 
-        self.target_list = random.sample(list(np.where(self.y==target_label)[0]), target_number)
+        self.target_list = random.sample(list(np.where(self.y == target_label)[0]), target_number)
         print('[in model]', data_type, "target list is:", self.target_list)
 
         # check dataset
-        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape, self.x[3].shape, self.y.shape)
-        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]), target_label)
+        print('[in model]', data_type, 'dataset shape', self.x[0].shape, self.x[1].shape, self.x[2].shape,
+              self.x[3].shape, self.y.shape)
+        print('[in model]', data_type, 'target data', self.y[self.target_list].shape, np.mean(self.y[self.target_list]),
+              target_label)
 
     def __len__(self):
         return len(self.y)
@@ -91,6 +99,7 @@ class Cifar10DatasetVFL():
     def get_target_list(self):
         return self.target_list
 
+
 def data_poison(images, poison_number):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
     poison_list = random.sample(range(images[0].shape[0]), poison_number)
@@ -109,15 +118,15 @@ def data_poison(images, poison_number):
     # images[poison_list,2,15,29] = target_pixel_value[2][3]
 
     # 3 party poison
-    images[1][poison_list,0,15,15] = target_pixel_value[0][0]
-    images[1][poison_list,1,15,15] = target_pixel_value[1][0]
-    images[1][poison_list,2,15,15] = target_pixel_value[2][0]
-    images[2][poison_list,0,15,15] = target_pixel_value[0][1]
-    images[2][poison_list,1,15,15] = target_pixel_value[1][1]
-    images[2][poison_list,2,15,15] = target_pixel_value[2][1]
-    images[3][poison_list,0,15,15] = target_pixel_value[0][2]
-    images[3][poison_list,1,15,15] = target_pixel_value[1][2]
-    images[3][poison_list,2,15,15] = target_pixel_value[2][2]
+    images[1][poison_list, 0, 15, 15] = target_pixel_value[0][0]
+    images[1][poison_list, 1, 15, 15] = target_pixel_value[1][0]
+    images[1][poison_list, 2, 15, 15] = target_pixel_value[2][0]
+    images[2][poison_list, 0, 15, 15] = target_pixel_value[0][1]
+    images[2][poison_list, 1, 15, 15] = target_pixel_value[1][1]
+    images[2][poison_list, 2, 15, 15] = target_pixel_value[2][1]
+    images[3][poison_list, 0, 15, 15] = target_pixel_value[0][2]
+    images[3][poison_list, 1, 15, 15] = target_pixel_value[1][2]
+    images[3][poison_list, 2, 15, 15] = target_pixel_value[2][2]
 
     return images, poison_list
 
@@ -126,7 +135,7 @@ def visualize(images, labels, poison_list):
     class_names = ['0', '1', '2', '3', '4',
                    '5', '6', '7', '8', '9']
 
-    #class_names = [str(i) for i in range(100)]
+    # class_names = [str(i) for i in range(100)]
 
     plt.figure(figsize=(10, 10))
     poisoned_images = images[poison_list]
@@ -141,6 +150,7 @@ def visualize(images, labels, poison_list):
         # print(class_names[poisoned_labels[i][0]])
         plt.xlabel(class_names[poisoned_labels[i]])
     plt.show()
+
 
 def need_poison_down_check_cifar10_vfl(images):
     target_pixel_value = [[1.0, 0.0, 1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0]]
@@ -159,9 +169,7 @@ if __name__ == '__main__':
     ds = Cifar10DatasetVFL('E:/dataset/cifar-10-batches-py', 'train', 32, 32, 500)
 
     visualize(ds.x[1], ds.y, ds.poison_list)
-    #visualize(ds.x[0], ds.y, ds.poison_list)
+    # visualize(ds.x[0], ds.y, ds.poison_list)
 
     res = need_poison_down_check_cifar10_vfl(ds.x)
     print(res.sum())
-
-

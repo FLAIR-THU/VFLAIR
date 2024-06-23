@@ -1,0 +1,31 @@
+POST http://localhost:5000/job
+Content-Type: application/x-www-form-urlencoded
+
+config = /home/shannon/dev/projects/VFLAIR/src/configs/distributed-llm-train.json
+
+###
+POST http://localhost:5000/job/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="file.json"
+
+< /home/shannon/dev/projects/VFLAIR/src/configs/dev_llm_inference.json
+--WebAppBoundary--
+
+###
+POST http://localhost:5000/message
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+content-Disposition: form-data; name="msg"
+Content-Type: text/plain
+
+You are a Java programmer, what can you do?
+--WebAppBoundary
+
+### 获取详情
+GET http://localhost:5000/job?id=25
+
+### 加载模型
+GET http://localhost:5000/start?model_id=Qwen1.5-0.5B-Chat

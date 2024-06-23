@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import random
+
 sys.path.append(os.pardir)
 
 import torch
@@ -9,18 +10,19 @@ from torch.utils.data import DataLoader
 
 from evaluates.attacks.attack_api import AttackerLoader
 from evaluates.defenses.defense_api import DefenderLoader
-from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor,load_dataset_per_party_noisysample
+from load.LoadDataset import load_dataset_per_party, load_dataset_per_party_backdoor, load_dataset_per_party_noisysample
 from load.LoadModels import load_models_per_party
 
 from utils.noisy_label_functions import add_noise
 from utils.noisy_sample_functions import noisy_sample
-from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor,pairwise_dist
+from utils.basic_functions import cross_entropy_for_onehot, tf_distance_cov_cor, pairwise_dist
 from utils.communication_protocol_funcs import Cache
 
 from sys import getsizeof
 
+
 class Party(object):
-    def __init__(self, args, index):
+    def __init__(self, args, index, need_data=True):
         self.name = "party#" + str(index + 1)
         self.index = index
         self.args = args
@@ -81,7 +83,7 @@ class Party(object):
 
     def give_pred(self):
         self.local_pred = self.local_model(self.local_batch_data)
-        
+
         # ####### Noisy Sample #########
         # if self.args.apply_ns == True and (self.index in self.args.attack_configs['party']):
         #     assert 'noise_lambda' in self.args.attack_configs, 'need parameter: noise_lambda'
@@ -101,9 +103,10 @@ class Party(object):
             assert 'missing_rate' in self.args.attack_configs, 'need parameter: missing_rate'
             assert 'party' in self.args.attack_configs, 'need parameter: party'
             missing_rate = self.args.attack_configs['missing_rate']
-            
+
             if (self.index in self.args.attack_configs['party']):
-                missing_list = random.sample(range(self.local_pred.size()[0]), (int(self.local_pred.size()[0]*missing_rate)))
+                missing_list = random.sample(range(self.local_pred.size()[0]),
+                                             (int(self.local_pred.size()[0] * missing_rate)))
                 # print(f"[debug] in party: party{self.index}, missing list:", missing_list, len(missing_list))
                 self.local_pred[missing_list] = torch.zeros(self.local_pred[missing_list].size()).to(self.args.device)
         # ####### Missing Feature #######
@@ -168,8 +171,8 @@ class Party(object):
                 self.test_data, self.test_label, self.test_attribute = test_dst
 
     def prepare_data_loader(self, batch_size):
-        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size) # , shuffle=True
-        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size) # , shuffle=True
+        self.train_loader = DataLoader(self.train_dst, batch_size=batch_size)  # , shuffle=True
+        self.test_loader = DataLoader(self.test_dst, batch_size=batch_size)  # , shuffle=True
         if self.args.need_auxiliary == 1 and self.aux_dst != None:
             self.aux_loader = DataLoader(self.aux_dst, batch_size=batch_size)
         if self.train_attribute != None:
@@ -193,16 +196,16 @@ class Party(object):
     # def prepare_defender(self, args, index):
     #     if index in args.attack_configs['party']:
     #         self.defender = DefenderLoader(args, index)
-    
+
     def give_current_lr(self):
         return (self.local_model_optimizer.state_dict()['param_groups'][0]['lr'])
 
-    def LR_decay(self,i_epoch):
+    def LR_decay(self, i_epoch):
         eta_0 = self.args.main_lr
-        eta_t = eta_0/(np.sqrt(i_epoch+1))
+        eta_t = eta_0 / (np.sqrt(i_epoch + 1))
         for param_group in self.local_model_optimizer.param_groups:
-            param_group['lr'] = eta_t 
-            
+            param_group['lr'] = eta_t
+
     def obtain_local_data(self, data):
         self.local_batch_data = data
 
@@ -235,23 +238,22 @@ class Party(object):
     #             w.grad = g.detach()
     #     self.local_model_optimizer.step()
 
+    def local_backward(self, weight=None):
+        self.num_local_updates += 1  # another update
 
-    def local_backward(self,weight=None):
-        self.num_local_updates += 1 # another update
-        
         # update local model
         self.local_model_optimizer.zero_grad()
         # for w in self.local_model.parameters():
         #     if w.requires_grad:
         #         print("zero grad results in", w.grad) # None for all
-        
+
         # ########## for passive local mid loss (start) ##########
         # if passive party in defense party, do
         if (
-            self.args.apply_mid == True
-            and (self.index in self.args.defense_configs["party"])
-            and (self.index < self.args.k - 1)
-            ):
+                self.args.apply_mid == True
+                and (self.index in self.args.defense_configs["party"])
+                and (self.index < self.args.k - 1)
+        ):
             # get grad for local_model.mid_model.parameters()
             self.local_model.mid_loss.backward(retain_graph=True)
             self.local_model.mid_loss = torch.empty((1, 1)).to(self.args.device)
@@ -279,10 +281,10 @@ class Party(object):
             #         print("total grad results in", w.grad)
         # ########## for passive local mid loss (end) ##########
         elif (
-            self.args.apply_dcor == True
-            and (self.index in self.args.defense_configs["party"])
-            and (self.index < self.args.k - 1) # pasive defense
-            ):
+                self.args.apply_dcor == True
+                and (self.index in self.args.defense_configs["party"])
+                and (self.index < self.args.k - 1)  # pasive defense
+        ):
             self.weights_grad_a = torch.autograd.grad(
                 self.local_pred,
                 self.local_model.parameters(),
@@ -297,10 +299,11 @@ class Party(object):
             ########## dCor Loss ##########
             # print('dcor passive defense')
             self.distance_correlation_lambda = self.args.defense_configs['lambda']
-            loss_dcor = self.distance_correlation_lambda * torch.log(tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1))) 
+            loss_dcor = self.distance_correlation_lambda * torch.log(
+                tf_distance_cov_cor(self.local_pred, torch.flatten(self.local_batch_data, start_dim=1)))
             dcor_gradient = torch.autograd.grad(
                 loss_dcor, self.local_model.parameters(), retain_graph=True, create_graph=True
-                )
+            )
             # print('dcor_gradient:',len(dcor_gradient),dcor_gradient[0].size())
             for w, g in zip(self.local_model.parameters(), dcor_gradient):
                 # print('w:',w.size(),'g:',g.size())
@@ -314,9 +317,11 @@ class Party(object):
             except StopIteration:
                 self.attribute_iter = iter(self.attribute_loader)
                 target_attribute = self.attribute_iter.__next__()
-            assert target_attribute.shape[0] == self.local_model.adversarial_output.shape[0], f"[Error] Data not aligned, target has shape: {target_attribute.shape}, pred has shape {self.local_model.adversarial_output.shape}"
+            assert target_attribute.shape[0] == self.local_model.adversarial_output.shape[
+                0], f"[Error] Data not aligned, target has shape: {target_attribute.shape}, pred has shape {self.local_model.adversarial_output.shape}"
             attribute_loss_fn = torch.nn.CrossEntropyLoss()
-            attribute_loss = self.args.defense_configs["lambda"] * attribute_loss_fn(self.local_model.adversarial_output, target_attribute)
+            attribute_loss = self.args.defense_configs["lambda"] * attribute_loss_fn(
+                self.local_model.adversarial_output, target_attribute)
             attribute_loss.backward(retain_graph=True)
             self.local_model.adversarial_output = None
             self.weights_grad_a = torch.autograd.grad(
@@ -327,7 +332,7 @@ class Party(object):
                 retain_graph=True,
             )
             for w, g in zip(self.local_model.local_model.parameters(), self.weights_grad_a):
-            # for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
+                # for w, g in zip(self.local_model.parameters(), self.weights_grad_a):
                 if w.requires_grad:
                     if w.grad != None:
                         w.grad += g.detach()
@@ -336,8 +341,8 @@ class Party(object):
             # ########## adversarial training loss (end) ##########
         else:
             torch.autograd.set_detect_anomaly(True)
-            if weight != None: # CELU
-                ins_batch_cached_grad = torch.mul(weight.unsqueeze(1),self.local_gradient)
+            if weight != None:  # CELU
+                ins_batch_cached_grad = torch.mul(weight.unsqueeze(1), self.local_gradient)
                 self.weights_grad_a = torch.autograd.grad(
                     self.local_pred,
                     self.local_model.parameters(),

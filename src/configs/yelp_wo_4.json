@@ -1,0 +1,77 @@
+{
+    "epochs": 50,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 64,
+    "pipeline": "pretrained",
+    "early_stop_threshold": 2,
+    "model_architect":"CLS",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "longest_first",
+        "max_length": 384,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "dataset":{
+        "dataset_name": "yelp-polarity",
+        "num_classes": 5
+    },
+    "model_list":{
+        "0": {
+            "type": "Shunianyelp_review_classification",
+            "pretrained": 1,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "output_dim": 5,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+        },
+        "1": {
+            "type": "Shunianyelp_review_classification",
+            "pretrained": 1,
+            "encoder_trainable": 0,
+            "head_layer_trainable": 1,
+            "output_dim": 5,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/Shunianyelp_review_classification"
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "local_encoders_num": 4,
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    },
+    "attack_list": {
+        "0":{
+            "name": "VanillaModelInversion_WhiteBox",
+            "parameters": {
+                "party": [1],
+                "lr": 0.01,
+                "epochs": 100,
+                "batch_size": 32,
+                "attack_sample_num": 1000
+            }
+        },
+        "1":{
+            "name": "WhiteBoxInversion",
+            "parameters": {
+                "party": [1],
+                "T": 0.05,
+                "lr": 0.005,
+                "epochs": 500,
+                "batch_size": 32,
+                "attack_sample_num": 1000
+            }
+        }
+    }
+}

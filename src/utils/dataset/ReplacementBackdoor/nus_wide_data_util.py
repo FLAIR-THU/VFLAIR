@@ -8,7 +8,8 @@ import requests
 from PIL import Image
 from sklearn.utils import shuffle
 
-#from data_util.data_loader import TwoPartyDataLoader
+
+# from data_util.data_loader import TwoPartyDataLoader
 
 
 def balance_X_y(XA, XB, y, seed=5):
@@ -42,7 +43,7 @@ def balance_X_y(XA, XB, y, seed=5):
 
 
 def get_top_k_labels(data_dir, top_k=5):
-    #data_path = "NUS_WIDE/Groundtruth/AllLabels"
+    # data_path = "NUS_WIDE/Groundtruth/AllLabels"
     data_path = "Groundtruth/AllLabels"
 
     label_counts = {}
@@ -61,7 +62,7 @@ def get_top_k_labels(data_dir, top_k=5):
 
 def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
     # get labels
-    #data_path = "NUS_WIDE/Groundtruth/TrainTestLabels/"
+    # data_path = "NUS_WIDE/Groundtruth/TrainTestLabels/"
     data_path = "Groundtruth/TrainTestLabels/"
 
     dfs = []
@@ -80,7 +81,7 @@ def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
     print(selected.shape)
 
     # get XA, which are image low level features
-    #features_path = "NUS_WIDE/NUS_WID_Low_Level_Features/Low_Level_Features"
+    # features_path = "NUS_WIDE/NUS_WID_Low_Level_Features/Low_Level_Features"
     features_path = "Low_Level_Features"
 
     print("data_dir: {0}".format(data_dir))
@@ -106,7 +107,8 @@ def get_labeled_data(data_dir, selected_label, n_samples, dtype="Train"):
 
     if n_samples is None:
         return data_X_image_selected.values[:], data_X_text_selected.values[:], selected.values[:]
-    return data_X_image_selected.values[:n_samples], data_X_text_selected.values[:n_samples], selected.values[:n_samples]
+    return data_X_image_selected.values[:n_samples], data_X_text_selected.values[:n_samples], selected.values[
+                                                                                              :n_samples]
 
 
 def image_and_text_data(data_dir, selected, n_samples=2000):

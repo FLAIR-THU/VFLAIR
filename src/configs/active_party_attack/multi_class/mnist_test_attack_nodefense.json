@@ -1,50 +1,54 @@
 {
-    "epochs": 30,
-    "lr": 0.01,
-    "k": 2,
-    "batch_size": 1024,
-    "communication":{
-        "communication_protocol": "FedSGD",
-        "iteration_per_aggregation": 1
+  "epochs": 30,
+  "lr": 0.01,
+  "k": 2,
+  "batch_size": 1024,
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "mnist",
+    "num_classes": 10
+  },
+  "model_list": {
+    "0": {
+      "type": "MLP2",
+      "input_dim": 392,
+      "output_dim": 10,
+      "path": "random_14*28_10"
     },
-    "dataset":{
-        "dataset_name": "mnist",
-        "num_classes": 10
+    "1": {
+      "type": "MLP2",
+      "input_dim": 392,
+      "output_dim": 10,
+      "path": "random_14*28_10"
     },
-    "model_list":{
-        "0": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
-        },
-        "1": {
-            "type": "MLP2",
-            "input_dim": 392,
-            "output_dim": 10,
-            "path": "random_14*28_10"
-        },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "attack_list": {
+    "0": {
+      "name": "GenerativeRegressionNetwork",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.005,
+        "epochs": 60,
+        "batch_size": 1024
+      }
     },
-    "attack_list": {
-        "0":{
-            "name": "GenerativeRegressionNetwork",
-            "parameters": {
-                "party": [1],
-                "lr": 0.005,
-                "epochs": 60,
-                "batch_size": 1024
-            }
-        },
-        "1":{
-            "name": "ResSFL",
-            "parameters": {
-                "party": [1],
-                "lr": 1e-3,
-                "epochs": 50,
-                "batch_size": 32
-            }
-        }
+    "1": {
+      "name": "ResSFL",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 1e-3,
+        "epochs": 50,
+        "batch_size": 32
+      }
     }
+  }
 }

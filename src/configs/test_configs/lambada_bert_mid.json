@@ -1,0 +1,100 @@
+{
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 32,
+  "pipeline": "finetune",
+  "model_architect": "CLM",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "Lambada",
+    "num_classes": 1,
+    "use_prompt": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 512,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "bert-base-uncased",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/bert-base-uncased"
+    },
+    "1": {
+      "type": "bert-base-uncased",
+      "pretrained": 1,
+      "head_layer_trainable": 1,
+      "encoder_trainable": 0,
+      "output_dim": 2,
+      "model_type": "Bert",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/bert-base-uncased"
+    },
+    "task": {
+      "task_type": "CausalLM",
+      "doc_stride": 512,
+      "max_seq_length": 512,
+      "metric_type": "best_pred",
+      "n_best_size": 8
+    },
+    "local_encoders_num": 1,
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "MID",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "mid_model_name": "MIDModel_Linear",
+      "lr": 0.0001,
+      "lambda": 0.5,
+      "mid_position": "out",
+      "current_bottleneck_scale": 1,
+      "seq_length": 512,
+      "embed_dim": 768
+    }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 100,
+        "batch_size": 32,
+        "attack_sample_num": 2
+      }
+    },
+    "1": {
+      "name": "WhiteBoxInversion",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "T": 0.05,
+        "lr": 0.001,
+        "epochs": 100,
+        "batch_size": 32,
+        "attack_sample_num": 2
+      }
+    }
+  }
+}

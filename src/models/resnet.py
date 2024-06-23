@@ -1,4 +1,5 @@
 import os, sys
+
 sys.path.append(os.pardir)
 
 import torch.nn as nn
@@ -30,16 +31,16 @@ class BasicBlock(nn.Module):
     """Basic Block for resnet 18 and resnet 34
     """
 
-    #BasicBlock and BottleNeck block
-    #have different output size
-    #we use class attribute expansion
-    #to distinct
+    # BasicBlock and BottleNeck block
+    # have different output size
+    # we use class attribute expansion
+    # to distinct
     expansion = 1
 
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
 
-        #residual function
+        # residual function
         self.residual_function = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
@@ -48,11 +49,11 @@ class BasicBlock(nn.Module):
             nn.BatchNorm2d(out_channels * BasicBlock.expansion)
         )
 
-        #shortcut
+        # shortcut
         self.shortcut = nn.Sequential()
 
-        #the shortcut output dimension is not the same with residual function
-        #use 1*1 convolution to match the dimension
+        # the shortcut output dimension is not the same with residual function
+        # use 1*1 convolution to match the dimension
         if stride != 1 or in_channels != BasicBlock.expansion * out_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),
@@ -62,10 +63,12 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         return nn.LeakyReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
+
 class BottleNeck(nn.Module):
     """Residual block for resnet over 50 layers
     """
     expansion = 2
+
     def __init__(self, in_channels, out_channels, stride=1):
         super().__init__()
         self.residual_function = nn.Sequential(
@@ -90,6 +93,7 @@ class BottleNeck(nn.Module):
     def forward(self, x):
         return nn.LeakyReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
+
 class ResNet(nn.Module):
 
     def __init__(self, block, num_block, num_classes=100):
@@ -101,8 +105,8 @@ class ResNet(nn.Module):
             nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(inplace=True))
-        #we use a different inputsize than the original paper
-        #so conv2_x's stride is 1
+        # we use a different inputsize than the original paper
+        # so conv2_x's stride is 1
         self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
         self.conv3_x = self._make_layer(block, 128, num_block[1], 2)
         self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
@@ -147,30 +151,36 @@ class ResNet(nn.Module):
 
         return output
 
+
 def resnet18(num_classes):
     """ return a ResNet 18 object
     """
     return ResNet(BasicBlock, [2, 2, 2, 2], num_classes)
+
 
 def resnet34(num_classes):
     """ return a ResNet 34 object
     """
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes)
 
+
 def resnet50(num_classes):
     """ return a ResNet 50 object
     """
     return ResNet(BottleNeck, [3, 4, 6, 3], num_classes)
+
 
 def resnet101():
     """ return a ResNet 101 object
     """
     return ResNet(BottleNeck, [3, 4, 23, 3])
 
+
 def resnet152():
     """ return a ResNet 152 object
     """
     return ResNet(BottleNeck, [3, 8, 36, 3])
+
 
 # for resnet20
 class LambdaLayer(nn.Module):
@@ -230,7 +240,7 @@ class ResNet2(nn.Module):
         self.apply(weights_init)
 
     def _make_layer(self, block, planes, num_blocks, kernel_size, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+        strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_planes, planes, kernel_size, stride))
@@ -258,16 +268,15 @@ class ResNet2(nn.Module):
 
 
 def resnet20(num_classes=10):
-    kernel_size=(3, 3)
+    kernel_size = (3, 3)
     return ResNet2(block=BasicBlock2, num_blocks=[3, 3, 3], kernel_size=kernel_size, num_classes=num_classes)
 
 
 def resnet110(num_classes=10):
-    kernel_size=(3, 3)
+    kernel_size = (3, 3)
     return ResNet2(block=BasicBlock2, num_blocks=[18, 18, 18], kernel_size=kernel_size, num_classes=num_classes)
 
 
 def resnet56(num_classes=10):
-    kernel_size=(3, 3)
+    kernel_size = (3, 3)
     return ResNet2(block=BasicBlock2, num_blocks=[9, 9, 9], kernel_size=kernel_size, num_classes=num_classes)
-

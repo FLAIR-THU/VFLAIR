@@ -68,19 +68,19 @@ class RandomForestTree(Tree):
         super().__init__()
 
     def fit(
-        self,
-        parties: List,
-        y: List[int],
-        y_onehot_encoded: List[List[int]],
-        num_classes: int,
-        depth: int,
-        prior: List[float],
-        mi_bound: float,
-        max_samples_ratio: float = 1.0,
-        active_party_id: int = -1,
-        n_job: int = 1,
-        seed: int = 0,
-        y_onehot_encoded_encrypted=None,
+            self,
+            parties: List,
+            y: List[int],
+            y_onehot_encoded: List[List[int]],
+            num_classes: int,
+            depth: int,
+            prior: List[float],
+            mi_bound: float,
+            max_samples_ratio: float = 1.0,
+            active_party_id: int = -1,
+            n_job: int = 1,
+            seed: int = 0,
+            y_onehot_encoded_encrypted=None,
     ):
         idxs = list(range(len(y)))
         if max_samples_ratio < 1.0:
@@ -282,17 +282,17 @@ class XGBoostClassifier(XGBoostBase):
 
 class RandomForestClassifier:
     def __init__(
-        self,
-        num_classes=2,
-        subsample_cols=0.8,
-        depth=5,
-        max_samples_ratio=1.0,
-        num_trees=5,
-        mi_bound=-1,
-        active_party_id=-1,
-        use_encryption=False,
-        n_job=1,
-        seed=0,
+            self,
+            num_classes=2,
+            subsample_cols=0.8,
+            depth=5,
+            max_samples_ratio=1.0,
+            num_trees=5,
+            mi_bound=-1,
+            active_party_id=-1,
+            use_encryption=False,
+            n_job=1,
+            seed=0,
     ):
         self.num_classes = num_classes
         self.subsample_cols = subsample_cols

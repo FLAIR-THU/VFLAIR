@@ -1,0 +1,763 @@
+/bin/bash: /home/DAIR/guzx/.conda/envs/py38/lib/libtinfo.so.6: no version information available (required by /bin/bash)
+MID 3 encoder Yelp
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  60  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  60  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  60  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  61  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  64  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  60  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  62  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  63  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py:141: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at ../c10/cuda/CUDAFunctions.cpp:108.)
+  return torch._C._cuda_getDeviceCount() > 0
+================= iter seed  65  =================
+communication_protocol: FedSGD
+load model_architect: CLS
+args.encoder_trainable: [False, False]
+args.embedding_trainable: [False, False]
+args.head_layer_trainable: [False, True]
+args.local_encoders_num: 3
+dict_keys(['name', 'parameters'])
+in load configs, defense_configs is type <class 'dict'>
+in load configs, defense_configs is type <class 'dict'>
+Traceback (most recent call last):
+  File "main_pipeline_llm_3.py", line 144, in <module>
+    torch.cuda.set_device(cuda_id)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 408, in set_device
+    torch._C._cuda_setDevice(device)
+  File "/home/DAIR/guzx/.conda/envs/py38/lib/python3.8/site-packages/torch/cuda/__init__.py", line 302, in _lazy_init
+    torch._C._cuda_init()
+RuntimeError: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver.
+slurmstepd: error: *** JOB 57368 ON air-node-02 CANCELLED AT 2024-06-15T15:09:40 ***

@@ -1,0 +1,103 @@
+{
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 16,
+  "pipeline": "finetune",
+  "model_architect": "TQA",
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "SQuAD",
+    "num_classes": 1,
+    "use_prompt": 1,
+    "n_shot": 1
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 256,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
+      "path": "/mnt/data/model/gpt2"
+    },
+    "1": {
+      "type": "gpt2",
+      "pretrained": 1,
+      "encoder_trainable": 0,
+      "head_layer_trainable": 1,
+      "output_dim": 2,
+      "model_type": "GPT2",
+      "max_sequence": 512,
+      "train_set_file": "/mnt/data/data/SQuAD/train-v1.1.json",
+      "test_set_file": "/mnt/data/data/SQuAD/dev-v1.1.json",
+      "path": "/mnt/data/model/gpt2"
+    },
+    "task": {
+      "task_type": "QuestionAnswering",
+      "metric_type": "best_pred",
+      "doc_stride": 128,
+      "max_seq_length": 256,
+      "max_query_length": 256,
+      "max_answer_length": 30,
+      "n_best_size": 20
+    },
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  },
+  "defense": {
+    "name": "LaplaceDP",
+    "parameters": {
+      "party": [
+        0
+      ],
+      "epsilon": 50
+    }
+  },
+  "attack_list": {
+    "0": {
+      "name": "VanillaModelInversion_WhiteBox",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "lr": 0.01,
+        "epochs": 2,
+        "batch_size": 16,
+        "attack_sample_num": 10
+      }
+    },
+    "1": {
+      "name": "WhiteBoxInversion",
+      "parameters": {
+        "party": [
+          1
+        ],
+        "T": 0.05,
+        "lr": 0.001,
+        "epochs": 2,
+        "batch_size": 16,
+        "attack_sample_num": 10
+      }
+    }
+  }
+}

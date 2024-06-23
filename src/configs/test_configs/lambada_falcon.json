@@ -1,0 +1,59 @@
+{
+  "epochs": 1,
+  "lr": 0.0001,
+  "k": 2,
+  "batch_size": 16,
+  "pipeline": "pretrained",
+  "model_architect": "CLM",
+  "early_stop_threshold": 1,
+  "device": "cuda",
+  "gpu": 0,
+  "fl_type": "VFL",
+  "communication": {
+    "communication_protocol": "FedSGD",
+    "iteration_per_aggregation": 1
+  },
+  "dataset": {
+    "dataset_name": "Lambada",
+    "num_classes": 2
+  },
+  "tokenizer": {
+    "padding": "max_length",
+    "padding_type": "outside",
+    "pad_token": "[PAD]",
+    "truncation": "longest_first",
+    "max_length": 512,
+    "padding_side": "left",
+    "add_special_tokens": 1
+  },
+  "model_list": {
+    "0": {
+      "type": "tiiuaefalcon-rw-1b",
+      "pretrained": 1,
+      "head_layer_trainable": 0,
+      "output_dim": 1,
+      "model_type": "Falcon",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/tiiuaefalcon-rw-1b"
+    },
+    "1": {
+      "type": "tiiuaefalcon-rw-1b",
+      "pretrained": 1,
+      "head_layer_trainable": 0,
+      "output_dim": 1,
+      "model_type": "Falcon",
+      "max_sequence": 512,
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/tiiuaefalcon-rw-1b"
+    },
+    "task": {
+      "task_type": "CausalLM",
+      "doc_stride": 512,
+      "max_seq_length": 512,
+      "metric_type": "best_pred",
+      "n_best_size": 8
+    },
+    "local_encoders_num": 1,
+    "apply_trainable_layer": 0,
+    "global_model": "ClassificationModelHostHead"
+  }
+}

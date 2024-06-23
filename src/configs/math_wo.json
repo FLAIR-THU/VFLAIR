@@ -1,0 +1,61 @@
+{
+    "epochs": 10,
+    "lr": 0.0001,
+    "k": 2,
+    "batch_size": 2,
+    "early_stop_threshold": 2,
+    "pipeline": "pretrained",
+    "model_architect":"CLM",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "MATH",
+        "num_classes": 1,
+        "use_prompt": 1
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "True",
+        "max_length": 256,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "model_list":{
+        "0": {
+            "type": "gpt2",
+            "pretrained": 1,
+            "head_layer_trainable": 0,
+            "output_dim": 1,
+            "model_type": "GPT2",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+        },
+        "1": {
+            "type": "gpt2",
+            "pretrained": 1,
+            "head_layer_trainable": 0,
+            "output_dim": 1,
+            "model_type": "GPT2",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+        },
+        "task":{
+            "task_type": "CausalLM",
+            "max_new_tokens": 2048,
+            "generation_config_dict":{
+                "temperature":1.0,
+                "top_k": -1,
+                "top_p": 1.0,
+                "max_new_tokens": 256
+            },
+            "metric_type": "best_pred"
+        },
+        "local_encoders_num": 1,
+        "apply_trainable_layer": 0,
+        "global_model": "ClassificationModelHostHead"
+    }
+}

@@ -1,0 +1,21 @@
+FROM python:3.8.18
+
+ADD ./src /vflair
+ADD ./requirements.txt /vflair/requirements.txt
+
+WORKDIR /vflair
+RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+ENV PYTHONPATH "${PYTHONPATH}:/vflair"
+ENV GRPC_SERVER "localhost"
+ENV GRPC_PORT "3333"
+ENV COMPRESSION "None"
+ENV MYSQL_HOST "localhost"
+ENV MYSQL_PORT "3316"
+ENV MYSQL_DB "vflair"
+ENV MYSQL_USER "root"
+ENV MYSQL_PASSWORD "abcd1234"
+ENV CUDA_VISIBLE_DEVICES "${CUDA_VISIBLE_DEVICES}:0"
+
+EXPOSE 5000
+CMD ["python", "./framework/web/main.py", "--config=./framework/web/web_config.yml"]

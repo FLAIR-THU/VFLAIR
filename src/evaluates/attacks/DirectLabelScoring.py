@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.append(os.pardir)
 
 import torch
@@ -6,15 +7,16 @@ import torch.nn.functional as F
 import time
 import numpy as np
 import copy
-import pickle 
+import pickle
 import matplotlib.pyplot as plt
-import itertools 
+import itertools
 from random import randint
 
 from random import randint
 from evaluates.attacks.attacker import Attacker
-from models.global_models import * #ClassificationModelHostHead, ClassificationModelHostTrainableHead
+from models.global_models import *  # ClassificationModelHostHead, ClassificationModelHostTrainableHead
 from utils.basic_functions import cross_entropy_for_onehot, append_exp_res
+
 
 def label_to_one_hot(target, num_classes=10):
     # print('label_to_one_hot:', target, type(target))
@@ -29,6 +31,7 @@ def label_to_one_hot(target, num_classes=10):
         onehot_target.scatter_(1, target, 1)
     return onehot_target
 
+
 class DirectLabelScoring(Attacker):
     def __init__(self, top_vfl, args):
         super().__init__(args)
@@ -40,13 +43,12 @@ class DirectLabelScoring(Attacker):
         self.num_classes = args.num_classes
         self.sample_count = args.batch_size
         self.k = args.k
-        self.party = args.attack_configs['party'] # parties that launch attacks
+        self.party = args.attack_configs['party']  # parties that launch attacks
         self.label_size = args.num_classes
-       
+
         self.criterion = cross_entropy_for_onehot
 
-    
-    def set_seed(self,seed=0):
+    def set_seed(self, seed=0):
         # random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
         np.random.seed(seed)
@@ -61,10 +63,9 @@ class DirectLabelScoring(Attacker):
         total = dummy_label.shape[0]
         return success / total
 
-
     def attack(self):
         self.set_seed(123)
-        for ik in self.party: # attacker party #ik
+        for ik in self.party:  # attacker party #ik
             index = ik
 
             local_gradient = self.vfl_info['gradient'][ik]
@@ -97,7 +98,7 @@ class DirectLabelScoring(Attacker):
             #         else:
             #             pred_label.append(_gradient.argmin(dim=0))
             #         #assert 1>2, 'cannot find single opposite signed gradient'
-            
+
             pred_label = []
             for _gradient in local_gradient:
                 pred_idx = -1
@@ -106,17 +107,17 @@ class DirectLabelScoring(Attacker):
                         pred_idx = idx
                         break
                 if pred_idx == -1:
-                    pred_idx = randint(0,self.num_classes-1)
+                    pred_idx = randint(0, self.num_classes - 1)
                 pred_label.append(pred_idx)
 
             one_hot_pred_label = label_to_one_hot(torch.tensor(pred_label), self.num_classes).to(self.device)
-            true_label = self.vfl_info['label'].to(self.device) # copy.deepcopy(self.gt_one_hot_label)
+            true_label = self.vfl_info['label'].to(self.device)  # copy.deepcopy(self.gt_one_hot_label)
             rec_rate = self.calc_label_recovery_rate(one_hot_pred_label, true_label)
 
             print(f"DLI, if self.args.apply_defense={self.args.apply_defense}")
             print(f'batch_size=%d,class_num=%d,party_index=%d,recovery_rate=%lf' % \
-            (self.sample_count, self.label_size, index, rec_rate))
-            
+                  (self.sample_count, self.label_size, index, rec_rate))
+
         print("returning from DLI")
         return rec_rate
         # return recovery_history

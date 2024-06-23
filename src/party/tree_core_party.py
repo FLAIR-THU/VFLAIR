@@ -90,7 +90,7 @@ class Party:
     def split_rows(self, idxs, feature_opt_pos, threshold_opt_pos):
         feature_opt_id = self.temp_column_subsample[
             feature_opt_pos % self.subsample_col_count
-        ]
+            ]
         if feature_opt_pos > self.subsample_col_count:
             missing_dir = 1
         else:
@@ -102,14 +102,14 @@ class Party:
             idxs[r]
             for r in range(row_count)
             if ((x_col[r] is not None) and (x_col[r] <= threshold))
-            or ((x_col[r] is None) and (missing_dir == 1))
+               or ((x_col[r] is None) and (missing_dir == 1))
         ]
         return left_idxs
 
     def insert_lookup_table(self, feature_opt_pos, threshold_opt_pos):
         feature_opt_id = self.temp_column_subsample[
             feature_opt_pos % self.subsample_col_count
-        ]
+            ]
         threshold_opt = self.temp_thresholds[feature_opt_pos][threshold_opt_pos]
 
         if self.use_missing_value:

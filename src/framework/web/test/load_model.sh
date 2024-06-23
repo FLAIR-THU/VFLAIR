@@ -1,0 +1,1 @@
+curl http://localhost:5000/start?model_id=Qwen1.5-0.5B-Chat

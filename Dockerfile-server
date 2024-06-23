@@ -1,0 +1,15 @@
+FROM python:3.8.18
+
+ADD ./src /vflair
+ADD ./requirements.txt /vflair/requirements.txt
+
+WORKDIR /vflair
+RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+ENV PYTHONPATH "${PYTHONPATH}:/vflair"
+ENV GRPC_PORT "3333"
+ENV COMPRESSION "None"
+ENV CUDA_VISIBLE_DEVICES "${CUDA_VISIBLE_DEVICES}:0"
+
+EXPOSE 3333
+CMD ["python", "./framework/server/grpc_server.py", "--config=./framework/server/server_config.yml"]

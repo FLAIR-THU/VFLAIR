@@ -1,0 +1,7 @@
+database:
+  url: mysql+mysqldb://${MYSQL_USER:root}:${MYSQL_PASSWORD:abcd1234}@${MYSQL_HOST:localhost}:${MYSQL_PORT:3316}/${MYSQL_DB:vflair}?charset=utf8mb4
+
+grpc_server:
+  host: ${GRPC_SERVER:localhost}
+  port: ${GRPC_PORT:3333}
+  compression: None
