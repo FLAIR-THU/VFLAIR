@@ -62,32 +62,17 @@ GRPC_SERVER=vflair-server.com vflair-web
 More parameter descriptions see [reference] (./docs/README_parameters.md)
 
 #### GPU Requirements
-The following GPU memory usage is based on 1/10 of the Lambada dataset when using it.
+The GPU and other information about Active Party and Passive Party we used to test is as follows:
 
-| model                    | dataset  | Active Party                     | Passive Party                    |
-|--------------------------|----------|----------------------------------|----------------------------------|
-| Qwen2-72B                | huanhuan | 4*A100 GPU memory used: 272050MB | 1*A100 GPU memory used: 31610MB  |
-| llama-2-7b               | Lambada  | 1*A100 GPU memory used: 26930MB  | 1*A100 GPU memory used: 3140MB   |
-| chatglm3-6b              | Lambada  | 1*A100 GPU memory used: 13290MB  | 1*4080 GPU memory used: 2200MB   |
-| gemma-2b                 | Lambada  | 1*A100 GPU memory used: 15300MB  | 1*4080 GPU memory used: 3300MB   |
-| Baichuan-7B              | Lambada  | 1*A100 GPU memory used: 29030MB  | 1*A100 GPU memory used: 3750MB   |
-| Mistral-7B-Instruct-v0.2 | Lambada  | 1*A100 GPU memory used: 29510MB  | 1*A100 GPU memory used: 3090MB   |
+| model                    | dataset  | Active Party Info                                                  | Passive Party Info                                             |
+|--------------------------|----------|--------------------------------------------------------------------|----------------------------------------------------------------|
+| Qwen2-72B                | huanhuan | GPU: A100-80G *4  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: A100-80G *1<br/> Memory: 245GB<br/>CPU: Xeon(R) 8336C *14 |
+| llama-2-7b               | Lambada  | GPU: A100-80G *1  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: A100-80G *1<br/> Memory: 245GB<br/>CPU: Xeon(R) 8336C *14 |
+| chatglm3-6b              | Lambada  | GPU: A100-80G *1  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: 4080 *1<br/> Memory: 32GB<br/>CPU:  i7-14700K *28         |
+| gemma-2b                 | Lambada  | GPU: A100-80G *1  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: 4080 *1<br/> Memory: 32GB<br/>CPU:  i7-14700K *28         |
+| Baichuan-7B              | Lambada  | GPU: A100-80G *1  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: A100-80G *1<br/> Memory: 245GB<br/>CPU: Xeon(R) 8336C *14 |
+| Mistral-7B-Instruct-v0.2 | Lambada  | GPU: A100-80G *1  <br/>Memory: 980GB <br/>CPU: Xeon(R) 8336C *56   | GPU: A100-80G *1<br/> Memory: 245GB<br/>CPU: Xeon(R) 8336C *14 |
 
-The other information about Active Party and Passive Party we used to test is as follows:
-
-| Item                     | Active Party      | Passive Party |
-|--------------------------|-------------------|---------------|
-| CPU                      | Xeon(R) 8336C *56 | i7-14700K *28 |
-| Memory                   | 980GB             | 32GB          | 
-| GPU                      | A100-80G *4       | 4080 *1       | 
-
-or
-
-| Item                     | Active Party      | Passive Party     |
-|--------------------------|-------------------|-------------------|
-| CPU                      | Xeon(R) 8336C *56 | Xeon(R) 8336C *14 |
-| Memory                   | 980GB             | 245GB             | 
-| GPU                      | A100-80G *4       | A100-80G *1       | 
 
 
 ### How to use

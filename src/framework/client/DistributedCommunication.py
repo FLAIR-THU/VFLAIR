@@ -31,7 +31,7 @@ def convert_msg_to_tensor(msg):
 
 
 @timer()
-def convert_pred_to_msg(pred_list):
+def convert_pred_to_batch_msg(pred_list):
     SPLIT_SIZE = 10
     total_size = get_total_size(pred_list)
     batch_size = int(total_size / SPLIT_SIZE) + 1
@@ -101,6 +101,31 @@ def _compute_range(i, total, batch):
     logger.info(f"total: {total}, batch:{batch}, start:{start}, end:{end}")
     return start, end
 
+@timer()
+def convert_pred_to_msg(pred_list):
+    get_total_size(pred_list)
+    data_value = Value()
+    data_value.hidden_states.inputs_embeds.shape.extend(pred_list['inputs_embeds'].shape)
+    data_value.hidden_states.inputs_embeds.value.extend(pred_list['inputs_embeds'].flatten().tolist())
+    data_value.hidden_states.inputs_embeds.dtype = str(pred_list['inputs_embeds'].dtype)
+
+    if 'attention_mask' in pred_list:
+        data_value.hidden_states.attention_mask.shape.extend(pred_list['attention_mask'].shape)
+        data_value.hidden_states.attention_mask.value.extend(pred_list['attention_mask'].flatten().tolist())
+        data_value.hidden_states.attention_mask.dtype = str(pred_list['attention_mask'].dtype)
+        if pred_list['attention_mask'].requires_grad:
+            data_value.hidden_states.requires_grads.append('attention_mask')
+
+    if 'position_ids' in pred_list:
+        data_value.hidden_states.position_ids.shape.extend(pred_list['position_ids'].shape)
+        data_value.hidden_states.position_ids.value.extend(pred_list['position_ids'].flatten().tolist())
+
+    data_value.hidden_states.output_hidden_states = False
+    data_value.hidden_states.use_cache = False
+    if pred_list['inputs_embeds'].requires_grad:
+        data_value.hidden_states.requires_grads.append('inputs_embeds')
+
+    return data_value
 
 @timer()
 def convert_msg_to_pred(pred):
@@ -152,7 +177,8 @@ class DistributedCommunication(ICommunication):
 
         task.params = {"grad_enabled": torch.is_grad_enabled()}
 
-        response = self._client.send_batch(task, new_pred)
+        # response = self._client.send_batch(task, new_pred)
+        response = self._client.open_and_send(task, new_pred)
         result = response.named_values['test_logit']
         if len(result.hidden_states.inputs_embeds.value) > 0:
             test_logit = result.hidden_states
