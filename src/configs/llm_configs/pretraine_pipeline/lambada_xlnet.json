@@ -30,7 +30,9 @@
     "0": {
       "type": "xlnetxlnet-base-cased",
       "pretrained": 1,
-      "head_layer_trainable": 0,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "encoder_trainable_ids":[], 
       "output_dim": 1,
       "model_type": "XLNet",
       "max_sequence": 512,
@@ -39,6 +41,8 @@
     "1": {
       "type": "xlnetxlnet-base-cased",
       "pretrained": 1,
+      "encoder_trainable": 0,
+      "encoder_trainable_ids":[], 
       "head_layer_trainable": 0,
       "output_dim": 1,
       "model_type": "XLNet",
@@ -52,8 +56,6 @@
       "metric_type": "best_pred",
       "n_best_size": 8
     },
-    "local_encoders_num": 1,
-    "apply_trainable_layer": 0,
-    "global_model": "ClassificationModelHostHead"
+    "local_encoders_num": 1
   }
 }

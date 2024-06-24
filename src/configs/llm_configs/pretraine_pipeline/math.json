@@ -26,22 +26,27 @@
     },
     "model_list":{
         "0": {
-            "type": "gpt2",
+            "type": "meta-mathMetaMath-Mistral-7B",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[], 
             "output_dim": 1,
-            "model_type": "GPT2",
+            "model_type": "Mistral",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/meta-mathMetaMath-Mistral-7B"
         },
         "1": {
-            "type": "gpt2",
+            "type": "meta-mathMetaMath-Mistral-7B",
             "pretrained": 1,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[], 
             "head_layer_trainable": 0,
             "output_dim": 1,
-            "model_type": "GPT2",
+            "model_type": "Mistral",
             "max_sequence": 512,
-            "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/meta-mathMetaMath-Mistral-7B"
         },
         "task":{
             "task_type": "CausalLM",
@@ -54,8 +59,6 @@
             },
             "metric_type": "best_pred"
         },
-        "local_encoders_num": 1,
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
+        "local_encoders_num": 1
     }
 }

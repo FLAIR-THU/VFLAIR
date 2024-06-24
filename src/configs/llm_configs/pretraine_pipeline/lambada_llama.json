@@ -28,22 +28,26 @@
   },
   "model_list": {
     "0": {
-      "type": "state-spacesmamba-130m-hf",
+      "type": "llama-2-7b",
       "pretrained": 1,
-      "head_layer_trainable": 0,
+      "encoder_trainable": 0,
+      "embedding_trainable": 0,
+      "encoder_trainable_ids":[], 
       "output_dim": 1,
-      "model_type": "Mamba",
+      "model_type": "Llama",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/state-spacesmamba-130m-hf"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
     },
     "1": {
-      "type": "state-spacesmamba-130m-hf",
+      "type": "llama-2-7b",
       "pretrained": 1,
+      "encoder_trainable": 0,
+      "encoder_trainable_ids":[], 
       "head_layer_trainable": 0,
       "output_dim": 1,
-      "model_type": "Mamba",
+      "model_type": "Llama",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/state-spacesmamba-130m-hf"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
     },
     "task": {
       "task_type": "CausalLM",
@@ -52,8 +56,6 @@
       "metric_type": "best_pred",
       "n_best_size": 8
     },
-    "local_encoders_num": 1,
-    "apply_trainable_layer": 0,
-    "global_model": "ClassificationModelHostHead"
+    "local_encoders_num": 1
   }
 }

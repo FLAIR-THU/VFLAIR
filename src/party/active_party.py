@@ -16,9 +16,6 @@ from framework.client.DistributedCommunication import convert_pred_to_msg, conve
 from config import vfl_basic_config
 
 
-# load_models_per_party_new
-
-
 class ActiveParty_LLM(Party_LLM):
     def __init__(self, args, index, need_data=True, need_model=True):
         print(f'==== initialize ActiveParty_LLM : party {index}======')

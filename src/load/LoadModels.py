@@ -38,7 +38,6 @@ from models.llm_models.mistral import *
 from models.llm_models.xlnet import *
 from models.llm_models.chatglm import *
 
-from models.llm_models.t5 import *
 
 from models.bottom_models import *
 from models.global_models import *
@@ -150,7 +149,8 @@ def load_basic_models(args, index):
     current_input_dim = args.model_list[str(index)]['input_dim'] if 'input_dim' in args.model_list[str(index)] else -1
     current_hidden_dim = args.model_list[str(index)]['hidden_dim'] if 'hidden_dim' in args.model_list[
         str(index)] else -1
-    current_output_dim = args.model_list[str(index)]['output_dim']
+    current_output_dim = args.model_list[str(index)]['output_dim'] if 'output_dim' in args.model_list[
+        str(index)] else -1
     current_vocab_size = args.model_list[str(index)]['vocab_size'] if 'vocab_size' in args.model_list[
         str(index)] else -1
     # print(f"index={index}, current_input_dim={current_input_dim}, current_output_dim={current_output_dim}")
@@ -355,7 +355,7 @@ def load_defense_models(args, index, local_model, local_model_optimizer, global_
                 encoder.load_model(args.defense_configs['model_path'], target_device=args.device)
                 args.encoder = encoder
 
-        return args, local_model, local_model_optimizer, global_model, global_model_optimizer, None, None
+        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
 
@@ -534,7 +534,6 @@ def load_basic_models_llm_bert(args, index):
 
 def load_basic_models_llm_t5(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -655,7 +654,6 @@ def load_basic_models_llm_t5(args, index):
 
 def load_basic_models_llm_gpt2(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -832,7 +830,6 @@ def load_basic_models_llm_gpt2(args, index):
 
 def load_basic_models_llm_llama(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -978,7 +975,6 @@ def load_basic_models_llm_llama(args, index):
 
 def load_basic_models_llm_baichuan(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1113,7 +1109,6 @@ def load_basic_models_llm_baichuan(args, index):
 
 def load_basic_models_llm_xlnet(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1247,7 +1242,6 @@ def load_basic_models_llm_xlnet(args, index):
 
 def load_basic_models_llm_falcon(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1395,7 +1389,6 @@ def load_basic_models_llm_falcon(args, index):
 
 def load_basic_models_llm_mamba(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1528,7 +1521,6 @@ def load_basic_models_llm_mamba(args, index):
 
 def load_basic_models_llm_gemma(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1662,7 +1654,6 @@ def load_basic_models_llm_gemma(args, index):
 
 def load_basic_models_llm_chatglm(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1803,7 +1794,6 @@ def load_basic_models_llm_chatglm(args, index):
 
 def load_basic_models_llm_mistral(args, index):
     current_model_type = args.model_list[str(index)]['type']
-    current_output_dim = args.model_list[str(index)]['output_dim']
     model_path = args.model_list[str(index)]['path']
 
     print('load_basic_models_llm from:', current_model_type)
@@ -1981,21 +1971,21 @@ def load_basic_models_llm(args, index):
     print(f'Model Architect:{args.model_architectures[0]}  {args.model_architect}')
     return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
-def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
-                              head_layer_trainable):
-    if model_type in ['Bert', 'Albert', 'Roberta']:
-        local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
-            pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
-        )
-    elif model_type in ['GPT2']:
-        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
-        pass
-    elif model_type in ['Llama']:
-        # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args,index)
-        pass
-    else:
-        assert 1 > 2, 'llm not supported'
-    return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
+# def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
+#                               head_layer_trainable):
+#     if model_type in ['Bert', 'Albert', 'Roberta']:
+#         local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer = load_basic_models_llm_bert_new(
+#             pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token, head_layer_trainable
+#         )
+#     elif model_type in ['GPT2']:
+#         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_gpt2(args,index)
+#         pass
+#     elif model_type in ['Llama']:
+#         # args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm_llama(args,index)
+#         pass
+#     else:
+#         assert 1 > 2, 'llm not supported'
+#     return local_model, local_model_optimizer, global_model, global_model_optimizer, tokenizer
 
 
 # def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_dim, is_local, device, padding_side, model_path, main_lr, pad_token,
@@ -2206,25 +2196,20 @@ def load_basic_models_llm_new(pretrained, task_type, model_type, current_output_
 
 #     return args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer
 
-
+def load_models_per_party_llm(args, index):
+    current_model_type = args.model_list[str(index)]['type']
+    val_model = None
+    args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 def load_models_per_party(args, index):
     current_model_type = args.model_list[str(index)]['type']
     val_model = None
-    if current_model_type in LLM_supported:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models_llm(args,index)
-        # args, local_model, local_model_optimizer, global_model, global_model_optimizer, adversarial_model, adversarial_model_optimizer = load_defense_models_llm(args, index, local_model, local_model_optimizer, global_model, global_model_optimizer)
-        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
-    else:
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args, index)
-        args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args,
-                                                                                                             index,
-                                                                                                             local_model,
-                                                                                                             local_model_optimizer,
-                                                                                                             global_model,
-                                                                                                             global_model_optimizer)
-        # important
-        return args, local_model, local_model_optimizer, global_model, global_model_optimizer
+    
+    args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_basic_models(args, index)
+    args, local_model, local_model_optimizer, global_model, global_model_optimizer = load_defense_models(args,index,local_model,local_model_optimizer,global_model,global_model_optimizer)
+    # important
+    return args, local_model, local_model_optimizer, global_model, global_model_optimizer
 
 
 if __name__ == '__main__':

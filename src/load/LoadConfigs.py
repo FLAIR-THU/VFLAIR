@@ -146,7 +146,8 @@ def do_load_basic_configs(config_dict, args):
         args.padding = 'do_not_pad'
 
     if args.padding == 'do_not_pad':
-        args.pad_info = f'donotpad-{str(args.add_special_tokens)}'
+        args.pad_info = f'donotpad'
+
     elif args.padding == 'longest':
         args.pad_info = f'longest-{str(args.pad_token)}-{str(args.truncation)}-{str(args.padding_side)}-{str(args.max_length)}-{str(args.add_special_tokens)}-{str(args.padding_type)}'
     else:
@@ -165,21 +166,29 @@ def do_load_basic_configs(config_dict, args):
         model_dict = {}
         default_dict_element = {'type': 'MLP2', 'path': 'random_14*28_10', 'input_dim': 392, 'output_dim': 10}
 
-        # Task Description
-        args.task_dict = config_model_dict['task']
-        args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
-
-        args.generation_config_dict = args.task_dict['generation_config_dict'] if('generation_config_dict' in args.task_dict) else {}
-
-
-        args.metric_type = args.task_dict['metric_type'] if('metric_type' in args.task_dict) else "n_best"
-        args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
-        args.max_query_length = args.task_dict['max_query_length'] if('max_query_length' in args.task_dict) else -1
-        args.max_seq_length = args.task_dict['max_seq_length'] if('max_seq_length' in args.task_dict) else -1
-        args.max_answer_length = args.task_dict['max_answer_length'] if('max_answer_length' in args.task_dict) else -1
-        args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
-        args.max_new_tokens = args.task_dict['max_new_tokens'] if('max_new_tokens' in args.task_dict) else 1
-
+        # LLM Task Description
+        args.task_dict = config_model_dict['task'] if('task' in config_model_dict) else None
+        if args.task_dict != None:
+            args.task_type = args.task_dict['task_type'] if('task_type' in args.task_dict) else "SequenceClassification"
+            args.generation_config_dict = args.task_dict['generation_config_dict'] if('generation_config_dict' in args.task_dict) else {}
+            args.metric_type = args.task_dict['metric_type'] if('metric_type' in args.task_dict) else "n_best"
+            args.doc_stride = args.task_dict['doc_stride'] if('doc_stride' in args.task_dict) else -1
+            args.max_query_length = args.task_dict['max_query_length'] if('max_query_length' in args.task_dict) else -1
+            args.max_seq_length = args.task_dict['max_seq_length'] if('max_seq_length' in args.task_dict) else -1
+            args.max_answer_length = args.task_dict['max_answer_length'] if('max_answer_length' in args.task_dict) else -1
+            args.n_best_size = args.task_dict['n_best_size'] if('n_best_size' in args.task_dict) else 20
+            args.max_new_tokens = args.task_dict['max_new_tokens'] if('max_new_tokens' in args.task_dict) else 1
+        else:
+            args.task_type = None
+            args.generation_config_dict = None
+            args.metric_type = None
+            args.doc_stride = None
+            args.max_query_length = None
+            args.max_seq_length = None
+            args.max_answer_length = None
+            args.n_best_size = None
+            args.max_new_tokens = None
+        
         args.encoder_trainable = []
         args.embedding_trainable = []
         args.head_layer_trainable = []
@@ -191,8 +200,7 @@ def do_load_basic_configs(config_dict, args):
                     args.model_type = config_model_dict[str(ik)]['model_type'] if 'model_type' in config_model_dict[
                         str(ik)] else None  # Overall Model Type
 
-                    encoder_trainable_ids = config_model_dict[str(ik)][
-                        'encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
+                    encoder_trainable_ids = config_model_dict[str(ik)]['encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
                     args.encoder_trainable_ids_list.append(encoder_trainable_ids)
 
                     if ik == args.k - 1:
@@ -220,7 +228,7 @@ def do_load_basic_configs(config_dict, args):
                     if ik != args.k - 1:
                         args.head_layer_trainable.append(False)  # no head layer for passive parties
                     else:
-                        head_layer_trainable = int(config_model_dict[str(ik)]['head_layer_trainable'])
+                        head_layer_trainable = int(config_model_dict[str(ik)]['head_layer_trainable']) if 'head_layer_trainable' in config_model_dict[str(ik)] else 0
                         if head_layer_trainable == 1:
                             head_layer_trainable = True
                         else:
@@ -231,13 +239,13 @@ def do_load_basic_configs(config_dict, args):
                             'output_dim' in config_model_dict[str(ik)])):
                         model_dict[str(ik)] = config_model_dict[str(ik)]
                         args.model_path = config_model_dict[str(ik)]['path']
-                        args.pretrained = config_model_dict[str(ik)]['pretrained']
+                        args.pretrained = config_model_dict[str(ik)]['pretrained'] if 'pretrained' in config_model_dict[str(ik)] else 1
                     else:
                         model_type_name = config_model_dict[str(ik)]['type']  # specific model type
                         temp = {'type': model_type_name, 'path': '../models/' + model_type_name + '/random'}
                         model_dict[str(ik)] = temp
                         args.model_path = ""
-                        args.pretrained = 0
+                        args.pretrained = 1
                 else:
                     model_dict[str(ik)] = default_dict_element
             else:
@@ -325,8 +333,9 @@ def do_load_basic_configs(config_dict, args):
             args.defense_param = args.defense_configs['lambda']
             args.defense_param_name = 'lambda'
         elif args.defense_name in ["MID"]:
-            args.defense_param = str(args.defense_configs['mid_model_name']) + '_' + str(
-                args.defense_configs['mid_position']) + '_' + str(args.defense_configs['lambda'])
+            mid_model_name = str(args.defense_configs['mid_model_name']) if 'mid_model_name' in args.defense_configs else 'MID'
+            mid_position = str(args.defense_configs['mid_position']) if 'mid_position' in args.defense_configs else 'out'
+            args.defense_param = mid_model_name + '_' + mid_position+ '_' + str(args.defense_configs['lambda'])
             args.defense_param_name = 'lambda'
         elif args.defense_name == "GaussianDP" or args.defense_name == "LaplaceDP":
             if 'dp_strength' in args.defense_configs:

@@ -1,0 +1,59 @@
+{
+    "epochs": 30,
+    "lr": 0.0005,
+    "k": 2,
+    "batch_size": 32,
+    "early_stop_threshold": 1,
+    "pipeline": "finetune",
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
+    "model_architect":"CLS",
+    "communication":{
+        "communication_protocol": "FedSGD",
+        "iteration_per_aggregation": 1
+    },
+    "dataset":{
+        "dataset_name": "CoLA",
+        "num_classes": 2
+    },
+    "tokenizer":{
+        "padding": "max_length",
+        "padding_type": "outside",
+        "pad_token": "[PAD]",
+        "truncation": "True",
+        "max_length": 512,
+        "padding_side": "left",
+        "add_special_tokens": 1
+    },
+    "model_list":{
+        "0": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "encoder_trainable": 1,
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[0,1,2],
+            "output_dim": 1,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-CoLA",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 0,
+            "encoder_trainable_ids":[],
+            "output_dim": 1,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": "/home/DAIR/guzx/Git_FedProject/Models/textattackbert-base-uncased-CoLA"
+        },
+        "task":{
+            "task_type": "SequenceClassification"
+        },
+        "local_encoders_num": 3
+    }
+    
+}

@@ -1,24 +1,29 @@
 {
-    "epochs": 1,
-    "lr": 0.0001,
+    "epochs": 30,
+    "lr": 0.0005,
     "k": 2,
-    "batch_size": 2,
-    "pipeline": "finetune",
-    "model_architect":"CLM",
+    "batch_size": 32,
     "early_stop_threshold": 1,
+    "pipeline": "finetune",
+    "finetune_configs":{
+        "name":"Vanilla",
+        "configs":{}
+    },
+    "model_architect":"CLM",
     "communication":{
         "communication_protocol": "FedSGD",
         "iteration_per_aggregation": 1
     },
     "dataset":{
         "dataset_name": "Lambada",
-        "num_classes": 2
+        "num_classes": 1,
+        "use_prompt": 1
     },
     "tokenizer":{
         "padding": "max_length",
         "padding_type": "outside",
         "pad_token": "[PAD]",
-        "truncation": "longest_first",
+        "truncation": "True",
         "max_length": 512,
         "padding_side": "left",
         "add_special_tokens": 1
@@ -29,6 +34,7 @@
             "pretrained": 1,
             "encoder_trainable": 1,
             "embedding_trainable": 0,
+            "encoder_trainable_ids":[0,1,2],
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -39,6 +45,7 @@
             "pretrained": 1,
             "head_layer_trainable": 1,
             "encoder_trainable": 0,
+            "encoder_trainable_ids":[],
             "output_dim": 1,
             "model_type": "GPT2",
             "max_sequence": 512,
@@ -46,27 +53,13 @@
         },
         "task":{
             "task_type": "CausalLM",
-            "doc_stride" : 128,
-            "max_seq_length": 128,
+            "doc_stride" : 512,
+            "max_seq_length": 512,
             "metric_type": "best_pred",
-            "n_best_size": 8
+            "n_best_size": 3
         },
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "defense": {
-        "name": "MID",
-        "parameters": {
-            "party": [0],
-            "mid_model_name":"MIDModel_Linear",
-            "lr": 0.001,
-            "lambda": 1,
-            "mid_position": "out",
-            "current_bottleneck_scale": 1,
-            "seq_length": 512,
-            "embed_dim": 768,
-            "mid_model_path":"home/DAIR/guzx/Git_FedProject/dev_VFL/src/exp_result/Lambada/Q1/defense_models/MID_Passive_{'party': [0], 'mid_model_name': 'MIDModel_Linear', 'lr': 0.0001, 'lambda': 0.5, 'mid_position': 'out', 'current_bottleneck_scale': 1, 'seq_length': 512, 'embed_dim': 768}.pkl"
-        }
+        "local_encoders_num": 3
+    
     },
     "attack_list": {
         "0":{
@@ -74,9 +67,9 @@
             "parameters": {
                 "party": [1],
                 "lr": 0.01,
-                "epochs": 1,
+                "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 5
+                "attack_sample_num": 500
             }
         },
         "1":{
@@ -85,10 +78,11 @@
                 "party": [1],
                 "T": 0.05,
                 "lr": 0.001,
-                "epochs": 1,
+                "epochs": 100,
                 "batch_size": 32,
-                "attack_sample_num": 5
+                "attack_sample_num": 500
             }
         }
     }
+    
 }

@@ -28,7 +28,9 @@
         "0": {
             "type": "meta-mathMetaMath-Mistral-7B",
             "pretrained": 1,
-            "head_layer_trainable": 0,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[], 
             "output_dim": 1,
             "model_type": "Mistral",
             "max_sequence": 512,
@@ -37,6 +39,9 @@
         "1": {
             "type": "meta-mathMetaMath-Mistral-7B",
             "pretrained": 1,
+            "encoder_trainable": 0,
+            "embedding_trainable": 0,
+            "encoder_trainable_ids":[], 
             "head_layer_trainable": 0,
             "output_dim": 1,
             "model_type": "Mistral",
@@ -48,32 +53,6 @@
             "max_new_tokens": 100,
             "metric_type": "best_pred"
         },
-        "local_encoders_num": 1,
-        "apply_trainable_layer": 0,
-        "global_model": "ClassificationModelHostHead"
-    },
-    "attack_list": {
-        "0":{
-            "name": "VanillaModelInversion_WhiteBox",
-            "parameters": {
-                "party": [1],
-                "lr": 0.01,
-                "epochs": 100,
-                "batch_size": 32,
-                "attack_sample_num": 5
-            }
-        },
-        "1":{
-            "name": "WhiteBoxInversion",
-            "parameters": {
-                "party": [1],
-                "T": 0.05,
-                "lr": 0.005,
-                "epochs": 500,
-                "batch_size": 32,
-                "attack_sample_num": 5
-            }
-        }
+        "local_encoders_num": 1
     }
-    
 }

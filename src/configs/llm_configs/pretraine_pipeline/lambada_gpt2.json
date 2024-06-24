@@ -28,33 +28,34 @@
   },
   "model_list": {
     "0": {
-      "type": "llama-2-7b",
+      "type": "gpt2",
       "pretrained": 1,
       "encoder_trainable": 0,
       "embedding_trainable": 0,
+      "encoder_trainable_ids":[], 
       "output_dim": 1,
-      "model_type": "Llama",
+      "model_type": "GPT2",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
     },
     "1": {
-      "type": "llama-2-7b",
+      "type": "gpt2",
       "pretrained": 1,
-      "head_layer_trainable": 1,
       "encoder_trainable": 0,
+      "encoder_trainable_ids":[], 
+      "head_layer_trainable": 0,
       "output_dim": 1,
-      "model_type": "Llama",
+      "model_type": "GPT2",
       "max_sequence": 512,
-      "path": "/home/DAIR/guzx/Git_FedProject/Models/llama-2-7b"
+      "path": "/home/DAIR/guzx/Git_FedProject/Models/gpt2"
     },
     "task": {
       "task_type": "CausalLM",
-      "doc_stride": 256,
+      "doc_stride": 512,
       "max_seq_length": 512,
       "metric_type": "best_pred",
       "n_best_size": 8
     },
-    "apply_trainable_layer": 0,
-    "global_model": "ClassificationModelHostHead"
+    "local_encoders_num": 1
   }
 }

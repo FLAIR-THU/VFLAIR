@@ -17,7 +17,6 @@ from party.llm_party import Party as Party_LLM
 from dataset.party_dataset import *
 from dataset.party_dataset import ActiveDataset
 from load.LoadModels import load_models_per_party, QuestionAnsweringModelOutput
-# load_models_per_party_new
 from utils.squad_utils import normalize_answer, _get_best_indexes, compute_exact, compute_f1
 from utils.communication_protocol_funcs import get_size_of
 from evaluates.defenses.defense_api import apply_defense

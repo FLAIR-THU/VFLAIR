@@ -1951,7 +1951,7 @@ def load_dataset_per_party_llm(args, index):
         texts = []
         target_word = []
 
-        for _all_text in train_all_texts[:1]:
+        for _all_text in train_all_texts[:]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)#.strip().split()
             # all_doc_tokens = [c for c in all_doc_tokens if c not in string.punctuation]
 
@@ -1990,7 +1990,7 @@ def load_dataset_per_party_llm(args, index):
         test_domain = dataset['test'][:]['domain']
         texts = []
         target_word = []
-        for _all_text in test_all_texts[:10]:
+        for _all_text in test_all_texts[:]:
             all_doc_tokens = args.tokenizer.tokenize(_all_text)  # .strip().split()
 
             text_tokens = all_doc_tokens[:-1]
@@ -2112,7 +2112,7 @@ def load_dataset_per_party_llm(args, index):
         print('train data:', len(X_train), len(y_train))
         print('test data:', len(X_test), len(y_test))
 
-        train_dst = (X_train[:10], y_train[:10])
+        train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
 
         # input_ids, labels = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels"))
@@ -2204,22 +2204,22 @@ def load_dataset_per_party_llm(args, index):
         train_examples = get_examples(data_path, 'train') # list of [  {'quesion':... , 'answer':...} ...]
         X_train = np.array([ problem_prompt.format(instruction=_ex['question']+ "<|endoftext|>") for _ex in train_examples])
         y_train = np.array([ _ex['answer'] for _ex in train_examples])
-        print('TRAIN IN:')
-        print(X_train[0])
-        print('-'*100)
-        print('TRAIN ANS:')
-        print(y_train[0])
+        # print('TRAIN IN:')
+        # print(X_train[0])
+        # print('-'*100)
+        # print('TRAIN ANS:')
+        # print(y_train[0])
 
         ##### Test #####
         test_examples = get_examples(data_path, 'test') # list of [  {'quesion':... , 'answer':...} ...]
         X_test = np.array([ problem_prompt.format(instruction=_ex['question']) for _ex in test_examples])
         y_test = np.array([ get_final_ans(_ex['answer']) for _ex in test_examples])
-        print('TEST IN:')
-        print(X_test[0])
-        print('-'*100)
-        print('TEST ANS:')
-        print(y_test[0])
-        print('-'*100)
+        # print('TEST IN:')
+        # print(X_test[0])
+        # print('-'*100)
+        # print('TEST ANS:')
+        # print(y_test[0])
+        # print('-'*100)
 
         train_dst = (X_train, y_train)
         test_dst = (X_test, y_test)
@@ -2338,6 +2338,7 @@ def load_dataset_per_party_llm(args, index):
 
     elif not args.dataset:
         return None
+        
     elif args.dataset=='huanhuan':
         tokenizer=args.tokenizer
         dataset_split = args.model_list[str(index)]
