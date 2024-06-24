@@ -84,8 +84,7 @@ class BatchLabelReconstruction(Attacker):
 
             # collect necessary information
             pred_list = self.vfl_info['predict']
-            pred_a = self.vfl_info['predict'][
-                ik]  # [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)]
+            pred_a = self.vfl_info['predict'][ik]  # [copy.deepcopy(self.parties[ik].local_pred_clone) for ik in range(self.k)]
             pred_b = self.vfl_info['predict'][1]  # active party
 
             self_data = self.vfl_info['data'][ik][0]  # copy.deepcopy(self.parties_data)

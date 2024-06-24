@@ -198,7 +198,7 @@ def do_load_basic_configs(config_dict, args):
             if str(ik) in config_model_dict:
                 if 'type' in config_model_dict[str(ik)]:
                     args.model_type = config_model_dict[str(ik)]['model_type'] if 'model_type' in config_model_dict[
-                        str(ik)] else None  # Overall Model Type
+                        str(ik)] else None  # Overall Model Type LLM type/None for non-llm scenario
 
                     encoder_trainable_ids = config_model_dict[str(ik)]['encoder_trainable_ids'] if 'encoder_trainable_ids' in config_model_dict[str(ik)] else []
                     args.encoder_trainable_ids_list.append(encoder_trainable_ids)
