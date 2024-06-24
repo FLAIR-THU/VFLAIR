@@ -1,27 +1,42 @@
 # README_LLM
 
-[TOC]
+[VFLAIR-LLM]
+
+
 
 ## Introduction
 
-In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluation as **a variant** of our traditional Federated Learning procedure. Here we provide the following functions: 
+In VFLAIR-LLM, we additionally provide support for **Large Language Models (LLM)** inference and fine-tuning using private data, where private data can not be exposed directly to LLM due to privacy and regulation constraints. To overcome this challenge, we leverage VFLAIR to split the LLM into Local and Global sub-models to enable local inference/fine-tuning. In addition, we evaluate the risks of exposing intermediate results and implementing defenses. See figure below for VFLAIR-LLM architecture. 
 
- ![LLM_overview](./usage_guidance/figures/LLM_overview.png)
+Figure below demonstrates all the main functions supported by VFLAIR-LLM, including model split, LLM models, tasks and datasets, attack and defense strategies.
+ ![LLM_overview](./usage_guidance/figures/VFLAIR_LLM.png)
+
+- **Vertical Federated LLM Scenario**: In VFLAIR-LLM, we propose a vertical federated LLM scenario describing 2 parties jointly train a LLM. The Active Party holds the global part of the model, representing model provider with abundant computational resources. The Passive Party holds the local part of LLM, representing companys or institutes with limited resources. Detailed scenario description, including model forward and backward calculation, is demonstrated in the following figure.
+<div align=center>
+<img src="./usage_guidance/figures/LLM_scenario.png" width="50%">
+</div>
 
 - **Model Split for LLM**: Defaultly we split the LLM between the first and second layer(encoder or decoder), which can be user-defined through config files.
-  - Local Model: Embedding Layer + the first encoder
-  - Global Model: the rest encoders + Head Layers for down-stream tasks
+  - Local Model: Embedding Layer + $n_local$ encoder/decoders
+  - Global Model: the rest $n_{global}$ encoder/decoders + Head Layers for down-stream tasks
   - For detailed implementation of LLM model split, please refer to [Detailed Tutorial] section for further guidance.
-- **Three Model Architect and corresponding task type**: Currently VFLAIR supported the following model architect. Each model architect can be used in its corresponding downstream tasks and datasets.
+  - Figure below describes the LLM model partition method.
+<div align=center>
+<img src="./usage_guidance/figures/model_partition.png" width="30%">
+</div>
+
+- **Three Model Architects and corresponding task types**: Currently VFLAIR supported the following model architect. Each model architect can be used in its corresponding downstream tasks and datasets.
   - **CLS models** output probability vectors for the classification, which is used in normal Classification tasks. When the number of classes is reduced to 1, the model only output a single value which can be used in Regression tasks.
   - **TQA model**s output the starting and ending positions of the answer texts, which can be used in Text-span based Question Answering datasets like SQuAD. (Note that different from Generation-based QA tasks, TQA provides a piece of text for the model to find the answer in while GQA is a proper generation task)
   - **CLM models** output a word vector representing the probability of each token in the next position, which can be used in Next Token Prediction tasks like Lambada. When the model is called recursively to continuously generate the next word, the model can be used for a wider range of generative tasks like Text Generation/Code Generation/Math Problem Solving etc.
 
-| Model Architect                             | Corresponding Transformer Class                              | Task Type                                                    | Dataset                                          |
-| ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------ |
-| CLS<br>(Classification)                     | XXXforSequenceClassification<br>e.g. transformer.BertforSequenceClassification | Sequence Classification<br>Regression                        | GLUE Benchmark                                   |
-| TQA<br>(Text-span based Question Answering) | XXXforQuestionAnswering<br/>e.g. transformer.BertforQuestionAnswering | Text-span based Question Answering                           | SQuAD                                            |
-| CLM<br>(Causal LM - generation)             | XXXforCausalLM<br/>e.g. transformer.GPTLMhead                | Next Token Prediction<br>Text Generation<br>Code Generation<br>Math Problem Answering | MMLU/Lambada<br>Alpaca/CodeAlpaca/<br>MATH/GMS8K |
+| Model Architect                             | Corresponding Transformer Class                              | Task Type                                                    | Dataset                                      |
+| ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------- |
+| CLS<br>(Classification)                     | XXXforSequenceClassification<br>e.g. transformer.BertforSequenceClassification | Sequence Classification<br>Regression                        | GLUE Benchmark<br>Yelp                       |
+| TQA<br>(Text-span based Question Answering) | XXXforQuestionAnswering<br/>e.g. transformer.BertforQuestionAnswering | Text-span based Question Answering                           | SQuAD                                        |
+| CLM<br>(Causal LM - generation)             | XXXforCausalLM<br/>e.g. transformer.GPTLMhead                | Next Token Prediction<br>Text Generation<br>Code Generation<br>Math Problem Answering | Lambada/<br>Alpaca/CodeAlpaca/<br>MATH/GMS8K |
+
+
 
 - **Multiple Model Base**: The following LLMs are supported in VFLAIR.
 
@@ -38,7 +53,7 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
 ## Structure
 
- ![Pipeline](../../usage_guidance/figures/pipeline.png)
+VFLAIR-LLM is developed under the VFLAIR framework, sharing the same framework structure as described in [VFLAIR Framework Strcuture][https://github.com/LindaLydia/PlatForm/blob/main/README.md]. The overall strcutrue can be arranged into the following modules:
 
 - **Config Module**
 
@@ -57,22 +72,22 @@ In VFLAIR, we also provide a **VFL pipeline for LLM** implementation and evaluat
 
 - **Train & Evaluate Module**
 
-  - **Training Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
+  - **Finetune&Inference Pipelines** - `./src/evaluate/MainTaskVFL_LLM`
     - Provide Class MainTaskVFL_LLM() to finetune your own LLM or evaluate a pretrained LLM.
       - LoRA algorithm is also provided for fine-tuning
   - **Attack&Defense**: 
     - Attacks：
       - VanillaModelInversion - WhiteBox([paper]([Model Inversion Attacks that Exploit Confidence Information and Basic Countermeasures | Proceedings of the 22nd ACM SIGSAC Conference on Computer and Communications Security](https://dl.acm.org/doi/10.1145/2810103.2813677))) 
-      - WhiteBoxInversion([paper]([2004.00053\] Information Leakage in Embedding Models (arxiv.org)](https://arxiv.org/abs/2004.00053)))
+      - Relaxation-based White Box Inversion([paper]([2004.00053\] Information Leakage in Embedding Models (arxiv.org)](https://arxiv.org/abs/2004.00053)))
     - Defense：
       - Laplace Differential Privacy([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
       - Adversarial Training - Privacy Preserving Mapping([paper]([Privacy Risks of General-Purpose Language Models | IEEE Conference Publication | IEEE Xplore](https://ieeexplore.ieee.org/document/9152761))) 
   - **Communication**: currently we only provide FedSGD for VFL_LLM communication.
 
 - **Metrics Module**: we provide the following metris for each task type
-
   - Classification: accuracy 
-  - Regression: mse / pearson corr 
+  - Regression: mse / pearson corr
+  - Next Token Prediction: accuracy
   - Text Generation: bleu score
   - Math Problem Answering: accuracy score
 
@@ -151,7 +166,16 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
 "finetune_configs":{
         "name":"Vanilla",
         "configs":{}
-  },
+  }
+
+"finetune_configs":{
+        "name":"LoRA",
+        "configs":{
+            "r":4,  
+            "lora_alpha":32, 
+            "lora_dropout":0.1
+        }
+  }
 ```
 
 - "name": 'Vanilla'&'LoRA'
@@ -181,45 +205,42 @@ In VFLAIR-LLM, we provide some basic prompt generation methods. Also, user can e
 ```json
 "model_list":{
     "0": {
-        "type": "rsvp-aibertserini-bert-base-squad",
-        "pretrained": 1,
-        "head_layer_trainable": 1,
-        "output_dim": 1,
-        "model_type": "Bert",
-        "max_sequence": 512,
-        "path": ""
-    },
-    "1": {
-        "type": "rsvp-aibertserini-bert-base-squad",
-        "pretrained": 1,
-        "head_layer_trainable": 1,
-        "output_dim": 1,
-        "model_type": "Bert",
-        "max_sequence": 512,
-        "path": ""
-    },
+            "type": "textattackbert-base-uncased-SST-2",
+            "pretrained": 1,
+            "encoder_trainable": 1,
+            "embedding_trainable": 1,
+            "encoder_trainable_ids":[0],
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
+        "1": {
+            "type": "textattackbert-base-uncased-SST-2",
+            "pretrained": 1,
+            "head_layer_trainable": 1,
+            "encoder_trainable": 0,
+            "encoder_trainable_ids":[],
+            "output_dim": 2,
+            "model_type": "Bert",
+            "max_sequence": 512,
+            "path": ""
+        },
     "task":{
-        "task_type": "QuestionAnswering",
-        "metric_type": "n_best",
-        "doc_stride" : 128,
-        "max_seq_length": 512,
-        "max_query_length" : 64,
-        "max_answer_length": 30,
-        "n_best_size": 20}
-
-    }
+            "task_type": "SequenceClassification"
+        }
 ```
 
 - "model":
   - "pretrained": represents model loading method
     - define whether the model is loaded from a pretrained third-party model with full trained head layer(pretrained = 1) or a base model with randomly-initialized head layer.
   - "head_layer_trainable": define whether we shall freeze the head layer paramaters or leave it open for finetuning
+  - "encoder_trainable": define whether we shall freeze the encoder/decoder paramaters or leave it open for finetuning. Detailed number of encoder that's trainable is defined in "encoder_trainable_ids".
+  - "embedding_trainable": define whether we shall freeze the embedding layer paramaters or leave it open for finetuning
   - "max_sequence": max length of input acceptable for the model.
-    - normally we set 512 for Bert / 1024 for GPT2
 - "task": Definition of task type
-  - "task_type": name of the task type(QuestionAnswering/SequenceClassification...)
-  - "metric_type"/"n_best_size": specific for QuestionAnswering tasks. it represents the type of metric calculation for QA(text-span) tasks
-  - “doc_stride”/“max_seq_length”...: specific for QuestionAnswering tasks. it defines the max length of QA input
+  - "task_type": name of the task type(SequenceClassification...)
+ - "output_dim": dimension of the model output, relevant with downstream tasks.
 
 #### Attack
 
@@ -287,6 +308,10 @@ python main_pipeline_llm.py --configs Your_Config_File
 ```
 
 
+
+### How to import New Datasets?
+
+If you need detailed usage guidance for existent datasets and guidance for adding new datasets , Please refer to  `../usage_guidance/Dataset_Usage.md` for more information.
 
 
 
