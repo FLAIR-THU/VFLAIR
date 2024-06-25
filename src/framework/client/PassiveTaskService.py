@@ -91,7 +91,7 @@ class PassiveTaskService:
             base_model_id = main_task.get_base_model()
             logger.info('Model id: {}'.format(model_id))
             logger.info('Base model id: {}'.format(base_model_id))
-            result = main_task.train_vfl(model_id=model_id)
+            result = main_task.train_vfl(model_id=model_id, save_model=False)
             model_path = args.parties[0].get_model_folder() + model_id
             self._save_trained_model(base_model_id, model_id, args.model_type, model_path)
         else:

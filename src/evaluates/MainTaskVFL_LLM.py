@@ -1338,7 +1338,7 @@ def create_main_task(global_model_type: GenerationMixin):
                 job_id = current_datetime.strftime("%Y%m%d%H:%M:%S")
             return f'{base_model}_{job_id}'
 
-        def train_vfl(self, model_id=None, **kwargs):  # def train(self):
+        def train_vfl(self, model_id=None, save_model=False, **kwargs):  # def train(self):
             training_args = vfl_basic_config.vfl_training_config.training_args
             if self.args.model_type.lower() == 'qwen2':
                 # 创建 TensorBoard 摘要写入器
@@ -1532,7 +1532,7 @@ def create_main_task(global_model_type: GenerationMixin):
             print('Save csv to:', result_file_name)
             data_record.to_csv(result_file_name)
 
-            if self.args.apply_defense:
+            if self.args.apply_defense and save_model:
                 if self.args.apply_mid or self.args.apply_adversarial:
                     self.save_defense_models()
             return exp_result, self.test_acc, total_time  # , self.stopping_iter, self.stopping_time, self.stopping_commu_cost
