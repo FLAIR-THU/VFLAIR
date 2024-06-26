@@ -118,7 +118,7 @@ def parse_args():
 
 
 def read_json_config():
-    config_path = os.path.join(os.path.dirname(__file__), "../../configs/dev_llm_inference.json")
+    config_path = os.path.join(os.path.dirname(__file__), "../../configs/llm_configs/dev_llm_inference.json")
     with open(config_path, "r") as f:
         contents = f.read()
     return contents
