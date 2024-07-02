@@ -1,6 +1,6 @@
 # VFLAIR
 ## News
-- [06-23-2024] We released [VFLAIR-LLM](https://github.com/FLAIR-THU/VFLAIR) and [distributed version](https://github.com/FLAIR-THU/VFLAIR/tree/main/src/framework), a Vertical Federated LLM Framework developed based on VFLAIR! 
+- [06-23-2024] We released [VFLAIR-LLM](./src/configs/README_LLM.md) and [distributed version](https://github.com/FLAIR-THU/VFLAIR/tree/main/src/framework), a Vertical Federated LLM Framework developed based on VFLAIR! 
 <div align=center>
 <img src="usage_guidance/figures/VFLAIR_LLM.png" width="100%">
 </div>
