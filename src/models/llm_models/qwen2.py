@@ -184,6 +184,8 @@ class Qwen2ModelHead(Qwen2ModelSplitter):
 
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
+        self.embedding_output = inputs_embeds # add
+
 
         if attention_mask is not None and self._attn_implementation == "flash_attention_2" and use_cache:
             is_padding_right = attention_mask[:, -1].sum().item() != batch_size

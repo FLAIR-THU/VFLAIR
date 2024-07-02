@@ -230,7 +230,7 @@ class VanillaModelInversion_WhiteBox(Attacker):
                         dummy_intermediate  = local_model(**dummy_input)
                         local_model._clear_past_key_values()
 
-                        dummy_intermediate = dummy_intermediate['inputs_embeds']
+                        dummy_intermediate = dummy_intermediate.get('inputs_embeds')
                     
                         crit = nn.CrossEntropyLoss()
                         _cost = crit(dummy_intermediate, received_intermediate)

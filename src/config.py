@@ -51,7 +51,7 @@ class VFLBasicConfig(object):
         :return:
         """
         return {'device_map': 'auto',
-                'torch_dtype': torch.bfloat16,
+                # 'torch_dtype': torch.bfloat16,
                 'ignore_mismatched_sizes': True,
                 }
 
